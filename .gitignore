@@ -1,0 +1,48 @@
+# --- bandera del gate del vault ---------------------------------------------
+# UNA SOLA RUTA. La define scripts/hooks/_comun.sh y la usan el PreToolUse y
+# el Stop. En PadelPunilla el .gitignore listaba DOS rutas, y esa duda ya
+# existia cuando se escribio: el gate llevaba meses sin frenar nada.
+.claude/.vault-session-ok
+
+# --- temporales de las pruebas de hooks --------------------------------------
+.tmp-pruebas-hooks/
+
+# --- secretos ----------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*-service-account*.json
+serviceAccountKey*.json
+key.properties
+*.keystore
+*.jks
+
+# --- Node / Next.js ----------------------------------------------------------
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+.vercel
+
+# --- Firebase ----------------------------------------------------------------
+functions/lib/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*-debug.log
+
+# --- Flutter / Dart ----------------------------------------------------------
+.dart_tool/
+.packages
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+*.g.dart.lock
+
+# --- SO / editor -------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.pyc
+__pycache__/

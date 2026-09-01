@@ -1,0 +1,180 @@
+name: CI
+
+# ============================================================================
+# ALCANCES - elegi el mas chico que conteste la pregunta.
+#
+#   rapido    guardas + enlaces                       ~1 min
+#   tests     + suites de TS y Dart                   (cuando existan)
+#   completo  + analisis estatico y reglas            (cuando existan)
+#
+# Builds NUNCA automaticos: son la mitad del costo y casi nunca son lo que se
+# esta verificando. iOS cuesta x10 (runner macOS).
+#
+# La capa gratuita son 2000 min/mes. En PadelPunilla la disciplina de alcance
+# bajo el costo por push de ~21 min a ~4 min (LECCIONES 3.6).
+# ============================================================================
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'          # lunes: detecta que algo se pudrio solo
+  workflow_dispatch:
+    inputs:
+      alcance:
+        description: Que tan lejos ir
+        type: choice
+        options: [rapido, tests, completo]
+        default: rapido
+
+# El event_name va EN EL GRUPO a proposito.
+#
+# En PadelPunilla el grupo era ci-${{ github.ref }} con cancel-in-progress y
+# sin discriminar por evento, asi que disparar los tests a mano CANCELABA la
+# corrida del push - y `gh run watch` devolvia 0 igual, o sea que la
+# cancelacion se leia como verde. LECCIONES 2.2.
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+# Sin paths-ignore a proposito: hoy el unico trabajo caro es de ~1 min y uno
+# de los verificadores es justamente el de la documentacion. Se agrega
+# paths-ignore: ['docs/**', '**/*.md'] el dia que entren los jobs de Flutter
+# y de tests, que son los que cuestan minutos.
+
+jobs:
+  # Que existe en el repo hoy. Los jobs de abajo se encienden solos cuando
+  # aparece su carpeta: nada de jobs comentados que se pudren.
+  contexto:
+    runs-on: ubuntu-latest
+    outputs:
+      hay_ts: ${{ steps.mirar.outputs.hay_ts }}
+      hay_flutter: ${{ steps.mirar.outputs.hay_flutter }}
+      hay_reglas: ${{ steps.mirar.outputs.hay_reglas }}
+      alcance: ${{ steps.mirar.outputs.alcance }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: mirar
+        run: |
+          # push -> rapido | PR y lunes -> completo | dispatch -> lo pedido
+          case "${{ github.event_name }}" in
+            workflow_dispatch) A="${{ inputs.alcance }}" ;;
+            pull_request|schedule) A="completo" ;;
+            *) A="rapido" ;;
+          esac
+          echo "alcance=$A" >> "$GITHUB_OUTPUT"
+          [ -f packages/contratos/package.json ] && echo "hay_ts=true" >> "$GITHUB_OUTPUT" || echo "hay_ts=false" >> "$GITHUB_OUTPUT"
+          [ -f apps/admin/pubspec.yaml ] && echo "hay_flutter=true" >> "$GITHUB_OUTPUT" || echo "hay_flutter=false" >> "$GITHUB_OUTPUT"
+          [ -f firestore.rules ] && echo "hay_reglas=true" >> "$GITHUB_OUTPUT" || echo "hay_reglas=false" >> "$GITHUB_OUTPUT"
+
+  # Los hooks son la unica parte del sistema que mide en vez de describir.
+  # Si dejan de medir, hay que enterarse acá y no seis meses despues.
+  guardas:
+    needs: contexto
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sintaxis de los hooks
+        run: for f in scripts/hooks/*.sh; do bash -n "$f" || exit 1; done
+      - name: Los hooks bloquean lo que dicen bloquear
+        run: bash scripts/hooks/probar_hooks.sh
+      - name: Enlaces de la documentacion
+        run: node scripts/ci/verificar_enlaces.mjs .
+
+  tipos:
+    needs: contexto
+    if: needs.contexto.outputs.hay_ts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci
+      # tsc --noEmit termina en segundos y atrapa imports faltantes y exports
+      # duplicados sin gastar una corrida entera (LECCIONES 5.8).
+      - run: npx tsc --noEmit --project packages/contratos
+      - name: El contrato generado esta fresco
+        # Sin esto, contratos.json envejece y el test de Dart pasa contra un
+        # contrato que ya no existe: el test se vuelve teatro.
+        run: node scripts/ci/auditar_estados.mjs
+
+  suite_ts:
+    needs: [contexto, tipos]
+    if: needs.contexto.outputs.hay_ts == 'true' && needs.contexto.outputs.alcance != 'rapido'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22', cache: npm }
+      - run: npm ci
+      # --runInBand: en paralelo los timeouts se disfrazan de fallos de logica
+      # y se pierde la tarde buscando un bug que no existe (LECCIONES 5.8).
+      - run: npm test -- --runInBand
+
+  suite_dart:
+    needs: contexto
+    if: needs.contexto.outputs.hay_flutter == 'true' && needs.contexto.outputs.alcance != 'rapido'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: flutter pub get
+        working-directory: apps/admin
+      # --fatal-infos viene ACTIVADO por defecto: un avoid_print olvidado
+      # frenaria un deploy. Errores y warnings si bloquean (LECCIONES 3.8).
+      - run: flutter analyze --no-fatal-infos
+        working-directory: apps/admin
+        if: needs.contexto.outputs.alcance == 'completo'
+      - run: flutter test --reporter expanded
+        working-directory: apps/admin
+
+  # ==========================================================================
+  # VEREDICTO - separado de los jobs que corren.
+  #
+  # Es la mitad menos obvia y mas importante del diseno de PadelPunilla: los
+  # shards terminan verdes con rojos adentro, asi que el veredicto tiene que
+  # EXIGIR los reportes. Sin esa cuenta, un job muerto en silencio pasa por
+  # suite verde.
+  # ==========================================================================
+  veredicto:
+    needs: [contexto, guardas, tipos, suite_ts, suite_dart]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exigir que las guardas hayan pasado
+        run: |
+          [ "${{ needs.guardas.result }}" = "success" ] || {
+            echo "::error::las guardas no pasaron (${{ needs.guardas.result }})"; exit 1; }
+      - name: Ningun job puede haber fallado ni quedado cancelado
+        run: |
+          for r in "${{ needs.tipos.result }}" "${{ needs.suite_ts.result }}" "${{ needs.suite_dart.result }}"; do
+            case "$r" in
+              success|skipped) ;;
+              *) echo "::error::un job termino en '$r' (cancelled cuenta como rojo)"; exit 1 ;;
+            esac
+          done
+      - name: Decir en el resumen QUE NO se verifico
+        # LECCIONES 2.1: un job verde no prueba lo que no corrio. El resumen
+        # dice explicitamente que quedo sin mirar, para que "CI verde" no se
+        # lea como "todo verificado".
+        run: |
+          {
+            echo "## CI verde - alcance \`${{ needs.contexto.outputs.alcance }}\`"
+            echo
+            echo "### Verificado"
+            echo "- hooks: sintaxis y comportamiento (controles positivos y negativos)"
+            echo "- documentacion: enlaces y anclas"
+            [ "${{ needs.tipos.result }}" = "success" ] && echo "- TypeScript: tipos y frescura del contrato"
+            [ "${{ needs.suite_ts.result }}" = "success" ] && echo "- TypeScript: suite"
+            [ "${{ needs.suite_dart.result }}" = "success" ] && echo "- Dart: suite"
+            echo
+            echo "### NO verificado en esta corrida"
+            [ "${{ needs.contexto.outputs.hay_ts }}" = "false" ] && echo "- TypeScript: todavia no existe \`packages/contratos\`"
+            [ "${{ needs.contexto.outputs.hay_flutter }}" = "false" ] && echo "- Flutter: todavia no existe \`apps/admin\`"
+            [ "${{ needs.contexto.outputs.hay_reglas }}" = "false" ] && echo "- Reglas de Firestore: todavia no existe \`firestore.rules\`"
+            [ "${{ needs.contexto.outputs.alcance }}" = "rapido" ] && echo "- **Las suites NO corrieron.** Si el cambio es logica y no UI, dispara \`alcance=tests\` antes de tocar produccion."
+            echo "- Builds: nunca son automaticos."
+            echo "- Que la UI se vea bien: eso no lo mira ningun job."
+          } >> "$GITHUB_STEP_SUMMARY"
