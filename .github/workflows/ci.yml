@@ -89,7 +89,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '22', cache: npm }
+        with: { node-version: '24', cache: npm }
       - run: npm ci
       # tsc --noEmit termina en segundos y atrapa imports faltantes y exports
       # duplicados sin gastar una corrida entera (LECCIONES 5.8).
@@ -106,11 +106,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '22', cache: npm }
+        with: { node-version: '24', cache: npm }
       - run: npm ci
-      # --runInBand: en paralelo los timeouts se disfrazan de fallos de logica
-      # y se pierde la tarde buscando un bug que no existe (LECCIONES 5.8).
-      - run: npm test -- --runInBand
+      # Runner de tests de Node, sobre .ts directo: cero dependencias de test.
+      #
+      # Cuando entren los tests de integracion de functions contra el emulador,
+      # ESOS van con --runInBand / concurrencia 1: en paralelo los timeouts se
+      # disfrazan de fallos de logica y se pierde la tarde buscando un bug que
+      # no existe (LECCIONES 5.8). Los de contratos son puros y no lo necesitan.
+      - name: Suite, y la CUENTA de tests
+        # "la suite paso" no distingue un test verde de un archivo que ni se
+        # ejecuto (LECCIONES 2.8). El piso se sube a mano al agregar tests.
+        #
+        # El patron no se ancla con '^.' a proposito: el reporter de Node
+        # prefija cada linea con un caracter multibyte, y '.' no lo matchea
+        # fuera de un locale UTF-8. Medido: falla en Git Bash de Windows.
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee /tmp/suite.txt
+          N=$(grep -oE 'tests [0-9]+' /tmp/suite.txt | head -1 | grep -oE '[0-9]+')
+          echo "tests ejecutados: ${N:-0}"
+          [ "${N:-0}" -ge 26 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 26"; exit 1; }
 
   suite_dart:
     needs: contexto

@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "generadoPor": "packages/contratos/scripts/generar.mjs",
+  "noEditarAMano": true,
+  "pago": {
+    "estados": [
+      "pendiente",
+      "en_proceso",
+      "pagada",
+      "rechazada",
+      "reembolsada"
+    ],
+    "naceEn": [
+      "pendiente",
+      "pagada"
+    ],
+    "transiciones": {
+      "pendiente": [
+        "en_proceso",
+        "pagada",
+        "rechazada"
+      ],
+      "en_proceso": [
+        "pagada",
+        "rechazada"
+      ],
+      "pagada": [
+        "reembolsada"
+      ],
+      "rechazada": [
+        "en_proceso",
+        "pagada"
+      ],
+      "reembolsada": []
+    }
+  },
+  "entrega": {
+    "estados": [
+      "sin_preparar",
+      "preparando",
+      "despachada",
+      "entregada",
+      "fallida",
+      "cancelada"
+    ],
+    "naceEn": [
+      "sin_preparar"
+    ],
+    "transiciones": {
+      "sin_preparar": [
+        "preparando",
+        "cancelada"
+      ],
+      "preparando": [
+        "despachada",
+        "cancelada"
+      ],
+      "despachada": [
+        "entregada",
+        "fallida"
+      ],
+      "entregada": [],
+      "fallida": [
+        "despachada"
+      ],
+      "cancelada": []
+    }
+  },
+  "publico": {
+    "estados": [
+      "recibida",
+      "confirmando",
+      "pago_rechazado",
+      "pagada",
+      "en_preparacion",
+      "en_camino",
+      "entregada",
+      "entregada_impaga",
+      "no_entregada",
+      "cancelada",
+      "cancelada_con_pago",
+      "reembolsada"
+    ],
+    "requierenAccion": [
+      "pagada",
+      "entregada_impaga",
+      "no_entregada",
+      "cancelada_con_pago"
+    ],
+    "rotulos": {
+      "recibida": {
+        "cliente": "Pedido recibido",
+        "operador": "Recibida - falta cobrar"
+      },
+      "confirmando": {
+        "cliente": "Confirmando...",
+        "operador": "Pago en proceso"
+      },
+      "pago_rechazado": {
+        "cliente": "No pudimos cobrar el pago",
+        "operador": "Pago rechazado"
+      },
+      "pagada": {
+        "cliente": "Pago acreditado",
+        "operador": "Pagada - falta preparar"
+      },
+      "en_preparacion": {
+        "cliente": "Preparando tu pedido",
+        "operador": "En preparacion"
+      },
+      "en_camino": {
+        "cliente": "En camino",
+        "operador": "Despachada"
+      },
+      "entregada": {
+        "cliente": "Entregado",
+        "operador": "Entregada"
+      },
+      "entregada_impaga": {
+        "cliente": "Entregado",
+        "operador": "ENTREGADA SIN COBRAR"
+      },
+      "no_entregada": {
+        "cliente": "No pudimos entregarlo",
+        "operador": "Entrega fallida - reprogramar"
+      },
+      "cancelada": {
+        "cliente": "Pedido cancelado",
+        "operador": "Cancelada"
+      },
+      "cancelada_con_pago": {
+        "cliente": "Pedido cancelado",
+        "operador": "CANCELADA CON PAGO - devolver"
+      },
+      "reembolsada": {
+        "cliente": "Pedido cancelado y reintegrado",
+        "operador": "Reembolsada"
+      }
+    },
+    "proyeccion": {
+      "pendiente|sin_preparar": "recibida",
+      "pendiente|preparando": "en_preparacion",
+      "pendiente|despachada": "en_camino",
+      "pendiente|entregada": "entregada_impaga",
+      "pendiente|fallida": "no_entregada",
+      "pendiente|cancelada": "cancelada",
+      "en_proceso|sin_preparar": "confirmando",
+      "en_proceso|preparando": "confirmando",
+      "en_proceso|despachada": "confirmando",
+      "en_proceso|entregada": "entregada_impaga",
+      "en_proceso|fallida": "no_entregada",
+      "en_proceso|cancelada": "cancelada",
+      "pagada|sin_preparar": "pagada",
+      "pagada|preparando": "en_preparacion",
+      "pagada|despachada": "en_camino",
+      "pagada|entregada": "entregada",
+      "pagada|fallida": "no_entregada",
+      "pagada|cancelada": "cancelada_con_pago",
+      "rechazada|sin_preparar": "pago_rechazado",
+      "rechazada|preparando": "pago_rechazado",
+      "rechazada|despachada": "pago_rechazado",
+      "rechazada|entregada": "entregada_impaga",
+      "rechazada|fallida": "no_entregada",
+      "rechazada|cancelada": "cancelada",
+      "reembolsada|sin_preparar": "reembolsada",
+      "reembolsada|preparando": "reembolsada",
+      "reembolsada|despachada": "reembolsada",
+      "reembolsada|entregada": "entregada_impaga",
+      "reembolsada|fallida": "no_entregada",
+      "reembolsada|cancelada": "reembolsada"
+    }
+  }
+}

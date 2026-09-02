@@ -16,15 +16,23 @@
 
 ## Dónde está el proyecto
 
-**Fase: paso 0 terminado (2026-09-01). Todavía no hay una línea de producto.**
+**Fase: pasos 0 y 1 terminados (2026-09-01). Todavía no hay UI ni backend.**
 
-Existe: `git init` en `main`, `CLAUDE.md`, los 10 hooks con su arnés de 30 casos,
-`ci.yml`, el verificador de enlaces, y los ADRs 001-004. No existe todavía
-ningún `apps/`, `functions/` ni `packages/`.
+Existe: `git init` en `main`, `CLAUDE.md`, los 10 hooks con su arnés de 30
+casos, `ci.yml`, los ADRs 001-004, y **`packages/contratos`** — la máquina de
+estados de Orden, la proyección de los 30 pares, el dinero en centavos, 24
+tests y el contrato generado.
 
-Lo próximo es el **paso 1** de
+No existe todavía `apps/`, `functions/` ni `firestore.rules`.
+
+**Node 24 corre TypeScript sin transpilar**, así que el paquete tiene **cero
+dependencias de test** (ni jest, ni vitest, ni ts-node). La única dependencia
+del repo es `typescript`, para `tsc --noEmit`. En una máquina de 7,9 GB eso no
+es un detalle de gusto.
+
+Lo próximo es el **paso 2** de
 [ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
-`packages/contratos` con la máquina de estados de Orden.
+`firestore.rules` e índices, antes de que haya datos.
 
 ### Dos cosas que quedaron abiertas del paso 0
 

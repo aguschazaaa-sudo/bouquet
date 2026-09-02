@@ -1,0 +1,22 @@
+{
+  "name": "bouquet",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "tipos": "tsc --noEmit --project packages/contratos",
+    "contratos:generar": "npm run -w @bouquet/contratos generar",
+    "verificar": "npm run tipos && npm test && node scripts/ci/auditar_estados.mjs && node scripts/ci/verificar_enlaces.mjs . && bash scripts/hooks/probar_hooks.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "^5.9.0"
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

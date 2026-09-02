@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": true,
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // Node 24 ejecuta TypeScript borrando los tipos, sin transpilar. Eso da
+    // cero dependencias de test -ni jest, ni vitest, ni ts-node-, que en una
+    // maquina de 7,9 GB no es un detalle. El precio es que no se puede usar
+    // sintaxis que genere codigo: nada de enum, namespace ni parametros de
+    // constructor con modificador. Esta bandera lo hace fallar en tsc y no en
+    // tiempo de ejecucion.
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.ts", "scripts/**/*.mjs"]
+}

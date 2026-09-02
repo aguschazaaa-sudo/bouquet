@@ -24,10 +24,16 @@ derivada** para mostrar.
 | Estado | Significa | Entra desde |
 |---|---|---|
 | `pendiente` | Se debe | creación |
-| `en_proceso` | El proveedor la tomó y no resolvió | `pendiente` |
-| `pagada` | Cobrada y conciliada | **creación**, `pendiente`, `en_proceso` |
+| `en_proceso` | El proveedor la tomó y no resolvió | `pendiente`, `rechazada` |
+| `pagada` | Cobrada y conciliada | **creación**, `pendiente`, `en_proceso`, `rechazada` |
 | `rechazada` | El proveedor la rechazó | `pendiente`, `en_proceso` |
 | `reembolsada` | Se devolvió la plata | `pagada` |
+
+> **`rechazada` no es terminal, y se decidió al implementar.** La primera
+> versión de esta tabla la dejaba sin salida, y eso convierte una tarjeta
+> rechazada en una orden muerta: el caso normal es que el cliente reintente con
+> otro medio. Un estado del que no se sale tiene que ser una decisión, no un
+> renglón que faltó.
 
 ### `estadoEntrega`
 
@@ -35,10 +41,22 @@ derivada** para mostrar.
 |---|---|---|
 | `sin_preparar` | Confirmada, sin tocar | creación |
 | `preparando` | Se está armando | `sin_preparar` |
-| `despachada` | Salió | `preparando` |
+| `despachada` | Salió | `preparando`, `fallida` |
 | `entregada` | Llegó y firmó un mayor de 18 | `despachada` |
 | `fallida` | No se pudo entregar | `despachada` |
 | `cancelada` | No se entrega | `sin_preparar`, `preparando` |
+
+> **`fallida` vuelve a `despachada`** por la misma razón: no había nadie el
+> martes, se vuelve el jueves. Una entrega fallida terminal obligaría a crear
+> una orden nueva y a perder el número que el cliente ya tiene.
+>
+> **`despachada` NO puede cancelarse.** Una vez que el vino salió, el estado
+> honesto es `fallida`, no `cancelada` — el reparto ya costó.
+
+Las dos transiciones de reintento y todo lo demás de esta sección viven en
+[`packages/contratos/src/orden.ts`](../../../../packages/contratos/src/orden.ts),
+y `scripts/ci/auditar_estados.mjs` verifica que ningún estado quede
+inalcanzable.
 
 ### La proyección
 
