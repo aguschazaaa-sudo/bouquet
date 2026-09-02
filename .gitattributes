@@ -1,0 +1,27 @@
+# Todo texto va en LF, en el indice Y en el arbol de trabajo.
+#
+# POR QUE, con el sintoma concreto: esta maquina tiene core.autocrlf=true, asi
+# que sin esta linea git convierte los .sh a CRLF en el proximo checkout. Bash
+# en Windows no tolera el \r: falla con "$'\r': command not found" o, peor, se
+# comporta distinto sin decir nada. Los hooks dejarian de correr en un clon
+# nuevo y el sintoma no se parece a la causa.
+#
+# LECCIONES 9.5: el vault es CRLF y el codigo LF, y un script que busca \n en
+# un archivo CRLF encuentra CERO coincidencias y falla sin decir por que.
+# No se ve con `cat`; se ve con `cat -A` (aparece como ^M).
+* text=auto eol=lf
+
+# Binarios: que git no toque un byte.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.keystore binary
+*.jks binary
