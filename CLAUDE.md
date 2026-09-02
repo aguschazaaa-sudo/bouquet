@@ -149,6 +149,37 @@ toca `presentation/`"* **no lo es** — las fronteras por ruta las miden los
 hooks, no el frontmatter. En PadelPunilla un widget importó `cloud_firestore`
 desde el commit inicial pese a que el "agente" lo prohibía en su texto.
 
+## MCP — y su plan B, escrito al lado
+
+`.mcp.json` **está en el repo**, no en la máquina. Un solo servidor: `firebase`,
+para **lectura**. Cualquier escritura se confirma antes.
+
+⚠️ **Arranca con el binario `firebase` global, no con `npx -y firebase-tools`.**
+El plugin oficial usa `npx`, y en esta máquina `npx` falla con
+`Lock compromised`: la red tarda ~34 s por tarball y el heartbeat del lock
+aborta. Eso es exactamente el `CONNECT_TIMEOUT` a los 30 s que dejó una
+verificación abierta en PadelPunilla. **Requisito: `firebase-tools` instalado
+global** (`npm i -g firebase-tools`).
+
+**Un MCP es una comodidad, no una dependencia.** Si no levanta, seguís por acá y
+la tarea NO se detiene:
+
+```bash
+firebase functions:list
+gcloud firestore indexes composite list --format="value(state,fields)"
+gcloud scheduler jobs list --location=us-central1
+TOKEN=$(gcloud auth print-access-token)
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://firestore.googleapis.com/v1/projects/<proj>/databases/(default)/documents/<col>/<doc>"
+```
+
+**GitHub va por `gh` CLI, sin MCP** — y es a propósito: para verificar necesitás
+el exit code real. `gh run watch --exit-status` devuelve **0 en corridas
+canceladas**, y eso sólo se ve mirando la salida cruda.
+
+**Mercado Pago: sin MCP.** Si un cobro sale mal necesitás el cuerpo exacto de la
+respuesta, no un resumen.
+
 ## Las skills
 
 27 de terceros, declaradas en `skills-lock.json` y **no commiteadas**.

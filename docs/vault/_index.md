@@ -20,8 +20,14 @@
 
 Existe: `git init` en `main`, `CLAUDE.md`, los 10 hooks con su arnés de 30
 casos, `ci.yml`, los ADRs 001-004, y **`packages/contratos`** — la máquina de
-estados de Orden, la proyección de los 30 pares, el dinero en centavos, 24
+estados de Orden, la proyección de los 30 pares, el dinero en centavos, los
 tests y el contrato generado.
+
+**El conteo de tests salió de acá a propósito.** Decía **24** y el runner
+dice **26** — lo detectó `_verdad.md` en su primera corrida, que es
+exactamente para lo que existe. Un número que se puede calcular no se
+escribe a mano: está en
+[`_verdad.md`](_verdad.md), generado desde el código.
 
 No existe todavía `apps/`, `functions/` ni `firestore.rules`.
 
@@ -53,6 +59,27 @@ archivar.
 Y un **Workflow E** nuevo: el chore que no llega solo a producción. Su paso
 definitorio es un `grep`, no un criterio, y su último paso anota **en qué deploy
 ajeno viaja de polizón**.
+
+### Las cuatro piezas que se invocaban y no existían (2026-09-02)
+
+Estaban nombradas en los documentos y no en el disco — la feature sin puerta,
+al revés: la puerta existía y no había cuarto detrás.
+
+| Pieza | Estado |
+|---|---|
+| **`openspec/`** | inicializado con `@fission-ai/openspec` **v1.11.0**, `--language es`. Los 6 comandos `/opsx:*` existen. ⚠️ El paquete npm llamado `openspec` a secas es **0.0.0 y sin binario**: no es el real |
+| **`.mcp.json`** | en el repo. Arranca `firebase mcp` con el **binario global**, no con `npx -y firebase-tools` — ese `npx` ES la causa del `CONNECT_TIMEOUT` |
+| **`_verdad.md`** | generado por `scripts/ci/generar_verdad.mjs`, **corre en CI** y en `npm run verificar` |
+| **`verificar_release.sh`** | escrito. Hashea el contenido en vez de mirar el 200, cuenta un job `skipped` como **falla**, y trae los dos controles adentro |
+
+**`_verdad.md` ya pagó en su primera corrida:** detectó que este archivo decía
+**24 tests** cuando el runner dice **26**. Esa es, literal, la diferencia entre
+intención y comportamiento que el archivo existe para medir.
+
+Y dejó un dato que hay que mirar cuando aparezcan `apps/` y `functions/`:
+**19 de 28 símbolos de `packages/contratos` no tienen call site productivo**.
+Hoy es correcto —el paquete se escribió primero a propósito— pero **el bug
+sería que ese número no baje** cuando existan sus consumidores.
 
 ### Tres cosas que quedaron abiertas
 

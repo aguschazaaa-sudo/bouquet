@@ -75,12 +75,55 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Sintaxis de los hooks
-        run: for f in scripts/hooks/*.sh; do bash -n "$f" || exit 1; done
+      # Todos los .sh del repo, no solo los hooks: verificar_release.sh es el
+      # paso 9 del Workflow A y se ejecuta DESPUES de un deploy, o sea en el
+      # peor momento posible para descubrir un error de sintaxis.
+      - name: Sintaxis de los scripts
+        run: for f in scripts/*.sh scripts/hooks/*.sh; do bash -n "$f" || exit 1; done
+      - name: verificar_release se explica solo y no miente al no verificar
+        # Sin argumentos TIENE que salir 2. Un script de verificacion que sale 0
+        # sin haber verificado nada es peor que no tener script.
+        run: |
+          bash scripts/verificar_release.sh --help > /dev/null
+          if bash scripts/verificar_release.sh > /dev/null 2>&1; then
+            echo "::error::verificar_release.sh salio 0 sin verificar nada"; exit 1
+          fi
+          echo "ok  sin argumentos sale distinto de 0"
       - name: Los hooks bloquean lo que dicen bloquear
         run: bash scripts/hooks/probar_hooks.sh
       - name: Enlaces de la documentacion
         run: node scripts/ci/verificar_enlaces.mjs .
+
+      # _verdad.md documenta el COMPORTAMIENTO, derivado del codigo; el resto
+      # del vault documenta la INTENCION. La diferencia entre los dos es la
+      # deuda del proyecto, medida.
+      #
+      # Corre ACA y no como skill a mano por la leccion de SKILLS-AGENTES-MCP
+      # 3.3: en PadelPunilla el indexer estaba escrito y nadie lo ejecutaba, y
+      # por eso el vault declaro CUATRO VECES una feature entregada que no
+      # tenia puerta. Lo generado no puede depender de que alguien se acuerde.
+      #
+      # Ya pago en su primera corrida: el _index.md decia 24 tests y el runner
+      # dice 26.
+      - name: _verdad.md esta al dia con el codigo
+        run: node scripts/ci/generar_verdad.mjs . --check
+
+      # Las skills de terceros NO se commitean (quedan congeladas y no se
+      # actualizan). skills-lock.json es la declaracion. Si el lock se rompe,
+      # un clon se queda sin skills y nadie se entera hasta que las necesita.
+      - name: El lock de skills es coherente
+        run: |
+          node -e '
+            const l = require("./skills-lock.json");
+            const s = l.skills || {};
+            const n = Object.keys(s).length;
+            if (!n) { console.error("::error::skills-lock.json sin skills"); process.exit(1); }
+            for (const [k, v] of Object.entries(s))
+              for (const c of ["source", "sourceType", "skillPath", "computedHash"])
+                if (!v[c]) { console.error(`::error::${k} sin ${c}`); process.exit(1); }
+            console.log(`ok  ${n} skills declaradas, todas con origen y hash`);
+          '
+          bash -n scripts/skills_restaurar.sh
 
   tipos:
     needs: contexto
