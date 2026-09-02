@@ -72,5 +72,25 @@
         ]
       }
     ]
+  },
+  "permissions": {
+    "deny": [
+      "Bash(flutter analyze:*)",
+      "Bash(flutter test:*)",
+      "Bash(flutter build:*)",
+      "PowerShell(flutter analyze:*)",
+      "PowerShell(flutter test:*)",
+      "PowerShell(flutter build:*)",
+      "Bash(npx jest:*)",
+      "PowerShell(npx jest:*)",
+      "Bash(firebase deploy:*)",
+      "PowerShell(firebase deploy:*)",
+      "Bash(git push:*)",
+      "PowerShell(git push:*)"
+    ],
+    "ask": [
+      "Bash(gh workflow run:*)",
+      "Bash(gh run rerun:*)"
+    ]
   }
 }

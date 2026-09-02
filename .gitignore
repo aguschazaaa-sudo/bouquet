@@ -46,3 +46,22 @@ build/
 Thumbs.db
 *.pyc
 __pycache__/
+
+# --- Skills de terceros (skills.sh) ------------------------------------------
+# El contenido NO se commitea: `skills-lock.json` lo declara con su hash y
+# `npx skills experimental_install` lo restaura. SKILLS-AGENTES-MCP.md §3.5:
+# una skill del ecosistema copiada al repo queda congelada en la version del dia
+# que se copio y no se actualiza nunca.
+#
+# Ademas, en esta maquina `git config core.symlinks` es FALSE: si se commitearan,
+# git seguiria el symlink y duplicaria el contenido dentro de .claude/skills/.
+#
+# Restaurar en un clon: bash scripts/skills_restaurar.sh
+.agents/skills/
+.claude/skills/*
+
+# Las skills PROPIAS del proyecto si se commitean: mencionan nuestro dominio,
+# nuestras rutas y nuestras decisiones (§3.5 "en .claude/skills/ del repo va
+# solo lo que menciona tu dominio"). Cada skill propia nueva se agrega ACA.
+!.claude/skills/commit/
+!.claude/skills/post-task-doc/

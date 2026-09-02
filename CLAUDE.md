@@ -131,6 +131,36 @@ control positivo y negativo cada uno.
 
 ---
 
+## Los agentes — y qué hacen cumplir de verdad
+
+`.claude/agents/` tiene **12 subagentes reales**. El `tools:` del frontmatter es
+enforcement estructural: **restringe herramientas, no rutas.**
+
+| Escriben (`Edit`+`Write`+`Bash`) | Verifican (**sin** `Edit`/`Write`) |
+|---|---|
+| `contratos` · `functions` · `reglas` | `cazador-de-puertas` — ¿alguien lo abre? |
+| `tienda` · `admin-datos` · `admin-presentacion` | `presupuesto-lecturas` — ¿cuántas lecturas? |
+| `vault` (sin `Bash`: no puede desplegar) | `revisor-pagos` — obligatorio en Workflow D |
+| | `auditor-produccion` — qué corre de verdad |
+| | `revisor-acoplamiento` — semanal, repo entero |
+
+**Un revisor sin `Edit` no puede escribir: eso es real.** *"Este agente sólo
+toca `presentation/`"* **no lo es** — las fronteras por ruta las miden los
+hooks, no el frontmatter. En PadelPunilla un widget importó `cloud_firestore`
+desde el commit inicial pese a que el "agente" lo prohibía en su texto.
+
+## Las skills
+
+27 de terceros, declaradas en `skills-lock.json` y **no commiteadas**.
+Restaurar en un clon: `bash scripts/skills_restaurar.sh`.
+
+`opsx` (12) · Firebase reglas y Firestore (2) · Mercado Pago (2, oficiales) ·
+diseño y front (11). Las **propias** del proyecto sí se commitean: `commit` y
+`post-task-doc`, las dos que corren **siempre**.
+
+Antes de escribir componentes visuales, `/disenio`: la dirección y los tokens
+salen antes que el primer widget, no después del décimo.
+
 ## Convenciones
 
 **Dominio en español, infraestructura en inglés.** `Producto`, `Bodega`,

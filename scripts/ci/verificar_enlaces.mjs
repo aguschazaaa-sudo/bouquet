@@ -16,11 +16,36 @@ import { join, dirname, relative, resolve, sep } from 'node:path';
 const RAIZ = resolve(process.argv[2] ?? '.');
 const IGNORAR = new Set(['node_modules', '.git', '.next', 'build', '.dart_tool']);
 
+// Las skills de terceros traen su propia documentacion, con enlaces a archivos
+// que ese repo no vendoriza. No son nuestras para arreglar y hacian fallar el
+// check entero. Se ignora .agents/ por RUTA, no por nombre, para no ignorar de
+// rebote cualquier carpeta que se llame asi.
+const IGNORAR_RUTAS = new Set(['.agents']);
+
+// Y bajo .claude/skills/ conviven las nuestras con las de terceros. La lista
+// autoritativa de cuales son ajenas es skills-lock.json, no el tipo de archivo:
+// el CLI de skills.sh a veces symlinkea y a veces COPIA (medido: openspec-sync-specs
+// y writing-guidelines quedaron como carpetas reales). Filtrar por symlink
+// dejaba pasar las copiadas y volvia a romper el check.
+const SKILLS_AJENAS = (() => {
+  const lock = join(RAIZ, 'skills-lock.json');
+  if (!existsSync(lock)) return new Set();
+  try {
+    return new Set(Object.keys(JSON.parse(readFileSync(lock, 'utf8')).skills ?? {}));
+  } catch {
+    return new Set();
+  }
+})();
+const DIR_SKILLS = join('.claude', 'skills');
+
 async function markdowns(dir) {
   const salida = [];
   for (const e of await readdir(dir, { withFileTypes: true })) {
     if (IGNORAR.has(e.name)) continue;
     const p = join(dir, e.name);
+    const rel = relative(RAIZ, p);
+    if (IGNORAR_RUTAS.has(rel)) continue;
+    if (dirname(rel) === DIR_SKILLS && SKILLS_AJENAS.has(e.name)) continue;
     if (e.isDirectory()) salida.push(...(await markdowns(p)));
     else if (e.name.endsWith('.md')) salida.push(p);
   }

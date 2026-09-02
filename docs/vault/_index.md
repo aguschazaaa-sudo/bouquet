@@ -34,12 +34,33 @@ Lo próximo es el **paso 2** de
 [ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
 `firestore.rules` e índices, antes de que haya datos.
 
-### Dos cosas que quedaron abiertas del paso 0
+### La capa `.claude/` (2026-09-02)
+
+**12 subagentes reales** en `.claude/agents/` — 7 escriben, 5 verifican **sin
+`Edit` ni `Write`**. Esa resta es el único enforcement real del frontmatter:
+`tools:` restringe herramientas, **no rutas**. Las fronteras por ruta las
+siguen midiendo los hooks.
+
+**27 skills de terceros**, declaradas en `skills-lock.json` y **no
+commiteadas** — `bash scripts/skills_restaurar.sh` las restaura. Las propias
+(`commit`, `post-task-doc`) sí se commitean.
+
+`opsx` completo (12 skills) trae dos que PadelPunilla no tenía:
+**`openspec-verify-change`**, que es el paso 9 que `WORKFLOWS.md` §4 pedía
+agregar, y **`openspec-bulk-archive-change`**, la respuesta a los 33 changes sin
+archivar.
+
+Y un **Workflow E** nuevo: el chore que no llega solo a producción. Su paso
+definitorio es un `grep`, no un criterio, y su último paso anota **en qué deploy
+ajeno viaja de polizón**.
+
+### Tres cosas que quedaron abiertas
 
 | Qué | Por qué | Quién |
 |---|---|---|
 | **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. **Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.** | el usuario |
 | **No hay remote de git** | `SETUP` §0.2: elegí `origin`, verificá que resuelve, y no tengas dos. | el usuario |
+| **`git push` está en `deny`, no en `ask`** | Cerrado el hueco de `SKILLS-AGENTES-MCP` §5: el allowlist ya no pre-aprueba lo que `CLAUDE.md` prohíbe. Queda una decisión abierta: con `git push` en **`deny`**, el agente no puede pushear nunca y el paso de deploy lo dispara siempre una persona. Es defendible como baranda —es el paso que sale del repo— pero **es una elección, no un descuido**. Si molesta, moverlo a `ask`. Desde 2026-09-02. | el usuario |
 
 ---
 
