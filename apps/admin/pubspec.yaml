@@ -25,6 +25,10 @@ dependencies:
   firebase_auth: ^5.3.3
 
 dev_dependencies:
+  # package:test y no solo flutter_test: el test del espejo del enum es Dart
+  # puro y con esto corre con `dart test`, que SI se puede correr en esta
+  # maquina. `flutter test` esta denegado.
+  test: ^1.25.15
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0

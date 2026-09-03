@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:admin/core/contratos/estado_entrega.dart';
 import 'package:admin/core/contratos/estado_pago.dart';
 import 'package:admin/core/contratos/estado_publico.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:test/test.dart';
 
 /// ADR 002: "apps/admin espeja el enum en Dart, con un test que compara
 /// contra contratos/generated/contratos.json." Este es ese test.
@@ -16,7 +16,12 @@ import 'package:flutter_test/flutter_test.dart';
 /// contra un contrato que ya no existe y pasa igual.
 ///
 /// La ruta al JSON es relativa a la raíz de ESTE paquete (`apps/admin/`),
-/// que es el directorio de trabajo cuando corre `flutter test`.
+/// que es el directorio de trabajo cuando corre `dart test`.
+///
+/// Usa package:test y NO flutter_test A PROPOSITO: no hay un solo widget acá,
+/// y `flutter test` esta DENEGADO en esta maquina (un archivo de test no
+/// completo en 7 minutos). Con package:test corre local en segundos — o sea
+/// que este test se EJECUTA en vez de existir.
 void main() {
   late Map<String, dynamic> contrato;
 

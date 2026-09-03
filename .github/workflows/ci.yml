@@ -186,7 +186,21 @@ jobs:
       - run: flutter analyze --no-fatal-infos
         working-directory: apps/admin
         if: needs.contexto.outputs.alcance == 'completo'
-      - run: flutter test --reporter expanded
+
+      # `dart test` y NO `flutter test`, mientras no haya un solo widget test.
+      #
+      # Razon: el unico test del panel hoy es el espejo del enum, que es Dart
+      # PURO -- lee contratos.json y compara. Con `dart test` corre local en
+      # menos de un segundo, o sea que se EJECUTA en cada cambio en vez de
+      # existir esperando a CI.  `flutter test` esta denegado en la maquina de
+      # desarrollo (un archivo de test no completo en 7 minutos), asi que un
+      # paso de CI con `flutter test` seria un comando que NADIE probo nunca
+      # antes de que corra en la nube -- justo la clase de capacidad sin
+      # evidencia que este repo evita.
+      #
+      # El dia que haya widget tests se agrega `flutter test` al lado, y ese
+      # dia se lo prueba primero.
+      - run: dart test --reporter expanded
         working-directory: apps/admin
 
   # ==========================================================================
