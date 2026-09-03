@@ -60,6 +60,30 @@ Y un **Workflow E** nuevo: el chore que no llega solo a producción. Su paso
 definitorio es un `grep`, no un criterio, y su último paso anota **en qué deploy
 ajeno viaja de polizón**.
 
+### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
+
+Existen y **compilan**: `apps/tienda` (Next.js), `apps/admin` (Flutter) y
+`functions` (Cloud Functions, `nodejs24`). Más `firestore.rules`,
+`storage.rules`, `firestore.indexes.json`, `firebase.json` y `.firebaserc`.
+
+⚠️ **Es andamio a propósito.** No hay componentes, rutas, repositories ni
+lógica de negocio. En la primera pasada se escribieron y **se borraron**: eran
+las features de los pasos 4, 5 y 6 de
+[ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción), y su
+momento es después de `/disenio` y por Workflow A. Lo único que sobrevive
+además de la config es el **cableado del contrato**: el espejo del enum en
+Dart (que `auditar_estados.mjs` verifica) y la frontera `apps/tienda/src/server/`.
+
+**Proyecto Firebase: `bouquet-vinos`.** Firestore en **`southamerica-east1`**
+(São Paulo) — verificado con `gcloud firestore databases list`, no con la
+salida del comando de creación. **Esa ubicación no se puede cambiar nunca.**
+Se eligió por latencia hacia Argentina; no afecta al comprador, porque la
+vidriera usa ISR y no lee Firestore por visitante (ADR 004), pero sí al panel
+del operador y a las functions.
+
+**Runtime `nodejs24`**, que es el máximo que soporta Cloud Functions y calza
+exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
+
 ### Las cuatro piezas que se invocaban y no existían (2026-09-02)
 
 Estaban nombradas en los documentos y no en el disco — la feature sin puerta,

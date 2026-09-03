@@ -65,3 +65,7 @@ __pycache__/
 # solo lo que menciona tu dominio"). Cada skill propia nueva se agrega ACA.
 !.claude/skills/commit/
 !.claude/skills/post-task-doc/
+
+# --- Next.js / apps ----------------------------------------------------------
+apps/tienda/.next/
+apps/tienda/out/

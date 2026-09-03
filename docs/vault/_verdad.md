@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-02 - commit `aba95ae` **+ cambios sin commitear** - huella del cuerpo `0b071774dc6b`
+> **Generado:** 2026-09-03 - commit `9f93aab` **+ cambios sin commitear** - huella del cuerpo `34ea8f90f6dc`
 
 ---
 
@@ -72,27 +72,30 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | Paquete | Version | Ruta | Scripts |
 |---|---|---|---|
 | `@bouquet/contratos` | 0.1.0 | `packages/contratos` | `test`, `generar` |
+| `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck` |
+| `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.4.0
+### Scripts de la raiz - `bouquet` 0.5.0
 
 | Script | Comando |
 |---|---|
 | `test` | `npm test --workspaces --if-present` |
-| `tipos` | `tsc --noEmit --project packages/contratos` |
+| `tipos` | `tsc --noEmit --project packages/contratos && tsc --noEmit --project functions && tsc --noEmit --project apps/tienda` |
 | `contratos:generar` | `npm run -w @bouquet/contratos generar` |
 | `verdad` | `node scripts/ci/generar_verdad.mjs .` |
 | `verificar` | `npm run tipos && npm test && node scripts/ci/auditar_estados.mjs && node scripts/ci/verificar_enlaces.mjs . && node scripts/ci/generar_verdad.mjs . --check && bash scripts/hooks/probar_hooks.sh` |
 
-Dependencias declaradas en la raiz: `@fission-ai/openspec`, `@types/node`, `typescript`. Node exigido: `>=22.18`.
+Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai/openspec`, `@types/node`, `typescript`. Node exigido: `>=22.18`.
 
 ## 3. Tests - contados, no declarados
 
 | Archivo | Casos |
 |---|---|
+| `apps/admin/test/core/contratos/estados_orden_test.dart` | 9 |
 | `packages/contratos/test/dinero.test.ts` | 7 |
 | `packages/contratos/test/orden.test.ts` | 13 |
 | `packages/contratos/test/proyeccion.test.ts` | 6 |
-| **total** | **26** |
+| **total** | **35** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -179,8 +182,8 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `TRANSICIONES_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
 | `transicionPagoValida` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `transicionEntregaValida` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
-| `entroEn` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
-| `entroEnPagada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `entroEn` | funcion | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
+| `entroEnPagada` | valor | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
 | `entroEnReembolsada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `entroEnDespachada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `entroEnEntregada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
@@ -198,9 +201,9 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `porCantidad` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
 | `formatearARS` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
 
-**28 simbolos exportados. 18 SIN PUERTA.**
+**28 simbolos exportados. 16 SIN PUERTA.**
 
-Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEn`, `entroEnPagada`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `Centavos`, `centavos`, `CERO`, `desdePesos`, `sumar`, `porCantidad`, `formatearARS`.
+Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `Centavos`, `centavos`, `CERO`, `desdePesos`, `sumar`, `porCantidad`, `formatearARS`.
 
 Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
@@ -210,17 +213,17 @@ Se comprueba por ruta, en cada corrida. Un `si` aca no dice que funcione.
 
 | Ruta | Que seria | Existe |
 |---|---|---|
-| `apps/tienda` | vidriera Next.js | **no** |
-| `apps/admin` | panel Flutter | **no** |
-| `functions` | Cloud Functions | **no** |
-| `firestore.rules` | reglas de Firestore | **no** |
-| `storage.rules` | reglas de Storage | **no** |
-| `firestore.indexes.json` | indices compuestos | **no** |
-| `firebase.json` | proyecto Firebase | **no** |
+| `apps/tienda` | vidriera Next.js | si |
+| `apps/admin` | panel Flutter | si |
+| `functions` | Cloud Functions | si |
+| `firestore.rules` | reglas de Firestore | si |
+| `storage.rules` | reglas de Storage | si |
+| `firestore.indexes.json` | indices compuestos | si |
+| `firebase.json` | proyecto Firebase | si |
 | `.mcp.json` | MCP versionado en el repo | si |
 
 Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota. Un generador que se saltea una seccion en silencio es indistinguible de uno que la encontro vacia.
 
 ---
 
-Archivos de codigo recorridos: 11. Archivos de test: 3. Casos de test: 26.
+Archivos de codigo recorridos: 17. Archivos de test: 4. Casos de test: 35.

@@ -1,0 +1,33 @@
+name: admin
+description: >
+  Panel de administración de bouquet (Flutter, web + Android). Consume el
+  SDK cliente de Firebase con las reglas de Firestore aplicándose de verdad
+  (ARQUITECTURA.md §1). Fuera del workspace npm: es un proyecto Flutter, no
+  un paquete de la monorepo de TypeScript.
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '^3.11.1'
+  flutter: '>=3.41.4'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Estado. ARQUITECTURA — decisiones tomadas: Riverpod, no BLoC ni GetX.
+  flutter_riverpod: ^2.6.1
+
+  # Backend. El panel es el único consumidor autenticado del SDK cliente
+  # (ARQUITECTURA §1, regla 3).
+  firebase_core: ^3.8.0
+  cloud_firestore: ^5.5.0
+  firebase_auth: ^5.3.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true

@@ -1,19 +1,22 @@
 {
   "name": "bouquet",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/tienda",
+    "functions"
   ],
   "scripts": {
     "test": "npm test --workspaces --if-present",
-    "tipos": "tsc --noEmit --project packages/contratos",
+    "tipos": "tsc --noEmit --project packages/contratos && tsc --noEmit --project functions && tsc --noEmit --project apps/tienda",
     "contratos:generar": "npm run -w @bouquet/contratos generar",
     "verdad": "node scripts/ci/generar_verdad.mjs .",
     "verificar": "npm run tipos && npm test && node scripts/ci/auditar_estados.mjs && node scripts/ci/verificar_enlaces.mjs . && node scripts/ci/generar_verdad.mjs . --check && bash scripts/hooks/probar_hooks.sh"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@fission-ai/openspec": "^1.11.0",
     "@types/node": "^24.13.3",
     "typescript": "^5.9.0"

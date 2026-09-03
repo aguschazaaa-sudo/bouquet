@@ -1,0 +1,204 @@
+rules_version = '2';
+
+// ===========================================================================
+// bouquet - reglas de Firestore.  ARQUITECTURA §9.
+//
+// LA POSTURA: TODO DENEGADO para el navegador anonimo.  Y no es paranoia: es
+// que NO LO NECESITA.  La vidriera renderiza del lado servidor (ISR +
+// revalidacion por trigger, ADR 004), asi que el visitante NUNCA tiene un SDK
+// de Firestore en la mano.  El dia que haga falta una lectura desde el
+// cliente, se abre ESA lectura a proposito y se escribe por que.
+//
+// EL AGUJERO QUE ESTAS REGLAS EXISTEN PARA NO REPETIR: en PadelPunilla las
+// reglas permitian que el creador de una Reserva mutara su propio `estado`, o
+// sea que un jugador se auto-confirmaba salteando la aprobacion del club.  Lo
+// encontro una revision de DISENIO, no una de seguridad, porque revisar una
+// pantalla en serio obliga a preguntar quien puede apretar cada boton.
+//
+// Traducido a una tienda de vinos: SI EL COMPRADOR PUEDE ESCRIBIR
+// `estadoPago`, LA TIENDA REGALA VINO.  De ahi que el eje de pago sea
+// server-only y que ni el operador pueda tocarlo por escritura directa.
+//
+// La pregunta que se hace por cada campo escribible:
+//   ¿quien puede escribir esto, y QUE GANA si miente?
+// ===========================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------- roles
+    //
+    // §9.2: el rol va en un CUSTOM CLAIM, no en un documento.
+    //
+    // `get(/databases/$(database)/documents/usuarios/$(uid)).data.rol` cuesta
+    // UNA LECTURA FACTURADA POR CADA EVALUACION.  Con el panel abierto sobre
+    // una lista de 200 productos son 200 lecturas extra por pantalla, y son
+    // INVISIBLES en cualquier auditoria de codigo porque no aparecen en
+    // ninguna query.  Contra una cuota de 50.000/dia (§6.3) eso se nota.
+    //
+    // Ademas un documento se puede falsificar si es escribible; un claim lo
+    // firma el Admin SDK.
+    function esAdmin() {
+      return request.auth != null && request.auth.token.rol == 'admin';
+    }
+
+    // Campos que SOLO escribe el servidor (Admin SDK), nunca el panel.
+    // El Admin SDK NO pasa por estas reglas, asi que prohibirlos aca no le
+    // saca capacidad a nadie que la necesite: le saca la posibilidad de que
+    // un bug del panel los pise.
+    function noTocaCamposDelServidor(campos) {
+      return !campos.hasAny([
+        'numero',        // secuencial, asignado en la transaccion de creacion
+        'busqueda',      // tokens generados por trigger (§5.2)
+        'creadaEn',
+        'estadoPago'     // el eje de plata: se mueve por callable auditada
+      ]);
+    }
+
+    function editaSolo(permitidos) {
+      return request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(permitidos);
+    }
+
+    // ------------------------------------------------------------ productos
+    //
+    // §5.2 - las trampas que se cierran ACA, en la creacion:
+    //
+    //  · `publicado` SIEMPRE presente.  `where('publicado','==',true)` NO
+    //    devuelve los documentos donde el campo no existe.  Somos greenfield,
+    //    asi que la defensa correcta no es un backfill: es que NINGUN
+    //    documento pueda nacer sin el campo.  Esta regla lo hace imposible.
+    //
+    //  · `precio` ENTERO en centavos de ARS.  Nunca float, nunca string.
+    //    `is int` rechaza 1250.50 y rechaza "1250".
+    //
+    //  · `imagenes` UN SOLO array de URLs.  En PadelPunilla convivieron DOS
+    //    campos `photoUrl` -uno anidado y uno en la raiz- desde el commit
+    //    inicial, y aun con la subida arreglada la foto nueva no se veia en
+    //    ningun otro lado, PARA SIEMPRE.  Un dato, una ruta.
+    match /productos/{productoId} {
+      allow read: if esAdmin();
+
+      allow create: if esAdmin()
+        && request.resource.data.publicado is bool
+        && request.resource.data.precio is int
+        && request.resource.data.precio >= 0
+        && request.resource.data.imagenes is list
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && noTocaCamposDelServidor(request.resource.data.keys());
+
+      allow update: if esAdmin()
+        && noTocaCamposDelServidor(
+             request.resource.data.diff(resource.data).affectedKeys())
+        // Si vienen, tienen que seguir siendo del tipo correcto.  Un update
+        // parcial que convierta `precio` en string es exactamente el bug que
+        // no se ve hasta que alguien ordena por precio.
+        && (!('precio' in request.resource.data)
+              || (request.resource.data.precio is int
+                  && request.resource.data.precio >= 0))
+        && (!('publicado' in request.resource.data)
+              || request.resource.data.publicado is bool)
+        && (!('imagenes' in request.resource.data)
+              || request.resource.data.imagenes is list);
+
+      allow delete: if esAdmin();
+    }
+
+    // -------------------------------------------------------------- bodegas
+    match /bodegas/{bodegaId} {
+      allow read: if esAdmin();
+      allow create, update: if esAdmin()
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0;
+      allow delete: if esAdmin();
+    }
+
+    // -------------------------------------------------------------- ordenes
+    //
+    // El operador LEE y puede mover la ENTREGA a mano desde el panel.  Lo que
+    // NO puede es escribir `estadoPago` por escritura directa, ni tocar
+    // `items[]`, `total` o `numero` de una orden ya creada.
+    //
+    // POR QUE: `items[]` es un SNAPSHOT de precios al momento de la compra
+    // (§5.2), no una referencia.  Si se puede editar despues, deja de ser un
+    // snapshot y el historico de la tienda se vuelve mentira -- justo lo que
+    // el snapshot existe para evitar.
+    //
+    // El cliente NO figura aca en absoluto.  Consulta su orden por la
+    // callable `consultarOrden(numero, email)` (§9.1): una lectura directa
+    // por id permite ENUMERAR ORDENES AJENAS probando ids.
+    match /ordenes/{ordenId} {
+      allow read: if esAdmin();
+
+      // Las ordenes nacen SOLO por la transaccion de `crearOrden` (Admin
+      // SDK), que es la unica que sabe asignar `numero` contra
+      // `contadores/ordenes`.  Nadie las crea desde un cliente.
+      allow create: if false;
+
+      allow update: if esAdmin()
+        && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn']);
+
+      // Una orden no se borra: se cancela.  Cancelar es un par de estados
+      // (ADR 002), no un DELETE -- y el historico de una venta no se tira.
+      allow delete: if false;
+
+      // ----------------------------------------------------- idempotencia
+      //
+      // Los marcadores son la defensa contra el trigger que corre dos veces.
+      // Los triggers son AT-LEAST-ONCE: el mismo evento llega repetido.  El
+      // marcador se escribe en la MISMA TRANSACCION que el efecto, desde el
+      // Admin SDK.
+      //
+      // Si un cliente pudiera escribir un marcador, podria hacer que un
+      // efecto NUNCA ocurra (marcandolo como ya hecho).  Si pudiera borrarlo,
+      // podria hacer que ocurra DOS VECES.  Las dos cosas son plata.
+      match /marcadores/{efecto} {
+        allow read, write: if false;
+      }
+    }
+
+    // ----------------------------------------------------------------- zonas
+    // Cobertura de envio y costo.  El operador las lee; las escribe el
+    // servidor.  Un costo de envio editable desde el navegador es un descuento
+    // que se pone el comprador.
+    match /zonas/{zonaId} {
+      allow read: if esAdmin();
+      allow write: if false;
+    }
+
+    // ---------------------------------------------------------------- config
+    //
+    // §9.4 - LA BARANDA TIENE QUE PROTEGER LA PRIMERA ESCRITURA.
+    //
+    // Una condicion anti fat-finger escrita sobre el valor ANTERIOR no sirve
+    // en una CREACION, porque no hay "antes" -- y la primera escritura es
+    // exactamente cuando mas se equivoca uno.  Por eso `config` es
+    // server-only en su totalidad, creacion incluida: la baranda vive en el
+    // trigger, sobre el valor NUEVO, y las reglas garantizan que no exista
+    // ningun otro camino de escritura que la saltee.
+    match /config/{documento} {
+      allow read: if esAdmin();
+      allow write: if false;
+    }
+
+    // ------------------------------------------------------------ contadores
+    // Numeracion secuencial de ordenes.  Se toca UNICAMENTE dentro de la
+    // transaccion de `crearOrden`.  Dos escrituras concurrentes por fuera de
+    // esa transaccion dan dos ordenes con el mismo numero.
+    match /contadores/{nombre} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------- deny por defecto
+    //
+    // Esta clausula es redundante con el modelo de Firestore (lo que no se
+    // permite, se niega) y esta puesta A PROPOSITO: hace que la intencion sea
+    // legible para quien lea el archivo, y que una coleccion nueva que
+    // aparezca sin su bloque quede cerrada de forma EXPLICITA en vez de
+    // parecer un olvido.
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}

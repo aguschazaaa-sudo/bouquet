@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "bouquet-vinos"
+  },
+  "targets": {
+    "bouquet-vinos": {
+      "hosting": {
+        "admin": ["bouquet-vinos"]
+      }
+    }
+  }
+}

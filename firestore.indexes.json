@@ -1,0 +1,55 @@
+{
+  "//": [
+    "Indices compuestos de bouquet. ARQUITECTURA 5.5 y ADR 004.",
+    "",
+    "REGLA QUE ORDENA ESTE ARCHIVO: el CATALOGO se filtra EN MEMORIA.",
+    "CERO indices compuestos para 'productos'. La vidriera trae el catalogo",
+    "completo en la revalidacion (son decenas de productos, no millones) y",
+    "filtra en el proceso. Un indice compuesto por varietal+precio+bodega no",
+    "compra nada y cuesta escrituras en cada alta.",
+    "",
+    "Si alguien va a agregar un indice de 'productos', primero tiene que",
+    "explicar por que el filtrado en memoria no alcanza. Esa explicacion va",
+    "en un ADR, no en este comentario.",
+    "",
+    "Los que SI hacen falta son para el PANEL sobre 'ordenes', que es la",
+    "unica pantalla con volumen creciente y necesidad real de ordenar.",
+    "",
+    "PRESUPUESTO (50.000 lecturas/dia, ARQUITECTURA 6.3): el panel es UN",
+    "operador. Con paginas de 25 y limit() obligatorio en los repositories,",
+    "una jornada de trabajo intensa son cientos de lecturas, no miles. El",
+    "riesgo de cuota en este proyecto NO esta aca: esta en un StreamBuilder",
+    "sin limit() y en leer un documento para autorizar (por eso el rol va en",
+    "un custom claim)."
+  ],
+  "indexes": [
+    {
+      "//": "Panel: bandeja de trabajo del operador. Filtra por el eje de ENTREGA y ordena por fecha. Es la pantalla de 'que tengo que despachar hoy'.",
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estadoEntrega", "order": "ASCENDING" },
+        { "fieldPath": "creadaEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "Panel: cobranzas. Filtra por el eje de PAGO y ordena por fecha. Son dos ejes independientes (ADR 002), por eso son dos indices y no uno: una orden pagada-y-no-despachada y una despachada-y-no-cobrada se buscan desde pantallas distintas.",
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estadoPago", "order": "ASCENDING" },
+        { "fieldPath": "creadaEn", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "consultarOrden(numero, email): la callable con la que el cliente ve SU orden. Sin este indice esa consulta no resuelve, y es la unica via de lectura que tiene el comprador -- por id no se puede, porque permitiria enumerar ordenes ajenas probando ids (ARQUITECTURA 9.1).",
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "numero", "order": "ASCENDING" },
+        { "fieldPath": "contacto.email", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

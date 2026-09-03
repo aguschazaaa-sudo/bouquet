@@ -1,0 +1,12 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # core/contratos/ espeja 1:1 los strings de
+    # packages/contratos/generated/contratos.json — snake_case porque así
+    # los escribe Firestore (`estadoPago: 'en_proceso'`, no `enProceso`).
+    # scripts/ci/auditar_estados.mjs busca esos strings literales en el
+    # código Dart; traducirlos a camelCase para este lint sería una
+    # traducción más, y una traducción es exactamente lo que se
+    # desincroniza (ADR 002).
+    constant_identifier_names: false

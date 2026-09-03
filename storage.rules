@@ -1,0 +1,54 @@
+rules_version = '2';
+
+// ===========================================================================
+// bouquet - reglas de Cloud Storage.  ARQUITECTURA §9.3 y §5.4.
+//
+// Las fotos de producto SI son publicas de lectura: se sirven en la vidriera,
+// que es un sitio publico.  Es la unica cosa de este proyecto que un anonimo
+// puede leer.
+//
+// ⚠️ LA TRAMPA DE LOS SEGMENTOS, que es la razon de este comentario:
+//
+// Abajo va `{archivo}` -- UN SOLO SEGMENTO -- y NO `{archivo=**}`.
+//
+// La regla y el codigo de subida tienen que estar de acuerdo sobre CUANTOS
+// SEGMENTOS tiene la ruta.  Cuando no lo estan, el modo de falla es un
+// `unauthorized` que PARECE un problema de permisos y es un problema de
+// string: alguien sube a `productos/abc/2026/01/foto.jpg` (cuatro segmentos),
+// la regla espera dos, y se pierde la tarde revisando claims y roles.
+//
+// Si algun dia hace falta anidar mas, se cambia la regla Y el codigo de
+// subida en el mismo commit, no uno de los dos.
+// ===========================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function esAdmin() {
+      return request.auth != null && request.auth.token.rol == 'admin';
+    }
+
+    // 5 MB.  Declarado a proposito y no "generoso por si acaso": una foto de
+    // producto que pesa mas que esto no es una foto de producto, es un
+    // original sin redimensionar, y sirviendolo en la vidriera se paga en
+    // transferencia y en Core Web Vitals cada vez que alguien entra.
+    function pesaMenosDe5MB() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    function esImagen() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    match /productos/{productoId}/{archivo} {
+      allow read: if true;
+      allow write: if esAdmin() && esImagen() && pesaMenosDe5MB();
+    }
+
+    // Deny por defecto, explicito.  Un prefijo nuevo que aparezca sin su
+    // bloque queda cerrado de forma visible en vez de parecer un olvido.
+    match /{rutaCompleta=**} {
+      allow read, write: if false;
+    }
+  }
+}
