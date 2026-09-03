@@ -105,13 +105,38 @@ Y dejó un dato que hay que mirar cuando aparezcan `apps/` y `functions/`:
 Hoy es correcto —el paquete se escribió primero a propósito— pero **el bug
 sería que ese número no baje** cuando existan sus consumidores.
 
-### Tres cosas que quedaron abiertas
+### El repo publicado, y lo que eso destapó (2026-09-03)
+
+**`github.com/aguschazaaa-sudo/bouquet`, público.** Remote `origin`, default
+`main`. Verificado comparando `git ls-remote` contra el hash local, no por el
+mensaje del push: **`93525f1` de los dos lados**.
+
+**Se cerró un agujero del `.gitignore` antes de publicar.** Cubría
+`*-service-account*.json` y `serviceAccountKey*.json`, pero el nombre con el
+que la consola de Firebase **descarga de verdad** una clave privada es
+`<proyecto>-firebase-adminsdk-<hash>-<hash>.json`, que no matcheaba ninguno.
+Medido con `git check-ignore` sobre esa ruta exacta: daba **"se subiría"**. Es
+la credencial que ignora `firestore.rules` por diseño. El barrido de las 7
+commits del historial —no sólo del HEAD— no encontró nada más.
+
+⚠️ **El primer CI real falló, y la causa era del CI, no del código.**
+`_verdad.md` incluía *"En disco hay N carpetas de skill"*, y N es **29** en
+esta máquina y **2** en el runner, porque las de terceros no se commitean. Con
+`--check` comparando texto exacto, el job `guardas` era **imposible de pasar
+regenerando**: el número cambia con el entorno, no con el código. El dato pasó
+a stderr y dice *cuáles* faltan, que es accionable. Arreglado en `v0.5.3`.
+
+**El defecto existía desde que se escribió el script.** No lo vio nadie porque
+hasta hoy no había remote y el workflow nunca había corrido. Para el resto del
+repo: **un workflow que nunca corrió no es un workflow verde, es un workflow
+desconocido** — y hay dos en esa situación ahora mismo, abajo.
+
+### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
 |---|---|---|
 | **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. **Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.** | el usuario |
-| **No hay remote de git** | `SETUP` §0.2: elegí `origin`, verificá que resuelve, y no tengas dos. | el usuario |
-| **`git push` está en `deny`, no en `ask`** | Cerrado el hueco de `SKILLS-AGENTES-MCP` §5: el allowlist ya no pre-aprueba lo que `CLAUDE.md` prohíbe. Queda una decisión abierta: con `git push` en **`deny`**, el agente no puede pushear nunca y el paso de deploy lo dispara siempre una persona. Es defendible como baranda —es el paso que sale del repo— pero **es una elección, no un descuido**. Si molesta, moverlo a `ask`. Desde 2026-09-02. | el usuario |
+| **`suite_ts` y `suite_dart` nunca corrieron** | Un push a `main` dispara `alcance=rapido`, que **no corre tests**: las dos salen `skipped`. Las suites de `packages/contratos` jamás se ejecutaron en CI. **Disparador:** antes del próximo cambio de lógica, `gh workflow run ci.yml -f alcance=tests`. Desde 2026-09-03. | el usuario |
 
 ---
 
