@@ -13,9 +13,21 @@
 !.env.example
 *-service-account*.json
 serviceAccountKey*.json
+# El nombre REAL con el que la consola de Firebase descarga la clave privada de
+# una service account: <proyecto>-firebase-adminsdk-<hash>-<hash>.json. No lo
+# cubria NINGUNO de los dos patrones de arriba. Verificado con `git check-ignore`:
+# antes de esta linea, ese archivo se subia.
+*-firebase-adminsdk-*.json
 key.properties
 *.keystore
 *.jks
+
+# Config de Firebase de las apps moviles del panel. No son secretos (la apiKey
+# web es publica por diseno y quien protege los datos son firestore.rules),
+# pero atan el repo a un proyecto concreto. apps/admin todavia no tiene
+# android/ ni ios/: el patron va antes de que existan, no despues.
+google-services.json
+GoogleService-Info.plist
 
 # --- Node / Next.js ----------------------------------------------------------
 node_modules/
