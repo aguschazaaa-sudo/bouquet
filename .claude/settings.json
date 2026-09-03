@@ -84,13 +84,13 @@
       "Bash(npx jest:*)",
       "PowerShell(npx jest:*)",
       "Bash(firebase deploy:*)",
-      "PowerShell(firebase deploy:*)",
-      "Bash(git push:*)",
-      "PowerShell(git push:*)"
+      "PowerShell(firebase deploy:*)"
     ],
     "ask": [
       "Bash(gh workflow run:*)",
-      "Bash(gh run rerun:*)"
+      "Bash(gh run rerun:*)",
+      "Bash(git push:*)",
+      "PowerShell(git push:*)"
     ]
   }
 }

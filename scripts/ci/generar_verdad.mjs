@@ -618,11 +618,26 @@ if (!lock?.skills) {
       ? `Propias del proyecto, commiteadas porque mencionan nuestro dominio: ${lista(nuestras.sort())}.`
       : 'No hay skills propias en `.claude/skills/`.',
   );
-  linea(
-    enDisco.length
-      ? `En disco hay ${enDisco.length} carpetas de skill contra ${Object.keys(lock.skills).length} declaradas en el lock.`
-      : '**En disco no hay ninguna skill**: en un clon limpio hay que restaurarlas antes de contar con ellas.',
-  );
+  // El conteo de carpetas EN DISCO no puede vivir en el documento. En la
+  // maquina de desarrollo son 29 y en el runner de CI son 2, porque las de
+  // terceros no se commitean -- y `--check` compara TEXTO EXACTO. Esa linea
+  // hacia que el job `guardas` fuera IMPOSIBLE de pasar, regeneraras las veces
+  // que regeneraras: el numero cambia con el entorno, no con el codigo.
+  //
+  // Se descubrio en la PRIMERA corrida real del CI, el dia que el repo tuvo
+  // remote. Antes de eso el defecto existia igual y nadie lo veia: un workflow
+  // que nunca corrio no es un workflow verde, es un workflow desconocido.
+  //
+  // El dato sigue sirviendo, asi que va por stderr: se lee al correr el
+  // script y no contamina lo que se compara. Y dice cuales faltan, que es
+  // accionable, en vez de un total que no lo es.
+  const faltan = Object.keys(lock.skills).filter((n) => !enDisco.includes(n));
+  if (faltan.length) {
+    console.error(
+      `aviso  faltan ${faltan.length} de las ${Object.keys(lock.skills).length} skills ` +
+        'del lock en .claude/skills/: bash scripts/skills_restaurar.sh',
+    );
+  }
   linea();
 }
 

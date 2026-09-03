@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-03 - commit `d5b863b` **+ cambios sin commitear** - huella del cuerpo `f35138781641`
+> **Generado:** 2026-09-03 - commit `dfa5597` **+ cambios sin commitear** - huella del cuerpo `4cff243fcb43`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.5.1
+### Scripts de la raiz - `bouquet` 0.5.3
 
 | Script | Comando |
 |---|---|
@@ -120,8 +120,8 @@ Los 10 hooks apuntan a scripts que existen. Que existan no prueba que midan: eso
 
 ### Permisos del harness
 
-- **deny**: `Bash(flutter analyze:*)`, `Bash(flutter test:*)`, `Bash(flutter build:*)`, `PowerShell(flutter analyze:*)`, `PowerShell(flutter test:*)`, `PowerShell(flutter build:*)`, `Bash(npx jest:*)`, `PowerShell(npx jest:*)`, `Bash(firebase deploy:*)`, `PowerShell(firebase deploy:*)`, `Bash(git push:*)`, `PowerShell(git push:*)`
-- **ask**: `Bash(gh workflow run:*)`, `Bash(gh run rerun:*)`
+- **deny**: `Bash(flutter analyze:*)`, `Bash(flutter test:*)`, `Bash(flutter build:*)`, `PowerShell(flutter analyze:*)`, `PowerShell(flutter test:*)`, `PowerShell(flutter build:*)`, `Bash(npx jest:*)`, `PowerShell(npx jest:*)`, `Bash(firebase deploy:*)`, `PowerShell(firebase deploy:*)`
+- **ask**: `Bash(gh workflow run:*)`, `Bash(gh run rerun:*)`, `Bash(git push:*)`, `PowerShell(git push:*)`
 - **allow**: -
 
 Se listan porque `SKILLS-AGENTES-MCP.md` 5 documenta el caso contrario: un `CLAUDE.md` que prohibia lo que el allowlist pre-aprobaba. **La configuracion le gana al documento, siempre.**
@@ -162,7 +162,6 @@ Escriben pero no tienen `Bash`, o sea que no pueden desplegar ni commitear: `vau
 | `vercel-labs/agent-skills` | 6 | `vercel-composition-patterns`, `vercel-optimize`, `vercel-react-best-practices`, `vercel-react-view-transitions`, `web-design-guidelines`, `writing-guidelines` |
 
 Propias del proyecto, commiteadas porque mencionan nuestro dominio: `commit`, `post-task-doc`.
-En disco hay 29 carpetas de skill contra 27 declaradas en el lock.
 
 ## 7. Simbolos publicos y quien los abre
 
