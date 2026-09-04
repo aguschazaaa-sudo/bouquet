@@ -25,7 +25,7 @@ re-discute cada dos semanas.
 | Stack | Vidriera **Next.js**, panel **Flutter**, backend **Firebase** | [001](docs/vault/architecture/decisions/001-stack.md) | No se re-evalúa Flutter web para la vidriera |
 | Estados de Orden | **Dos ejes** (pago y entrega) + proyección para mostrar | [002](docs/vault/architecture/decisions/002-estados-de-orden.md) | No hay un único `estado` string lineal |
 | Pagos | **Diferida** — puerto y adaptador, contrato escrito hoy | [003](docs/vault/architecture/decisions/003-pagos.md) | El eje de pago existe desde el día 1 igual |
-| Frescura del catálogo | **ISR con revalidación por trigger** | [004](docs/vault/architecture/decisions/004-frescura-y-lecturas.md) | La vidriera no lee Firestore por visitante |
+| Frescura del catálogo | **Caché de página invalidada por trigger** — hoy, purga por tag en el borde | [004](docs/vault/architecture/decisions/004-frescura-y-lecturas.md) · [005](docs/vault/architecture/decisions/005-hosting-vidriera.md) | La vidriera no lee Firestore por visitante |
 
 Y una quinta que sale de las anteriores:
 
@@ -38,7 +38,7 @@ Y una quinta que sale de las anteriores:
 ```
                         ┌──────────────────────────┐
    visitante ──────────▶│  apps/tienda  (Next.js)  │
-   (anónimo)            │  SSR + ISR               │
+   (anónimo)            │  SSR, borde en Cloudflare│
                         └───────────┬──────────────┘
                                     │ Admin SDK, sólo del lado servidor
                                     │ (src/server/**)
@@ -52,9 +52,9 @@ Y una quinta que sale de las anteriores:
                         │   functions/  (TS)       │────┘
                         │   callables + triggers   │
                         └───────────┬──────────────┘
-                                    │ revalidación on-demand
+                                    │ purga por tag (ADR 005)
                                     ▼
-                             (webhook → tienda)
+                             (API de Cloudflare)
 
    operador ────────────▶ apps/admin (Flutter, web + Android)
    (claim rol=admin)      SDK cliente, reglas de Firestore aplicadas
@@ -348,12 +348,13 @@ La vidriera puede leer Firestore de dos maneras:
 | | Lecturas/día a 100 visitas | A 250 visitas | A 1.000 visitas |
 |---|---:|---:|---:|
 | **Por visitante** (SPA que consulta Firestore) | 20.000 | **50.000** | 200.000 |
-| **ISR con revalidación por trigger** | ~1.500 | ~1.600 | ~2.000 |
+| **Página cacheada, invalidada por trigger** | ~1.500 | ~1.600 | ~2.000 |
 
 La cuota gratuita son **50.000 lecturas/día**. Una vidriera que lee por
 visitante la revienta **a las 250 visitas diarias** — que para una tienda es un
-día flojo. Con ISR, las lecturas escalan con las **ediciones del catálogo**, no
-con las visitas, y el catálogo lo edita una persona.
+día flojo. Cacheando la página e invalidándola por trigger, las lecturas
+escalan con las **ediciones del catálogo**, no con las visitas, y el catálogo lo
+edita una persona.
 
 ### 6.2 Cómo funciona la frescura
 
@@ -370,9 +371,9 @@ trigger revalidarVidriera  (onDocumentWritten)
         │
         │  compara la PROYECCIÓN PÚBLICA de antes contra la de después
         │  ¿son iguales?  → no hace nada
-        │  ¿son distintas? → POST al webhook de revalidación de la tienda
+        │  ¿son distintas? → POST a la API de purga de Cloudflare, POR TAG
         ▼
-Next.js regenera /vino/<slug> y el listado
+el borde descarta /vinos/<slug> y el listado; la próxima visita re-renderiza
 ```
 
 **Comparar la proyección y no el documento** es el detalle que hace que esto sea
@@ -386,9 +387,11 @@ veces, el número cambia en cada venta. La de honestidad: *"Últimas 3 botellas"
 afirma un número exacto y *"poco stock"* no — si el pool de redacciones las
 mezcla, mentís en la mitad de los casos (§7.4).
 
-Fallback: `revalidate` largo (6 h) por si un webhook se pierde. Con ISR el
-fallback sólo consume lecturas cuando alguien pide la página después de que venza
-la ventana.
+Fallback: el origen manda `s-maxage` corto, así que una purga perdida se corrige
+sola en minutos en lugar de quedar vieja para siempre. Sólo consume lecturas
+cuando alguien pide la página después de que venza la ventana. **El mecanismo
+concreto —quién cachea, quién purga y por qué no hay ISR— está en
+[ADR 005](docs/vault/architecture/decisions/005-hosting-vidriera.md).**
 
 ### 6.3 El presupuesto completo
 
@@ -570,15 +573,15 @@ Con una particularidad favorable del stack elegido:
 
 | Pieza | Dónde vive | Modelo de release |
 |---|---|---|
-| `apps/tienda` | Vercel | **Deployments inmutables + promote.** Es §3.3 implementado por la plataforma: se promueve un build ya verificado, no se recompila. |
+| `apps/tienda` | **Firebase App Hosting**, detrás de Cloudflare ([ADR 005](docs/vault/architecture/decisions/005-hosting-vidriera.md)) | Rollout sobre revisiones de Cloud Run: se promueve una revisión ya verificada. |
 | `apps/admin` | Firebase Hosting | Build → canal de preview → verificar → `hosting:clone` a live |
 | `functions` | Cloud Functions | Verificar **por nombre** en el log, no por color (§3.5) |
 | Reglas e índices | Firebase | Primero, siempre |
 
-**Vercel también resuelve el problema más caro del proyecto original.** El build
-de Next.js corre en su infraestructura: no consume minutos de GitHub Actions
-(§3.6, la cuota de 2.000 min/mes) y no corre en una máquina de 7,9 GB de RAM
-(§9.4). El ciclo de feedback de la vidriera es local y de segundos — `next dev`
+**El build de la vidriera tampoco corre acá.** Lo hace **Cloud Build**, con
+2.500 minutos/mes sin cargo: no consume minutos de GitHub Actions (§3.6, la
+cuota de 2.000 min/mes) y no corre en una máquina de 7,9 GB de RAM (§9.4). El
+ciclo de feedback de la vidriera sigue siendo local y de segundos — `next dev`
 sí corre acá. El del panel no lo es, y eso ordena el plan de construcción (§12).
 
 **La trampa heredada que sigue viva y hay que decidir hoy:** el deploy de front
@@ -610,6 +613,8 @@ la condición que lo activa y la fecha en que se escribió.
 | **Buscador dedicado y queries con índices** | Catálogo > ~1.000 productos o proyección > ~2 MB (§5.5). | 2026-09-01 |
 | **Requisitos legales de venta de alcohol online** | Antes de la primera venta real. No es técnico; lo contesta el dueño. | 2026-09-01 |
 | **Deploy desde tag en vez de rama** | Antes del primer deploy que incluya cobro. | 2026-09-01 |
+| **Verificar la purga de Cloudflare contra producción** | El día que exista dominio. [ADR 005](docs/vault/architecture/decisions/005-hosting-vidriera.md) razona el mecanismo de frescura pero **no lo midió**: hay que probar que purgar cambia lo que ve un visitante, y que Cloud CDN no sirva viejo por debajo. Hasta entonces ese ADR está abierto. | 2026-09-03 |
+| **Licencia de las imágenes de la landing** | Antes de publicar el dominio. La recopilación inicial es de reemplazo y puede no ser de uso comercial ([design/parallax.md §10.3](docs/vault/design/parallax.md#103-el-manifiesto-de-assets-para-que-la-recopilación-sea-dirigida)). | 2026-09-03 |
 
 ---
 
@@ -649,7 +654,7 @@ estén verdes*. Diferir el proveedor de pagos no difiere el riesgo del pago
 | Decisión | Lección |
 |---|---|
 | Vidriera en Next.js | §1.1 — Flutter web es invisible y no hay flag que tocar |
-| ISR con revalidación por trigger | §1.1 + §4.1.7 — el precio cambia hoy; la cuota es 50k/día |
+| Página cacheada, invalidada por trigger | §1.1 + §4.1.7 — el precio cambia hoy; la cuota es 50k/día |
 | Filtrado en memoria, cero índices de catálogo | §4.2 — un índice `READY` puede no servir |
 | Dos ejes de estado | §5.1 + §5.2 — nace en estado final; llega desordenado |
 | `onDocumentWritten` + `entroEn*` en un helper | §5.1 |

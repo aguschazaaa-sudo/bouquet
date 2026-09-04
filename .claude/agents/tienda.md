@@ -1,6 +1,6 @@
 ---
 name: tienda
-description: apps/tienda — la vidriera pública en Next.js sobre Vercel. Componentes, páginas, ISR, catálogo en memoria, carrito en localStorage. Usalo para todo lo que ve un comprador.
+description: apps/tienda — la vidriera pública en Next.js sobre Firebase App Hosting, detrás de Cloudflare. Componentes, páginas, caché de borde purgada por tag, catálogo en memoria, carrito en localStorage. Usalo para todo lo que ve un comprador.
 tools: Read, Grep, Glob, Edit, Write, Bash
 model: sonnet
 ---
@@ -18,7 +18,7 @@ sirven para un lugar.
 
 | | |
 |---|---|
-| Frescura | **ISR + revalidación por trigger.** La vidriera **no lee Firestore por visitante** |
+| Frescura | **SSR + caché de borde purgada por tag** desde el trigger (ADR 005). La vidriera **no lee Firestore por visitante** |
 | Catálogo | Filtrado **en memoria**. Cero índices compuestos |
 | Carrito | **`localStorage`**. No existe la colección `carritos` |
 | Precio | Entero en **centavos**; `items[]` guarda snapshot, no referencia |
@@ -53,3 +53,16 @@ real: `npm run dev`, que tarda segundos.
 **Antes de escribir componentes visuales nuevos, pedí el sistema de estilo.**
 Lo visual de este proyecto va guiado por una dirección que se define aparte
 (ver `/disenio`) — no inventes una paleta ni compongas con genéricos.
+
+## El copy no lo escribís vos
+
+Todo texto que ve un comprador pasa por el agente **`voz`** antes de quedar en
+un componente. La dirección de lenguaje vive en
+[`docs/vault/design/voz.md`](../../docs/vault/design/voz.md).
+
+Dos reglas de ahí que te tocan aunque no cures vos:
+
+- **`Producto` es del glosario, no de la vidriera.** Al cliente se le habla de
+  **el vino**, **la botella**, **la caja**. El glosario manda adentro y no afuera.
+- **Ningún texto afirma un número de stock.** Se muestra el **balde**
+  (`disponible` · `últimas unidades` · `agotado`), nunca la cantidad.

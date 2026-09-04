@@ -28,7 +28,7 @@ Y buscá específicamente estos cuatro, que son los que se comen las cuotas:
 - **`snapshots()` / `StreamBuilder` sobre una colección sin `limit()`** — cobra
   la colección entera en la primera lectura y cada documento que cambie después.
 - **Lectura por visitante en la vidriera.** No debería existir: la frescura va
-  por **ISR + revalidación por trigger** (ADR 004). Si aparece una, es un
+  por **caché de borde purgada por trigger** (ADR 004 · 005). Si aparece una, es un
   hallazgo, no un costo.
 - **`get()` adentro de un builder o de un loop** — se multiplica por la lista.
 - **Leer un documento para autorizar.** El rol va en un **custom claim**

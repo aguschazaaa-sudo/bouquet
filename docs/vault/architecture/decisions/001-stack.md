@@ -1,8 +1,16 @@
 # ADR 001 — Vidriera en Next.js, panel en Flutter, backend en Firebase
 
 - **Fecha:** 2026-09-01
-- **Estado:** aceptada
+- **Estado:** aceptada · **la columna *Hosting* de la vidriera fue reemplazada
+  el 2026-09-03 por [ADR 005](005-hosting-vidriera.md)**
 - **Decide:** con qué se escribe cada front-end y dónde vive cada uno
+
+> **Qué cambió y qué no.** El dueño decidió no usar Vercel y desplegar por
+> Firebase. **Next.js sigue**, y por el mismo motivo de siempre: el argumento de
+> este ADR es contra Flutter web, no a favor de un proveedor. Lo que se cae es
+> el hosting, y con él el mecanismo de frescura de [ADR 004](004-frescura-y-lecturas.md),
+> que ADR 005 reconstruye con purga por tag en Cloudflare. **El razonamiento de
+> abajo se conserva sin editar**: sirve para saber qué había que reemplazar.
 
 ## Contexto
 
@@ -16,7 +24,7 @@ bouquet tiene dos superficies con requisitos opuestos:
 
 | Superficie | Stack | Hosting |
 |---|---|---|
-| Vidriera | Next.js (App Router, SSR + ISR) | Vercel |
+| Vidriera | Next.js (App Router, SSR) | ~~Vercel~~ → **Firebase App Hosting + Cloudflare** ([ADR 005](005-hosting-vidriera.md)) |
 | Panel | Flutter (web + Android) | Firebase Hosting |
 | Backend | Firebase: Firestore, Cloud Functions (TS), Storage, Auth | — |
 
@@ -74,6 +82,12 @@ Ahorraría un stack. Se descarta por dos razones:
 
 ## Por qué Vercel y no Firebase Hosting para la vidriera
 
+> ⚠️ **Reemplazado el 2026-09-03 por [ADR 005](005-hosting-vidriera.md).** De
+> las tres cosas que se compraban acá, App Hosting conserva dos —rollouts por
+> revisión y el build fuera de esta máquina— y **no tiene la tercera**: no
+> existe purga on-demand. Esa es exactamente la que sostenía a ADR 004, y por
+> eso ADR 005 la repone con Cloudflare. Lo de abajo queda como estaba.
+
 Cuesta un segundo proveedor. Compra tres cosas:
 
 1. **Deployments inmutables con promote.** Es `LECCIONES` §3.3 —*promové, no
@@ -90,10 +104,11 @@ Cuesta un segundo proveedor. Compra tres cosas:
 
 - Dos pipelines de deploy, con dos modelos de release distintos. Documentado en
   [ARQUITECTURA §10](../../../../ARQUITECTURA.md#10-deploy-y-entornos).
-- La service account de Firebase vive como variable de entorno en Vercel. Eso
-  crea un modo de falla nuevo —credenciales filtradas al bundle del cliente— que
-  cierra el hook `server-only-guard.sh`. **Es una regla que se escribe como hook
-  o no existe** (§9.3).
+- La service account de Firebase vive fuera del repo — desde
+  [ADR 005](005-hosting-vidriera.md), en Secret Manager, junto al token de purga
+  de Cloudflare. Eso crea un modo de falla nuevo —credenciales filtradas al
+  bundle del cliente— que cierra el hook `server-only-guard.sh`. **Es una regla
+  que se escribe como hook o no existe** (§9.3).
 - `packages/contratos` lo importan los tres lados de TypeScript directo, y Dart
   lo espeja con un test contra el JSON generado.
 - El ciclo de feedback es asimétrico: la vidriera se desarrolla local en

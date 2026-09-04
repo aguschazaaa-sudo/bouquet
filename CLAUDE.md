@@ -133,14 +133,14 @@ control positivo y negativo cada uno.
 
 ## Los agentes — y qué hacen cumplir de verdad
 
-`.claude/agents/` tiene **12 subagentes reales**. El `tools:` del frontmatter es
+`.claude/agents/` tiene **13 subagentes reales**. El `tools:` del frontmatter es
 enforcement estructural: **restringe herramientas, no rutas.**
 
 | Escriben (`Edit`+`Write`+`Bash`) | Verifican (**sin** `Edit`/`Write`) |
 |---|---|
 | `contratos` · `functions` · `reglas` | `cazador-de-puertas` — ¿alguien lo abre? |
 | `tienda` · `admin-datos` · `admin-presentacion` | `presupuesto-lecturas` — ¿cuántas lecturas? |
-| `vault` (sin `Bash`: no puede desplegar) | `revisor-pagos` — obligatorio en Workflow D |
+| `vault` · `voz` (sin `Bash`: no despliegan) | `revisor-pagos` — obligatorio en Workflow D |
 | | `auditor-produccion` — qué corre de verdad |
 | | `revisor-acoplamiento` — semanal, repo entero |
 
@@ -192,6 +192,10 @@ diseño y front (11). Las **propias** del proyecto sí se commitean: `commit` y
 Antes de escribir componentes visuales, `/disenio`: la dirección y los tokens
 salen antes que el primer widget, no después del décimo.
 
+Y antes de que un texto llegue a una pantalla que ve un comprador, pasalo por
+`voz`. La dirección de lenguaje está en
+[docs/vault/design/voz.md](docs/vault/design/voz.md); el agente la ejecuta.
+
 ## Convenciones
 
 **Dominio en español, infraestructura en inglés.** `Producto`, `Bodega`,
@@ -210,7 +214,7 @@ no una nota al pie. Presupuesto vigente:
 
 | | |
 |---|---|
-| Vidriera | **Next.js** en Vercel. Flutter web es invisible y el renderer HTML se eliminó en 3.29 |
+| Vidriera | **Next.js** en **Firebase App Hosting, detrás de Cloudflare** (ADR 005). Flutter web es invisible y el renderer HTML se eliminó en 3.29 |
 | Panel | **Flutter** (web + Android) en Firebase Hosting |
 | Backend | **Firebase** |
 | Estado en el panel | **Riverpod** — no BLoC, no GetX |
@@ -221,7 +225,7 @@ no una nota al pie. Presupuesto vigente:
 | Idempotencia | **Marcador en la misma transacción** que el efecto |
 | Carrito | **`localStorage`**. No hay colección `carritos` |
 | Catálogo | Filtrado **en memoria**. Cero índices compuestos |
-| Frescura | **ISR + revalidación por trigger**. La vidriera no lee por visitante |
+| Frescura | **SSR + caché de borde purgada por tag** desde el trigger. La vidriera no lee por visitante |
 | Precio | **Entero en centavos**. `items[]` guarda snapshot, no referencia |
 | Pagos | **Diferido** — el eje existe y se usa a mano desde el día 1 |
 

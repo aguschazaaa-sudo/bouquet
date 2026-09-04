@@ -24,7 +24,16 @@ y lo edita una persona a mano.**
 Todo acceso a Firestore vive en `apps/tienda/src/server/**` con el Admin SDK. El
 visitante no tiene un SDK de Firestore en la mano.
 
-### 2. ISR con revalidación disparada por trigger
+### 2. Caché de página invalidada por trigger
+
+> ⚠️ **El mecanismo cambió el 2026-09-03, la decisión no.** Al pasar de Vercel a
+> Firebase ([ADR 005](005-hosting-vidriera.md)) ya no hay ISR: la vidriera
+> renderiza SSR, cachea en el borde de Cloudflare y el trigger **purga por
+> tag** en vez de llamar a un webhook de revalidación. **La condición del
+> trigger —comparar la proyección pública— y el presupuesto de ~1.700
+> lecturas/día son los mismos.** El diagrama de abajo sigue describiendo la
+> forma; lo que cambia es quién recibe el POST y que el fallback de 6 h se
+> reemplaza por `s-maxage` corto en el origen.
 
 ```
 admin escribe productos/{id}
