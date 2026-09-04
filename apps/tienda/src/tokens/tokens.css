@@ -80,20 +80,40 @@
   --chaflan-ventana: 8px;
   --chaflan-boton: 9px;
 
-  /* --- El motor de parallax. parallax.md §2.1 y §4.1 ------------------- */
-  /* v = 1 − z/D. Nadie elige 0.62: se elige "esto está lejos" y el número
-   * sale de la ecuación. Separación mínima perceptible: 0,15.
+  /* --- El motor de parallax. parallax.md §2.1 -------------------------- */
+  /* v = 1 − z/D. Nadie elige 0.62: se elige "esto está lejos" y el número sale
+   * de la ecuación.
    *
-   * ⚠️ SIGNO: lento → amplitud POSITIVA. Sobre el rango `cover` el contenedor
-   * recorre (viewport + alto del elemento) hacia arriba; para que un plano
-   * recorra MENOS hay que sumarle desplazamiento hacia abajo. Es la
-   * corrección de escenas.md §5 y contradice el snippet de parallax.md §4.1,
-   * que los escribe negativos. Se confirma con el dedo en un teléfono. */
-  --amp-ambiente: 18vh; /* v = 0.40 */
-  --amp-escenario: 13.5vh; /* v = 0.55 */
-  --amp-sujeto: 4.5vh; /* v = 0.85 */
+   * ⚠️ LA MAGNITUD SALE DE LA ARITMÉTICA, NO DE UNA ESCALA ELEGIDA A OJO.
+   * Sobre el rango `cover` el scroll avanza S = alto de viewport + alto de la
+   * escena ≈ 200svh. Para que un plano viaje a velocidad v hay que darle una
+   * contra-traslación total de (1 − v)·S. No hay margen para "atenuar": la
+   * amplitud ES la velocidad.
+   *
+   * En la práctica lo que importa es que el PASO entre planos vecinos sea
+   * parejo: cada escalón de 0,15 de velocidad son ~32svh de amplitud, medido
+   * sobre la página. Con pasos desparejos el cuello de botella se muda de par
+   * en par y la separación mínima empeora aunque los extremos mejoren.
+   *
+   * `parallax.md §4.1` manda 13,5vh para v = 0.55, y `escenas.md §5` lo llama
+   * "una escala de 30vh, la fuerza de parallax que el documento eligió". Medido
+   * sobre la página corriendo, esa escala da **v = 0.93** y una separación entre
+   * planos de **0,021** contra el mínimo de 0,15 que el propio §2.2 fija para
+   * que se lea como profundidad. O sea: no se ve nada. Los dos documentos están
+   * mal en la MAGNITUD, no sólo en el signo.
+   *
+   * SIGNO: lento -> POSITIVO. Para que un plano recorra menos hay que sumarle
+   * desplazamiento hacia abajo. Eso de escenas.md §5 sí estaba bien.
+   *
+   * Se usan 5 de las 6 posiciones que §2.2 habilita (0.40 a 1.15, separación
+   * 0,15). Se arranca en 0.55 y no en 0.40 porque la amplitud de 0.40 son
+   * 120svh y el plano tendría que medir 220svh de alto: la superficie
+   * compositada no entra en el presupuesto de memoria de §2.2. */
+  --amp-ambiente: 96svh; /* v = 0.55 — 3 escalones */
+  --amp-escenario: 64svh; /* v = 0.70 — 2 escalones */
+  --amp-sujeto: 32svh; /* v = 0.85 — 1 escalón */
   --amp-contenido: 0; /* v = 1.00 — el texto y su scrim, juntos */
-  --amp-detalle: -4.5vh; /* v = 1.15 — delante de la cámara */
+  --amp-detalle: -32svh; /* v = 1.15 — 1 escalón, delante de la cámara */
 
   /* --- La lámpara. Una por escena, tres números ------------------------ */
   /* Valores por defecto; cada escena los pisa. El radio crece a lo largo de

@@ -173,36 +173,79 @@ página no hay ninguno: no hay precio, ni stock, ni número de Orden.
 
 ---
 
-## 4. Los signos: se implementó la corrección de `escenas.md §5`
+## 4. El parallax de los dos documentos no se ve, y es aritmética
 
-`parallax.md §4.1` escribe las amplitudes en **negativo** para los planos lentos.
-`escenas.md §5` dice que están invertidas. **Los dos no pueden tener razón**, y
-el pendiente seguía abierto desde el 2026-09-03.
+`escenas.md §5` tenía razón en **el signo** y los dos documentos están mal en
+**la magnitud**, por un factor de ~7. Con las amplitudes que mandan, no hay
+efecto: el dueño lo vio antes que cualquier medición.
 
-La aritmética: sobre el rango `cover`, el contenedor recorre
-`(alto de viewport + alto del elemento)` hacia arriba. Para que un plano recorra
-**menos**, hay que sumarle desplazamiento hacia abajo. **Lento → positivo.**
+### 4.1 De dónde sale el número
 
-Y ahora está medido sobre la página corriendo, leyendo el `translate` calculado:
+Sobre el rango `cover`, el scroll avanza `S = alto de viewport + alto de la
+escena`. Para que un plano viaje a velocidad `v` hay que darle una
+contra-traslación **total** de `(1 − v)·S`. No hay margen para atenuar: **la
+amplitud ES la velocidad.**
 
-| `scrollY` | ambiente (`v = 0.40`) | escenario (`v = 0.55`) |
-|---:|---:|---:|
-| 0 | `69,13 px` | `51,84 px` |
-| 300 | `94,92 px` | `71,19 px` |
-| 600 | `120,71 px` | `90,53 px` |
-| 900 | `144,72 px` | `108,54 px` |
+En el héroe, `S = 900 + 879 = 1779 px`. Para `v = 0.55` hacen falta **800 px**.
+`parallax.md §4.1` manda `13,5vh` = **121 px**, que da `v = 0.93`.
 
-Los dos **crecen** (positivo, o sea que se quedan atrás) y su recorrido está en
-proporción `75,6 / 56,7 = 1,333`, que es exactamente `18vh / 13,5vh`. **La
-cámara de `parallax.md §2.1` se cumple en el píxel.**
+`escenas.md §5` lo llama *"una escala de 30vh, que es la fuerza de parallax que
+el documento eligió"*. **Esa escala es el error.** La escala correcta no se
+elige: es `S`, que ronda los 200vh.
 
-⚠️ Esto confirma la aritmética, **no la sensación**. El pendiente de scrollear
-con el dedo en un teléfono sigue abierto: si el fondo se siente adelantado o
-pegado, la respuesta está ahí y no en esta tabla.
+### 4.2 Medido antes y después, sobre la página corriendo
 
----
+`v = (cuánto se movió el plano en pantalla) / (cuánto se movió el contenido)`.
 
-## 5. Los cinco defectos que sólo aparecieron mirando
+| Plano | objetivo | con `parallax.md §4.1` | corregido |
+|---|---:|---:|---:|
+| ambiente | 0.55 | **0.914** | **0.541** |
+| escenario | 0.70 | **0.936** | **0.694** |
+| sujeto | 0.85 | **0.979** | **0.847** |
+| contenido | 1.00 | 1.000 | 1.000 |
+| detalle | 1.15 | **1.021** | **1.153** |
+| **separación mínima** | **≥ 0,15** | **0,021** ❌ | **0,153** ✅ |
+
+`parallax.md §2.2` fija 0,15 como el mínimo para que el cerebro lo lea como
+profundidad y no como *"algo se corrió"*. Con los valores del documento la
+separación era **siete veces menor que su propio umbral**.
+
+### 4.3 ⚠️ Por qué la verificación anterior no lo agarró
+
+La primera pasada midió que los `translate` **cambiaban** y que eran
+**proporcionales entre sí** (18/13,5 = 1,333, que daba exacto). Eso es
+**consistencia interna, no correctitud**: los números eran proporcionales a los
+tokens, y los tokens estaban mal. Una medición que compara el sistema consigo
+mismo confirma cualquier cosa.
+
+**Lo que faltaba era una unidad externa:** la velocidad aparente contra el
+contenido, que es lo que el ojo ve. Es la versión de "toda verificación necesita
+un control positivo" aplicada a un número en vez de a una lista.
+
+### 4.4 Lo que costó arreglarlo
+
+- **El keyframe se centra**: va de `−A/2` a `+A/2` en vez de `0` a `A`. Así el
+  sangrado necesario es la mitad del recorrido.
+- **El sangrado crece de 16-24vh a 22-55vh.** No es negociable: un plano que no
+  puede moverse 48svh no puede ir a `v = 0.55`.
+- **La costura entre escenas se movió del plano a la escena.** El fundido estaba
+  como `mask-image` en porcentajes del plano; con el plano a 180svh, un 14 % de
+  esa altura cae dentro del sangrado, o sea fuera de lo visible, y la costura
+  volvía. Ahora es un `::after` de la escena, en píxeles.
+- **Las direcciones de arte horizontales se rehicieron a ~0,9 de proporción**,
+  no a 16:9. Con el sangrado, el plano es **más alto que ancho aunque el
+  viewport sea apaisado**, y `object-fit: cover` sobre un 16:9 recortaba los
+  costados y ampliaba de más.
+
+⚠️ **El presupuesto de memoria de `parallax.md §2.2` está subestimado por el
+mismo motivo:** calculó capas del **tamaño del viewport**, y una capa del tamaño
+del viewport **no puede hacer parallax**. Una capa de 180svh cuesta ~1,8 veces
+esa cuenta. Es la próxima cosa a medir en un teléfono real.
+
+⚠️ Y sigue faltando la mitad que ninguna aritmética contesta: **scrollearlo con
+el dedo**. Que la separación pase el umbral no dice que la sensación sea buena.
+
+## 5. Los seis defectos que sólo aparecieron mirando
 
 Ninguno se veía en el código. Todos salieron de capturar la página y abrir el
 PNG.
@@ -269,7 +312,8 @@ Todo sobre la página corriendo en `next dev`, con Chrome headless por CDP.
 |---|---|---|
 | **"El scrim viaja con el texto"** (`parallax.md §3.2`) | Decodificar el PNG de la captura en 5 puntos del rango de scroll y calcular el contraste real del fondo detrás del `h2` | **13,48 → 13,31:1**, variación **0,17 puntos** |
 | *control negativo* | La **misma foto**, mismo scroll, en una franja **sin scrim** | variación **0,46 puntos** — **3× más**. La medición discrimina |
-| **"El movimiento existe"** | Leer el `translate` **calculado** en 4 puntos, no que el CSS diga `animation-timeline` | Cambia, y en la proporción exacta de los tokens (§4) |
+| **"El movimiento se ve"** | Medir la **velocidad aparente** de cada plano contra el contenido, que es la unidad que ve el ojo | `0.54 / 0.69 / 0.85 / 1.00 / 1.15`, separación **0,153** |
+| *lo que NO alcanza* | Leer el `translate` y ver que cambia y que es proporcional a los tokens | **Daba verde con el parallax invisible.** §4.3 |
 | **"Tier C apaga el movimiento"** | Emular `prefers-reduced-motion: reduce` y releer el `translate` | `none` en los 4 puntos |
 | **"Tier C no deja scroll muerto"** (el peor defecto de `escenas.md §4.3`) | Comparar el `scrollHeight` con y sin movimiento | **5278 px = 5278 px.** No hay geometría atada al movimiento porque **no hay pin** |
 | **"La composición estática está completa"** | Contar bloques de texto en el DOM con el movimiento apagado | **55**. No se pierde una sola frase |

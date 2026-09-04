@@ -26,7 +26,7 @@ export function EscenaSeleccion() {
       <Plano
         rol="ambiente"
         ansiosa
-        foto={{ base: 'ambiente', ancho: 1200, alto: 900, foco: '40% 60%' }}
+        foto={{ base: 'ambiente', ancho: 1300, alto: 1450, foco: '40% 60%' }}
       />
 
       <div className="lampara" aria-hidden="true" />

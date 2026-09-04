@@ -27,15 +27,19 @@
 
 /* ============================================================= EL PLANO == */
 
-/* El sangrado tiene que ser mayor que la amplitud del plano o la deriva
- * descubre el borde del asset. Pero un sangrado PAREJO de 24vh hace el plano
- * mucho más alto que el viewport, y ahí `object-fit: cover` sobre-amplía la
- * dirección de arte horizontal: la foto de la mesa entraba con las copas al
- * doble de tamaño. Cada rol sangra lo que su propia amplitud necesita, más un
- * 20 % de margen. */
+/* El sangrado tiene que cubrir el recorrido del plano o la deriva descubre el
+ * borde del asset. Con el keyframe centrado, ese recorrido es amplitud/2 hacia
+ * cada lado, más un margen.
+ *
+ * ⚠️ Estos números son grandes y NO se pueden bajar sin bajar la velocidad: un
+ * plano que no puede moverse 45svh no puede ir a v = 0.55. La primera versión
+ * sangraba 16-24vh y por eso no se veía nada. Es también el costo real de un
+ * parallax de verdad: la superficie compositada es más alta que el viewport, y
+ * el presupuesto de memoria de parallax.md §2.2 —que calculó capas del tamaño
+ * del viewport— está subestimado por ese mismo factor. */
 .plano {
   position: absolute;
-  inset: calc(-1 * var(--sangrado, 8vh)) 0;
+  inset: calc(-1 * var(--sangrado, 20svh)) 0;
   z-index: 0;
   pointer-events: none;
 }
@@ -87,35 +91,34 @@
 
 .plano--ambiente {
   z-index: 0;
-  --sangrado: 22vh; /* amplitud 18vh */
+  --sangrado: 55svh; /* recorrido 48svh */
 }
 .plano--escenario {
   z-index: 1;
-  --sangrado: 16vh; /* amplitud 13,5vh */
-  /* Sin esto, una escena con foto choca a filo contra una sin foto y se ve la
-   * costura horizontal. La máscara es estática: no repinta por frame. */
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    black 14%,
-    black 86%,
-    transparent 100%
-  );
+  --sangrado: 40svh; /* recorrido 32svh */
 }
 .plano--sujeto {
   z-index: 2;
-  --sangrado: 6vh; /* amplitud 4,5vh */
+  --sangrado: 22svh; /* recorrido 16svh */
 }
 .plano--detalle {
   z-index: 4;
-  --sangrado: 6vh; /* amplitud 4,5vh */
+  --sangrado: 22svh; /* recorrido 16svh */
 }
 
 /* ======================================================== EL MOVIMIENTO == */
 
+/* El recorrido se reparte a los dos lados del reposo en vez de arrancar en 0.
+ * Es lo que hace que el sangrado necesario sea la MITAD de la amplitud: un
+ * plano que viaja 90svh sangra 45, no 90. Con amplitudes de verdad (las que
+ * producen la velocidad declarada) esa mitad es la diferencia entre un plano
+ * de 190svh de alto y uno de 280. */
 @keyframes deriva {
+  from {
+    translate: 0 calc(var(--amplitud) * -0.5);
+  }
   to {
-    translate: 0 var(--amplitud);
+    translate: 0 calc(var(--amplitud) * 0.5);
   }
 }
 
@@ -337,4 +340,25 @@
 .enlace-blando:hover,
 .enlace-blando:focus-visible {
   color: var(--dorado);
+}
+
+/* ================================================= COSTURA DE ESCENA === */
+
+/* El fundido que evita que una escena con foto choque a filo contra una sin
+ * foto va en LA ESCENA, no en el plano.
+ *
+ * Antes estaba como `mask-image` en porcentajes del plano. Dejó de servir
+ * cuando el plano pasó a medir 160-190svh: un 14 % de esa altura cae dentro
+ * del sangrado, o sea fuera de lo que se ve, y la costura volvía. El borde que
+ * hay que fundir es el de la escena, así que el degradé tiene que estar anclado
+ * ahí y en píxeles, no en porcentaje de otra cosa. */
+.escena::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, var(--tinta) 0, transparent 110px),
+    linear-gradient(to top, var(--tinta) 0, transparent 110px);
 }

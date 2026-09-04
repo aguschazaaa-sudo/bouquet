@@ -70,14 +70,37 @@ es lo único que bouquet hizo. Y el texto del héroe no se escribió: **estaba e
 **`parallax.md`, `direccion.md` y `voz.md` no se tocaron.** Lo único que se
 descarta es la composición.
 
-⚠️ **Los signos de `parallax.md §4.1` ya no son una discusión: están medidos.**
-Leyendo el `translate` calculado sobre la página corriendo, ambiente y escenario
-**crecen** —o sea, positivo— y su recorrido está en proporción **1,333**, que es
-exactamente `18vh / 13,5vh`. La cámara se cumple en el píxel y `escenas.md §5`
-tenía razón. **Falta la mitad que ninguna aritmética contesta:** scrollearlo con
-el dedo en un teléfono.
+⚠️ **Y ahí apareció el hallazgo más grande: el parallax de los dos documentos
+de diseño NO SE VE, y es aritmética.** `escenas.md §5` acertó el **signo**;
+los dos documentos están mal en la **magnitud**, por un factor de ~7.
 
-**Cinco defectos que ninguna revisión de código encuentra**, todos hallados
+Sobre el rango `cover` el scroll avanza `S = viewport + alto de escena` ≈ 200vh,
+y para que un plano vaya a velocidad `v` hace falta `(1 − v)·S`. Para `v = 0.55`
+son **90vh**; `parallax.md §4.1` manda **13,5vh**, con lo que `escenas.md §5`
+llama *"una escala de 30vh, la fuerza de parallax que el documento eligió"*.
+**Esa escala es el error: la amplitud ES la velocidad, no se atenúa.**
+
+Medida la velocidad aparente contra el contenido, que es la unidad que ve el
+ojo: **v = 0.91 / 0.94 / 0.98 / 1.02** con los valores del documento, y
+separación entre planos de **0,021** contra el mínimo de **0,15** que el propio
+`§2.2` fija. Siete veces por debajo de su propio umbral. Corregido:
+**0.54 / 0.69 / 0.85 / 1.00 / 1.15**, separación **0,153**.
+
+⚠️ **Lo encontró el dueño mirando, después de que una verificación mía diera
+verde.** Esa verificación medía que los `translate` cambiaban y que eran
+proporcionales a los tokens — **consistencia interna, no correctitud**. Los
+números eran fieles a unos tokens equivocados. Faltaba una unidad externa.
+
+⚠️ **Y el presupuesto de memoria de `parallax.md §2.2` está subestimado por el
+mismo motivo:** calculó capas del tamaño del viewport, y una capa del tamaño del
+viewport **no puede hacer parallax**. Con sangrado real la capa mide ~180svh.
+
+**Falta la mitad que ninguna aritmética contesta:** scrollearlo con el dedo.
+Y ojo con el navegador: **Firefox sigue en `preview`** —detrás de flag— según
+`mdn/browser-compat-data`, así que ahí no se ve movimiento por diseño y la
+página cae a Tier C.
+
+**Seis defectos que ninguna revisión de código encuentra**, todos hallados
 abriendo el PNG de una captura: la foto de la mesa venía con **marca de agua
 `Unsplash+`** tileada; `.plano > img` no matcheaba porque el `<img>` es hijo de
 `<picture>`, así que las fotos salían a tamaño nativo; el scrim se leía como un

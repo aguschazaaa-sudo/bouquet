@@ -22,7 +22,7 @@ export function EscenaProblema() {
       <Plano
         rol="ambiente"
         ansiosa
-        foto={{ base: 'ambiente', ancho: 1200, alto: 900, foco: '60% 40%' }}
+        foto={{ base: 'ambiente', ancho: 1300, alto: 1450, foco: '60% 40%' }}
       />
 
       <Plano
