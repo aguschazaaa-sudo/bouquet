@@ -43,17 +43,40 @@
 
   /* Escala: cuarta justa (1.333) en display, tercera menor (1.2) en texto.
    * Fluida entre 380px y 1440px de viewport. */
-  --t-kicker: clamp(0.72rem, 0.68rem + 0.2vw, 0.82rem);
-  --t-rotulo: clamp(0.7rem, 0.66rem + 0.18vw, 0.78rem);
+  --t-kicker: clamp(0.78rem, 0.73rem + 0.22vw, 0.88rem);
+  --t-rotulo: clamp(0.76rem, 0.71rem + 0.2vw, 0.85rem);
   --t-cuerpo: clamp(1rem, 0.95rem + 0.28vw, 1.19rem);
   --t-lead: clamp(1.13rem, 1.02rem + 0.55vw, 1.5rem);
   --t-h3: clamp(1.35rem, 1.15rem + 0.9vw, 1.9rem);
   --t-h2: clamp(2rem, 1.5rem + 2.3vw, 3.6rem);
   --t-h1: clamp(2.5rem, 1.7rem + 3.6vw, 5.2rem);
 
-  --tracking-versalita: 0.14em;
-  --tracking-rotulo: 0.22em;
+  --tracking-versalita: 0.13em;
+  --tracking-rotulo: 0.18em;
   --interlinea-prosa: 1.68;
+
+  /* ⚠️ PESOS, y no son decoración. direccion.md §4.1 lo había advertido y la
+   * primera implementación lo ignoró: **el texto claro sobre oscuro adelgaza
+   * ópticamente** (irradiación), así que un 400 que se ve bien sobre papel
+   * llega a la pantalla como un 350.
+   *
+   * Medido: comparando el contraste NOMINAL (el color computado) contra el
+   * contraste del PÍXEL pintado, un titular de 78px pierde el **1 %**, un
+   * cuerpo de 24px pierde el **6 %**, y el texto chico a peso 400 —el legal del
+   * pie, el wordmark— pierde el **30 %**. Esa brecha es lo que se percibe como
+   * "apagado" o "poco nítido", y no la detecta ningún chequeo de contraste,
+   * porque el color declarado está bien.
+   *
+   * ⚠️ Estos números son los de DESPUÉS de bajar `.vinieta` de z-index 4 a 2.
+   * Con la viñeta encima del contenido las mismas brechas daban 54-80 %, y esa
+   * medición **atribuía a la tipografía lo que hacía el velo**. Los pesos se
+   * mantienen igual porque §4.1 los justifica por su cuenta, pero el efecto
+   * tipográfico es la mitad de grande de lo que parecía.
+   *
+   * Las dos familias son variables: subir el peso no cuesta un archivo más. */
+  --peso-texto: 440;
+  --peso-enfasis: 520;
+  --peso-versalita: 600;
   --interlinea-titulo: 1.04;
   --medida: 34ch; /* direccion.md §5.1: párrafos de 60-70 caracteres… */
   --medida-ancha: 62ch; /* …y la medida real de lectura en desktop */

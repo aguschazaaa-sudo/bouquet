@@ -58,7 +58,7 @@ export function EscenaMesa() {
               ceremonia: el cierre es una exhalación, no otra insistencia. */}
           <p>
             <a className="boton" href="/vinos">
-              Ver todos los vinos
+              <span>Ver todos los vinos</span>
             </a>
           </p>
         </div>

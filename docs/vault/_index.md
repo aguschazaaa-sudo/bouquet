@@ -110,10 +110,26 @@ parejo de 24vh sobre-ampliaba la dirección de arte horizontal; y la página med
 arregló **sin sacar vino**: en pantalla angosta la tarjeta gira a fila.
 
 **El scrim está medido, no razonado.** Decodificando el PNG en cinco puntos del
-scroll: **13,48 → 13,31:1**, variación de **0,17 puntos**. El control negativo
-—la misma foto, sin scrim— varía **3 veces más**. Y con `prefers-reduced-motion`
-el `scrollHeight` es **idéntico** (5278 px): no hay pin, así que no existe el
-peor defecto de `escenas.md §4.3`.
+scroll: variación de **0,12 puntos**, contra **0,55** del control negativo —la
+misma foto, sin scrim—. Y con `prefers-reduced-motion` el `scrollHeight` es
+**idéntico**: no hay pin, así que no existe el peor defecto de `escenas.md §4.3`.
+
+⚠️ **Y el dueño encontró un segundo defecto mirando, otra vez después de una
+verificación mía en verde:** *"hay textos que parecen estar detrás de una nube
+borgoña"*. Estaban. **`.vinieta` vivía en `z-index: 4`, encima del contenido**, y
+oscurecía el panel dorado del CTA de 0,451 a **0,089** de luminancia — cinco
+veces—, cambiando además con la posición en la escena. `parallax.md §3.1` ya
+prohibía eso en z4: *"área grande, tapar texto"*. La viñeta y la costura bajaron
+a z2. La **brecha** entre el color declarado y el pintado se desplomó: CTA duro
+del **80 % al 2 %**, datos del vino del 67 % al 4 %.
+
+⚠️ **El error de método es lo más caro y lo más transferible:** para buscar velos
+se usó `elementsFromPoint`, que **ignora los elementos con `pointer-events:
+none`** — y toda capa decorativa lo lleva. **El detector era incapaz por
+construcción de encontrar lo que buscaba**, y devolvió "nada encima" en cada
+corrida mientras el velo estaba ahí. Con él ciego se persiguieron seis hipótesis
+falsas y se llegó a invertir el CTA para esquivar el síntoma; esa inversión se
+revirtió. Detalle y tabla en [`landing-alternativa.md §5.1`](design/landing-alternativa.md).
 
 ⚠️ **Los seis vinos son INVENTADOS.** `grep -rn LA_SELECCION_ES_DE_MUESTRA`:
 mientras dé `true`, esto no se publica.

@@ -257,6 +257,7 @@ PNG.
 | 3 | **El scrim se leía como un panel rectangular translúcido** | Los radios eran `76% / 70%`: el degradé llegaba a transparente **más allá** del borde de la caja, así que el borde lo cortaba. Tienen que ser ≤ 50 % |
 | 4 | **La dirección de arte horizontal salía sobre-ampliada** | El sangrado parejo de 24vh hacía el plano mucho más alto que el viewport, y `object-fit: cover` compensaba ampliando. Ahora **cada rol sangra lo que su propia amplitud necesita** |
 | 5 | **La página medía 9,71 pantallas en móvil**, contra el techo de 8 de `parallax.md §4.5` | Seis ventanas de 9:16 a una columna son ~3.600 px de una sola escena |
+| 6 | **`.vinieta` estaba en z-index 4, encima del contenido, y apagaba todo el texto de la página** | §5.1 |
 
 **El 5 se corrigió sin sacar vino**, porque menos vino es exactamente lo
 contrario del pedido: en pantalla angosta la tarjeta pasa a **fila horizontal**,
@@ -268,6 +269,75 @@ de 9:16, que es justo lo que se perdía al achatar la ventana. Resultado:
 > El defecto 1 es el más caro de los cinco y el único que no tiene arreglo
 > técnico: **hay que mirar cada foto**. La API de Unsplash marca los assets de
 > pago con `plus: true`, y ese campo ahora se chequea antes de bajar nada.
+
+### 5.1 El velo — y por qué el detector de velos no podía encontrarlo
+
+**Lo reportó el dueño, mirando:** *"hay textos que parecen estar detrás de una
+nube borgoña, lo que lo apaga en nitidez; no sé si está realmente detrás o fue mi
+sensación nomás."*
+
+Estaba realmente detrás. **`.vinieta` —la viñeta de caída— vivía en `z-index: 4`,
+por encima de `.plano--contenido` (z 3).** Medido sobre el píxel pintado, el
+panel dorado del CTA se dibujaba a **0,089** de luminancia con un valor declarado
+de **0,451**: cinco veces más oscuro. Y como una viñeta cae hacia los bordes, el
+mismo texto cambiaba de contraste según dónde cayera en la escena y mientras se
+scrolleaba — **la violación exacta que `parallax.md §3.2` existe para prohibir**.
+
+`parallax.md §3.1` ya lo decía de z4: *"Qué NUNCA va: área grande. Tapar texto."*
+z4 es para oclusores chicos. Estaban ahí arriba la viñeta **y** la costura de
+escena, las dos de pantalla completa. Las dos bajaron a z-index 2: encima de toda
+la fotografía, debajo del contenido.
+
+**El efecto, medido antes y después.** La columna que importa no es el contraste
+sino la **brecha**: cuánto pierde el texto entre el color que declara y el que
+llega a la pantalla.
+
+| Texto | Antes | Después |
+|---|---:|---:|
+| CTA duro | 2,24:1 · brecha **80 %** | 13,98:1 · brecha **2 %** |
+| Datos del vino | 2,86:1 · brecha **67 %** | 12,06:1 · brecha **4 %** |
+| Firma de la custodia | 3,40:1 · brecha **73 %** | 13,38:1 · brecha **11 %** |
+| Rótulo dorado | 2,00:1 · brecha **77 %** | 7,62:1 · brecha **13 %** |
+
+⚠️ **Y el error de método, que es lo que hay que llevarse.** Para buscar velos se
+usó `document.elementsFromPoint`, que devuelve la pila de elementos en un punto.
+Devolvió **"nada encima"** en cada una de las corridas.
+
+> **`elementsFromPoint` ignora los elementos con `pointer-events: none` — y toda
+> capa decorativa lleva `pointer-events: none`. El detector de velos era incapaz
+> por construcción de encontrar un velo.**
+
+Es la misma clase de falla que el `_verdad.md` del repo existe para atrapar: una
+herramienta que informa "todo bien" porque no puede ver el problema. Un hit-test
+contesta *"qué puedo clickear"*, no *"qué se pinta encima"*. **Las capas se
+enumeran por z-index, no se le preguntan al hit-test.**
+
+Con el detector ciego, se persiguió la causa por seis hipótesis equivocadas —el
+relleno del botón, la costura, `isolation`, el z-index del span, el `clip-path`,
+las versalitas sintetizadas— y se llegó a **invertir el CTA a panel dorado** para
+esquivar un síntoma cuya causa estaba afuera del botón. Esa inversión **se
+revirtió** cuando apareció la causa real.
+
+**Lo que sí sobrevivió de esa persecución**, porque se sostiene solo:
+
+- **El chaflán del botón estaba roto** y eso era real: `border` + `clip-path` no
+  dibuja un marco achaflanado —el recorte come la esquina y la diagonal queda sin
+  línea—, así que se pasó a dos capas recortadas, la técnica del cartucho.
+- **Fraunces no trae versalitas reales**, el navegador las sintetiza escalando
+  capitales, y a 19px los trazos rinden como a 13px. Los CTA se componen a
+  `--t-lead`.
+- **Los pesos**: `direccion.md §4.1` avisa que el texto claro sobre oscuro
+  adelgaza por irradiación, y la primera implementación puso 400 en todo. Ahora
+  hay tokens de peso.
+- **Los datos del vino eran dorado casi puro sobre el panel borgoña**, y §2.1
+  dice que ese par da 4,59:1 y *"sirve para títulos, no para párrafos"*.
+
+⚠️ **La segunda medición también estaba mal, y de un modo instructivo:** comparaba
+el fondo **medido** contra el marfil **teórico**, asumiendo que el texto se pinta
+puro. Bajo un velo, el texto también se apaga y esa cuenta no lo ve. Hay que
+medir los dos lados sobre el píxel. Es la misma lección que ya había dejado el
+parallax en §4.3 —**medir contra una unidad externa, no contra el propio
+sistema**—, repetida sobre otro material.
 
 ---
 

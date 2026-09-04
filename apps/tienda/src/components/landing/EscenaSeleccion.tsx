@@ -67,7 +67,7 @@ export function EscenaSeleccion() {
 
             {/* Primero de los DOS únicos CTA duros de la página. */}
             <a className="boton" href="/vinos">
-              Ver todos los vinos
+              <span>Ver todos los vinos</span>
             </a>
           </div>
         </div>

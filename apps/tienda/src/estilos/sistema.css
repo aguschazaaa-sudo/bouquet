@@ -185,11 +185,27 @@
 }
 
 /* La viñeta de caída. Es AMBIENTE: oscurece bordes de pantalla. No confundir
- * con el scrim, que garantiza contraste y viaja con el texto (§3.2). */
+ * con el scrim, que garantiza contraste y viaja con el texto (§3.2).
+ *
+ * ⚠️ ESTABA EN z-index 4 — ENCIMA DEL CONTENIDO — y era el defecto que se
+ * sentía como "una nube borgoña que apaga el texto". Medido sobre el píxel: el
+ * panel dorado del CTA se pintaba a **0,089** de luminancia con un valor
+ * declarado de **0,451**. Cinco veces más oscuro. Y como una viñeta cae hacia
+ * los bordes, el mismo texto cambiaba de contraste según dónde estuviera en la
+ * escena y mientras se scrolleaba: la violación exacta que parallax.md §3.2
+ * existe para prohibir.
+ *
+ * parallax.md §3.1 ya lo decía de z4: *"Qué NUNCA va: área grande. Tapar
+ * texto."* z4 es para oclusores CHICOS —un borde de copa, una hoja—, nunca para
+ * una capa de pantalla completa.
+ *
+ * Va a z-index 2: encima de toda la fotografía, debajo del contenido. La caída
+ * de luz sigue estando sobre la imagen, que es lo que tiene que oscurecer, y no
+ * toca una sola letra. */
 .vinieta {
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 2;
   pointer-events: none;
   background: radial-gradient(
     ellipse 120% 90% at var(--lx) var(--ly),
@@ -257,7 +273,7 @@
   font-family: var(--tipo-display);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-versalita);
-  font-weight: 500;
+  font-weight: var(--peso-versalita);
 }
 
 .rotulo {
@@ -265,7 +281,7 @@
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-rotulo);
   font-size: var(--t-rotulo);
-  font-weight: 500;
+  font-weight: var(--peso-versalita);
   color: var(--dorado);
   margin: 0 0 var(--e-5);
 }
@@ -273,15 +289,16 @@
 .prosa {
   font-family: var(--tipo-texto);
   font-size: var(--t-cuerpo);
+  font-weight: var(--peso-texto);
   line-height: var(--interlinea-prosa);
-  color: color-mix(in srgb, var(--marfil) 82%, transparent);
+  color: color-mix(in srgb, var(--marfil) 90%, transparent);
   max-width: var(--medida-ancha);
   margin: 0 0 var(--e-4);
 }
 
 .prosa--lead {
   font-size: var(--t-lead);
-  color: color-mix(in srgb, var(--marfil) 92%, transparent);
+  color: var(--marfil);
 }
 
 .prosa em {
@@ -292,34 +309,112 @@
 /* =============================================================== EL BOTÓN */
 
 /* direccion.md §6: sin card, sin pill, sin degradé, sin sombra de elevación.
- * Un rectángulo, un borde de 1px y versalitas trackeadas. */
+ * Un rectángulo, un filete de 1px y versalitas trackeadas.
+ *
+ * ⚠️ DOS DEFECTOS QUE SE VIERON AMPLIANDO EL BOTÓN, no leyendo el CSS:
+ *
+ * 1. `border` + `clip-path` NO dibuja un marco achaflanado. El borde sigue la
+ *    caja y después el recorte le come las esquinas, así que la diagonal queda
+ *    SIN línea: se lee como un rectángulo roto, no como un chaflán. Se resuelve
+ *    igual que el cartucho, con dos capas recortadas —una dorada y otra 1px
+ *    adentro— que es la técnica que ahí ya funcionaba.
+ *
+ * 2. El texto era DORADO, y el dorado a tamaño de botón pierde la mayor parte
+ *    de su color en el antialias: direccion.md §2.2 dice que sobre tinta el
+ *    dorado es la tinta, y eso es cierto a tamaño de título. **El texto pasa a
+ *    marfil y el dorado se queda en el filete**, que es exactamente el trabajo
+ *    estructural que §5.2 le asigna.
+ *
+ * ⚠️ Y la causa de la brecha en TODO lo que va en versalitas: Fraunces no trae
+ * versalitas reales, así que el navegador las SINTETIZA escalando capitales. A
+ * 19px los trazos rinden como a ~13px, y ningún ajuste de color lo compensa.
+ * Por eso los dos CTA se componen a `--t-lead` y no a `--t-cuerpo`: lo que hay
+ * que subir es el tamaño, no la opacidad.
+ *
+ * ⚠️ NOTA SOBRE CÓMO SE ENCONTRÓ EL VELO, porque el error de método es más útil
+ * que el arreglo. Durante toda la investigación este botón medía ~3:1 mientras
+ * el CTA blando —misma familia, tamaño, peso y un color MÁS tenue— medía ~8:1.
+ * Se falsificaron una por una el relleno, la costura, `isolation`, el z-index
+ * del span, el `clip-path` y las versalitas; ninguna era. Se llegó a invertir el
+ * botón a panel dorado para esquivar el síntoma.
+ *
+ * **La causa estaba afuera del botón: `.vinieta` en z-index 4, encima de todo
+ * el contenido.** El detector que se usó para buscar velos —`elementsFromPoint`—
+ * **ignora los elementos con `pointer-events: none`**, y toda capa decorativa lo
+ * lleva: era incapaz por construcción de encontrar lo que buscaba, y devolvió
+ * "nada encima" en cada corrida. La inversión se revirtió cuando apareció la
+ * causa real. Las capas se enumeran por z-index, no preguntándole al hit-test. */
 .boton {
+  position: relative;
+  isolation: isolate;
   display: inline-block;
   font-family: var(--tipo-display);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-versalita);
-  font-size: var(--t-cuerpo);
+  font-size: var(--t-lead);
+  font-weight: var(--peso-versalita);
   padding: var(--e-3) var(--e-6);
   text-decoration: none;
-  color: var(--dorado);
-  border: var(--filete) solid color-mix(in srgb, var(--dorado) 62%, transparent);
-  clip-path: polygon(
-    var(--chaflan-boton) 0,
-    100% 0,
-    100% calc(100% - var(--chaflan-boton)),
-    calc(100% - var(--chaflan-boton)) 100%,
-    0 100%,
-    0 var(--chaflan-boton)
-  );
-  transition:
-    background-color var(--dur-media) var(--ease-caida),
-    color var(--dur-media) var(--ease-caida);
+  color: var(--marfil);
+  transition: color var(--dur-media) var(--ease-caida);
 }
 
+.boton::before,
+.boton::after {
+  content: '';
+  position: absolute;
+  --ch: var(--chaflan-boton);
+  clip-path: polygon(
+    var(--ch) 0,
+    100% 0,
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    0 100%,
+    0 var(--ch)
+  );
+  transition: background var(--dur-media) var(--ease-caida);
+}
+
+/* ⚠️ El label va en un <span> con z-index propio y las dos capas quedan en 0.
+ * Con z-index negativo el relleno terminaba PINTANDO SOBRE el texto: el marfil
+ * medía 0,13 de luminancia -exactamente marfil bajo un velo del 88 %- y el CTA
+ * daba 3,27:1 mientras el CTA blando, con la misma fuente, tamaño, peso y
+ * color, daba 7,92:1.
+ *
+ * Y no lo agarró `elementsFromPoint`, que devolvía "nada encima": **esa API no
+ * reporta pseudo-elementos.** Un velo dibujado con ::after es invisible para
+ * el diagnóstico que existe para encontrar velos. */
+.boton > span {
+  position: relative;
+  z-index: 1;
+}
+
+/* El filete. */
+.boton::before {
+  inset: 0;
+  z-index: 0;
+  background: color-mix(in srgb, var(--dorado) 78%, transparent);
+}
+
+/* El relleno, 1px adentro. Sobre una foto hace además de scrim: es el único
+ * texto de la página que no puede permitirse contraste variable mientras el
+ * fondo se mueve. */
+.boton::after {
+  inset: var(--filete);
+  z-index: 0;
+  --ch: calc(var(--chaflan-boton) - 1px);
+  background: color-mix(in srgb, var(--tinta-honda) 88%, transparent);
+}
+
+/* Al pasar por encima se invierte: el filete se vuelve panel. */
 .boton:hover,
 .boton:focus-visible {
-  background-color: color-mix(in srgb, var(--dorado) 14%, transparent);
-  color: var(--marfil);
+  color: var(--tinta);
+}
+
+.boton:hover::after,
+.boton:focus-visible::after {
+  background: var(--dorado);
 }
 
 /* El CTA blando no es un botón: es una línea de texto con un filete abajo.
@@ -328,8 +423,9 @@
   font-family: var(--tipo-display);
   font-variant-caps: all-small-caps;
   letter-spacing: var(--tracking-versalita);
-  font-size: var(--t-cuerpo);
-  color: color-mix(in srgb, var(--marfil) 78%, transparent);
+  font-size: var(--t-lead);
+  font-weight: var(--peso-versalita);
+  color: color-mix(in srgb, var(--marfil) 92%, transparent);
   text-decoration: none;
   border-bottom: var(--filete) solid
     color-mix(in srgb, var(--dorado) 55%, transparent);
@@ -351,12 +447,17 @@
  * cuando el plano pasó a medir 160-190svh: un 14 % de esa altura cae dentro
  * del sangrado, o sea fuera de lo que se ve, y la costura volvía. El borde que
  * hay que fundir es el de la escena, así que el degradé tiene que estar anclado
- * ahí y en píxeles, no en porcentaje de otra cosa. */
+ * ahí y en píxeles, no en porcentaje de otra cosa.
+ *
+ * ⚠️ También estaba en z-index 4, por el mismo error que la viñeta: pinta
+ * `--tinta` OPACO en los 110px de cada borde, y cualquier texto que caiga ahí
+ * quedaba debajo. Lo que tiene que fundir es la FOTOGRAFÍA, que vive entre z0 y
+ * z2, así que z-index 2 alcanza y el contenido queda libre. */
 .escena::after {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: 4;
+  z-index: 2;
   pointer-events: none;
   background:
     linear-gradient(to bottom, var(--tinta) 0, transparent 110px),

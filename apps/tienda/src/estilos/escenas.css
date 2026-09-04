@@ -41,7 +41,8 @@
   font-family: var(--tipo-texto);
   font-style: italic;
   font-size: var(--t-cuerpo);
-  color: color-mix(in srgb, var(--marfil) 62%, transparent);
+  font-weight: var(--peso-texto);
+  color: color-mix(in srgb, var(--marfil) 82%, transparent);
   max-width: 44ch;
   margin: 0;
 }
@@ -152,7 +153,7 @@
 
 .cartucho__interior {
   --ch: calc(var(--chaflan-marco) - 1px);
-  background: color-mix(in srgb, var(--borgona) 34%, var(--tinta-honda));
+  background: color-mix(in srgb, var(--borgona) 27%, var(--tinta-honda));
   clip-path: polygon(
     var(--ch) 0,
     100% 0,
@@ -223,7 +224,10 @@
 
 .tarjeta__datos {
   font-size: var(--t-rotulo);
-  color: color-mix(in srgb, var(--dorado) 88%, var(--marfil));
+  /* Era dorado casi puro sobre el panel borgoña. direccion.md §2.1 avisa que
+   * dorado sobre borgoña da 4,59:1 y "sirve para títulos, no para párrafos" —
+   * y esto es un párrafo de 12px. Pasa a marfil con un toque de dorado. */
+  color: color-mix(in srgb, var(--marfil) 74%, var(--dorado));
   text-align: center;
   margin: 0;
   line-height: 1.7;
@@ -231,9 +235,10 @@
 
 .tarjeta__guarda {
   font-family: var(--tipo-texto);
-  font-size: var(--t-rotulo);
+  font-size: var(--t-kicker);
   font-style: italic;
-  color: color-mix(in srgb, var(--marfil) 58%, transparent);
+  font-weight: var(--peso-enfasis);
+  color: color-mix(in srgb, var(--marfil) 80%, transparent);
   text-align: center;
   margin: 0;
 }
@@ -305,7 +310,8 @@
   font-family: var(--tipo-texto);
   font-size: var(--t-lead);
   font-style: italic;
-  color: color-mix(in srgb, var(--marfil) 76%, transparent);
+  font-weight: var(--peso-enfasis);
+  color: color-mix(in srgb, var(--marfil) 94%, transparent);
   max-width: 54ch;
   line-height: 1.6;
   margin: 0;
@@ -368,7 +374,8 @@
 .pie__legal {
   font-family: var(--tipo-texto);
   font-size: var(--t-rotulo);
-  color: color-mix(in srgb, var(--marfil) 52%, transparent);
+  font-weight: var(--peso-texto);
+  color: color-mix(in srgb, var(--marfil) 76%, transparent);
   margin: 0;
   max-width: 46ch;
   line-height: 1.7;
