@@ -8,9 +8,16 @@
   decisión estética, y cuál es el límite de cada referencia.
 - **Qué NO contesta:** los tokens con sus nombres de código. Eso es
   `docs/vault/design/tokens.md`, el paso 2, y no existe todavía.
-- **Insumos:** el imagotipo final (`LOGO ORIGINAL BOUQUET`), la propuesta de
-  Rinowin con sus 6 variaciones, y el informe de
-  [parallax](parallax.md), que fijó el movimiento sin condicionar la estética.
+- **Insumos:** el imagotipo final, la propuesta de Rinowin con sus 6
+  variaciones, y el informe de [parallax](parallax.md), que fijó el movimiento
+  sin condicionar la estética.
+- **Qué material de marca está en el repo:** **uno solo**,
+  [`docs/marca/logo-bouquet-rgb.png`](../../marca/logo-bouquet-rgb.png) — el PNG
+  RGB gestionado, que es **la fuente de los dos colores de §2** y por lo tanto lo
+  único que hace verificable la medición. El resto (el PDF vectorial CMYK, los
+  JPG de imprenta, el `.cdr` y el PDF de la propuesta del estudio) **no está
+  versionado a propósito**: son ~10 MB en un repo público, y las variantes
+  descartadas no deberían quedar en el historial. Los tiene el dueño aparte.
 - **Su mitad verbal:** [`voz.md`](voz.md) — la dirección de lenguaje, que corta
   la ceremonia y la transacción **en el mismo lugar** que corta ésta.
 
@@ -52,7 +59,9 @@ literalmente "intacto", en un objeto.
 
 ### 1.2 Las tipografías, verificadas en el PDF y no supuestas
 
-Leídas de las fuentes incrustadas en `PROPUESTA LOGO BOUQUET- CON CORRECCIONES.pdf`:
+Leídas de las fuentes incrustadas en el PDF de la propuesta del estudio
+(`PROPUESTA LOGO BOUQUET- CON CORRECCIONES.pdf`, **fuera del repo** — ver
+Insumos):
 
 | Dónde | Fuente real | Nota |
 |---|---|---|
@@ -78,8 +87,9 @@ Los dos colores, tomados del PNG del logo píxel por píxel — no del PDF ni a 
 
 ### 2.0 ⚠️ El PDF del logo es CMYK. No le saques los colores de ahí.
 
-`LOGO ORIGINAL BOUQUET - PDF.pdf` es **vectorial y CMYK**: pinta con el operador
-`scn` de 4 componentes, no con `rg`.
+El PDF del imagotipo (`LOGO ORIGINAL BOUQUET - PDF.pdf`, **fuera del repo** —
+ver Insumos) es **vectorial y CMYK**: pinta con el operador `scn` de 4
+componentes, no con `rg`.
 
 | Tinta | CMYK del PDF | Conversión ingenua | **Valor de pantalla** |
 |---|---|---|---|
