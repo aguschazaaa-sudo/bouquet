@@ -1,0 +1,110 @@
+/* tokens.css — los únicos literales de color de la vidriera.
+ *
+ * El hook no-hardcoded-colors permite hex/rgb/hsl SOLO acá y en globals.css.
+ * Cualquier otro archivo de apps/tienda/src usa var() o color-mix(), y eso es
+ * a propósito: un color suelto no aparece en ninguna auditoría de tema.
+ *
+ * ⚠️ Esto NO es docs/vault/design/tokens.md. Ese documento —el paso 2 de
+ * /disenio— sigue sin existir, y direccion.md §12 lo pone como bloqueo para
+ * escribir componentes. Acá se adelantó la capa de implementación porque la
+ * rama existe para MIRAR una composición, no para publicarla. Los valores
+ * salen de direccion.md §2 (medidos del PNG del logo) y §4; los nombres son
+ * provisorios hasta que el documento los fije.
+ */
+
+:root {
+  /* --- Los dos colores de la marca. direccion.md §2 -------------------- */
+  /* Tomados píxel por píxel del PNG RGB, NO del PDF (que es CMYK y da
+   * #700E0F, mucho más saturado). Si alguien "arregla" esto a #700E0F,
+   * está pisando el original con una aproximación. */
+  --borgona: #762d2d;
+  --dorado: #d2ae6d;
+
+  /* --- El modo cava. La landing entera vive acá ------------------------ */
+  /* direccion.md §3: la ceremonia es oscura. La transacción es de papel y
+   * todavía no tiene pantallas. */
+  --tinta: #1a1210;
+  --tinta-honda: #110b09;
+  --marfil: #f5efe4;
+
+  /* Se usan sólo dentro de color-mix() para scrims, viñetas y resplandores. */
+  --negro: #000000;
+  --blanco: #ffffff;
+
+  /* --- Tipografía. direccion.md §4 ------------------------------------- */
+  /* Display: Fraunces — old-style con esqueleto sólido. Es la recomendación
+   * de §4.2; la alternativa Bodoni Moda sigue abierta y la decide el dueño.
+   * Texto: Newsreader, dibujada para pantalla, aguanta el fondo oscuro.
+   * Tercera familia (grotesca de cifras): NO entra. La landing no tiene un
+   * solo número que se pueda leer mal — no hay precio ni stock. */
+  --tipo-display: var(--fuente-fraunces), 'Iowan Old Style', 'Palatino Linotype',
+    Palatino, Georgia, serif;
+  --tipo-texto: var(--fuente-newsreader), Georgia, 'Times New Roman', serif;
+
+  /* Escala: cuarta justa (1.333) en display, tercera menor (1.2) en texto.
+   * Fluida entre 380px y 1440px de viewport. */
+  --t-kicker: clamp(0.72rem, 0.68rem + 0.2vw, 0.82rem);
+  --t-rotulo: clamp(0.7rem, 0.66rem + 0.18vw, 0.78rem);
+  --t-cuerpo: clamp(1rem, 0.95rem + 0.28vw, 1.19rem);
+  --t-lead: clamp(1.13rem, 1.02rem + 0.55vw, 1.5rem);
+  --t-h3: clamp(1.35rem, 1.15rem + 0.9vw, 1.9rem);
+  --t-h2: clamp(2rem, 1.5rem + 2.3vw, 3.6rem);
+  --t-h1: clamp(2.5rem, 1.7rem + 3.6vw, 5.2rem);
+
+  --tracking-versalita: 0.14em;
+  --tracking-rotulo: 0.22em;
+  --interlinea-prosa: 1.68;
+  --interlinea-titulo: 1.04;
+  --medida: 34ch; /* direccion.md §5.1: párrafos de 60-70 caracteres… */
+  --medida-ancha: 62ch; /* …y la medida real de lectura en desktop */
+
+  /* --- Espaciado: escala de 4px con saltos de ~1.5 --------------------- */
+  --e-1: 0.25rem;
+  --e-2: 0.5rem;
+  --e-3: 0.75rem;
+  --e-4: 1rem;
+  --e-5: 1.5rem;
+  --e-6: 2.25rem;
+  --e-7: 3.5rem;
+  --e-8: 5rem;
+  --e-9: 7.5rem;
+
+  /* --- El Decó, que acá es estructural. direccion.md §5.2 -------------- */
+  /* Un panel borgoña sobre tinta llega a 2,05:1: por debajo del 3:1 de un
+   * borde de UI. La línea dorada que lo enmarca es lo único que lo hace
+   * visible, así que el filete no es adorno. */
+  --filete: 1px; /* grosor constante, siempre. La jerarquía va por opacidad */
+  --filete-fuerte: 0.72;
+  --filete-tenue: 0.3;
+  --chaflan-marco: 16px;
+  --chaflan-ventana: 8px;
+  --chaflan-boton: 9px;
+
+  /* --- El motor de parallax. parallax.md §2.1 y §4.1 ------------------- */
+  /* v = 1 − z/D. Nadie elige 0.62: se elige "esto está lejos" y el número
+   * sale de la ecuación. Separación mínima perceptible: 0,15.
+   *
+   * ⚠️ SIGNO: lento → amplitud POSITIVA. Sobre el rango `cover` el contenedor
+   * recorre (viewport + alto del elemento) hacia arriba; para que un plano
+   * recorra MENOS hay que sumarle desplazamiento hacia abajo. Es la
+   * corrección de escenas.md §5 y contradice el snippet de parallax.md §4.1,
+   * que los escribe negativos. Se confirma con el dedo en un teléfono. */
+  --amp-ambiente: 18vh; /* v = 0.40 */
+  --amp-escenario: 13.5vh; /* v = 0.55 */
+  --amp-sujeto: 4.5vh; /* v = 0.85 */
+  --amp-contenido: 0; /* v = 1.00 — el texto y su scrim, juntos */
+  --amp-detalle: -4.5vh; /* v = 1.15 — delante de la cámara */
+
+  /* --- La lámpara. Una por escena, tres números ------------------------ */
+  /* Valores por defecto; cada escena los pisa. El radio crece a lo largo de
+   * la página: la luz se acerca al lector. */
+  --lx: 50%;
+  --ly: 40%;
+  --lr: 60%;
+
+  /* --- Movimiento por tiempo (no atado al scroll) ---------------------- */
+  /* direccion.md §8.2: el vino pesa. Nada rebota, nunca. */
+  --ease-caida: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-corta: 180ms;
+  --dur-media: 420ms;
+}

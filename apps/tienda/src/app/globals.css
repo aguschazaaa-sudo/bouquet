@@ -1,0 +1,74 @@
+@import '../tokens/tokens.css';
+@import '../estilos/sistema.css';
+@import '../estilos/escenas.css';
+
+/* globals.css — reset y el suelo del modo cava.
+ *
+ * direccion.md §3.2: prefers-color-scheme se IGNORA a propósito en el modo
+ * cava y se respetará en el modo papel (carrito, checkout, comprobante). La
+ * landing es un ambiente, no un documento. Esa asimetría se anota acá porque
+ * si no, alguien la va a "arreglar".
+ * Y no hay toggle de tema: el modo lo fija la página, no el usuario.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* parallax.md §5.4: scroll-snap NO. Pelea contra el timeline continuo y en
+   * iOS produce artefactos de rebote. */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+body {
+  margin: 0;
+  background-color: var(--tinta);
+  /* La caída de luz base, debajo de todas las escenas. Un fondo plano sería
+   * un tema oscuro; esto es un lugar con una lámpara. */
+  background-image: radial-gradient(
+    ellipse 90% 60% at 50% 0%,
+    color-mix(in srgb, var(--borgona) 22%, transparent),
+    transparent 60%
+  );
+  background-attachment: scroll;
+  color: var(--marfil);
+  font-family: var(--tipo-texto);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+img {
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 2px solid var(--dorado);
+  outline-offset: 3px;
+}
+
+/* El salto al contenido. Existe porque la primera escena es alta y alguien
+ * con teclado no tiene por qué recorrerla entera. */
+.saltar {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--tinta);
+  color: var(--dorado);
+  padding: var(--e-3) var(--e-4);
+  z-index: 20;
+}
+
+.saltar:focus {
+  left: var(--e-4);
+  top: var(--e-4);
+}

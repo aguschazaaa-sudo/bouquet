@@ -1,0 +1,565 @@
+/* escenas.css — la composición de las cuatro escenas.
+ *
+ * El ritmo es lugar · objeto · lugar · lugar, y la lámpara camina: su radio
+ * crece a lo largo de la página (30 → 78 → 44 → 96), con una sola contracción
+ * en la escena que enseña. El scroll no te lleva por cuatro lugares: te lleva
+ * desde una góndola mal iluminada hasta tu propia mesa.
+ *
+ * Cero literales de color. Sólo var() y color-mix().
+ */
+
+/* ================================================== 1 · EL PROBLEMA ===== */
+
+.escena--problema {
+  --lx: 62%;
+  --ly: 38%;
+  --lr: 30%;
+  min-height: 100svh;
+}
+
+.hero {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--e-5);
+  max-width: 62rem;
+  position: relative;
+}
+
+.hero__marca {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.34em;
+  font-size: var(--t-kicker);
+  color: var(--dorado);
+  margin: 0;
+}
+
+/* El único lugar de todo el sitio donde la palabra se usa como término.
+ * voz.md §1 prohíbe gastarla como jerga en cualquier otro lado. */
+.hero__kicker {
+  font-family: var(--tipo-texto);
+  font-style: italic;
+  font-size: var(--t-cuerpo);
+  color: color-mix(in srgb, var(--marfil) 62%, transparent);
+  max-width: 44ch;
+  margin: 0;
+}
+
+.hero__titulo {
+  font-size: var(--t-h1);
+  color: var(--marfil);
+}
+
+/* direccion.md §7.3: nunca centrar un párrafo largo. El título es ceremonial
+ * y va centrado; la prosa es lectura y va a bandera. */
+.hero__lead {
+  text-align: left;
+  max-width: 48ch;
+  margin-inline: auto;
+}
+
+.hero__pie {
+  margin-top: var(--e-4);
+}
+
+/* ================================================== 2 · LA SELECCIÓN ==== */
+
+.escena--seleccion {
+  --lx: 50%;
+  --ly: 22%;
+  --lr: 78%;
+}
+
+.seleccion {
+  width: 100%;
+  max-width: 78rem;
+  display: grid;
+  gap: var(--e-7);
+  position: relative;
+}
+
+.seleccion__intro {
+  display: grid;
+  gap: var(--e-4);
+  max-width: 52ch;
+}
+
+.seleccion__titulo {
+  font-size: var(--t-h2);
+  color: var(--marfil);
+}
+
+/* direccion.md §7.2 — 1 / 2 / 3 por fila, nunca 4. Tres es una decisión de
+ * posicionamiento, no de layout: una grilla de 4 o 5 dice "volumen"; una de 3
+ * dice "selección". */
+.seleccion__grilla {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--e-5);
+}
+
+@media (min-width: 34rem) {
+  .seleccion__grilla {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 60rem) {
+  .seleccion__grilla {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--e-6);
+  }
+}
+
+.seleccion__cierre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--e-5);
+  justify-content: space-between;
+}
+
+/* ================================================== EL CARTUCHO ======== */
+
+/* direccion.md §5.2 — sobre fondo oscuro un panel borgoña llega a 2,05:1, por
+ * debajo del 3:1 que necesita un borde de UI. La línea dorada que lo enmarca
+ * es lo único que lo hace visible: el recurso decorativo está haciendo trabajo
+ * estructural, y por eso es el único Art Decó que este proyecto se permite.
+ *
+ * Chaflán en DOS esquinas opuestas, nunca cuatro: cuatro es un border-radius
+ * con otro nombre. */
+.cartucho {
+  --ch: var(--chaflan-marco);
+  position: relative;
+  margin: 0;
+  padding: var(--filete);
+  background: color-mix(
+    in srgb,
+    var(--dorado) calc(var(--filete-fuerte) * 100%),
+    transparent
+  );
+  clip-path: polygon(
+    var(--ch) 0,
+    100% 0,
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    0 100%,
+    0 var(--ch)
+  );
+  transition: background var(--dur-media) var(--ease-caida);
+}
+
+.cartucho__interior {
+  --ch: calc(var(--chaflan-marco) - 1px);
+  background: color-mix(in srgb, var(--borgona) 34%, var(--tinta-honda));
+  clip-path: polygon(
+    var(--ch) 0,
+    100% 0,
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    0 100%,
+    0 var(--ch)
+  );
+  display: grid;
+  gap: var(--e-4);
+  padding: var(--e-5) var(--e-5) var(--e-6);
+  height: 100%;
+}
+
+/* ================================================== LA TARJETA ========= */
+
+.tarjeta {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+}
+
+.tarjeta:hover .cartucho,
+.tarjeta:focus-visible .cartucho {
+  background: var(--dorado);
+}
+
+/* direccion.md §7.1 — una botella es alta y angosta, cerca de 1:4,5. El tile
+ * cuadrado es el error que hace que las tiendas de vino se vean a
+ * supermercado: obliga a achicar la botella hasta que el vino es un detalle. */
+.tarjeta__ventana {
+  --ch: var(--chaflan-ventana);
+  aspect-ratio: 9 / 16;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(
+    ellipse 70% 55% at 50% 42%,
+    color-mix(in srgb, var(--dorado) 15%, transparent),
+    transparent 70%
+  );
+  border: var(--filete) solid
+    color-mix(
+      in srgb,
+      var(--dorado) calc(var(--filete-tenue) * 100%),
+      transparent
+    );
+  clip-path: polygon(
+    var(--ch) 0,
+    100% 0,
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    0 100%,
+    0 var(--ch)
+  );
+}
+
+.tarjeta__ventana svg {
+  height: 84%;
+  width: auto;
+}
+
+.tarjeta__nombre {
+  font-size: var(--t-h3);
+  color: var(--marfil);
+  text-align: center;
+}
+
+.tarjeta__datos {
+  font-size: var(--t-rotulo);
+  color: color-mix(in srgb, var(--dorado) 88%, var(--marfil));
+  text-align: center;
+  margin: 0;
+  line-height: 1.7;
+}
+
+.tarjeta__guarda {
+  font-family: var(--tipo-texto);
+  font-size: var(--t-rotulo);
+  font-style: italic;
+  color: color-mix(in srgb, var(--marfil) 58%, transparent);
+  text-align: center;
+  margin: 0;
+}
+
+/* ================================================== 3 · LA CUSTODIA ==== */
+
+/* La lámpara se apoya sobre el cono de luz que ya trae la foto de la cava.
+ * parallax.md §10.3 advierte que una foto con luz propia choca con la lámpara
+ * única; acá se resuelve haciéndolas coincidir en vez de pelearlas. */
+.escena--custodia {
+  --lx: 26%;
+  --ly: 20%;
+  --lr: 44%;
+}
+
+.custodia {
+  width: 100%;
+  max-width: 74rem;
+  display: grid;
+  gap: var(--e-7);
+  position: relative;
+}
+
+.custodia__intro {
+  display: grid;
+  gap: var(--e-4);
+  max-width: 56ch;
+}
+
+.custodia__titulo {
+  font-size: var(--t-h2);
+  color: var(--marfil);
+}
+
+.custodia__mecanismos {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--e-6);
+}
+
+@media (min-width: 56rem) {
+  .custodia__mecanismos {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--e-7);
+  }
+}
+
+.mecanismo {
+  display: grid;
+  gap: var(--e-3);
+  align-content: start;
+  border-top: var(--filete) solid
+    color-mix(in srgb, var(--dorado) 45%, transparent);
+  padding-top: var(--e-4);
+}
+
+.mecanismo__nombre {
+  font-size: var(--t-h3);
+  color: var(--dorado);
+}
+
+.mecanismo__texto {
+  font-size: var(--t-cuerpo);
+  max-width: 38ch;
+  margin: 0;
+}
+
+.custodia__firma {
+  font-family: var(--tipo-texto);
+  font-size: var(--t-lead);
+  font-style: italic;
+  color: color-mix(in srgb, var(--marfil) 76%, transparent);
+  max-width: 54ch;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ================================================== 4 · LA MESA ======== */
+
+.escena--mesa {
+  --lx: 50%;
+  --ly: 62%;
+  --lr: 96%;
+}
+
+.mesa {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: var(--e-5);
+  max-width: 54rem;
+  position: relative;
+}
+
+.mesa__titulo {
+  font-size: var(--t-h2);
+  color: var(--marfil);
+}
+
+.mesa__cuerpo {
+  text-align: left;
+  max-width: 46ch;
+  margin-inline: auto;
+}
+
+/* ================================================== EL PIE ============= */
+
+/* "Después del CTA no hay más ceremonia. El cierre es una exhalación, no otra
+ * insistencia." Sin segundo CTA, sin oferta, sin newsletter. */
+.pie {
+  border-top: var(--filete) solid
+    color-mix(in srgb, var(--dorado) 50%, transparent);
+  background: var(--tinta-honda);
+  padding: var(--e-7) var(--e-5);
+  display: grid;
+  gap: var(--e-4);
+  justify-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 5;
+}
+
+.pie__marca {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: 0.3em;
+  font-size: var(--t-kicker);
+  color: var(--dorado);
+  margin: 0;
+}
+
+.pie__legal {
+  font-family: var(--tipo-texto);
+  font-size: var(--t-rotulo);
+  color: color-mix(in srgb, var(--marfil) 52%, transparent);
+  margin: 0;
+  max-width: 46ch;
+  line-height: 1.7;
+}
+
+/* ================================================== LA SILUETA ========= */
+
+/* Trazo de grosor constante, como el isotipo. La jerarquía entre el contorno,
+ * la cápsula y el cartucho de etiqueta va por OPACIDAD, nunca por grosor:
+ * direccion.md §1 y escenas.md §2.3 coinciden en esto. */
+.botella__trazo {
+  fill: none;
+  stroke: color-mix(in srgb, var(--dorado) 78%, transparent);
+  stroke-width: 3;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.botella__etiqueta {
+  fill: none;
+  stroke: color-mix(in srgb, var(--dorado) 34%, transparent);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.botella__vidrio {
+  fill: color-mix(in srgb, var(--tinta-honda) 72%, transparent);
+}
+
+/* El tinte del vidrio sale de los dos colores de marca mezclados con la
+ * tinta. No hay una paleta de varietales: hay dos colores y un fondo. */
+[data-vidrio='tinto'] .botella__liquido {
+  fill: color-mix(in srgb, var(--borgona) 82%, var(--tinta-honda));
+}
+
+[data-vidrio='blanco'] .botella__liquido {
+  fill: color-mix(in srgb, var(--dorado) 46%, var(--tinta-honda));
+}
+
+[data-vidrio='rosado'] .botella__liquido {
+  fill: color-mix(
+    in srgb,
+    var(--borgona) 42%,
+    color-mix(in srgb, var(--dorado) 40%, var(--tinta-honda))
+  );
+}
+
+/* ================================================== PLANOS COLOCADOS === */
+
+/* El sujeto del héroe no va a sangre: es un objeto COLOCADO en la esquina, y
+ * tiene que tapar algo. parallax.md §3.3 — de todas las señales de
+ * profundidad, la oclusión es la más fuerte e inmediata, más que el paralaje
+ * de movimiento, y es la única que sobrevive intacta cuando el movimiento se
+ * apaga. Cinco planos que nunca se superponen son cinco stickers deslizándose.
+ *
+ * La máscara radial lo funde contra el fondo en vez de recortarlo con alfa:
+ * una máscara estática con la capa moviéndose detrás es el efecto más caro a
+ * la vista y el más barato de renderizar (§3.5). */
+.escena--problema .plano--sujeto {
+  inset: auto -12% -6vh auto;
+  width: min(72vw, 520px);
+  height: auto;
+  mask-image: radial-gradient(
+    ellipse 62% 62% at 42% 48%,
+    black 30%,
+    transparent 78%
+  );
+}
+
+.escena--problema .plano--sujeto img {
+  height: auto;
+  object-fit: contain;
+}
+
+/* El borde de copa del plano de detalle. Un anillo de gradiente, no un
+ * filter: blur() — parallax.md §3.5 prohíbe animar desenfoque sobre superficie
+ * grande porque repinta cada frame, y un gradiente de paradas suaves hace el
+ * mismo trabajo por cero. */
+.detalle-copa {
+  position: absolute;
+  left: -10%;
+  bottom: 22vh;
+  width: min(56vw, 340px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side circle,
+    transparent 66%,
+    color-mix(in srgb, var(--marfil) 18%, transparent) 76%,
+    color-mix(in srgb, var(--dorado) 12%, transparent) 84%,
+    transparent 94%
+  );
+}
+
+@media (max-width: 34rem) {
+  .detalle-copa {
+    bottom: 8vh;
+  }
+}
+
+/* ================================================== AJUSTES MEDIDOS === */
+
+/* Los cinco que siguen salieron de mirar capturas, no de leer el CSS. */
+
+/* 1. En la escena de objeto el bokeh competía con el texto: manchas naranjas
+ *    grandes, más brillantes que el titular. El ambiente tiene que ser
+ *    ambiente — contraste mínimo, saturación mínima (parallax.md §3.4). */
+.escena--seleccion .plano--ambiente img {
+  filter: saturate(0.34) contrast(0.55) brightness(0.2);
+}
+
+/* 2. La leyenda legal se partía en "18 / años.". Es la línea que menos puede
+ *    darse el lujo de leerse mal. */
+.pie__legal {
+  max-width: 60ch;
+}
+
+/* 3. El scrim de la custodia envuelve tres columnas, no un párrafo: necesita
+ *    una elipse más ancha que alta o deja las columnas de los costados
+ *    afuera. */
+.escena--custodia .scrim {
+  inset: -30% -18%;
+}
+
+/* 4. La mesa cierra la página y su scrim tapaba la vela, que es la única
+ *    fuente de luz de la foto. Se corre hacia arriba, donde está el texto. */
+.escena--mesa .scrim {
+  inset: -40% -20% -10%;
+}
+
+/* 5. El pie no lleva grano encima: es el único bloque de la página donde la
+ *    prioridad es leer, no la atmósfera. */
+.pie {
+  isolation: isolate;
+}
+
+/* ================================================== EL LARGO EN MÓVIL == */
+
+/* parallax.md §4.5 pone el techo de la home en 8 pantallas de móvil, y la
+ * primera medición dio 9,71: se pasaba por 1,7. Una barra de scroll que promete
+ * tres pantallas y entrega doce es el problema de la ilusión de completitud —
+ * la gente cree que terminó y se va, o siente que la engañaron.
+ *
+ * Lo que sobraba eran dos cosas medibles, no una sensación:
+ *   1. seis ventanas de 9:16 a una columna = ~3.600 px de una sola escena;
+ *   2. 120 px de aire arriba y abajo de cada escena, cuatro veces.
+ *
+ * No se resuelve sacando vinos: menos vino es exactamente lo contrario del
+ * pedido. Se resuelve achatando la ventana y el aire. */
+@media (max-width: 34rem) {
+  /* Achatar la ventana a 4:5 no alcanzaba: quedaba en 8,46 pantallas. Y
+   * achatarla más es el error de supermercado que direccion.md §7.1 describe.
+   *
+   * La salida es girar la tarjeta, no encogerla: en pantalla angosta pasa a
+   * FILA, con la botella en una columna finita a la izquierda. Sigue habiendo
+   * un vino por fila —direccion.md §7.2 al pie de la letra— y la botella
+   * conserva su retrato de 9:16, que es justo lo que se perdía al achatar.
+   * Una lista es además lo que un teléfono ya sabe leer. */
+  .cartucho__interior {
+    grid-template-columns: 5.75rem 1fr;
+    align-items: center;
+    column-gap: var(--e-5);
+    padding: var(--e-4);
+  }
+
+  .tarjeta__nombre,
+  .tarjeta__datos,
+  .tarjeta__guarda {
+    text-align: left;
+  }
+
+  .tarjeta__nombre {
+    margin-bottom: var(--e-2);
+  }
+
+  .seleccion__grilla {
+    gap: var(--e-4);
+  }
+}
+
+@media (max-width: 40rem) {
+  .escena {
+    padding-block: var(--e-7);
+    padding-inline: var(--e-4);
+  }
+
+  /* En pantalla angosta la caja del texto es chica, así que la elipse del
+   * scrim también: hay que estirarla o el último párrafo queda sobre la foto
+   * sin protección. */
+  .scrim {
+    inset: -30% -40%;
+  }
+}

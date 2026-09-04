@@ -29,7 +29,10 @@ exactamente para lo que existe. Un número que se puede calcular no se
 escribe a mano: está en
 [`_verdad.md`](_verdad.md), generado desde el código.
 
-No existe todavía `apps/`, `functions/` ni `firestore.rules`.
+~~No existe todavía `apps/`, `functions/` ni `firestore.rules`.~~ Existen
+desde el 2026-09-03 — ver abajo. La línea quedó contradiciendo a su propio
+archivo dos entradas más abajo, que es el modo de falla que este dashboard
+existe para no tener.
 
 **Node 24 corre TypeScript sin transpilar**, así que el paquete tiene **cero
 dependencias de test** (ni jest, ni vitest, ni ts-node). La única dependencia
@@ -40,25 +43,57 @@ Lo próximo es el **paso 2** de
 [ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
 `firestore.rules` e índices, antes de que haya datos.
 
-### La capa `.claude/` (2026-09-02)
+### Una segunda landing, en su propia rama (2026-09-04)
 
-**12 subagentes reales** en `.claude/agents/` — 7 escriben, 5 verifican **sin
-`Edit` ni `Write`**. Esa resta es el único enforcement real del frontmatter:
-`tools:` restringe herramientas, **no rutas**. Las fronteras por ruta las
-siguen midiendo los hooks.
+**El dueño no quedó convencido de [`escenas.md`](design/escenas.md)**, así que
+hay una composición que compite con ella:
+[`design/landing-alternativa.md`](design/landing-alternativa.md), **construida y
+navegable** en la rama `home-parallax`. ⚠️ **Sin mergear y sin desplegar.**
 
-**27 skills de terceros**, declaradas en `skills-lock.json` y **no
-commiteadas** — `bash scripts/skills_restaurar.sh` las restaura. Las propias
-(`commit`, `post-task-doc`) sí se commitean.
+Cuatro objeciones, textuales: *mucha ceremonia y poco vino · el arco narrativo ·
+muy abstracto · los copys son cortos para desktop*. Lo que sale de ahí:
+**cuatro escenas en vez de cinco**, el vino en la **segunda** y son **seis**,
+y ~340 palabras contra ~120.
 
-`opsx` completo (12 skills) trae dos que PadelPunilla no tenía:
-**`openspec-verify-change`**, que es el paso 9 que `WORKFLOWS.md` §4 pedía
-agregar, y **`openspec-bulk-archive-change`**, la respuesta a los 33 changes sin
-archivar.
+**El arco deja de ser un recorrido de ánimos** —umbral, origen, sorbo, vitrina,
+mesa— y pasa a ser la secuencia de preguntas que hace alguien que podría
+comprar: el problema que ya vivió, qué hay, por qué nosotros, y qué queda
+después.
 
-Y un **Workflow E** nuevo: el chore que no llega solo a producción. Su paso
-definitorio es un `grep`, no un criterio, y su último paso anota **en qué deploy
-ajeno viaja de polizón**.
+**La escena que enseña cambió de tema, y ahí está el arreglo de "abstracto".**
+`escenas.md` enseñaba el color del menisco de una copa: cierto, pero sobre el
+vino, que es justo lo que la marca no puede firmar. Ahora enseña **la custodia**
+—acostada, temperatura pareja, sin luz, con el porqué físico de cada una—, que
+es lo único que bouquet hizo. Y el texto del héroe no se escribió: **estaba en
+[`voz.md §10.2`](design/voz.md)**, enterrado en un ejemplo.
+
+**`parallax.md`, `direccion.md` y `voz.md` no se tocaron.** Lo único que se
+descarta es la composición.
+
+⚠️ **Los signos de `parallax.md §4.1` ya no son una discusión: están medidos.**
+Leyendo el `translate` calculado sobre la página corriendo, ambiente y escenario
+**crecen** —o sea, positivo— y su recorrido está en proporción **1,333**, que es
+exactamente `18vh / 13,5vh`. La cámara se cumple en el píxel y `escenas.md §5`
+tenía razón. **Falta la mitad que ninguna aritmética contesta:** scrollearlo con
+el dedo en un teléfono.
+
+**Cinco defectos que ninguna revisión de código encuentra**, todos hallados
+abriendo el PNG de una captura: la foto de la mesa venía con **marca de agua
+`Unsplash+`** tileada; `.plano > img` no matcheaba porque el `<img>` es hijo de
+`<picture>`, así que las fotos salían a tamaño nativo; el scrim se leía como un
+panel rectangular porque sus radios superaban el borde de la caja; el sangrado
+parejo de 24vh sobre-ampliaba la dirección de arte horizontal; y la página medía
+**9,71 pantallas en móvil** contra el techo de 8. Quedó en **5,88**, y se
+arregló **sin sacar vino**: en pantalla angosta la tarjeta gira a fila.
+
+**El scrim está medido, no razonado.** Decodificando el PNG en cinco puntos del
+scroll: **13,48 → 13,31:1**, variación de **0,17 puntos**. El control negativo
+—la misma foto, sin scrim— varía **3 veces más**. Y con `prefers-reduced-motion`
+el `scrollHeight` es **idéntico** (5278 px): no hay pin, así que no existe el
+peor defecto de `escenas.md §4.3`.
+
+⚠️ **Los seis vinos son INVENTADOS.** `grep -rn LA_SELECCION_ES_DE_MUESTRA`:
+mientras dé `true`, esto no se publica.
 
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
@@ -273,6 +308,8 @@ de construcción de `escenas.md §7`.
 | **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. **Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.** | el usuario |
 | **`suite_ts` y `suite_dart` nunca corrieron** | Un push a `main` dispara `alcance=rapido`, que **no corre tests**: las dos salen `skipped`. Las suites de `packages/contratos` jamás se ejecutaron en CI. **Disparador:** antes del próximo cambio de lógica, `gh workflow run ci.yml -f alcance=tests`. Desde 2026-09-03. | el usuario |
 | **Los signos de `parallax.md §4.1` contradicen a `escenas.md §5`** | La aritmética dice que un plano lento lleva amplitud **positiva**; el snippet del informe la escribe negativa. **Los dos no pueden tener razón, y no lo midió nadie.** No se editó ningún documento a propósito. **Disparador:** scrollear la maqueta con el dedo en un teléfono. Desde 2026-09-03. | el usuario |
+| **Hay dos landings y sólo se mergea una** | [`escenas.md`](design/escenas.md) y [`landing-alternativa.md`](design/landing-alternativa.md) resuelven la misma pantalla de dos formas incompatibles. La segunda está construida en `home-parallax`; la primera no está construida. **Disparador:** mirar la rama y elegir. La que pierda se archiva en `changelog/`. Desde 2026-09-04. | el usuario |
+| **`generar_verdad.mjs` cuenta comentarios como call sites** | Busca con `new RegExp('\b' + nombre + '\b')` sobre el fuente entero, comentarios incluidos. La palabra `CERO` en un comentario bajó los símbolos "sin puerta" de 16 a 15 **sin que nadie abriera nada**. Se esquivó reformulando el comentario, que es un parche. **Disparador:** la próxima vez que ese número se mueva sin causa. Desde 2026-09-04. | — |
 | **El contraste del filete del cartucho no está medido** | `direccion.md §2.1` calcula dorado **puro** sobre tinta en 8,80:1, pero el filete se dibuja al 72 % y al 28 %. Si el píxel renderizado da < 3:1, el cartucho deja de cumplir la función estructural que lo justifica y `escenas.md §2.3` se cae. **Disparador:** junto con `tokens.md`. Desde 2026-09-03. | — |
 
 ---

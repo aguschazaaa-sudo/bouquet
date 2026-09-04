@@ -1,0 +1,340 @@
+/* sistema.css — el motor, no las escenas.
+ *
+ * parallax.md §4.1: todos los planos de una escena comparten el MISMO reloj y
+ * el MISMO rango. Difieren sólo en la amplitud. No existe el parámetro con el
+ * que una capa podría desincronizarse de las otras.
+ *
+ * Cero literales de color: el hook no-hardcoded-colors sólo los deja en
+ * tokens.css y globals.css. Acá todo es var() o color-mix().
+ */
+
+/* ============================================================ LA ESCENA == */
+
+.escena {
+  position: relative;
+  isolation: isolate;
+  overflow: clip; /* el sangrado de los planos no puede empujar scroll lateral */
+  display: grid;
+  place-items: center;
+  min-height: 100svh; /* svh, no vh: la barra de iOS cambia el viewport a
+                       * mitad de scroll y con vh el salto es visible */
+  padding-block: var(--e-9);
+  padding-inline: var(--e-5);
+
+  view-timeline-name: --escena;
+  view-timeline-axis: block;
+}
+
+/* ============================================================= EL PLANO == */
+
+/* El sangrado tiene que ser mayor que la amplitud del plano o la deriva
+ * descubre el borde del asset. Pero un sangrado PAREJO de 24vh hace el plano
+ * mucho más alto que el viewport, y ahí `object-fit: cover` sobre-amplía la
+ * dirección de arte horizontal: la foto de la mesa entraba con las copas al
+ * doble de tamaño. Cada rol sangra lo que su propia amplitud necesita, más un
+ * 20 % de margen. */
+.plano {
+  position: absolute;
+  inset: calc(-1 * var(--sangrado, 8vh)) 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.plano picture {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ⚠️ `.plano > img` NO sirve: el <img> es hijo de <picture>, no del plano, y
+ * con el selector de hijo directo la foto se renderiza a su tamaño nativo en
+ * vez de cubrir la escena. Se vio mirando una captura, no leyendo el CSS. */
+.plano img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* parallax.md §3.4 — perspectiva atmosférica. El contraste CRECE hacia el
+ * sujeto y CAE hacia los dos extremos. Un plano lejano con el mismo contraste
+ * que el sujeto contradice su propia velocidad, y el cerebro resuelve el
+ * conflicto del lado peor: lee capas pegoteadas, no espacio. */
+.plano--ambiente img {
+  filter: saturate(0.55) contrast(0.72) brightness(0.5);
+}
+.plano--escenario img {
+  filter: saturate(0.8) contrast(0.9) brightness(0.62);
+}
+.plano--sujeto img {
+  filter: saturate(1.05) contrast(1.08);
+}
+.plano--detalle img {
+  filter: saturate(0.75) blur(3px);
+}
+
+/* El plano de contenido NO es absoluto: es el flujo de la escena. Va a
+ * v = 1.00 y no lleva animación — es la referencia contra la que se miden
+ * todas las demás. */
+.plano--contenido {
+  position: relative;
+  inset: auto;
+  z-index: 3;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.plano--ambiente {
+  z-index: 0;
+  --sangrado: 22vh; /* amplitud 18vh */
+}
+.plano--escenario {
+  z-index: 1;
+  --sangrado: 16vh; /* amplitud 13,5vh */
+  /* Sin esto, una escena con foto choca a filo contra una sin foto y se ve la
+   * costura horizontal. La máscara es estática: no repinta por frame. */
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 14%,
+    black 86%,
+    transparent 100%
+  );
+}
+.plano--sujeto {
+  z-index: 2;
+  --sangrado: 6vh; /* amplitud 4,5vh */
+}
+.plano--detalle {
+  z-index: 4;
+  --sangrado: 6vh; /* amplitud 4,5vh */
+}
+
+/* ======================================================== EL MOVIMIENTO == */
+
+@keyframes deriva {
+  to {
+    translate: 0 var(--amplitud);
+  }
+}
+
+/* parallax.md §5.3 — Tier C es lo de arriba: la composición estática, entera.
+ * El movimiento se AGREGA acá adentro, no se integra. Si al apagarlo se
+ * pierde información, está mal puesto. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .plano--ambiente,
+    .plano--escenario,
+    .plano--sujeto,
+    .plano--detalle {
+      animation: deriva linear both;
+      animation-timeline: --escena;
+      animation-range: cover 0% cover 100%;
+      will-change: translate;
+    }
+
+    .plano--ambiente {
+      --amplitud: var(--amp-ambiente);
+    }
+    .plano--escenario {
+      --amplitud: var(--amp-escenario);
+    }
+    .plano--sujeto {
+      --amplitud: var(--amp-sujeto);
+    }
+    .plano--detalle {
+      --amplitud: var(--amp-detalle);
+    }
+  }
+}
+
+/* Tier B: en teléfono apaisado quedan ~400px de alto útil. El texto ocupa
+ * todo y no queda lugar para profundidad — parallax.md §6.5. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .plano--ambiente,
+  .plano--detalle {
+    display: none;
+  }
+  .escena {
+    min-height: auto;
+    padding-block: var(--e-7);
+  }
+}
+
+/* ============================================================ LA LÁMPARA = */
+
+/* direccion.md §8: un fondo "oscuro" plano es el gris de cualquier framework;
+ * un fondo ILUMINADO es un gradiente radial descentrado. Cuesta lo mismo.
+ * Tres números por escena — azimut, altura, radio — y la luz camina desde la
+ * puerta hasta el lector a lo largo de la página. CSS puro, cero bytes. */
+.lampara {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse var(--lr) calc(var(--lr) * 0.8) at var(--lx) var(--ly),
+    color-mix(in srgb, var(--dorado) 26%, transparent) 0%,
+    color-mix(in srgb, var(--borgona) 14%, transparent) 38%,
+    transparent 72%
+  );
+}
+
+/* La viñeta de caída. Es AMBIENTE: oscurece bordes de pantalla. No confundir
+ * con el scrim, que garantiza contraste y viaja con el texto (§3.2). */
+.vinieta {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 120% 90% at var(--lx) var(--ly),
+    transparent 30%,
+    color-mix(in srgb, var(--tinta-honda) 78%, transparent) 100%
+  );
+}
+
+/* ============================================================== EL SCRIM = */
+
+/* parallax.md §3.2 — la regla que casi nadie aplica. Un texto sobre una capa
+ * fotográfica que se mueve CAMBIA DE CONTRASTE mientras scrolleás: arranca
+ * sobre una zona oscura y termina sobre una clara. Ninguna herramienta
+ * estática lo detecta, porque en el momento de la captura está bien.
+ *
+ * El scrim es una placa de color plano DENTRO de .plano--contenido. Viaja a
+ * v = 1.00, igual que el texto que protege. */
+/* ⚠️ Los radios tienen que ser <= 50%. Con 76%/70% el degradé llega a
+ * transparente MÁS ALLÁ del borde de la caja, así que el borde lo corta y el
+ * scrim se lee como un panel rectangular translúcido en vez de como luz. Es el
+ * defecto que se vio en la primera captura del héroe. */
+.scrim {
+  position: absolute;
+  inset: -45% -25%;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 50% 50% at 50% 50%,
+    color-mix(in srgb, var(--tinta-honda) 82%, transparent) 0%,
+    color-mix(in srgb, var(--tinta-honda) 58%, transparent) 42%,
+    transparent 100%
+  );
+}
+
+/* =============================================================== EL GRANO */
+
+/* direccion.md §8: 2-3% de ruido sobre los fondos oscuros. Y no es nostalgia:
+ * un degradé oscuro en una pantalla de 8 bits hace BANDAS visibles, y el ruido
+ * las disuelve. Un recurso estético que paga una deuda técnica.
+ * position: fixed, no background-attachment: fixed (parallax.md §5.4). */
+.grano {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23r)'/></svg>");
+}
+
+/* ============================================================ TIPOGRAFÍA = */
+
+.display {
+  font-family: var(--tipo-display);
+  font-weight: 400;
+  line-height: var(--interlinea-titulo);
+  letter-spacing: -0.018em;
+  font-variation-settings: 'SOFT' 22, 'WONK' 1;
+  text-wrap: balance;
+  margin: 0;
+}
+
+/* direccion.md §4.4: etiquetas, categorías y botones van en la SERIF en
+ * versalitas con tracking abierto. Es lo que hace una etiqueta de vino, y la
+ * razón por la que una etiqueta de vino no se parece a un dashboard. */
+.versalita {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-versalita);
+  font-weight: 500;
+}
+
+.rotulo {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-rotulo);
+  font-size: var(--t-rotulo);
+  font-weight: 500;
+  color: var(--dorado);
+  margin: 0 0 var(--e-5);
+}
+
+.prosa {
+  font-family: var(--tipo-texto);
+  font-size: var(--t-cuerpo);
+  line-height: var(--interlinea-prosa);
+  color: color-mix(in srgb, var(--marfil) 82%, transparent);
+  max-width: var(--medida-ancha);
+  margin: 0 0 var(--e-4);
+}
+
+.prosa--lead {
+  font-size: var(--t-lead);
+  color: color-mix(in srgb, var(--marfil) 92%, transparent);
+}
+
+.prosa em {
+  font-style: italic;
+  color: color-mix(in srgb, var(--marfil) 95%, transparent);
+}
+
+/* =============================================================== EL BOTÓN */
+
+/* direccion.md §6: sin card, sin pill, sin degradé, sin sombra de elevación.
+ * Un rectángulo, un borde de 1px y versalitas trackeadas. */
+.boton {
+  display: inline-block;
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-versalita);
+  font-size: var(--t-cuerpo);
+  padding: var(--e-3) var(--e-6);
+  text-decoration: none;
+  color: var(--dorado);
+  border: var(--filete) solid color-mix(in srgb, var(--dorado) 62%, transparent);
+  clip-path: polygon(
+    var(--chaflan-boton) 0,
+    100% 0,
+    100% calc(100% - var(--chaflan-boton)),
+    calc(100% - var(--chaflan-boton)) 100%,
+    0 100%,
+    0 var(--chaflan-boton)
+  );
+  transition:
+    background-color var(--dur-media) var(--ease-caida),
+    color var(--dur-media) var(--ease-caida);
+}
+
+.boton:hover,
+.boton:focus-visible {
+  background-color: color-mix(in srgb, var(--dorado) 14%, transparent);
+  color: var(--marfil);
+}
+
+/* El CTA blando no es un botón: es una línea de texto con un filete abajo.
+ * "Coquetear es insinuar, no gritar" — parallax.md §10.1. */
+.enlace-blando {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-versalita);
+  font-size: var(--t-cuerpo);
+  color: color-mix(in srgb, var(--marfil) 78%, transparent);
+  text-decoration: none;
+  border-bottom: var(--filete) solid
+    color-mix(in srgb, var(--dorado) 55%, transparent);
+  padding-bottom: var(--e-1);
+  transition: color var(--dur-media) var(--ease-caida);
+}
+
+.enlace-blando:hover,
+.enlace-blando:focus-visible {
+  color: var(--dorado);
+}

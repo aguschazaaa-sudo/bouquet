@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-03 - commit `93525f1` **+ cambios sin commitear** - huella del cuerpo `0969580a59db`
+> **Generado:** 2026-09-04 - commit `3e81471` **+ cambios sin commitear** - huella del cuerpo `0a112c18c864`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.5.4
+### Scripts de la raiz - `bouquet` 0.6.1
 
 | Script | Comando |
 |---|---|
@@ -144,10 +144,11 @@ El `tools:` del frontmatter es **enforcement estructural**: restringe herramient
 | `revisor-pagos` | opus | **NO - verificador** | `Read`, `Grep`, `Glob`, `Bash` |
 | `tienda` | sonnet | si | `Read`, `Grep`, `Glob`, `Edit`, `Write`, `Bash` |
 | `vault` | sonnet | si | `Read`, `Grep`, `Glob`, `Edit`, `Write` |
+| `voz` | sonnet | si | `Read`, `Grep`, `Glob`, `Edit`, `Write` |
 
-**12 subagentes: 7 escriben, 5 verifican sin `Edit` ni `Write`** (`auditor-produccion`, `cazador-de-puertas`, `presupuesto-lecturas`, `revisor-acoplamiento`, `revisor-pagos`).
+**13 subagentes: 8 escriben, 5 verifican sin `Edit` ni `Write`** (`auditor-produccion`, `cazador-de-puertas`, `presupuesto-lecturas`, `revisor-acoplamiento`, `revisor-pagos`).
 
-Escriben pero no tienen `Bash`, o sea que no pueden desplegar ni commitear: `vault`.
+Escriben pero no tienen `Bash`, o sea que no pueden desplegar ni commitear: `vault`, `voz`.
 
 ## 6. Skills declaradas
 
@@ -225,4 +226,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 17. Archivos de test: 4. Casos de test: 35.
+Archivos de codigo recorridos: 28. Archivos de test: 4. Casos de test: 35.
