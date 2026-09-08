@@ -1,8 +1,11 @@
 # Las cinco escenas de la landing — bouquet
 
 - **Fecha:** 2026-09-03
-- **Estado:** vigente. Es el **paso 3 de `/disenio`** (la composición, después de la
-  dirección). Las cinco decisiones de §1.2 están tomadas por el dueño.
+- **Estado:** ❌ **DESCARTADA el 2026-09-08**, cuando el dueño eligió
+  [`landing-alternativa.md`](landing-alternativa.md). **Nunca se construyó:**
+  fue la única composición que se juzgó leyéndola y no mirándola. Se conserva
+  porque el documento que ganó **se lee contra éste** — sus §1 y §1.1 son las
+  cuatro objeciones a esta composición y lo que sí se le conservó.
 - **Qué contesta:** qué se muestra en cada escena, cómo se ve, qué dice y qué
   hace. Plano por plano, con su copy y su asset.
 - **Qué NO contesta:** los tokens con sus nombres de código —eso sigue siendo

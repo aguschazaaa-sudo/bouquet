@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-04 - commit `395214b` **+ cambios sin commitear** - huella del cuerpo `17bbaf93c134`
+> **Generado:** 2026-09-08 - commit `d42e7a1` **+ cambios sin commitear** - huella del cuerpo `861545972169`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.7.0
+### Scripts de la raiz - `bouquet` 0.13.1
 
 | Script | Comando |
 |---|---|
@@ -152,7 +152,7 @@ Escriben pero no tienen `Bash`, o sea que no pueden desplegar ni commitear: `vau
 
 ## 6. Skills declaradas
 
-**27 skills de terceros**, declaradas en `skills-lock.json` con su hash y **no commiteadas** (`.gitignore` ignora `.claude/skills/*`). Restaurar en un clon: `bash scripts/skills_restaurar.sh`.
+**28 skills de terceros**, declaradas en `skills-lock.json` con su hash y **no commiteadas** (`.gitignore` ignora `.claude/skills/*`). Restaurar en un clon: `bash scripts/skills_restaurar.sh`.
 
 | Origen | Cuantas | Cuales |
 |---|---|---|
@@ -160,9 +160,10 @@ Escriben pero no tienen `Bash`, o sea que no pueden desplegar ni commitear: `vau
 | `firebase/agent-skills` | 2 | `firebase-firestore`, `firebase-security-rules-auditor` |
 | `fission-ai/openspec` | 12 | `openspec-apply-change`, `openspec-archive-change`, `openspec-bulk-archive-change`, `openspec-continue-change`, `openspec-explore`, `openspec-ff-change`, `openspec-new-change`, `openspec-onboard`, `openspec-propose`, `openspec-sync-specs`, `openspec-update-change`, `openspec-verify-change` |
 | `mercadopago/mercadopago-claude-marketplace` | 2 | `mp-integrate`, `mp-webhooks` |
+| `obra/superpowers` | 1 | `brainstorming` |
 | `vercel-labs/agent-skills` | 6 | `vercel-composition-patterns`, `vercel-optimize`, `vercel-react-best-practices`, `vercel-react-view-transitions`, `web-design-guidelines`, `writing-guidelines` |
 
-Propias del proyecto, commiteadas porque mencionan nuestro dominio: `commit`, `post-task-doc`.
+Propias del proyecto, commiteadas porque mencionan nuestro dominio: `brainstorm-bouquet`, `commit`, `post-task-doc`.
 
 ## 7. Simbolos publicos y quien los abre
 

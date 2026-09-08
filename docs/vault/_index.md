@@ -16,7 +16,7 @@
 
 ## Dónde está el proyecto
 
-**Fase: pasos 0 y 1 terminados (2026-09-01). Todavía no hay UI ni backend.**
+**Fase: `main` ya tiene la home elegida (2026-09-08). Backend: todavía nada.**
 
 Existe: `git init` en `main`, `CLAUDE.md`, los 10 hooks con su arnés de 30
 casos, `ci.yml`, los ADRs 001-004, y **`packages/contratos`** — la máquina de
@@ -43,12 +43,56 @@ Lo próximo es el **paso 2** de
 [ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
 `firestore.rules` e índices, antes de que haya datos.
 
+### La composición elegida: la de cuatro escenas, y `main` la tiene (2026-09-08)
+
+**El dueño eligió entre las seis composiciones que llegaron a existir, y ganó la
+segunda:** [`landing-alternativa.md`](design/landing-alternativa.md) — cuatro
+escenas, problema → selección → custodia → mesa. **Era la primera que se pudo
+mirar corriendo**, y es la que ahora vive en `main`.
+
+**Cómo llegó:** `main` era **ancestro** de `home-parallax`, así que fue un
+fast-forward de un comando, no un merge.
+
+⚠️ **Y por eso este archivo NO sabe lo que aprendieron las composiciones 3 a 6**
+(del 2026-09-04 al 07, en `home-parallax-b`, `-c` y `-d`). Fue decisión
+explícita del dueño: son **dos días** de trabajo y quedan vivos en sus ramas.
+Lo que sí bajó son las **cuatro cosas que le faltan a la página que quedó
+publicada** — abajo, con disparador. El resto se recupera con
+`git show <rama>:<ruta>`.
+
+⚠️ **El fast-forward revivió un bug que ya estaba arreglado**, y conviene que se
+note porque es el costo real de volver a un commit viejo: **el BOM UTF-8 de
+`package.json`**, que entró en `v0.7.2` y se había quitado en un commit
+posterior que `main` ya no incluye. Rompe `JSON.parse`, y el `catch {}` de
+`generar_verdad.mjs` se traga el error: la sección 2 entera salía como *"No
+verificado: la raíz no declara `workspaces`"*, una **ausencia inventada,
+indistinguible de un hallazgo real**. Se quitó de nuevo acá. ⚠️ **El `catch`
+silencioso sigue ahí**, así que el próximo BOM vuelve a mentir igual.
+
+**Verificado, no supuesto:**
+
+| Qué | Cómo |
+|---|---|
+| Compila | `tsc --noEmit --project apps/tienda`, exit 0 |
+| Los enlaces resuelven | `verificar_enlaces.mjs`: 121 enlaces, 45 archivos. Control positivo: una corrida previa marcó **6 rotos** |
+| El informe no miente | `generar_verdad.mjs --check`, **exit 0** — y de paso destapó que estaba viejo desde `v0.7.0` |
+| Las 9 piezas tienen call site | `page.tsx` abre 5, las escenas abren las otras 4 |
+| Los 8 assets tienen consumidor | ⚠️ Las rutas se arman en runtime (`/landing/${base}.webp`), así que **el grep literal dio vacío**. Hubo que enumerar las bases: 5, tres con `dosDirecciones` → 8 archivos exactos |
+
+**No se miró renderizada, y esta vez es lo correcto:** es byte por byte la
+página que el dueño ya miró y eligió.
+
 ### Una segunda landing, en su propia rama (2026-09-04)
+
+> ⚠️ **Escrito antes de la decisión. Esta es la que ganó**, y desde el
+> 2026-09-08 no está en su propia rama: está en `main`. Lo de abajo cuenta de
+> dónde salió; el estado de hoy es la entrada de arriba.
 
 **El dueño no quedó convencido de [`escenas.md`](design/escenas.md)**, así que
 hay una composición que compite con ella:
 [`design/landing-alternativa.md`](design/landing-alternativa.md), **construida y
-navegable** en la rama `home-parallax`. ⚠️ **Sin mergear y sin desplegar.**
+navegable** en la rama `home-parallax`. ~~Sin mergear~~ — **mergeada a `main` el
+2026-09-08**. ⚠️ **Sin desplegar.**
 
 Cuatro objeciones, textuales: *mucha ceremonia y poco vino · el arco narrativo ·
 muy abstracto · los copys son cortos para desktop*. Lo que sale de ahí:
@@ -179,171 +223,14 @@ Y dejó un dato que hay que mirar cuando aparezcan `apps/` y `functions/`:
 Hoy es correcto —el paquete se escribió primero a propósito— pero **el bug
 sería que ese número no baje** cuando existan sus consumidores.
 
-### El repo publicado, y lo que eso destapó (2026-09-03)
-
-**`github.com/aguschazaaa-sudo/bouquet`, público.** Remote `origin`, default
-`main`. Verificado comparando `git ls-remote` contra el hash local, no por el
-mensaje del push: **`93525f1` de los dos lados**.
-
-**Se cerró un agujero del `.gitignore` antes de publicar.** Cubría
-`*-service-account*.json` y `serviceAccountKey*.json`, pero el nombre con el
-que la consola de Firebase **descarga de verdad** una clave privada es
-`<proyecto>-firebase-adminsdk-<hash>-<hash>.json`, que no matcheaba ninguno.
-Medido con `git check-ignore` sobre esa ruta exacta: daba **"se subiría"**. Es
-la credencial que ignora `firestore.rules` por diseño. El barrido de las 7
-commits del historial —no sólo del HEAD— no encontró nada más.
-
-⚠️ **El primer CI real falló, y la causa era del CI, no del código.**
-`_verdad.md` incluía *"En disco hay N carpetas de skill"*, y N es **29** en
-esta máquina y **2** en el runner, porque las de terceros no se commitean. Con
-`--check` comparando texto exacto, el job `guardas` era **imposible de pasar
-regenerando**: el número cambia con el entorno, no con el código. El dato pasó
-a stderr y dice *cuáles* faltan, que es accionable. Arreglado en `v0.5.3`.
-
-**El defecto existía desde que se escribió el script.** No lo vio nadie porque
-hasta hoy no había remote y el workflow nunca había corrido. Para el resto del
-repo: **un workflow que nunca corrió no es un workflow verde, es un workflow
-desconocido** — y hay dos en esa situación ahora mismo, abajo.
-
-### La landing, el hosting, y la dirección de marca (2026-09-03)
-
-[`design/parallax.md`](design/parallax.md) — el informe de parallax, con las
-seis decisiones **ya tomadas** por el dueño.
-
-**El sistema de movimiento.** Lo que separa un parallax premium de un capricho
-no es el efecto: es de dónde salen los números. **Las velocidades se derivan de
-una sola cámara** (`v = 1 − z/D`), no se eligen capa por capa. De ahí sale el
-techo de **5 planos** —el rango útil va de 0.4 a 1.15 y la separación mínima
-perceptible es 0,15— y el reparto de contenido: **el texto y su scrim viajan
-juntos a `v = 1.00`**, porque un texto sobre una foto que se mueve **cambia de
-contraste mientras scrolleás** y ninguna herramienta estática lo ve. Técnica:
-**scroll-driven animations de CSS** — Chrome 115, Safari 26 (y recién **26.4**
-en el compositor), **Firefox todavía detrás de flag**, verificado contra
-`browser-compat-data`. Por eso se construye **Tier C primero**: la composición
-estática hay que hacerla igual para `prefers-reduced-motion`.
-
-**La landing:** de marca, 5 escenas, *persuade y coquetea* — CTA duro sólo dos
-veces, y la puerta de edad es **el telón que se levanta**. Una sola escena toca
-el catálogo. **16 planos × 2 direcciones de arte = 32 assets**, especificados
-por rol en §10.3 para que la recopilación sea dirigida y cambiar una foto
-después cueste un archivo, no un rediseño.
-
-⚠️ **Y el hosting cambió: no va Vercel, va Firebase** — decisión del dueño,
-[ADR 005](architecture/decisions/005-hosting-vidriera.md). Lo caro no es mover
-el deploy: **App Hosting no tiene purga on-demand**, y esa era la pieza que
-sostenía la frescura del precio de [ADR 004](architecture/decisions/004-frescura-y-lecturas.md).
-La repone **Cloudflare, que sí tiene purga por tag en todos los planes**. El
-diseño resultante **no usa ISR**: SSR + caché de borde, TTL largo donde hay
-purga y TTL corto donde no la hay. **El presupuesto de lecturas no se movió:
-~1.700/día, y que no se moviera es la prueba de que el ADR está bien.**
-
-**Y ya existe la dirección visual**, que es lo que `parallax.md` declaraba
-faltante: [`design/direccion.md`](design/direccion.md), el **paso 1 de
-`/disenio`**. Sale de medir el logo, no de opinar sobre él.
-
-**El hallazgo que ordena todo lo demás:** la marca tiene exactamente **dos**
-colores —borgoña `#762D2D` y dorado `#D2AE6D`, tomados píxel por píxel del PNG—
-y **cada uno sobrevive en un solo fondo**. Dorado sobre claro da **2,10:1** y
-borgoña sobre oscuro da **1,92:1**: los dos fallan. No hay aclarado del borgoña
-que lo salve —hay que llegar a rosa viejo (`#C76B6B`) para que sea legible sobre
-oscuro—. De ahí salen **dos modos repartidos por tarea**: *ceremonia oscura*
-(landing, catálogo, ficha) y *transacción de papel* (carrito, checkout,
-comprobante). **No es un theme switcher: lo fija la página, no el usuario.**
-
-Ese corte cae **exactamente sobre el mismo límite** que `parallax.md` §1.1 había
-trazado para el movimiento, y los dos documentos se escribieron por separado.
-
-Y el Art Decó —del que el dueño dudaba, con razón— entra **sólo como marco**:
-un panel borgoña sobre el fondo oscuro llega a **2,05:1** como techo, por debajo
-del 3:1 de un borde de UI. **La línea dorada que lo enmarca es lo único que lo
-hace visible**, así que el recurso decorativo está haciendo trabajo estructural.
-Dark academia aporta el lugar; el Decó, el marco. Nunca al revés.
-
-⚠️ **Falta `design/tokens.md`** — el paso 2. Hasta que exista, `tienda` y
-`admin-presentacion` no deberían escribir componentes visuales.
-
-**Y existe la mitad verbal:** [`design/voz.md`](design/voz.md), con su agente
-en `.claude/agents/voz.md` — **son 13 subagentes ahora, 8 escriben y 5
-verifican.** `voz` no tiene `Bash`, igual que `vault`: cura texto, no despliega.
-
-**La tesis sale del nombre de la marca.** En enología *aroma* es lo que el vino
-trae de la uva y **bouquet es lo que gana mientras está guardado**. O sea: el
-nombre nombra la parte del vino que depende de **cómo lo cuidaron**, no de quién
-lo hizo. De ahí que **bouquet no hace vino: lo guarda**, y toda la autoridad de
-la voz salga de la custodia — que además es lo único que este negocio puede
-afirmar sin mentir, porque no produce.
-
-**Y la otra mitad del eslogan cierra la estructura.** *"Sabor eterno"* no
-afirma nada del gusto: es una metáfora sobre **la memoria** — el sabor se va, la
-experiencia de haberlo tomado dura. Con eso la marca queda con **dos tiempos**,
-el *antes* de la custodia (**Cuidador**) y el *después* de lo que quedó
-(**Amante**), y **el sorbo —lo único que bouquet no hizo— queda entre paréntesis
-sostenido por los dos lados**. Los dos tiempos que la marca posee son de tiempo,
-y ninguno es del líquido: ahí se resuelve la tensión del brief sin que ningún
-arquetipo tenga que inventar una nota de cata.
-
-Lo sensorial que pide el arquetipo Amante **no se resuelve con notas de cata**:
-son la voz del productor, se copian entre bodegas y no son falsables. Se
-resuelve describiendo **la escena y no la copa**. Y una nota de cata sólo existe
-**firmada** — la misma regla que el glosario §7.4 ya aplicaba al stock.
-
-Los registros son **cava** y **mostrador**, y los decide *el estado del lector,
-no la URL*: **donde hay plata, no hay metáfora.** Ese corte cae por **tercera
-vez** sobre el mismo límite que `parallax.md` trazó para el movimiento y
-`direccion.md` para el color, y los tres se escribieron por separado.
-
-⚠️ **La regla que hace seguro al agente:** cambia **cómo** se dice algo, nunca
-**qué** se afirma. Si el original no trae el dato, el curado deja un **hueco
-marcado** — plazos, stock, añadas y premios son exactamente por donde entra un
-hecho inventado a una tienda.
-
-**Y ya existe la composición:** [`design/escenas.md`](design/escenas.md), el
-**paso 3 de `/disenio`** — qué se muestra en cada una de las cinco escenas, plano
-por plano, con su copy y su asset.
-
-**La tesis sale de aplicarle a la luz lo que `parallax.md` ya le había aplicado
-al movimiento.** Ese documento fijó que las velocidades se derivan de **una sola
-cámara**. Faltaba que la atmósfera necesita lo mismo: **una sola lámpara**, con
-tres números por escena, cuya posición **camina de la puerta hasta el lector**.
-El scroll no te lleva por cinco lugares: te lleva desde una puerta hasta una
-lámpara. De ahí sale el ritmo **lugar · objeto · lugar · objeto · lugar** — las
-escenas 2 y 4 son láminas enmarcadas dentro de la cava, y **el marco excusa la
-foto de banco**, que era el riesgo más caro del manifiesto de assets.
-
-**Los assets bajaron de 32 a 7.** Resplandores, viñetas, marcos y chaflanes son
-CSS; las dos copas de la escena 3 son SVG propio. Eso achica mucho el pendiente
-de licencia que bloquea publicar el dominio — y de los 7, dos conviene que sean
-**fotos propias**.
-
-⚠️ **Se maquetó antes de especificar, y ahí apareció lo que no se veía leyendo.**
-Tres defectos reales, ninguno visible en los documentos: el **scrim viajaba en el
-plano equivocado** en dos escenas (el contraste del texto cambiaba mientras
-scrolleabas — la violación exacta que `parallax.md §3.2` existe para prohibir);
-el **pin se pasaba 12svh** del techo de §4.5; y el **pin sobrevivía a apagar el
-movimiento**, así que con `prefers-reduced-motion` se scrolleaban 1,4 pantallas
-sin que cambiara nada — parece que la página se colgó, y falla justo la cohorte
-que Tier C existe para proteger.
-
-⚠️ **Y los signos de `parallax.md §4.1` están invertidos.** Con el snippet tal
-como está escrito, una amplitud negativa hace que el plano lejano se mueva **más**
-que el contenido: la profundidad se lee al revés. Lento → **positivo**. Las
-magnitudes están bien; era sólo el signo. **`parallax.md` no se editó todavía a
-propósito:** se confirma scrolleando con el dedo en un teléfono, no desde el
-escritorio. Los dos documentos no pueden tener razón.
-
-Y la escena 4 ya sabe **cómo cambia el vino ofertado sin romper la landing
-estática**: un `slug` versionado en el repo, resuelto en **Cloud Build** contra la
-proyección publicada y horneado en el HTML. **Una lectura por deploy, cero por
-visita.** La defensa contra que se filtre el precio no es CSS — es que el build
-**nunca lee el campo**.
-
-⚠️ **Falta `design/tokens.md`.** Sigue siendo el bloqueo: es la fase 0 del plan
-de construcción de `escenas.md §7`.
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
 |---|---|---|
+| ⚠️ **La home NO tiene puerta de edad, y es la única pieza legal obligatoria** | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
+| ⚠️ **`/vinos` no existe y la home lo apunta DOS veces** | `EscenaSeleccion.tsx:69` y `EscenaMesa.tsx:60` — **los dos CTA duros de la página**, el de "qué tenés" y el de cierre. Hoy tiran **404**. No se arregla como página suelta: el catálogo es el **paso 5** del orden de construcción. **Disparador: bloquea el deploy.** Una landing cuyos dos botones no llevan a ningún lado es "terminada y sin puerta". Desde 2026-09-08. | el usuario |
+| ⚠️ **Los 8 assets están commiteados y no tienen `LICENCIAS.md`** | `ambiente`, `botella`, `cava-h/v`, `mesa-h/v`, `rack-h/v`. La única tabla de licencias verificada que existió es la de los **17 assets de `home-parallax-b`**, y **no cubre a éstos**. De esta misma tanda salió la foto con marca de agua `Unsplash+` tileada, que se descubrió **abriendo el PNG**, no leyendo metadatos. `scripts/assets/traer_landing.py` es la herramienta. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
+| **391 KB de `woff2` en la primera pantalla, y son de esta composición** | `parallax.md §8` fija **450 KB** para la primera pantalla en móvil: es el único presupuesto que paga el comprador, y arranca con el **87 % gastado antes de la primera imagen**. Salen de `layout.tsx` (Fraunces con `SOFT`+`WONK`+`opsz`, Newsreader roman e itálica con `opsz`). ⚠️ **Medido el 2026-09-08: el arreglo conocido NO sirve acá.** La composición 6 los bajó a **138 KB** sacando `SOFT` y `opsz`, y ésta usa las dos cosas (`font-variation-settings: 'SOFT' 22` en `sistema.css`, itálica de Newsreader en 4 lugares): sacarlos **cambia el dibujo de la página que se eligió mirando**. La palanca es del dueño. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
 | **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. **Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.** | el usuario |
 | **`suite_ts` y `suite_dart` nunca corrieron** | Un push a `main` dispara `alcance=rapido`, que **no corre tests**: las dos salen `skipped`. Las suites de `packages/contratos` jamás se ejecutaron en CI. **Disparador:** antes del próximo cambio de lógica, `gh workflow run ci.yml -f alcance=tests`. Desde 2026-09-03. | el usuario |
 | **Los signos de `parallax.md §4.1` contradicen a `escenas.md §5`** | La aritmética dice que un plano lento lleva amplitud **positiva**; el snippet del informe la escribe negativa. **Los dos no pueden tener razón, y no lo midió nadie.** No se editó ningún documento a propósito. **Disparador:** scrollear la maqueta con el dedo en un teléfono. Desde 2026-09-03. | el usuario |

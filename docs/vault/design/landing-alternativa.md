@@ -1,9 +1,11 @@
 # La landing en cuatro escenas — alternativa a `escenas.md`
 
-- **Fecha:** 2026-09-04
-- **Estado:** **construida y navegable** en la rama `home-parallax`, **sin
-  mergear a `main` y sin desplegar**. No reemplaza a
-  [`escenas.md`](escenas.md): compite con él.
+- **Fecha:** 2026-09-04. **Elegida el 2026-09-08.**
+- **Estado:** ✅ **ELEGIDA.** El dueño la eligió el 2026-09-08 entre las seis
+  composiciones que llegaron a existir, y es **la home que vive en `main`**.
+  Construida y navegable; ⚠️ **sin desplegar** — le falta la puerta de edad y
+  `/vinos` no existe, las dos anotadas en [`_index.md`](../_index.md).
+  Ya no compite con [`escenas.md`](escenas.md): lo reemplaza.
 - **Por qué existe:** el dueño no quedó convencido de `escenas.md`. Sus cuatro
   objeciones, textuales, están en §1 y cada una tiene abajo qué se hizo con
   ella.
