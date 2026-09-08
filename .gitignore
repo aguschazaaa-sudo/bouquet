@@ -77,6 +77,11 @@ __pycache__/
 # solo lo que menciona tu dominio"). Cada skill propia nueva se agrega ACA.
 !.claude/skills/commit/
 !.claude/skills/post-task-doc/
+# brainstorm-bouquet es el ENCAJE de la skill de terceros `brainstorming`, que
+# sigue en el lock y se actualiza sola. Adaptar el SKILL.md de upstream en el
+# lugar se pierde (esta gitignoreado) y lo pisa `skills update` (hash en el
+# lock). Por eso la parte nuestra vive afuera y committeada. §3.5.
+!.claude/skills/brainstorm-bouquet/
 
 # --- Next.js / apps ----------------------------------------------------------
 apps/tienda/.next/

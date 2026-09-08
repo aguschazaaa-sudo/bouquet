@@ -221,7 +221,11 @@ Cinco, no tres. Los tres de acá, corregidos, más dos nuevos.
 
 ```
 1. Leer vault           → vault-context
-2. Brainstorm           → /brainstorming
+2. Brainstorm           → `brainstorming` + `brainstorm-bouquet`  ← LAS DOS
+   ⚠️ La primera es de terceros y trae el método; la segunda es nuestra y
+      traduce sus tres caminos a estos cinco workflows. Sin la segunda,
+      upstream escribe en docs/superpowers/specs/ e invoca writing-plans,
+      que son dos cosas que acá no existen.
 3. Proponer             → /opsx:propose
    ⚠️ El ADR de la propuesta declara el PRESUPUESTO DE LECTURAS de la feature
 4. Implementar por capa → /opsx:apply
@@ -460,6 +464,7 @@ por ruta las siguen midiendo los hooks. Es exactamente la corrección que
 
 | Paso | Skill |
 |---|---|
+| **A·2 brainstorm** | **`brainstorming`** (terceros, el método) **+ `brainstorm-bouquet`** (nuestra, el encaje) |
 | A·2 explorar / C | `openspec-explore` |
 | A·3 proponer | `openspec-propose`, `openspec-new-change`, `openspec-ff-change` |
 | A·4 implementar | `openspec-apply-change`, `openspec-continue-change`, `openspec-update-change` |

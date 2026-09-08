@@ -199,6 +199,22 @@ proyecto** y 5 son ecosistema vendorizado (`find-skills`, `skill-creator`,
 `brainstorming` y las 4 de OpenSpec — estas últimas discutibles, porque están
 adaptadas).
 
+#### Cómo se resolvió en bouquet el caso `brainstorming` (2026-09-07)
+
+**Partida en dos, que es lo que la regla pide y PadelPunilla no hizo.** El
+método genérico queda en `skills-lock.json` (`obra/superpowers`) y se actualiza
+solo; lo que menciona nuestras rutas, workflows y decisiones vive committeado
+aparte en `.claude/skills/brainstorm-bouquet/`, con su excepción en
+`.gitignore`. Ninguno de los dos archivos repite al otro.
+
+**Adaptar el `SKILL.md` de upstream en el lugar no era una opción**, y no por
+gusto: `.claude/skills/*` está gitignoreado —el cambio se pierde en cualquier
+clon— y el hash de la skill está en el lock —lo pisa el próximo
+`skills update`—. Las dos cosas se midieron antes de decidir.
+
+Es el mismo reparto que ya vale entre un ADR y un informe: **la decisión del
+proyecto vive en el documento del proyecto.**
+
 ---
 
 ## 4. MCP: dos servidores, dos lecciones opuestas
