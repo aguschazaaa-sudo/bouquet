@@ -34,7 +34,13 @@ import { CARRITO, SECCIONES } from './secciones';
  * ya trae el suyo en `.hero__marca`. Dos wordmarks en la misma pantalla es un
  * error de composición, no una redundancia inofensiva. Así que en la home el
  * de la barra entra recién cuando el del héroe se va — con el mismo reloj de
- * scroll, cero JavaScript. El detalle está en `navegacion.css`.
+ * scroll, cero JavaScript.
+ *
+ * Y no deja el hueco reservado: colapsa el ancho, así que arriba de todo la
+ * placa queda CENTRADA sobre sus tres secciones y el carrito, y se ensancha
+ * sola a medida que bajás. Reservar el hueco dejaba la placa visiblemente
+ * corrida en el primer píxel de la página, que es el que más gente ve. El
+ * detalle está en `navegacion.css`.
  */
 
 export function BarraPrincipal() {

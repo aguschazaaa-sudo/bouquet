@@ -63,6 +63,33 @@
   padding: clamp(var(--e-5), 4vw, var(--e-7));
   --chaflan: var(--chaflan-marco);
   --grosor: var(--filete-grueso);
+
+  /* ⚠️ EL OCTÓGONO, PUBLICADO, Y ESTO NO ES UNA COMODIDAD.
+   *
+   * El anillo de abajo es un octógono, pero el elemento sigue siendo un
+   * RECTÁNGULO. Mientras el cartucho es transparente —que es como nació, sobre
+   * la foto de la escena de la mesa— eso no se nota. El día que alguien le
+   * pone un `background`, el fondo pinta las cuatro esquinas que el anillo
+   * dejó afuera y aparecen cuatro triangulitos: el marco chaflanado con las
+   * puntas cuadradas asomando por detrás.
+   *
+   * Pasó exactamente eso con la barra de navegación, y se vio recién con el
+   * zoom del navegador al 200 %. Así que la forma se publica acá: quien pinte
+   * un cartucho recorta con `clip-path: var(--octogono)` y hereda el mismo
+   * chaflán que el anillo, sin volver a escribir los ocho vértices.
+   *
+   * El anillo NO lo usa: necesita este octógono y el de adentro en un solo
+   * polígono `evenodd`, y eso no se compone desde acá. */
+  --octogono: polygon(
+    var(--chaflan) 0,
+    calc(100% - var(--chaflan)) 0,
+    100% var(--chaflan),
+    100% calc(100% - var(--chaflan)),
+    calc(100% - var(--chaflan)) 100%,
+    var(--chaflan) 100%,
+    0 calc(100% - var(--chaflan)),
+    0 var(--chaflan)
+  );
 }
 
 .cartucho-deco::before {

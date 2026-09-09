@@ -91,6 +91,27 @@ barra asentada quedó **opaca**, no en el alfa mínimo que "casi" tapa: es la
 misma familia de defecto que la viñeta en z4, y las dos veces anteriores una
 verificación numérica había dado verde.
 
+⚠️ **Y el dueño encontró DOS defectos más mirando, otra vez después de que mis
+capturas estuvieran bien.** Van cuatro veces en este proyecto, y el patrón ya no
+es anecdótico: *lo que verifico yo y lo que se ve son cosas distintas.*
+
+1. **La placa se veía descentrada en el primer píxel de la página.** Yo había
+   reservado el hueco del wordmark con `opacity` para evitar un salto de
+   layout — argumento correcto para un toggle discreto y **mal aplicado acá**,
+   donde el ancho lo interpola el mismo reloj de scroll: no es un salto, es un
+   revelado continuo. Ahora colapsa el ancho y la placa queda centrada sobre
+   sus cuatro ítems. Medido: `anchoMarca` 0 → 83 px, y la distancia al borde
+   izquierdo menos la del derecho da **0 en los dos estados**.
+2. ⚠️ **Cuatro triangulitos negros en las esquinas, visibles recién con el zoom
+   del navegador al 200 %.** El anillo del cartucho es un octógono pero el
+   elemento sigue siendo un RECTÁNGULO: mientras el cartucho fue transparente
+   —como nació, sobre la foto de la mesa— no se notaba, y el día que le puse
+   `background` el fondo pintó las cuatro esquinas que el anillo deja afuera.
+   **El arreglo NO fue en la barra:** `.cartucho-deco` ahora publica la forma
+   como `--octogono`, así que el próximo que pinte un cartucho recorta con ella
+   y hereda el mismo chaflán. Ninguna de mis capturas al 100 % lo mostraba: a
+   9 px el triángulo se pierde.
+
 ⚠️ **Y apareció un agujero que el vault contaba mal: la home tiene OCHO
 enlaces muertos, no dos.** Los dos CTA a `/vinos` ya están; los otros seis son
 las tarjetas, que apuntan a `/vinos/muestra-01…06` y **siguen dando 404**.

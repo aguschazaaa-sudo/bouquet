@@ -62,13 +62,23 @@
   margin-inline: auto;
   display: flex;
   align-items: center;
-  gap: clamp(var(--e-3), 2.4vw, var(--e-6));
+  /* ⚠️ `gap: 0` y el aire como variable, no como `gap`. Un `gap` sigue
+   * separando aunque el wordmark mida cero, y entonces al colapsarlo queda un
+   * hueco huérfano justo del lado que se quería cerrar. Cada pieza carga su
+   * propio aire, así el del wordmark se va CON el wordmark. */
+  --aire: clamp(var(--e-3), 2.4vw, var(--e-6));
+  gap: 0;
   /* `.cartucho-deco` trae padding de bloque —hasta --e-7—. Una barra necesita
    * el alto de una línea, no el de un párrafo: parallax.md §8 cuenta pantallas
    * y una barra fija se cobra su alto en TODAS, para siempre. */
   padding: var(--e-2) clamp(var(--e-3), 2.2vw, var(--e-5));
   --chaflan: var(--chaflan-boton);
   --grosor: var(--filete);
+  /* El fondo tiene que respetar la MISMA forma que el anillo. Sin esto el
+   * fondo pinta las esquinas que el octógono deja afuera y quedan cuatro
+   * triangulitos negros asomando por detrás del marco. La forma la publica
+   * `.cartucho-deco`, así que el chaflán no se escribe dos veces. */
+  clip-path: var(--octogono);
   /* ⚠️ 100% asentada, y se llegó ahí en dos pasos mirando capturas. Con 82%
    * el texto de la escena de abajo se leía A TRAVÉS de la barra —dos textos
    * superpuestos, los dos ilegibles—. Con 96% quedaba un fantasma tenue, que
@@ -108,9 +118,19 @@
 
 /* Entra cuando el del héroe se va. Ver el encabezado de BarraPrincipal.tsx.
  *
- * ⚠️ `opacity` y NO `display`, a propósito: el hueco se reserva igual, así que
- * las secciones no se corren un píxel mientras scrolleás. Un salto de layout
- * atado al scroll es peor que cualquier redundancia que esto evite. */
+ * ⚠️ COLAPSA EL ANCHO, no sólo la opacidad, y esto se corrigió mirando.
+ * La primera versión reservaba el hueco con `opacity` para que las secciones
+ * no se corrieran ni un píxel — el argumento era evitar un salto de layout.
+ * El argumento estaba mal aplicado: vale para un toggle discreto, que salta,
+ * y NO para esto, donde el ancho lo interpola el mismo reloj de scroll que
+ * todo lo demás. No es un salto, es un revelado continuo.
+ * Y el costo de reservarlo era peor de lo que valía: en el primer píxel de la
+ * página —el instante que más gente ve— la placa quedaba visiblemente
+ * descentrada, con un hueco vacío a la izquierda que no explicaba nada.
+ *
+ * `min-width: 0` es obligatorio: en un flex item `min-width: auto` vale
+ * min-content y GANA sobre `max-width`, así que sin esto el wordmark se
+ * negaría a colapsar y el bug sería invisible en el CSS. */
 .barra__marca {
   display: flex;
   align-items: center;
@@ -118,12 +138,23 @@
   text-decoration: none;
   color: var(--marfil);
   opacity: var(--asiento);
+  overflow: hidden;
+  min-width: 0;
+  /* El tope es generoso a propósito: `max-width` sólo recorta, así que a
+   * `--asiento: 1` el wordmark mide lo suyo y no lo que diga este número.
+   * Lo único que cambia si el nombre creciera es cuándo termina de revelarse. */
+  max-width: calc(var(--asiento) * 12rem);
+  /* El aire viaja con él. A ancho cero no queda separación sobrante. */
+  margin-inline-end: calc(var(--asiento) * var(--aire));
 }
 
 /* Invisible pero enfocable es un defecto conocido de accesibilidad. Con
- * teclado, aparece. */
+ * teclado, aparece entero — ancho incluido, o el foco caería sobre algo
+ * recortado a cero. */
 .barra__marca:focus-visible {
   opacity: 1;
+  max-width: 12rem;
+  margin-inline-end: var(--aire);
 }
 
 .barra__copa {
@@ -153,6 +184,7 @@
  * ya tiene— en vez de aire. Sigue diciendo lo mismo: el carrito no es una
  * sección del catálogo, es el estado del comprador. */
 .barra__carrito {
+  margin-inline-start: var(--aire);
   padding-inline-start: clamp(var(--e-3), 2.2vw, var(--e-5));
   border-inline-start: var(--filete) solid
     color-mix(in srgb, var(--dorado) calc(var(--asiento) * 40% + 18%), transparent);
@@ -235,6 +267,6 @@
   }
 
   .barra__cartucho {
-    gap: var(--e-3);
+    --aire: var(--e-3);
   }
 }
