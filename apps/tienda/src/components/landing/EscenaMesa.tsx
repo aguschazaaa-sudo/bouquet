@@ -36,7 +36,13 @@ export function EscenaMesa() {
       <div className="lampara" aria-hidden="true" />
 
       <div className="plano--contenido">
-        <div className="mesa">
+        {/* El cierre va dentro de un cartucho, y es el único de la página.
+            direccion.md §1.1: la propuesta del sello de lacre no ganó como
+            logo pero dejó identificado el gesto de la marca — *"un sello es un
+            cierre que nadie violó"*. Ésta es la escena del cierre, así que es
+            donde el gesto corresponde. Ponerlo en las cuatro escenas lo
+            convertiría en decoración de plantilla. */}
+        <div className="mesa cartucho-deco">
           <div className="scrim" aria-hidden="true" />
 
           <h2 className="display mesa__titulo">

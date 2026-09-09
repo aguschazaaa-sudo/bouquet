@@ -1,3 +1,4 @@
+import { Copa } from '@/components/marca/Copa';
 import { EscenaProblema } from '@/components/landing/EscenaProblema';
 import { EscenaSeleccion } from '@/components/landing/EscenaSeleccion';
 import { EscenaCustodia } from '@/components/landing/EscenaCustodia';
@@ -41,6 +42,21 @@ export default function Home() {
       </main>
 
       <PieDeLanding />
+
+      {/* El progreso de la página, dicho con el objeto de la marca: el vino
+          sube en la copa a medida que bajás. Es CSS puro sobre
+          `animation-timeline: scroll(root)` — cero JavaScript, cero estado.
+
+          direccion.md §6 pide "palabras, no íconos", y esto no lo contradice:
+          no es un ícono de interfaz, es el imagotipo haciendo lo único que un
+          recipiente puede hacer. Donde el timeline no existe (Firefox, que lo
+          tiene detrás de flag) queda con su nivel por defecto, lleno. */}
+      <Copa
+        id="progreso"
+        progresivo
+        className="marca-progreso"
+        etiqueta="Progreso de la página"
+      />
 
       {/* El grano va último y por encima de todo: disuelve las bandas que un
           degradé oscuro produce en una pantalla de 8 bits. Es un recurso

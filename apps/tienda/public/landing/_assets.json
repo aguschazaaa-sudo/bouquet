@@ -1,0 +1,142 @@
+[
+ {
+  "base": "ambiente",
+  "escena": "1 y 2 · fondo lejano",
+  "rol": "ambiente",
+  "por_que": "Un muro de culos de botella en su pupitre, oscuro y de contraste bajo. Es el plano MAS LEJANO y tiene que quedar asi: parallax.md §3.4 pide que el contraste caiga hacia los extremos. Lo que se corrigio no es su oscuridad — es que antes TODOS los planos estaban igual de oscuros que este.",
+  "fuente": {
+   "titulo": "File:Pol Roger pupitre 3.jpg",
+   "nativo": [
+    1742,
+    1856
+   ],
+   "pagina": "https://commons.wikimedia.org/wiki/File%3APol_Roger_pupitre_3.jpg",
+   "licencia": "CC BY-SA 3.0",
+   "licencia_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "autor": "Tomas er",
+   "atribucion_requerida": "true"
+  },
+  "piezas": [
+   {
+    "archivo": "ambiente.webp",
+    "px": [
+     1200,
+     1640
+    ],
+    "kb": 184,
+    "y_medio": 0.0337,
+    "y_p95": 0.1374
+   }
+  ]
+ },
+ {
+  "base": "rack",
+  "escena": "1 · El problema",
+  "rol": "escenario",
+  "por_que": "Tunel de barricas axial con punto de fuga centrado y la luz cayendo a lo largo del corredor. Lo ceremonial es axial (direccion.md §7.3), y es la foto de la tanda que mas se parece a 'una cava iluminada' en vez de 'una tienda oscura'.",
+  "fuente": {
+   "titulo": "File:Wine Cellar at Chateau Kirwan.jpg",
+   "nativo": [
+    4288,
+    2561
+   ],
+   "pagina": "https://commons.wikimedia.org/wiki/File%3AWine_Cellar_at_Chateau_Kirwan.jpg",
+   "licencia": "CC BY 2.0",
+   "licencia_url": "https://creativecommons.org/licenses/by/2.0",
+   "autor": "Jon",
+   "atribucion_requerida": "true"
+  },
+  "piezas": [
+   {
+    "archivo": "rack-v.webp",
+    "px": [
+     1700,
+     2550
+    ],
+    "kb": 146,
+    "y_medio": 0.1192,
+    "y_p95": 0.6585
+   },
+   {
+    "archivo": "rack-h.webp",
+    "px": [
+     2560,
+     1440
+    ],
+    "kb": 153,
+    "y_medio": 0.1007,
+    "y_p95": 0.5253
+   }
+  ]
+ },
+ {
+  "base": "botella",
+  "escena": "1 · El problema",
+  "rol": "sujeto",
+  "por_que": "Culos de botella en su rack contra pared de creta calida, cerca y nitido. Es el MISMO tema que el ambiente pero a otra profundidad: dos planos del mismo material a distinta distancia es exactamente lo que hace legible un parallax. Y dice lo que dice la escena — botellas guardadas.",
+  "fuente": {
+   "titulo": "File:Riddling racks, Veuve Clicquot cellars.jpg",
+   "nativo": [
+    2048,
+    1536
+   ],
+   "pagina": "https://commons.wikimedia.org/wiki/File%3ARiddling_racks%2C_Veuve_Clicquot_cellars.jpg",
+   "licencia": "CC BY-SA 4.0",
+   "licencia_url": "https://creativecommons.org/licenses/by-sa/4.0",
+   "autor": "Cynwolfe",
+   "atribucion_requerida": "true"
+  },
+  "piezas": [
+   {
+    "archivo": "botella.webp",
+    "px": [
+     1300,
+     1740
+    ],
+    "kb": 162,
+    "y_medio": 0.1321,
+    "y_p95": 0.5315
+   }
+  ]
+ },
+ {
+  "base": "cava",
+  "escena": "3 · La custodia",
+  "rol": "escenario",
+  "por_que": "Toneles de roble de frente, madera calida y veta real. La escena habla de los tres mecanismos de la guarda, asi que el fondo tiene que ser el lugar donde se guarda, no una metafora.",
+  "fuente": {
+   "titulo": "File:Wine cellar of Mrva & Stanko Winery, Trnava, Slovakia - 20140723-02.jpg",
+   "nativo": [
+    3872,
+    2592
+   ],
+   "pagina": "https://commons.wikimedia.org/wiki/File%3AWine_cellar_of_Mrva_%26_Stanko_Winery%2C_Trnava%2C_Slovakia_-_20140723-02.jpg",
+   "licencia": "CC BY-SA 3.0",
+   "licencia_url": "https://creativecommons.org/licenses/by-sa/3.0",
+   "autor": "Smuconlaw",
+   "atribucion_requerida": "true"
+  },
+  "piezas": [
+   {
+    "archivo": "cava-v.webp",
+    "px": [
+     1700,
+     2550
+    ],
+    "kb": 153,
+    "y_medio": 0.1601,
+    "y_p95": 0.5135
+   },
+   {
+    "archivo": "cava-h.webp",
+    "px": [
+     2560,
+     1440
+    ],
+    "kb": 142,
+    "y_medio": 0.1215,
+    "y_p95": 0.4676
+   }
+  ]
+ }
+]

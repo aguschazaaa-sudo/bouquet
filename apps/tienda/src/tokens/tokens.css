@@ -96,12 +96,58 @@
   /* Un panel borgoña sobre tinta llega a 2,05:1: por debajo del 3:1 de un
    * borde de UI. La línea dorada que lo enmarca es lo único que lo hace
    * visible, así que el filete no es adorno. */
-  --filete: 1px; /* grosor constante, siempre. La jerarquía va por opacidad */
-  --filete-fuerte: 0.72;
-  --filete-tenue: 0.3;
+
+  /* ⚠️ ESTO DECÍA "grosor constante, siempre. La jerarquía va por opacidad",
+   * y salía de direccion.md §1: *"Copa de trazo MONOLINEAL dorado […] todo lo
+   * dibujado que la acompañe —reglas, marcos, íconos— tiene que ser monolineal
+   * o pelea con la marca"*.
+   *
+   * **Es falso, y se midió.** `scripts/assets/generar_copa.py` corre la
+   * transformada de distancia sobre la máscara dorada del PNG del logo, 1313
+   * muestras de cresta:
+   *
+   *     p05 = 44px · mediana = 55px · p95 = 61px  ->  razón p95/p05 = 1,38
+   *
+   * Un monolineal da ~1,00. El isotipo tiene modulación de bajo contraste. No
+   * es caligráfico (eso sería 3:1), pero **no es monolineal**, y el §1 se
+   * escribió mirando en vez de midiendo.
+   *
+   * La consecuencia práctica es que el sitio puede tener DOS pesos de línea, y
+   * los necesita: sobre tinta, un filete de 1px al 30 % de opacidad no se ve.
+   * La jerarquía ahora va por GROSOR y la opacidad queda para el matiz. */
+  --filete: 1px; /* el fino: divisiones internas, marcos chicos */
+  --filete-grueso: 1.5px; /* 1,38 redondeado a algo que pinta en pantalla 2x */
+  --filete-fuerte: 0.85;
+  --filete-tenue: 0.42;
   --chaflan-marco: 16px;
   --chaflan-ventana: 8px;
   --chaflan-boton: 9px;
+
+  /* --- La escala de luz. direccion.md §0 y §8 -------------------------- */
+  /* "bouquet no es una tienda oscura: es una cava iluminada […] lo que se
+   * ilumina es la botella, nunca la interfaz."
+   *
+   * ⚠️ Eso NO se estaba cumpliendo, y el número lo dice. Medida la luminancia
+   * de la página renderizada por octavos, los ocho daban entre **0,014 y
+   * 0,025** — seis pantallas de scroll sin una sola variación de luz. Y el
+   * plano del SUJETO componía en 0,012: más oscuro que dos de los tres
+   * escenarios. Lo más oscuro de la página era la botella.
+   *
+   * Dos causas, las dos estructurales:
+   *   1. `.lampara` vivía en z-index 1 y `.plano--sujeto` en z-index 2: la
+   *      ÚNICA fuente de luz de la escena se pintaba DEBAJO del sujeto. Era
+   *      imposible por construcción iluminar la botella.
+   *   2. Los assets ya venían oscuros de origen (p95 de 0,044 a 0,47) y encima
+   *      el CSS los multiplicaba por brightness(0.5).
+   *
+   * Estos cuatro valores son la escalera que reemplaza al apagón parejo. Cada
+   * escalón es ~2x, que es lo que el ojo lee como profundidad — y coincide con
+   * la perspectiva atmosférica de parallax.md §3.4: el contraste CRECE hacia el
+   * sujeto y CAE hacia los dos extremos. */
+  --luz-ambiente: 0.72; /* el fondo lejano: presente, no negro */
+  --luz-escenario: 0.95; /* el lugar */
+  --luz-sujeto: 1.16; /* lo único iluminado de la escena */
+  --luz-detalle: 0.4; /* el oclusor: casi silueta */
 
   /* --- El motor de parallax. parallax.md §2.1 -------------------------- */
   /* v = 1 − z/D. Nadie elige 0.62: se elige "esto está lejos" y el número sale

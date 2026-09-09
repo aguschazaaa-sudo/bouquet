@@ -64,26 +64,45 @@
  * sujeto y CAE hacia los dos extremos. Un plano lejano con el mismo contraste
  * que el sujeto contradice su propia velocidad, y el cerebro resuelve el
  * conflicto del lado peor: lee capas pegoteadas, no espacio. */
+/* ⚠️ Los brillos salen de tokens.css y NO son un gusto: son la escalera de luz
+ * que reemplaza al apagón parejo. Medido sobre la página renderizada, los ocho
+ * octavos daban Y entre 0,014 y 0,025 — o sea ninguna variación en seis
+ * pantallas. Con estos valores cada plano queda a ~2x del siguiente, que es lo
+ * que el ojo lee como profundidad. */
 .plano--ambiente img {
-  filter: saturate(0.55) contrast(0.72) brightness(0.5);
+  filter: saturate(0.62) contrast(0.82) brightness(var(--luz-ambiente));
 }
 .plano--escenario img {
-  filter: saturate(0.8) contrast(0.9) brightness(0.62);
+  filter: saturate(0.92) contrast(0.96) brightness(var(--luz-escenario));
 }
 .plano--sujeto img {
-  filter: saturate(1.05) contrast(1.08);
+  filter: saturate(1.08) contrast(1.05) brightness(var(--luz-sujeto));
 }
 .plano--detalle img {
-  filter: saturate(0.75) blur(3px);
+  filter: saturate(0.7) blur(3px) brightness(var(--luz-detalle));
 }
 
 /* El plano de contenido NO es absoluto: es el flujo de la escena. Va a
  * v = 1.00 y no lleva animación — es la referencia contra la que se miden
  * todas las demás. */
+/* ⚠️ LA PILA CAMBIÓ, Y ERA UN DEFECTO ESTRUCTURAL, NO UN VALOR MAL ELEGIDO.
+ *
+ * Antes: ambiente 0 · escenario 1 · LÁMPARA 1 · sujeto 2 · viñeta 2 ·
+ * contenido 3 · detalle 4.
+ *
+ * O sea que la única fuente de luz de la escena se pintaba DEBAJO del sujeto y
+ * la viñeta encima: **la botella recibía la sombra y no recibía la luz.** Por
+ * eso el plano del sujeto medía 0,012 de luminancia, más oscuro que dos de los
+ * tres escenarios, y por eso direccion.md §0 —"lo que se ilumina es la
+ * botella"— era imposible de cumplir sin tocar el orden.
+ *
+ * Ahora la lámpara y la viñeta quedan por encima de TODA la fotografía y por
+ * debajo del contenido. Las dos siguen sin tocar una sola letra, que es lo que
+ * el episodio de la "nube borgoña" dejó como regla. */
 .plano--contenido {
   position: relative;
   inset: auto;
-  z-index: 3;
+  z-index: 5;
   width: 100%;
   display: grid;
   place-items: center;
@@ -102,7 +121,7 @@
   --sangrado: 22svh; /* recorrido 16svh */
 }
 .plano--detalle {
-  z-index: 4;
+  z-index: 6;
   --sangrado: 22svh; /* recorrido 16svh */
 }
 
@@ -171,16 +190,24 @@
  * un fondo ILUMINADO es un gradiente radial descentrado. Cuesta lo mismo.
  * Tres números por escena — azimut, altura, radio — y la luz camina desde la
  * puerta hasta el lector a lo largo de la página. CSS puro, cero bytes. */
+/* ⚠️ SUBE DE z1 A z3: por encima de TODA la fotografía, sujeto incluido.
+ * En z1 quedaba debajo del sujeto (z2) y la luz no llegaba nunca a lo único
+ * que la dirección quiere iluminar. Ver el bloque de la pila, más arriba.
+ *
+ * Y el `screen` no es un adorno: un degradé dorado en modo normal APOYA color
+ * encima y lava la foto; en `screen` ACLARA lo que ya está ahí, que es lo que
+ * hace una luz. Es la diferencia entre pintar una mancha y encender algo. */
 .lampara {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
+  mix-blend-mode: screen;
   background: radial-gradient(
     ellipse var(--lr) calc(var(--lr) * 0.8) at var(--lx) var(--ly),
-    color-mix(in srgb, var(--dorado) 26%, transparent) 0%,
-    color-mix(in srgb, var(--borgona) 14%, transparent) 38%,
-    transparent 72%
+    color-mix(in srgb, var(--dorado) 34%, transparent) 0%,
+    color-mix(in srgb, var(--borgona) 20%, transparent) 40%,
+    transparent 74%
   );
 }
 
@@ -202,15 +229,22 @@
  * Va a z-index 2: encima de toda la fotografía, debajo del contenido. La caída
  * de luz sigue estando sobre la imagen, que es lo que tiene que oscurecer, y no
  * toca una sola letra. */
+/* Va a z4: encima de la lámpara y de toda la fotografía, debajo del contenido.
+ *
+ * ⚠️ Y BAJA DEL 78 % AL 55 %. El 78 % se eligió cuando la viñeta tenía que
+ * tapar unas fotos que ya estaban apagadas por filtro; ahora la fotografía
+ * lleva luz de verdad y una caída al 78 % se la vuelve a comer entera. El
+ * centro también se abre de 30 % a 42 %: la caída tiene que empezar más
+ * afuera para dejar respirar al sujeto, que es el punto de todo esto. */
 .vinieta {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 4;
   pointer-events: none;
   background: radial-gradient(
     ellipse 120% 90% at var(--lx) var(--ly),
-    transparent 30%,
-    color-mix(in srgb, var(--tinta-honda) 78%, transparent) 100%
+    transparent 42%,
+    color-mix(in srgb, var(--tinta-honda) 55%, transparent) 100%
   );
 }
 
@@ -227,14 +261,24 @@
  * transparente MÁS ALLÁ del borde de la caja, así que el borde lo corta y el
  * scrim se lee como un panel rectangular translúcido en vez de como luz. Es el
  * defecto que se vio en la primera captura del héroe. */
+/* La fuerza es una variable porque ahora la fotografía lleva luz de verdad y
+ * no todas las escenas necesitan lo mismo: la que tiene un escenario claro y
+ * ancho detrás del texto necesita más placa que la que tiene una vela. Se mide
+ * por escena con el arnés de contraste, no se elige. */
 .scrim {
   position: absolute;
   inset: -45% -25%;
   z-index: -1;
+  --scrim-fuerza: 82%;
   background: radial-gradient(
     ellipse 50% 50% at 50% 50%,
-    color-mix(in srgb, var(--tinta-honda) 82%, transparent) 0%,
-    color-mix(in srgb, var(--tinta-honda) 58%, transparent) 42%,
+    color-mix(in srgb, var(--tinta-honda) var(--scrim-fuerza), transparent) 0%,
+    color-mix(
+        in srgb,
+        var(--tinta-honda) calc(var(--scrim-fuerza) - 24%),
+        transparent
+      )
+      42%,
     transparent 100%
   );
 }

@@ -1,0 +1,237 @@
+/* deco.css — el oro como MATERIA, no como adorno.
+ *
+ * Por qué existe esta hoja, con el número adelante: medida la luminancia de la
+ * página renderizada por octavos, los ocho daban entre 0,014 y 0,025. Seis
+ * pantallas sin una sola variación de luz. La paleta tiene exactamente tres
+ * valores —tinta 0,007 · dorado 0,447 · marfil 0,85— y sobre una página que
+ * vive entera abajo de 0,03, **el dorado es el único tono medio que existe.**
+ *
+ * direccion.md §5.2 ya lo había razonado por el lado del contraste: un panel
+ * borgoña sobre tinta topea en 2,05:1, y la línea dorada que lo enmarca es lo
+ * único que lo hace visible. *"Un recurso decorativo que además resuelve un
+ * problema medido deja de ser decorativo."*
+ *
+ * De Art Decó se toman las TRES cosas que §5.1 autoriza —la regla de un solo
+ * trazo, el cartucho y el chaflán a 45°— más una cuarta que apareció midiendo:
+ * el **trazo modulado**, porque el isotipo modula 1,38:1 y §1 decía que no.
+ *
+ * Lo prohibido de §5.3 no está y no entra: soles nacientes, zigzags, abanicos,
+ * escalonados, plumas, tipografías decó de display, degradés dorados con
+ * biselado, ornamentos espejados.
+ */
+
+/* Las dos propiedades registradas. Sin @property un custom property no se
+ * puede interpolar: la animación saltaría del valor inicial al final sin
+ * pasar por el medio, que es exactamente lo que no se quiere. */
+@property --nivel {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+@property --cierre {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 1turn;
+}
+
+/* ================================================================ LA COPA = */
+
+.copa {
+  display: block;
+  height: auto;
+  overflow: visible;
+}
+
+.copa__trazo {
+  fill: var(--dorado);
+}
+
+.copa__liquido {
+  fill: var(--borgona);
+  /* El nivel se expresa moviendo el líquido dentro de su recorte, no
+   * redibujándolo: así el vino nunca aparece donde el imagotipo no lo tiene. */
+  transform: translateY(calc(var(--vino-alto) * (1 - var(--nivel))));
+}
+
+/* La copa grande de la primera escena ES el sujeto iluminado.
+ * direccion.md §0: "lo que se ilumina es la botella, nunca la interfaz". El
+ * resplandor va por detrás del trazo, con `drop-shadow` y no con un degradé:
+ * §8 prohíbe el dorado en degradé — *"un dorado biselado es un <marquee> con
+ * mejor gusto"*. Un halo de luz alrededor de un objeto no es un degradé sobre
+ * el objeto. */
+/* El tamaño lo pone el contexto (escenas.css). Acá va SÓLO la luz, para que
+ * el mismo modificador sirva a una copa de 80px y a una de media pantalla. */
+.copa--faro {
+  filter: drop-shadow(0 0 clamp(28px, 7svh, 70px)
+      color-mix(in srgb, var(--dorado) 34%, transparent))
+    drop-shadow(0 0 clamp(60px, 16svh, 160px)
+      color-mix(in srgb, var(--borgona) 44%, transparent));
+}
+
+/* ==================================================== EL VINO QUE SUBE ==== */
+
+/* La marca como indicador de progreso: el vino sube a medida que bajás.
+ * Reemplaza una barra de scroll por el objeto de la marca — direccion.md §6
+ * pide "palabras, no íconos", y esto no es un ícono de UI: es el imagotipo
+ * haciendo lo único que un vaso puede hacer. */
+.marca-progreso {
+  position: fixed;
+  right: clamp(var(--e-4), 2.5vw, var(--e-6));
+  bottom: clamp(var(--e-4), 2.5vw, var(--e-6));
+  z-index: 8;
+  width: clamp(26px, 3.2vw, 44px);
+  pointer-events: none;
+  opacity: 0.82;
+}
+
+@keyframes llenar {
+  from {
+    --nivel: 0.04;
+  }
+  to {
+    --nivel: 0.96;
+  }
+}
+
+/* `scroll(root block)` es el timeline de la página entera, no el de una escena.
+ * Firefox lo tiene detrás de flag igual que `view()`, así que allá la copa
+ * queda con su nivel por defecto — llena, no vacía. Un indicador de progreso
+ * que se queda clavado en cero parece roto; clavado en lleno parece un sello. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .copa--progresiva {
+      animation: llenar linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marca-progreso {
+    display: none; /* sin movimiento no informa nada y ocupa una esquina */
+  }
+}
+
+/* ============================================================ EL CARTUCHO = */
+
+/* Un marco fino que encierra un bloque de tipografía centrada: la geometría de
+ * una etiqueta de vino, que es donde el comprador ya espera ver un bloque
+ * enmarcado (direccion.md §5.1).
+ *
+ * El anillo se dibuja con UN clip-path de regla `evenodd`: el octógono de
+ * afuera y el de adentro en el mismo polígono. Por qué así y no con `border` +
+ * `clip-path`: al clipear un borde, los cuatro chaflanes quedan ABIERTOS —el
+ * borde no existe sobre la diagonal— y el marco se lee roto. Y por qué no con
+ * dos capas apiladas: la de adentro tendría que pintar el fondo, y entonces el
+ * cartucho no puede ser transparente sobre la fotografía. */
+.cartucho-deco {
+  position: relative;
+  padding: clamp(var(--e-5), 4vw, var(--e-7));
+  --chaflan: var(--chaflan-marco);
+  --grosor: var(--filete-grueso);
+}
+
+.cartucho-deco::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--dorado) 88%, transparent);
+  clip-path: polygon(
+    evenodd,
+    /* el octógono de afuera */ var(--chaflan) 0,
+    calc(100% - var(--chaflan)) 0,
+    100% var(--chaflan),
+    100% calc(100% - var(--chaflan)),
+    calc(100% - var(--chaflan)) 100%,
+    var(--chaflan) 100%,
+    0 calc(100% - var(--chaflan)),
+    0 var(--chaflan),
+    /* y el de adentro, que es el que abre el hueco */
+      calc(var(--chaflan) + var(--grosor)) var(--grosor),
+    calc(100% - var(--chaflan) - var(--grosor)) var(--grosor),
+    calc(100% - var(--grosor)) calc(var(--chaflan) + var(--grosor)),
+    calc(100% - var(--grosor)) calc(100% - var(--chaflan) - var(--grosor)),
+    calc(100% - var(--chaflan) - var(--grosor)) calc(100% - var(--grosor)),
+    calc(var(--chaflan) + var(--grosor)) calc(100% - var(--grosor)),
+    var(--grosor) calc(100% - var(--chaflan) - var(--grosor)),
+    var(--grosor) calc(var(--chaflan) + var(--grosor))
+  );
+  /* La máscara cónica es la que lo DIBUJA al entrar. Barre desde arriba en
+   * sentido horario: el marco aparece trazándose, no apareciendo. */
+  mask-image: conic-gradient(
+    from -90deg,
+    var(--negro) var(--cierre),
+    transparent 0
+  );
+}
+
+@keyframes cerrar-cartucho {
+  from {
+    --cierre: 0turn;
+  }
+  to {
+    --cierre: 1turn;
+  }
+}
+
+/* Se dibuja mientras ENTRA y se queda. No se desdibuja al salir: eso sería
+ * inquieto, y direccion.md §8.2 prohíbe lo juguetón — "un rebote es juguetón,
+ * y juguetón es app". El rango termina en 55% del avance para que el marco esté
+ * cerrado bastante antes de que el bloque llegue al centro de la pantalla. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .cartucho-deco::before {
+      animation: cerrar-cartucho linear both;
+      animation-timeline: view();
+      animation-range: entry 10% cover 55%;
+    }
+  }
+}
+
+/* ============================================================== EL FILETE = */
+
+/* La regla modulada: fina en las puntas, gruesa en el medio.
+ *
+ * Es la cuarta cosa que se toma del Decó y la única que no estaba autorizada
+ * en direccion.md §5.1, porque el documento creía que el isotipo era
+ * monolineal. Medido, modula 1,38:1 — así que una regla de dos pesos no pelea
+ * con la marca: la cita. */
+.filete {
+  position: relative;
+  height: var(--filete-grueso);
+  width: min(46ch, 100%);
+  margin-inline: auto;
+  border: 0;
+}
+
+.filete::before,
+.filete::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: var(--dorado);
+}
+
+/* El peso fino recorre todo el ancho. */
+.filete::before {
+  top: calc((var(--filete-grueso) - var(--filete)) / 2);
+  height: var(--filete);
+  opacity: var(--filete-tenue);
+}
+
+/* El grueso vive sólo en el centro, y ahí está la modulación. */
+.filete::after {
+  top: 0;
+  height: var(--filete-grueso);
+  opacity: var(--filete-fuerte);
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--negro) 26%,
+    var(--negro) 74%,
+    transparent 100%
+  );
+}

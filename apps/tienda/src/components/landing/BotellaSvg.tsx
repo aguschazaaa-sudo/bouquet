@@ -1,8 +1,19 @@
-/* La silueta de la botella, monolineal.
+/* La silueta de la botella, de trazo constante.
  *
- * direccion.md §1: el isotipo es una copa de trazo de grosor CONSTANTE. Todo
- * lo dibujado que la acompañe —reglas, marcos, íconos— tiene que ser
- * monolineal o pelea con la marca.
+ * ⚠️ ESTE ENCABEZADO CITABA UNA LÍNEA DEL VAULT QUE ES FALSA.
+ * Decía: *"direccion.md §1: el isotipo es una copa de trazo de grosor
+ * CONSTANTE. Todo lo dibujado que la acompañe —reglas, marcos, íconos— tiene
+ * que ser monolineal o pelea con la marca."*
+ *
+ * Medido sobre la máscara dorada del PNG del logo con la transformada de
+ * distancia (`scripts/assets/generar_copa.py`, 1313 muestras de cresta): el
+ * ancho de trazo va de 44px (p05) a 61px (p95), **razón 1,38**. Un monolineal
+ * daría ~1,00. El isotipo modula.
+ *
+ * El dibujo de acá se deja monolineal igual, y ahora por una razón propia y no
+ * por una regla heredada: es una silueta esquemática de repuesto, no la marca.
+ * Quien cita a la marca es `components/marca/Copa.tsx`, que usa los paths
+ * reales del imagotipo.
  *
  * Por qué dibujo y no foto: seis fotos de botella con recorte consistente
  * —misma altura, misma perspectiva, misma luz— no existen como stock, y

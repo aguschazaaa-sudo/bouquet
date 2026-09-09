@@ -86,3 +86,9 @@ __pycache__/
 # --- Next.js / apps ----------------------------------------------------------
 apps/tienda/.next/
 apps/tienda/out/
+
+# Next 16 genera estos dos en cada `next dev` y no son del proyecto.
+# ⚠️ El CLAUDE.md de la RAIZ si es nuestro y esta versionado: esto no lo toca.
+apps/tienda/CLAUDE.md
+apps/tienda/AGENTS.md
+__pycache__/

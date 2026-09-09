@@ -1,3 +1,4 @@
+import { Copa } from '../marca/Copa';
 import { Escena } from './Escena';
 import { Plano } from './Plano';
 
@@ -57,7 +58,20 @@ export function EscenaProblema() {
               mientras scrolleás y ninguna captura lo mostraría. */}
           <div className="scrim" aria-hidden="true" />
 
-          <p className="hero__marca">bouquet</p>
+          {/* El isotipo, por primera vez en el sitio. Antes la marca era sólo
+              la palabra compuesta en versalitas: el dibujo que el estudio
+              entregó no aparecía en ninguna pantalla.
+
+              Va acá arriba y no en un header porque direccion.md §4.3 resuelve
+              la bajada floja del imagotipo separando las partes — el dibujo y
+              el nombre se usan juntos, la bajada se compone como texto del
+              sitio. Eso es exactamente esta pila. */}
+          <p className="hero__marca">
+            <Copa id="heroe" className="copa--faro hero__copa" nivel={0.72} />
+            <span className="hero__nombre">bouquet</span>
+          </p>
+
+          <hr className="filete hero__filete" />
 
           <p className="hero__kicker">
             El aroma lo trae la uva. El bouquet lo gana esperando.

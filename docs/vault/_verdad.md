@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-08 - commit `d42e7a1` **+ cambios sin commitear** - huella del cuerpo `861545972169`
+> **Generado:** 2026-09-09 - commit `c188c52` **+ cambios sin commitear** - huella del cuerpo `7b83338b5b83`
 
 ---
 
@@ -227,4 +227,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 28. Archivos de test: 4. Casos de test: 35.
+Archivos de codigo recorridos: 29. Archivos de test: 4. Casos de test: 35.

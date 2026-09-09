@@ -26,13 +26,35 @@
   position: relative;
 }
 
+/* El bloque de marca: el dibujo arriba, el nombre abajo, en un eje.
+ * direccion.md §7.3 — lo ceremonial es centrado y simétrico, y esto es la
+ * composición de una etiqueta. */
 .hero__marca {
+  display: grid;
+  justify-items: center;
+  gap: var(--e-3);
+  margin: 0;
+}
+
+.hero__nombre {
   font-family: var(--tipo-display);
   font-variant-caps: all-small-caps;
   letter-spacing: 0.34em;
   font-size: var(--t-kicker);
   color: var(--dorado);
-  margin: 0;
+}
+
+/* El isotipo entra a tamaño de sello, no de titular: la primera pantalla ya
+ * tiene un h1 de hasta 5,2rem y dos objetos grandes compitiendo es lo que
+ * direccion.md §5.1 llama "ninguno pidiendo atención al mismo tiempo que
+ * otro". */
+.hero__copa {
+  width: clamp(58px, 7.5vw, 96px);
+}
+
+.hero__filete {
+  width: min(22ch, 60%);
+  margin-block: calc(-1 * var(--e-2)) 0;
 }
 
 /* El único lugar de todo el sitio donde la palabra se usa como término.
@@ -481,11 +503,19 @@
 
 /* Los cinco que siguen salieron de mirar capturas, no de leer el CSS. */
 
-/* 1. En la escena de objeto el bokeh competía con el texto: manchas naranjas
- *    grandes, más brillantes que el titular. El ambiente tiene que ser
- *    ambiente — contraste mínimo, saturación mínima (parallax.md §3.4). */
+/* 1. ⚠️ EL PORQUÉ DE ESTA LÍNEA CAMBIÓ, Y CONVIENE QUE SE NOTE.
+ *    Decía: "el bokeh competía con el texto: manchas naranjas grandes, más
+ *    brillantes que el titular". Ese asset ya no existe — `ambiente.webp` es
+ *    ahora un muro de culos de botella en su pupitre, sin bokeh.
+ *
+ *    La razón de hoy es otra y es de ritmo: la escena 2 es el VALLE de luz de
+ *    la página. Con la 1 y la 4 iluminadas, una escena oscura en el medio deja
+ *    que las seis tarjetas sean lo único que brilla, que es exactamente lo que
+ *    tiene que pasar donde se mira el vino. El 0.2 original la dejaba en 0,019
+ *    de luminancia —indistinguible del fondo vacío—; 0.42 la deja como
+ *    penumbra con textura. */
 .escena--seleccion .plano--ambiente img {
-  filter: saturate(0.34) contrast(0.55) brightness(0.2);
+  filter: saturate(0.42) contrast(0.62) brightness(0.42);
 }
 
 /* 2. La leyenda legal se partía en "18 / años.". Es la línea que menos puede
@@ -499,6 +529,20 @@
  *    afuera. */
 .escena--custodia .scrim {
   inset: -30% -18%;
+  /* ⚠️ Y ADEMÁS SUBE DE FUERZA. Con la fotografía iluminada, el título de esta
+   * escena medía **4,57:1** contra el píxel pintado — pasa el 4,5 de AA por
+   * seis centésimas, o sea no pasa. Es la única escena sin sujeto: su escenario
+   * carga solo con la pantalla y por eso llega más claro detrás del texto. */
+  --scrim-fuerza: 90%;
+}
+
+/* 6. La foto de toneles es la más ruidosa de la tanda: caras de roble grandes
+ *    y pálidas, más dos pizarras con letras. Un escenario tiene que ser el
+ *    lugar, no el tema — parallax.md §3.4 pide que el contraste CREZCA hacia el
+ *    sujeto, y acá no hay sujeto contra el cual crecer. Se apaga sólo en esta
+ *    escena, con el token, no con un filtro suelto. */
+.escena--custodia {
+  --luz-escenario: 0.68;
 }
 
 /* 4. La mesa cierra la página y su scrim tapaba la vela, que es la única
