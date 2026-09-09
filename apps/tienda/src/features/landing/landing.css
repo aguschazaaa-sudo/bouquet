@@ -347,7 +347,12 @@
   --lr: 96%;
 }
 
+/* El único cartucho de la página, y el más grande del sitio. Sube el anillo al
+ * peso de marco: el default de `.cartucho-deco` está calibrado para piezas
+ * chicas —la barra hasta lo BAJA a `--filete`— y acá se leía como un pelo.
+ * La geometría del chaflán interior lo acompaña sola, en `deco.css`. */
 .mesa {
+  --grosor: var(--filete-marco);
   display: grid;
   justify-items: center;
   text-align: center;

@@ -90,6 +90,21 @@
     0 calc(100% - var(--chaflan)),
     0 var(--chaflan)
   );
+
+  /* ⚠️ El chaflán de adentro NO es `--chaflan + --grosor`, y la diferencia se
+   * ve recién cuando el anillo engorda.
+   *
+   * La diagonal de afuera es la recta `x + y = --chaflan`. Para que la de
+   * adentro quede a la MISMA distancia perpendicular que los lados rectos hay
+   * que correrla `--grosor·√2` sobre ese eje, y eso mueve el vértice sólo
+   * `√2 − 1 = 0,414` de grosor, no un grosor entero. Con un vértice a
+   * `+1·--grosor` la diagonal sale **1,41 veces más gorda** que los rectos.
+   *
+   * Con los 1,5 px del filete grueso el error medía 0,6 px y no se veía. El
+   * marco de la mesa duplica el grosor, así que empieza a verse — y este
+   * proyecto ya se comió dos veces un defecto de geometría que sólo aparecía
+   * con el zoom al 200 %. */
+  --chaflan-interior: calc(var(--chaflan) + 0.41421 * var(--grosor));
 }
 
 .cartucho-deco::before {
@@ -98,9 +113,42 @@
   inset: 0;
   pointer-events: none;
   background: color-mix(in srgb, var(--dorado) 88%, transparent);
+  /* ⚠️ LA RANURA DE ÁREA CERO, Y NO ES BARROCA: SIN ELLA EL MARCO SE PARTE.
+   *
+   * `polygon()` dibuja UN camino cerrado, no dos. Poniendo los ocho vértices
+   * de afuera y después los ocho de adentro, el camino tiene que ir y volver
+   * entre los dos anillos, y esos dos "puentes" son aristas reales: uno desde
+   * el último vértice de afuera `0 --chaflan` hasta el primero de adentro, y
+   * otro de vuelta. Los dos caen en la esquina SUPERIOR IZQUIERDA y **se
+   * cruzan**; con `evenodd`, cruzarse invierte el relleno, y el chaflán de esa
+   * esquina se estrangula hasta cortarse.
+   *
+   * No es teórico: medido sobre el cartucho publicado, el chaflán superior
+   * izquierdo bajaba de 6 px a **1 px** —una muesca— mientras los otros tres
+   * medían 6 px parejos. Estaba desde que existe el cartucho; con el filete
+   * fino la muesca medía menos de un píxel y por eso nadie la vio.
+   *
+   * El arreglo: salir y volver por el MISMO segmento. El anillo de afuera
+   * arranca y cierra en la mitad del lado de arriba, la ranura baja recta
+   * hasta el anillo de adentro, se recorre entero, y el cierre implícito
+   * vuelve por esa misma vertical. Un segmento recorrido en los dos sentidos
+   * encierra área cero: cualquier rayo lo cruza dos veces y la paridad de
+   * `evenodd` no se entera.
+   *
+   * Medido en un banco aislado, espesor perpendicular del chaflán a lo largo
+   * de las cuatro esquinas (el anillo mide 6 px):
+   *
+   *     puentes cruzados (lo que había)   sup-izq  min 0,1  max 4,4   ← roto
+   *     anillo interior espejado          sup-izq  min 1,1  max 13,9  ← peor
+   *     ranura de área cero               las cuatro  min 5,6 max 5,6 ← plano
+   *
+   * ⚠️ La ranura asume que el 50 % del ancho cae en el lado recto de arriba,
+   * o sea `ancho > 2 · --chaflan`. Con --chaflan-marco son 32 px: cualquier
+   * cartucho más angosto que eso no es un cartucho. */
   clip-path: polygon(
     evenodd,
-    /* el octógono de afuera */ var(--chaflan) 0,
+    /* el octógono de afuera, que arranca y cierra arriba al centro */
+      50% 0,
     calc(100% - var(--chaflan)) 0,
     100% var(--chaflan),
     100% calc(100% - var(--chaflan)),
@@ -108,15 +156,20 @@
     var(--chaflan) 100%,
     0 calc(100% - var(--chaflan)),
     0 var(--chaflan),
-    /* y el de adentro, que es el que abre el hueco */
-      calc(var(--chaflan) + var(--grosor)) var(--grosor),
-    calc(100% - var(--chaflan) - var(--grosor)) var(--grosor),
-    calc(100% - var(--grosor)) calc(var(--chaflan) + var(--grosor)),
-    calc(100% - var(--grosor)) calc(100% - var(--chaflan) - var(--grosor)),
-    calc(100% - var(--chaflan) - var(--grosor)) calc(100% - var(--grosor)),
-    calc(var(--chaflan) + var(--grosor)) calc(100% - var(--grosor)),
-    var(--grosor) calc(100% - var(--chaflan) - var(--grosor)),
-    var(--grosor) calc(var(--chaflan) + var(--grosor))
+    var(--chaflan) 0,
+    50% 0,
+    /* la ranura baja, y el de adentro abre el hueco y cierra donde empezó */
+      50% var(--grosor),
+    calc(100% - var(--chaflan-interior)) var(--grosor),
+    calc(100% - var(--grosor)) var(--chaflan-interior),
+    calc(100% - var(--grosor)) calc(100% - var(--chaflan-interior)),
+    calc(100% - var(--chaflan-interior)) calc(100% - var(--grosor)),
+    var(--chaflan-interior) calc(100% - var(--grosor)),
+    var(--grosor) calc(100% - var(--chaflan-interior)),
+    var(--grosor) var(--chaflan-interior),
+    var(--chaflan-interior) var(--grosor),
+    50% var(--grosor)
+    /* y el cierre implícito sube por la ranura, que es lo que la anula */
   );
 }
 
@@ -132,21 +185,51 @@
  * La geometría es vocabulario y la reusa cualquiera; el trazado al entrar es
  * un comportamiento de escena y sólo lo pide quien tiene un `view()` real. */
 .cartucho-deco--trazado::before {
-  /* La máscara cónica es la que lo DIBUJA al entrar. Barre desde arriba en
-   * sentido horario: el marco aparece trazándose, no apareciendo. */
+  /* La máscara cónica es la que lo DIBUJA al entrar: el marco aparece
+   * trazándose, no apareciendo.
+   *
+   * DOS INICIOS, NO UNO, y ahí está la mitad de la velocidad. Un solo barrido
+   * tiene que recorrer una vuelta entera dentro del mismo rango de scroll, y a
+   * esa velocidad el trazo se lee como un parpadeo. Acá salen dos trazos del
+   * mismo punto —arriba al centro— en sentidos opuestos y se encuentran abajo:
+   * cada uno cubre MEDIA vuelta en el mismo scroll, o sea que la punta del
+   * trazo va a la mitad de la velocidad angular.
+   *
+   * Y no cuesta una segunda capa: es un solo gradiente con los topes
+   * simétricos. `--cierre` desde 0 hacia adelante es el brazo horario; desde
+   * `1turn - --cierre` hasta el final es el antihorario, que es el mismo arco
+   * espejado. En el medio queda el hueco que se va cerrando.
+   *
+   * ⚠️ `from 0deg`, y ANTES DECÍA `from -90deg` con el comentario *"barre desde
+   * arriba"* al lado. **El comentario estaba bien y el código no.** En
+   * `conic-gradient` el ángulo 0 ya apunta ARRIBA —no a las 3, como en un
+   * `linear-gradient` o en `atan2`—, así que `-90deg` corría el arranque al
+   * borde IZQUIERDO. Con un solo brazo eso pasa por elección de estilo y nadie
+   * lo nota; con dos, los dos salían del costado izquierdo y se veía roto.
+   * Medido en un banco aislado a 47°: con `-90deg` los píxeles caían todos en
+   * las dos mitades izquierdas (644 y 643, cero a la derecha); con `0deg`
+   * quedan 625 y 625 arriba y cero abajo, que es la simetría que se buscaba.
+   *
+   * El fallback también se sostiene: sin `view()` el `initial-value` de
+   * `--cierre` es 1turn, los dos brazos se pasan de largo, los topes se
+   * clampean y el marco queda ENTERO —que es lo que tiene que pasar cuando la
+   * animación no corre. */
   mask-image: conic-gradient(
-    from -90deg,
+    from 0deg,
     var(--negro) var(--cierre),
-    transparent 0
+    transparent 0,
+    transparent calc(1turn - var(--cierre)),
+    var(--negro) 0
   );
 }
 
+/* Media vuelta por brazo, no una entera: los dos juntos cierran el anillo. */
 @keyframes cerrar-cartucho {
   from {
     --cierre: 0turn;
   }
   to {
-    --cierre: 1turn;
+    --cierre: 0.5turn;
   }
 }
 

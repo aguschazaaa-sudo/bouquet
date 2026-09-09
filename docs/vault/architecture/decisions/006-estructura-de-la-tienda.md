@@ -164,6 +164,31 @@ Contra la cuota de 50.000/día: **0 %**.
   usa `animation-timeline: view()`, y un elemento `position: fixed` nunca se
   mueve dentro del scrollport: la barra habría heredado un progreso clavado y
   el marco podía quedar **enmascarado entero, sin un error en consola**.
+
+### El anillo del cartucho: por qué existe la ranura (no revertir) — 2026-09-09
+
+`.cartucho-deco::before` dibuja el anillo con **un** `polygon(evenodd, …)` que
+arranca y cierra **arriba al centro**, baja al octógono interior por un
+segmento vertical y vuelve por ese mismo segmento. Se ve barroco al lado de
+"los ocho de afuera y los ocho de adentro", y esa forma simple **estaba rota**.
+
+`polygon()` es un solo camino cerrado, no dos subcaminos. Listando los dos
+octógonos seguidos, el camino tiene que puentear entre ellos dos veces, y los
+dos puentes caen en la **esquina superior izquierda** y se cruzan. `evenodd`
+invierte el relleno donde eso pasa: medida sobre el cartucho publicado, la
+banda del chaflán iba **9 → 1 px → corte → 1 → 9** mientras las otras tres
+esquinas daban 6 px parejos. Estaba desde el commit inicial del cartucho y
+nadie lo vio porque con el filete a 1,5 px la muesca medía menos de un píxel.
+
+Un segmento recorrido en los dos sentidos encierra **área cero**, así que
+cualquier rayo lo cruza dos veces y la paridad no se entera. Medido en un
+banco aislado, espesor perpendicular del chaflán (anillo de 6 px): puentes
+cruzados **0,1 – 4,4**; anillo interior espejado **1,1 – 13,9**; ranura de área
+cero **5,6 – 5,6 en las cuatro esquinas**.
+
+⚠️ **Requisito de la ranura:** el 50 % del ancho tiene que caer en el lado
+recto de arriba, o sea `ancho > 2 · --chaflan`. Con `--chaflan-marco` son
+32 px.
 - [`landing-alternativa.md`](../../design/landing-alternativa.md) apuntaba a
   cinco rutas que ya no existen. Actualizado.
 - Un `import` cruzado entre features ahora **bloquea**. Es la consecuencia

@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-09 - commit `9865957` **+ cambios sin commitear** - huella del cuerpo `cebb868ec257`
+> **Generado:** 2026-09-09 - commit `d794239` **+ cambios sin commitear** - huella del cuerpo `cebb868ec257`
 
 ---
 
