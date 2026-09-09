@@ -125,15 +125,15 @@ P3=$(fixture "apps/admin/lib/features/orden/presentation/ok.dart" \
 esperar 0 layer-boundary.sh "$P3" "presentation con Flutter pasa"
 
 echo "=== server-only-guard ==="
-S1=$(fixture "apps/tienda/src/components/Grilla.tsx" \
+S1=$(fixture "apps/tienda/src/features/catalogo/Grilla.tsx" \
   "import { getFirestore } from 'firebase-admin/firestore';" "export function Grilla() {}")
-esperar 2 server-only-guard.sh "$S1" "firebase-admin en components bloquea"
+esperar 2 server-only-guard.sh "$S1" "firebase-admin en una feature bloquea"
 S2=$(fixture "apps/tienda/src/server/catalogo.ts" \
   "import { getFirestore } from 'firebase-admin/firestore';" "export async function leer() {}")
 esperar 0 server-only-guard.sh "$S2" "firebase-admin en src/server pasa"
 S3=$(fixture "apps/tienda/src/server/malo.ts" "'use client'" "export const x = 1;")
 esperar 2 server-only-guard.sh "$S3" "'use client' dentro de src/server bloquea"
-S4=$(fixture "apps/tienda/src/components/Carrito.tsx" \
+S4=$(fixture "apps/tienda/src/features/carrito/Carrito.tsx" \
   "'use client'" "import { leer } from '@/server/catalogo';" "export function Carrito() {}")
 esperar 2 server-only-guard.sh "$S4" "cliente importando src/server bloquea"
 S5=$(fixture "apps/tienda/src/lib/pago.ts" \
@@ -157,9 +157,9 @@ C1=$(fixture "apps/admin/lib/features/orden/presentation/color.dart" \
 esperar 2 no-hardcoded-colors.sh "$C1" "Colors.grey bloquea (sin excepcion para grises)"
 C2=$(fixture "apps/admin/lib/theme/colores.dart" "final c = Color(0xFF112233);")
 esperar 0 no-hardcoded-colors.sh "$C2" "literal dentro de theme/ pasa"
-C3=$(fixture "apps/tienda/src/components/Boton.tsx" "const s = { color: '#1a2b3c' };")
+C3=$(fixture "apps/tienda/src/shared/ui/Boton.tsx" "const s = { color: '#1a2b3c' };")
 esperar 2 no-hardcoded-colors.sh "$C3" "hex en la tienda bloquea"
-C4=$(fixture "apps/tienda/src/components/Nav.tsx" "const l = <a href=\"#abc\">ir</a>;")
+C4=$(fixture "apps/tienda/src/features/navegacion/Nav.tsx" "const l = <a href=\"#abc\">ir</a>;")
 esperar 0 no-hardcoded-colors.sh "$C4" "href=\"#abc\" pasa (falso positivo descartado)"
 
 echo "=== vault-precheck (el que en PadelPunilla era un no-op) ==="
@@ -188,6 +188,28 @@ esperar_texto "AVISO" call-site-guard.sh "$H1" "avisa que nadie lo referencia"
 fixture "apps/admin/lib/features/orden/presentation/usa.dart" \
   "import 'huerfano.dart';" "final x = SheetHuerfano();" > /dev/null
 esperar_sin_texto "AVISO" call-site-guard.sh "$H1" "calla cuando alguien si lo usa"
+
+echo "=== frontera-features (ADR 006) ==="
+# Cada regla con su par. El negativo importa mas que el positivo aca: un hook
+# que bloquea TODO import de la vidriera pasaria los dos casos positivos y
+# haria la arquitectura inusable sin que ningun test se ponga rojo.
+F1=$(fixture "apps/tienda/src/shared/ui/Boton.tsx"   "import { SELECCION } from '@/features/landing/seleccion';")
+esperar 2 frontera-features.sh "$F1" "shared/ que importa una feature bloquea"
+
+F2=$(fixture "apps/tienda/src/shared/ui/Tarjeta.tsx"   "import { Copa } from '@/shared/marca/Copa';")
+esperar 0 frontera-features.sh "$F2" "shared/ que importa shared/ pasa"
+
+F3=$(fixture "apps/tienda/src/features/carrito/Resumen.tsx"   "import { TarjetaVino } from '@/features/landing/TarjetaVino';")
+esperar 2 frontera-features.sh "$F3" "feature que importa OTRA feature bloquea"
+
+# El caso que separa un hook util de uno que solo sabe decir que no: una
+# feature importando de SI MISMA por el alias absoluto es legitimo y comun.
+F4=$(fixture "apps/tienda/src/features/landing/TarjetaVino.tsx"   "import type { Vino } from '@/features/landing/seleccion';")
+esperar 0 frontera-features.sh "$F4" "feature que se importa a si misma pasa"
+
+# Y el router puede con todo: es el unico que compone features entre si.
+F5=$(fixture "apps/tienda/src/app/vinos/page.tsx"   "import { PaginaEnObra } from '@/shared/ui/PaginaEnObra';"   "import { Barra } from '@/features/navegacion/BarraPrincipal';")
+esperar 0 frontera-features.sh "$F5" "app/ compone features distintas y pasa"
 
 echo "=== extraccion de ruta en formato Windows ==="
 WIN=$(printf '%s' "$GRANDE" | sed 's#/#\\\\#g')

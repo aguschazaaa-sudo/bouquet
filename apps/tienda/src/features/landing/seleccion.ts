@@ -1,4 +1,4 @@
-import type { FormaDeBotella } from '@/components/landing/BotellaSvg';
+import type { FormaDeBotella } from './BotellaSvg';
 
 /* ⚠️⚠️  DATOS DE MUESTRA. NADA DE ESTO ES REAL.  ⚠️⚠️
  *

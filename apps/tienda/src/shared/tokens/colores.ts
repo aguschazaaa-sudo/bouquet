@@ -12,8 +12,8 @@
  * lo vea en un teléfono.
  *
  * Se verifica así, y tiene que devolver la misma cadena de los dos lados:
- *     grep -o '\--tinta: #[0-9a-f]*' apps/tienda/src/tokens/tokens.css
- *     grep -o "tinta: '#[0-9a-f]*'"  apps/tienda/src/tokens/colores.ts
+ *     grep -o '\--tinta: #[0-9a-f]*' apps/tienda/src/shared/tokens/tokens.css
+ *     grep -o "tinta: '#[0-9a-f]*'"  apps/tienda/src/shared/tokens/colores.ts
  *
  * Pendiente, con disparador: cuando aparezca el segundo o el tercer valor
  * espejado, esto deja de ser un archivo a mano y pasa a generarse desde

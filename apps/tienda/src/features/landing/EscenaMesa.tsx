@@ -1,5 +1,5 @@
-import { Escena } from './Escena';
-import { Plano } from './Plano';
+import { Escena } from '@/shared/movimiento/Escena';
+import { Plano } from '@/shared/movimiento/Plano';
 
 /* Escena 4 — La mesa. El cierre.
  *
@@ -42,7 +42,7 @@ export function EscenaMesa() {
             cierre que nadie violó"*. Ésta es la escena del cierre, así que es
             donde el gesto corresponde. Ponerlo en las cuatro escenas lo
             convertiría en decoración de plantilla. */}
-        <div className="mesa cartucho-deco">
+        <div className="mesa cartucho-deco cartucho-deco--trazado">
           <div className="scrim" aria-hidden="true" />
 
           <h2 className="display mesa__titulo">

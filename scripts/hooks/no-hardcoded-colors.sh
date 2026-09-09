@@ -35,7 +35,7 @@ esac
 
 # --- Vidriera en Next.js ---------------------------------------------------
 case "$RUTA" in
-  */apps/tienda/src/tokens/*|*/apps/tienda/src/app/globals.css) exit 0 ;;
+  */apps/tienda/src/shared/tokens/*|*/apps/tienda/src/app/globals.css) exit 0 ;;
   */apps/tienda/src/*.css|*/apps/tienda/src/*.tsx|*/apps/tienda/src/*.ts)
     # Se excluyen las lineas con href= y las anclas de ruta: un href="#abc"
     # tiene tres caracteres hex y no es un color. Falso positivo conocido,
@@ -47,7 +47,7 @@ case "$RUTA" in
         "" \
         "$HALLAZGOS" \
         "" \
-        "Usa los tokens de apps/tienda/src/tokens/. Un color suelto no" \
+        "Usa los tokens de apps/tienda/src/shared/tokens/. Un color suelto no" \
         "aparece en ninguna auditoria de tema y sobrevive a cualquier" \
         "rediseno."
     fi

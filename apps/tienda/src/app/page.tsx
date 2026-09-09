@@ -1,9 +1,9 @@
-import { Copa } from '@/components/marca/Copa';
-import { EscenaProblema } from '@/components/landing/EscenaProblema';
-import { EscenaSeleccion } from '@/components/landing/EscenaSeleccion';
-import { EscenaCustodia } from '@/components/landing/EscenaCustodia';
-import { EscenaMesa } from '@/components/landing/EscenaMesa';
-import { PieDeLanding } from '@/components/landing/PieDeLanding';
+import { Copa } from '@/shared/marca/Copa';
+import { EscenaProblema } from '@/features/landing/EscenaProblema';
+import { EscenaSeleccion } from '@/features/landing/EscenaSeleccion';
+import { EscenaCustodia } from '@/features/landing/EscenaCustodia';
+import { EscenaMesa } from '@/features/landing/EscenaMesa';
+import { PieDeLanding } from '@/features/landing/PieDeLanding';
 
 /* La home.
  *

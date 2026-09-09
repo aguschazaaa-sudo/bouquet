@@ -28,8 +28,12 @@ esac
 APLICA=0
 case "$RUTA" in
   */apps/admin/lib/*/presentation/*.dart) APLICA=1 ;;
-  */apps/tienda/src/components/*.tsx)     APLICA=1 ;;
-  */apps/tienda/src/app/*.tsx)            APLICA=1 ;;
+  # Un solo glob para toda la vidriera, y es a proposito: el anterior decia
+  # */apps/tienda/src/components/*.tsx y dejo de medir NADA el dia que la
+  # tienda paso a features/ + shared/ (ADR 006). Un hook que no aplica no
+  # falla: pasa. Este cubre app/, features/ y shared/ y sobrevive a la
+  # proxima carpeta que aparezca.
+  */apps/tienda/src/*.tsx)                APLICA=1 ;;
 esac
 [ "$APLICA" -eq 0 ] && exit 0
 

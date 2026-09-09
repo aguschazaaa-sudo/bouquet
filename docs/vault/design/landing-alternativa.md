@@ -153,12 +153,12 @@ cierra el paréntesis de §1.2: la marca tiene el *antes* de la custodia y el
 
 | Pieza | Archivo | Qué hace |
 |---|---|---|
-| Los colores literales | `apps/tienda/src/tokens/tokens.css` | **El único lugar** con hex. El hook `no-hardcoded-colors` lo hace cumplir |
-| El espejo en TS | `apps/tienda/src/tokens/colores.ts` | Sólo para `themeColor`, que sale del documento y no puede leer una `var()` |
-| El motor de planos | `apps/tienda/src/estilos/sistema.css` | Un `@keyframes`, un timeline, un token por plano |
-| La composición | `apps/tienda/src/estilos/escenas.css` | Layout y la lámpara de cada escena |
-| Los componentes | `apps/tienda/src/components/landing/` | 8 archivos, todos bajo el tope de 200 líneas |
-| Los datos | `apps/tienda/src/contenido/seleccion.ts` | ⚠️ **De muestra.** §9 |
+| Los colores literales | `apps/tienda/src/shared/tokens/tokens.css` | **El único lugar** con hex. El hook `no-hardcoded-colors` lo hace cumplir |
+| El espejo en TS | `apps/tienda/src/shared/tokens/colores.ts` | Sólo para `themeColor`, que sale del documento y no puede leer una `var()` |
+| El motor de planos | `apps/tienda/src/shared/movimiento/movimiento.css` | Un `@keyframes`, un timeline, un token por plano |
+| La composición | `apps/tienda/src/features/landing/landing.css` | Layout y la lámpara de cada escena |
+| Los componentes | `apps/tienda/src/features/landing/` | 8 archivos, todos bajo el tope de 200 líneas |
+| Los datos | `apps/tienda/src/features/landing/seleccion.ts` | ⚠️ **De muestra.** §9 |
 
 ### 3.1 Las fuentes
 

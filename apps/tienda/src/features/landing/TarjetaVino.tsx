@@ -1,5 +1,5 @@
 import { BotellaSvg } from './BotellaSvg';
-import type { VinoDeLaSeleccion } from '@/contenido/seleccion';
+import type { VinoDeLaSeleccion } from '@/features/landing/seleccion';
 
 /* La tarjeta de la selección.
  *

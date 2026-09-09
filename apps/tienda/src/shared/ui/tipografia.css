@@ -1,0 +1,56 @@
+/* tipografia.css — las cuatro clases de texto de la vidriera.
+ *
+ * Salieron de `estilos/sistema.css` al pasar a feature-first (ADR 006). No son
+ * del motor de parallax: las usa cualquier página, con escenas o sin ellas.
+ */
+
+.display {
+  font-family: var(--tipo-display);
+  font-weight: 400;
+  line-height: var(--interlinea-titulo);
+  letter-spacing: -0.018em;
+  font-variation-settings: 'SOFT' 22, 'WONK' 1;
+  text-wrap: balance;
+  margin: 0;
+}
+
+/* direccion.md §4.4: etiquetas, categorías y botones van en la SERIF en
+ * versalitas con tracking abierto. Es lo que hace una etiqueta de vino, y la
+ * razón por la que una etiqueta de vino no se parece a un dashboard. */
+.versalita {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-versalita);
+  font-weight: var(--peso-versalita);
+}
+
+.rotulo {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-rotulo);
+  font-size: var(--t-rotulo);
+  font-weight: var(--peso-versalita);
+  color: var(--dorado);
+  margin: 0 0 var(--e-5);
+}
+
+.prosa {
+  font-family: var(--tipo-texto);
+  font-size: var(--t-cuerpo);
+  font-weight: var(--peso-texto);
+  line-height: var(--interlinea-prosa);
+  color: color-mix(in srgb, var(--marfil) 90%, transparent);
+  max-width: var(--medida-ancha);
+  margin: 0 0 var(--e-4);
+}
+
+.prosa--lead {
+  font-size: var(--t-lead);
+  color: var(--marfil);
+}
+
+.prosa em {
+  font-style: italic;
+  color: color-mix(in srgb, var(--marfil) 95%, transparent);
+}
+

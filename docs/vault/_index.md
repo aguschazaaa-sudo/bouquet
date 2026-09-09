@@ -43,6 +43,63 @@ Lo próximo es el **paso 2** de
 [ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
 `firestore.rules` e índices, antes de que haya datos.
 
+### La vidriera se ordenó por feature, y ya tiene barra de navegación (2026-09-09)
+
+**`apps/tienda/src` pasó de capas técnicas a `features/` + `shared/`**, con las
+cinco reglas contra el cajón de sastre en
+[ADR 006](architecture/decisions/006-estructura-de-la-tienda.md), enlazado desde
+`CLAUDE.md`. La regla que se viola en una línea —`shared/` no importa de
+`features/`, las features no se importan entre sí— **la mide un hook**,
+`frontera-features.sh`, con 5 casos en el arnés, que pasó de 30 a **35**.
+
+**La barra es un cartucho fijo, no una franja al ras.** Reusa `.cartucho-deco`,
+que ya existía. Cuatro rutas nuevas —`/vinos`, `/custodia`, `/contacto`,
+`/carrito`— con contenido de placeholder, salvo el carrito, que trae el estado
+vacío REAL de [`voz.md §9.4`](design/voz.md) literal.
+
+⚠️ **La mudanza rompió DOS hooks en silencio, y ése es el hallazgo caro.**
+`widget-size-guard` medía `src/components/*.tsx` y **dejó de medir nada**;
+`no-hardcoded-colors` exceptuaba `src/tokens/*` y habría **bloqueado el propio
+archivo de tokens**. El primero es peor: *un hook que no aplica no falla,
+**pasa***. Los dos arreglados, con control positivo y negativo directos sobre
+los globs nuevos —no sólo con el arnés, que también pasaba con el glob roto—.
+
+**El parallax y la barra fija no pelean, y está verificado, no razonado.**
+`parallax.md §3.1` ya lo tenía decidido (*UI, fija, sin parallax*), y
+técnicamente no puede romperse: el motor son timelines de scroll de CSS sobre
+el scroller nativo, no un `transform` sobre un contenedor —que es lo que
+rompería `position: fixed`—. `.grano` (z9) y `.marca-progreso` (z8) ya lo
+probaban antes de esta barra.
+
+**Verificado, y las tres cosas que valen salieron de MIRAR:**
+
+| Qué | Cómo |
+|---|---|
+| Compila y construye | `tsc --noEmit` exit 0 con **control positivo** (`--listFiles` muestra los 8 archivos nuevos); `next build` con las 5 rutas **estáticas** |
+| Las rutas existen | 200 en las cuatro; **control negativo**: `/ruta-inventada-de-control` da 404 |
+| Los dos CTA muertos revivieron | 3 `href="/vinos"` en la home (2 CTA + barra), contados sobre el HTML servido |
+| El mecanismo del asiento | `--asiento` 0 → 1, fondo transparente → opaco, wordmark 0 → 1, medido por CDP en las dos posiciones |
+| Los hooks siguen midiendo | arnés 35/35, **más** 4 controles directos sobre los globs que cambié |
+| Los enlaces de la doc | 133 enlaces, 49 archivos, todos resuelven |
+
+⚠️ **Tres defectos que ningún número mostró y aparecieron abriendo el PNG**, que
+es la tercera vez que pasa en este proyecto: la barra estirada a 1440px **no
+leía como cartucho** sino como franja con borde; el fondo asentado al 82 %
+**dejaba leer el texto de la página a través de la barra**; y el cartucho de
+sección partía el título por ancho. Los tres arreglados y re-capturados. La
+barra asentada quedó **opaca**, no en el alfa mínimo que "casi" tapa: es la
+misma familia de defecto que la viñeta en z4, y las dos veces anteriores una
+verificación numérica había dado verde.
+
+⚠️ **Y apareció un agujero que el vault contaba mal: la home tiene OCHO
+enlaces muertos, no dos.** Los dos CTA a `/vinos` ya están; los otros seis son
+las tarjetas, que apuntan a `/vinos/muestra-01…06` y **siguen dando 404**.
+Abajo, con disparador.
+
+**Medido en 360×780:** la barra ocupa 48 px (6,2 % de cada pantalla, para
+siempre) y la home da **6,26 pantallas** contra el techo de 8. Una barra fija
+no suma alto de scroll.
+
 ### La composición elegida: la de cuatro escenas, y `main` la tiene (2026-09-08)
 
 **El dueño eligió entre las seis composiciones que llegaron a existir, y ganó la
@@ -228,7 +285,7 @@ sería que ese número no baje** cuando existan sus consumidores.
 | Qué | Por qué | Quién |
 |---|---|---|
 | ⚠️ **La home NO tiene puerta de edad, y es la única pieza legal obligatoria** | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
-| ⚠️ **`/vinos` no existe y la home lo apunta DOS veces** | `EscenaSeleccion.tsx:69` y `EscenaMesa.tsx:60` — **los dos CTA duros de la página**, el de "qué tenés" y el de cierre. Hoy tiran **404**. No se arregla como página suelta: el catálogo es el **paso 5** del orden de construcción. **Disparador: bloquea el deploy.** Una landing cuyos dos botones no llevan a ningún lado es "terminada y sin puerta". Desde 2026-09-08. | el usuario |
+| ⚠️ **Las SEIS tarjetas de la home apuntan a fichas que no existen** | ~~`/vinos` no existe y la home lo apunta dos veces~~ — **resuelto el 2026-09-09**: `/vinos` existe y los dos CTA duros dan 200. Pero contando los `href` del HTML servido aparecieron **seis más**: `/vinos/muestra-01` … `-06`, las tarjetas de `EscenaSeleccion`, todas **404**. El vault decía "dos" y eran **ocho**. No se arreglan con un placeholder: son la ficha, paso 5 de ARQUITECTURA §12, y hacer que `/vinos/<cualquier-cosa>` devuelva 200 es peor que un 404. Y sus datos son inventados mientras `LA_SELECCION_ES_DE_MUESTRA` siga en `true`. **Disparador: bloquea el deploy.** Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **Los 8 assets están commiteados y no tienen `LICENCIAS.md`** | `ambiente`, `botella`, `cava-h/v`, `mesa-h/v`, `rack-h/v`. La única tabla de licencias verificada que existió es la de los **17 assets de `home-parallax-b`**, y **no cubre a éstos**. De esta misma tanda salió la foto con marca de agua `Unsplash+` tileada, que se descubrió **abriendo el PNG**, no leyendo metadatos. `scripts/assets/traer_landing.py` es la herramienta. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
 | **391 KB de `woff2` en la primera pantalla, y son de esta composición** | `parallax.md §8` fija **450 KB** para la primera pantalla en móvil: es el único presupuesto que paga el comprador, y arranca con el **87 % gastado antes de la primera imagen**. Salen de `layout.tsx` (Fraunces con `SOFT`+`WONK`+`opsz`, Newsreader roman e itálica con `opsz`). ⚠️ **Medido el 2026-09-08: el arreglo conocido NO sirve acá.** La composición 6 los bajó a **138 KB** sacando `SOFT` y `opsz`, y ésta usa las dos cosas (`font-variation-settings: 'SOFT' 22` en `sistema.css`, itálica de Newsreader en 4 lugares): sacarlos **cambia el dibujo de la página que se eligió mirando**. La palanca es del dueño. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
 | **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. **Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.** | el usuario |
@@ -249,6 +306,7 @@ sería que ese número no baje** cuando existan sus consumidores.
 | 003 | Proveedor de pagos **diferido**; el contrato del webhook está escrito | [003](architecture/decisions/003-pagos.md) |
 | 004 | Frescura por invalidación on-demand · filtrado del catálogo **en memoria** | [004](architecture/decisions/004-frescura-y-lecturas.md) |
 | 005 | La vidriera va a **Firebase App Hosting detrás de Cloudflare**; la frescura la da la **purga por tag**, no el ISR | [005](architecture/decisions/005-hosting-vidriera.md) |
+| 006 | La vidriera se ordena por **feature**, y `shared/` tiene **cinco reglas** contra el cajón de sastre | [006](architecture/decisions/006-estructura-de-la-tienda.md) |
 
 ---
 

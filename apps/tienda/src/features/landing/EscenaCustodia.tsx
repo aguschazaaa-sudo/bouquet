@@ -1,5 +1,5 @@
-import { Escena } from './Escena';
-import { Plano } from './Plano';
+import { Escena } from '@/shared/movimiento/Escena';
+import { Plano } from '@/shared/movimiento/Plano';
 
 /* Escena 3 — La custodia. La que enseña.
  *

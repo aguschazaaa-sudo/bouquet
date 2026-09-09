@@ -1,7 +1,16 @@
-@import '../tokens/tokens.css';
-@import '../estilos/sistema.css';
-@import '../estilos/deco.css';
-@import '../estilos/escenas.css';
+/* El orden NO es alfabético: es la cascada, y se lee de menos a más
+ * específico. Los tokens primero porque todo lo demás los consume; la feature
+ * al final porque es la única que tiene derecho a pisar a shared. Mover una
+ * línea de acá cambia la página aunque ningún archivo cambie — ADR 006 §5. */
+@import '../shared/tokens/tokens.css';
+@import '../shared/movimiento/movimiento.css';
+@import '../shared/ui/tipografia.css';
+@import '../shared/ui/boton.css';
+@import '../shared/ui/en-obra.css';
+@import '../shared/marca/marca.css';
+@import '../shared/deco/deco.css';
+@import '../features/navegacion/navegacion.css';
+@import '../features/landing/landing.css';
 
 /* globals.css — reset y el suelo del modo cava.
  *

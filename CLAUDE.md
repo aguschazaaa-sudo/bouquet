@@ -118,6 +118,7 @@ quedes quieto, que es exactamente lo que no lo destraba.
 | `vault-precheck` | Escribir código sin haber leído el vault |
 | `widget-size-guard` | Presentación > 200 líneas |
 | `layer-boundary` | domain con Firebase · presentation con `data/` o con el SDK |
+| `frontera-features` | `shared/` que importa una feature · dos features que se importan ([ADR 006](docs/vault/architecture/decisions/006-estructura-de-la-tienda.md)) |
 | `server-only-guard` | `firebase-admin` fuera de `apps/tienda/src/server/` |
 | `one-widget-per-file` | Más de un widget público por archivo |
 | `no-hardcoded-colors` | `Colors.*`, `Color(0x…)`, hex fuera de tokens |
@@ -126,7 +127,7 @@ quedes quieto, que es exactamente lo que no lo destraba.
 **Ningún hook escribe git, nunca.** Un watcher de auto-commit corrompió
 `.git/index` y costó ~5 días de trabajo sin commitear.
 
-`bash scripts/hooks/probar_hooks.sh` verifica que sigan midiendo: 30 casos con
+`bash scripts/hooks/probar_hooks.sh` verifica que sigan midiendo: 35 casos con
 control positivo y negativo cada uno.
 
 ---
@@ -218,7 +219,7 @@ no una nota al pie. Presupuesto vigente:
 | Panel | **Flutter** (web + Android) en Firebase Hosting |
 | Backend | **Firebase** |
 | Estado en el panel | **Riverpod** — no BLoC, no GetX |
-| Estructura | **Feature-first**, no por capas en la raíz |
+| Estructura | **Feature-first**, no por capas en la raíz. En la vidriera: `features/` + `shared/` con **cinco reglas** contra el cajón de sastre, y `frontera-features.sh` que mide la que se viola en una línea ([ADR 006](docs/vault/architecture/decisions/006-estructura-de-la-tienda.md)) |
 | Composición | **Bottom-up**, del widget hoja a la página |
 | Estados de Orden | **Dos ejes** (pago y entrega) + proyección. No un string lineal |
 | Triggers | **`onDocumentWritten` + `entroEn*`**. Nunca `onDocumentUpdated` |

@@ -18,99 +18,32 @@
  * Lo prohibido de §5.3 no está y no entra: soles nacientes, zigzags, abanicos,
  * escalonados, plumas, tipografías decó de display, degradés dorados con
  * biselado, ornamentos espejados.
+ *
+ * ADR 006: acá vive el VOCABULARIO —cartucho, filete, grano—. La copa se fue a
+ * `shared/marca/`, porque una marca no es vocabulario: no se intercambia.
  */
 
-/* Las dos propiedades registradas. Sin @property un custom property no se
- * puede interpolar: la animación saltaría del valor inicial al final sin
- * pasar por el medio, que es exactamente lo que no se quiere. */
-@property --nivel {
-  syntax: '<number>';
-  inherits: true;
-  initial-value: 1;
-}
-
+/* La propiedad registrada del barrido del cartucho. Sin @property un custom
+ * property no se puede interpolar. */
 @property --cierre {
   syntax: '<angle>';
   inherits: false;
   initial-value: 1turn;
 }
 
-/* ================================================================ LA COPA = */
+/* =============================================================== EL GRANO */
 
-.copa {
-  display: block;
-  height: auto;
-  overflow: visible;
-}
-
-.copa__trazo {
-  fill: var(--dorado);
-}
-
-.copa__liquido {
-  fill: var(--borgona);
-  /* El nivel se expresa moviendo el líquido dentro de su recorte, no
-   * redibujándolo: así el vino nunca aparece donde el imagotipo no lo tiene. */
-  transform: translateY(calc(var(--vino-alto) * (1 - var(--nivel))));
-}
-
-/* La copa grande de la primera escena ES el sujeto iluminado.
- * direccion.md §0: "lo que se ilumina es la botella, nunca la interfaz". El
- * resplandor va por detrás del trazo, con `drop-shadow` y no con un degradé:
- * §8 prohíbe el dorado en degradé — *"un dorado biselado es un <marquee> con
- * mejor gusto"*. Un halo de luz alrededor de un objeto no es un degradé sobre
- * el objeto. */
-/* El tamaño lo pone el contexto (escenas.css). Acá va SÓLO la luz, para que
- * el mismo modificador sirva a una copa de 80px y a una de media pantalla. */
-.copa--faro {
-  filter: drop-shadow(0 0 clamp(28px, 7svh, 70px)
-      color-mix(in srgb, var(--dorado) 34%, transparent))
-    drop-shadow(0 0 clamp(60px, 16svh, 160px)
-      color-mix(in srgb, var(--borgona) 44%, transparent));
-}
-
-/* ==================================================== EL VINO QUE SUBE ==== */
-
-/* La marca como indicador de progreso: el vino sube a medida que bajás.
- * Reemplaza una barra de scroll por el objeto de la marca — direccion.md §6
- * pide "palabras, no íconos", y esto no es un ícono de UI: es el imagotipo
- * haciendo lo único que un vaso puede hacer. */
-.marca-progreso {
+/* direccion.md §8: 2-3% de ruido sobre los fondos oscuros. Y no es nostalgia:
+ * un degradé oscuro en una pantalla de 8 bits hace BANDAS visibles, y el ruido
+ * las disuelve. Un recurso estético que paga una deuda técnica.
+ * position: fixed, no background-attachment: fixed (parallax.md §5.4). */
+.grano {
   position: fixed;
-  right: clamp(var(--e-4), 2.5vw, var(--e-6));
-  bottom: clamp(var(--e-4), 2.5vw, var(--e-6));
-  z-index: 8;
-  width: clamp(26px, 3.2vw, 44px);
+  inset: 0;
+  z-index: 9;
   pointer-events: none;
-  opacity: 0.82;
-}
-
-@keyframes llenar {
-  from {
-    --nivel: 0.04;
-  }
-  to {
-    --nivel: 0.96;
-  }
-}
-
-/* `scroll(root block)` es el timeline de la página entera, no el de una escena.
- * Firefox lo tiene detrás de flag igual que `view()`, así que allá la copa
- * queda con su nivel por defecto — llena, no vacía. Un indicador de progreso
- * que se queda clavado en cero parece roto; clavado en lleno parece un sello. */
-@supports (animation-timeline: scroll()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .copa--progresiva {
-      animation: llenar linear both;
-      animation-timeline: scroll(root block);
-    }
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .marca-progreso {
-    display: none; /* sin movimiento no informa nada y ocupa una esquina */
-  }
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='r'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23r)'/></svg>");
 }
 
 /* ============================================================ EL CARTUCHO = */
@@ -158,6 +91,20 @@
     var(--grosor) calc(100% - var(--chaflan) - var(--grosor)),
     var(--grosor) calc(var(--chaflan) + var(--grosor))
   );
+}
+
+/* ⚠️ El TRAZADO va en un modificador, y la razón es un bug que no llegó a
+ * existir. La máscara cónica de abajo se dibuja con `animation-timeline:
+ * view()`, que mide dónde está el sujeto dentro del scrollport. Un elemento
+ * `position: fixed` NUNCA se mueve dentro del scrollport, así que su progreso
+ * no avanza: la barra de navegación —que reusa este anillo— habría heredado un
+ * `--cierre` clavado y el marco podía quedar entero enmascarado, o sea
+ * INVISIBLE. Y sin errores en consola: un marco que no se ve parece un marco
+ * que no se escribió.
+ *
+ * La geometría es vocabulario y la reusa cualquiera; el trazado al entrar es
+ * un comportamiento de escena y sólo lo pide quien tiene un `view()` real. */
+.cartucho-deco--trazado::before {
   /* La máscara cónica es la que lo DIBUJA al entrar. Barre desde arriba en
    * sentido horario: el marco aparece trazándose, no apareciendo. */
   mask-image: conic-gradient(
@@ -182,7 +129,7 @@
  * cerrado bastante antes de que el bloque llegue al centro de la pantalla. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
-    .cartucho-deco::before {
+    .cartucho-deco--trazado::before {
       animation: cerrar-cartucho linear both;
       animation-timeline: view();
       animation-range: entry 10% cover 55%;

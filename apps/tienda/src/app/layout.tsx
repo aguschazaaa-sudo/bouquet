@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 import { Fraunces, Newsreader } from 'next/font/google';
-import { COLORES } from '@/tokens/colores';
+import { BarraPrincipal } from '@/features/navegacion/BarraPrincipal';
+import { COLORES } from '@/shared/tokens/colores';
 import './globals.css';
 
 /* Las dos familias. direccion.md §4.
@@ -58,7 +59,15 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="es-AR" className={`${fraunces.variable} ${newsreader.variable}`}>
-      <body>{children}</body>
+      <body>
+        {/* La barra va en el layout y no en cada página: es la misma pieza en
+            todas las rutas, y duplicarla sería la forma más rápida de que una
+            sección quede sin navegación. Se pinta ANTES del contenido para que
+            el orden del DOM coincida con el orden de lectura — un usuario de
+            teclado llega a la navegación primero, que es donde la espera. */}
+        <BarraPrincipal />
+        {children}
+      </body>
     </html>
   );
 }

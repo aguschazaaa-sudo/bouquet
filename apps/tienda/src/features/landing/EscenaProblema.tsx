@@ -1,6 +1,6 @@
-import { Copa } from '../marca/Copa';
-import { Escena } from './Escena';
-import { Plano } from './Plano';
+import { Copa } from '@/shared/marca/Copa';
+import { Escena } from '@/shared/movimiento/Escena';
+import { Plano } from '@/shared/movimiento/Plano';
 
 /* Escena 1 — El problema.
  *

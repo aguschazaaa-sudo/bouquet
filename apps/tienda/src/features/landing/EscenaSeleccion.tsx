@@ -1,7 +1,7 @@
-import { Escena } from './Escena';
-import { Plano } from './Plano';
+import { Escena } from '@/shared/movimiento/Escena';
+import { Plano } from '@/shared/movimiento/Plano';
 import { TarjetaVino } from './TarjetaVino';
-import { SELECCION, LA_SELECCION_ES_DE_MUESTRA } from '@/contenido/seleccion';
+import { SELECCION, LA_SELECCION_ES_DE_MUESTRA } from '@/features/landing/seleccion';
 
 /* Escena 2 — La selección.
  *

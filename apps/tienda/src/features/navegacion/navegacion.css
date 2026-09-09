@@ -1,0 +1,240 @@
+/* navegacion.css — la barra principal.
+ *
+ * LA ESCALA DE Z, ESCRITA UNA VEZ. En esta página el `z-index` ya produjo dos
+ * defectos medidos —la viñeta y la costura en z4, encima del contenido— y los
+ * dos costaron horas porque la escala vivía en la cabeza de nadie. Acá está:
+ *
+ *   z0-z4  los planos, adentro de `.escena`  (movimiento.css)
+ *   z5     el plano de contenido
+ *   z6     el plano de detalle
+ *   z7     ESTA BARRA
+ *   z8     la copa de progreso                (marca.css)
+ *   z9     el grano                           (deco.css)
+ *   z20    "saltar al contenido"              (globals.css)
+ *
+ * ⚠️ `.escena` es `position: relative` SIN `z-index`, así que no abre contexto
+ * de apilamiento: los z de los planos compiten con los fijos en el mismo
+ * plano global. Por eso la barra tiene que estar arriba de z6 y no de z4.
+ * El grano queda por encima de la barra a propósito: 0,045 de opacidad sobre
+ * todo, para que la interfaz viva en el mismo aire que la fotografía.
+ */
+
+/* El asiento de la barra: 0 = flotando sobre el héroe, 1 = asentada.
+ *
+ * ⚠️ EL VALOR POR DEFECTO ES 1, Y ESE SENTIDO ES LA DECISIÓN. Firefox tiene
+ * los timelines de scroll detrás de flag, así que allá este número no se
+ * mueve nunca. Una barra clavada en transparente sobre una fotografía es
+ * ILEGIBLE; clavada en sólida es sólo menos linda. El fallback tiene que caer
+ * del lado que se puede leer, y por eso la animación QUITA el fondo sobre el
+ * héroe en vez de agregarlo al bajar. Es el mismo razonamiento con el que
+ * marca.css dejó la copa llena y no vacía. */
+@property --asiento {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 1;
+}
+
+.barra {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 7;
+  padding: clamp(var(--e-2), 1.6vw, var(--e-4));
+  /* El aire entre el cartucho y el borde tiene que dejar pasar el scroll y el
+   * click. Sin esto queda una franja muerta en el tope de todas las páginas y
+   * el usuario no entiende por qué ahí no puede agarrar nada. */
+  pointer-events: none;
+  --asiento: 1;
+}
+
+/* ================================================== EL CARTUCHO DE LA BARRA */
+
+/* ⚠️ `width: max-content` y centrado, y NO ancho completo. Esto se corrigió
+ * mirando la captura: estirado a 1440px el cartucho deja de leerse como
+ * cartucho y pasa a ser una franja con borde — que es exactamente la franja al
+ * ras que este diseño eligió NO hacer. Un cartucho es una placa: su ancho lo
+ * fija lo que dice adentro. Y abrazando el contenido, el parallax sangra por
+ * los dos costados además de por las esquinas, que es lo que lo vende.
+ * En pantalla angosta `max-width` lo devuelve a ancho completo solo. */
+.barra__cartucho {
+  pointer-events: auto;
+  width: max-content;
+  max-width: 100%;
+  margin-inline: auto;
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--e-3), 2.4vw, var(--e-6));
+  /* `.cartucho-deco` trae padding de bloque —hasta --e-7—. Una barra necesita
+   * el alto de una línea, no el de un párrafo: parallax.md §8 cuenta pantallas
+   * y una barra fija se cobra su alto en TODAS, para siempre. */
+  padding: var(--e-2) clamp(var(--e-3), 2.2vw, var(--e-5));
+  --chaflan: var(--chaflan-boton);
+  --grosor: var(--filete);
+  /* ⚠️ 100% asentada, y se llegó ahí en dos pasos mirando capturas. Con 82%
+   * el texto de la escena de abajo se leía A TRAVÉS de la barra —dos textos
+   * superpuestos, los dos ilegibles—. Con 96% quedaba un fantasma tenue, que
+   * es la MISMA familia de defecto que este proyecto ya se comió dos veces
+   * (la viñeta y la costura en z4, "textos detrás de una nube borgoña"), y
+   * las dos veces una verificación numérica había dado verde.
+   *
+   * Sin `backdrop-filter` (§3.5 lo prohíbe) la única palanca es el alfa, así
+   * que en vez de buscar el alfa mínimo que "casi" no deja pasar nada, la
+   * barra asentada es OPACA y el defecto deja de ser posible. Lo que la sigue
+   * uniendo al aire de la página es el grano, que pasa por encima en z9. */
+  background: color-mix(
+    in srgb,
+    var(--tinta-honda) calc(var(--asiento) * 100%),
+    transparent
+  );
+}
+
+/* ⚠️ NADA de `backdrop-filter` acá. parallax.md §3.5 ya prohíbe animar
+ * `blur()` sobre superficies grandes porque repinta cada frame; un
+ * `backdrop-filter` en un elemento fijo sobre una página que se mueve es
+ * exactamente eso, sólo que sucediendo siempre. El fondo es un color-mix
+ * plano, que cuesta cero. */
+
+/* El anillo dorado también respira: tenue sobre el héroe, pleno al asentarse.
+ * El 88% es el mismo valor con el que deco.css lo dibuja en la escena de la
+ * mesa, así que la barra no inventa un dorado nuevo: llega al que ya existe. */
+.barra__cartucho::before {
+  background: color-mix(
+    in srgb,
+    var(--dorado) calc(34% + var(--asiento) * 54%),
+    transparent
+  );
+}
+
+/* ============================================================== EL WORDMARK */
+
+/* Entra cuando el del héroe se va. Ver el encabezado de BarraPrincipal.tsx.
+ *
+ * ⚠️ `opacity` y NO `display`, a propósito: el hueco se reserva igual, así que
+ * las secciones no se corren un píxel mientras scrolleás. Un salto de layout
+ * atado al scroll es peor que cualquier redundancia que esto evite. */
+.barra__marca {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  text-decoration: none;
+  color: var(--marfil);
+  opacity: var(--asiento);
+}
+
+/* Invisible pero enfocable es un defecto conocido de accesibilidad. Con
+ * teclado, aparece. */
+.barra__marca:focus-visible {
+  opacity: 1;
+}
+
+.barra__copa {
+  width: clamp(14px, 1.6vw, 20px);
+  flex: none;
+}
+
+.barra__nombre {
+  font-size: var(--t-rotulo);
+  color: var(--marfil);
+}
+
+/* ============================================================ LAS SECCIONES */
+
+.barra__secciones {
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--e-3), 2vw, var(--e-5));
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Separado por un FILETE, no por distancia. Cuando el cartucho abraza su
+ * contenido ya no hay hueco que empuje el carrito a la derecha, y está mejor
+ * así: la separación pasa a ser una regla dibujada —vocabulario que la marca
+ * ya tiene— en vez de aire. Sigue diciendo lo mismo: el carrito no es una
+ * sección del catálogo, es el estado del comprador. */
+.barra__carrito {
+  padding-inline-start: clamp(var(--e-3), 2.2vw, var(--e-5));
+  border-inline-start: var(--filete) solid
+    color-mix(in srgb, var(--dorado) calc(var(--asiento) * 40% + 18%), transparent);
+}
+
+.barra__enlace {
+  position: relative;
+  display: inline-block;
+  padding-block: var(--e-1);
+  font-size: var(--t-rotulo);
+  color: color-mix(in srgb, var(--marfil) 86%, transparent);
+  text-decoration: none;
+}
+
+/* ⚠️ El subrayado es un pseudo-elemento y no `text-decoration`, porque el
+ * subrayado del navegador sobre una versalita con tracking abierto corta las
+ * serifas por la mitad. Y usa el filete de la marca, no una línea cualquiera. */
+.barra__enlace::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: var(--filete);
+  background: var(--dorado);
+  opacity: 0;
+  transition: opacity var(--dur-corta) var(--ease-caida);
+}
+
+.barra__enlace:hover,
+.barra__enlace:focus-visible {
+  color: var(--marfil);
+}
+
+.barra__enlace:hover::after,
+.barra__enlace:focus-visible::after {
+  opacity: var(--filete-tenue);
+}
+
+/* La sección en la que estás. Es el único uso de dorado como color de texto en
+ * la barra: direccion.md §2.1 lo autoriza para etiquetas cortas, no para
+ * párrafos, y esto es una palabra. */
+.barra__enlace[aria-current='page'] {
+  color: var(--dorado);
+}
+
+.barra__enlace[aria-current='page']::after {
+  opacity: var(--filete-fuerte);
+}
+
+/* ================================================================ EL ASIENTO */
+
+@keyframes asentar-barra {
+  from {
+    --asiento: 0;
+  }
+  to {
+    --asiento: 1;
+  }
+}
+
+/* Sólo donde hay héroe debajo. El `:has()` lo resuelve sin que el layout tenga
+ * que saber en qué ruta está: cualquier página que monte la escena del
+ * problema recibe la barra flotante, y cualquier otra la recibe asentada desde
+ * el primer píxel. Si `:has()` no existe, la regla entera se descarta y queda
+ * la barra sólida — otra vez el fallback del lado legible. */
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    body:has(.escena--problema) .barra {
+      animation: asentar-barra linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 60svh;
+    }
+  }
+}
+
+/* En pantalla angosta el nombre se va y queda la copa: la identidad sobrevive
+ * y las tres secciones entran sin apretarse. */
+@media (max-width: 30rem) {
+  .barra__nombre {
+    display: none;
+  }
+
+  .barra__cartucho {
+    gap: var(--e-3);
+  }
+}

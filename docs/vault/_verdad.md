@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-09 - commit `c188c52` **+ cambios sin commitear** - huella del cuerpo `7b83338b5b83`
+> **Generado:** 2026-09-09 - commit `ea0b05e` **+ cambios sin commitear** - huella del cuerpo `c18fad67e6b1`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.13.1
+### Scripts de la raiz - `bouquet` 0.14.0
 
 | Script | Comando |
 |---|---|
@@ -109,6 +109,7 @@ Leidos de `.claude/settings.json`, que es lo que el harness ejecuta de verdad.
 | PostToolUse | `Edit\|Write` | `scripts/hooks/widget-size-guard.sh` | 10s | si |
 | PostToolUse | `Edit\|Write` | `scripts/hooks/layer-boundary.sh` | 10s | si |
 | PostToolUse | `Edit\|Write` | `scripts/hooks/server-only-guard.sh` | 10s | si |
+| PostToolUse | `Edit\|Write` | `scripts/hooks/frontera-features.sh` | 10s | si |
 | PostToolUse | `Edit\|Write` | `scripts/hooks/one-widget-per-file.sh` | 10s | si |
 | PostToolUse | `Edit\|Write` | `scripts/hooks/no-hardcoded-colors.sh` | 10s | si |
 | PostToolUse | `Edit\|Write` | `scripts/hooks/call-site-guard.sh` | 30s | si |
@@ -116,7 +117,7 @@ Leidos de `.claude/settings.json`, que es lo que el harness ejecuta de verdad.
 | Stop | `(todos)` | `scripts/hooks/doc-reminder.sh` | 10s | si |
 | Stop | `(todos)` | `scripts/hooks/commit-reminder.sh` | 10s | si |
 
-Los 10 hooks apuntan a scripts que existen. Que existan no prueba que midan: eso lo prueba `bash scripts/hooks/probar_hooks.sh`.
+Los 11 hooks apuntan a scripts que existen. Que existan no prueba que midan: eso lo prueba `bash scripts/hooks/probar_hooks.sh`.
 
 ### Permisos del harness
 
@@ -227,4 +228,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 29. Archivos de test: 4. Casos de test: 35.
+Archivos de codigo recorridos: 37. Archivos de test: 4. Casos de test: 35.
