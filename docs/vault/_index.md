@@ -43,6 +43,63 @@ Lo próximo es el **paso 2** de
 [ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
 `firestore.rules` e índices, antes de que haya datos.
 
+### `El oficio`: la sección que cierra dos placeholders con una sola pieza (2026-09-09)
+
+**Nace `/oficio`** —tres tramos, `I Elegir · II Guardar · III Abrir`, de los que
+la marca **firma dos**— y con ella se van las dos secciones vacías que la barra
+venía nombrando desde `v0.15.0`. `/custodia` **se borró** (nada estaba
+desplegado: no hay enlace entrante que preservar) y `/contacto` **se plegó** como
+cierre de la página, con la URL vieja redirigiendo **308** a `/oficio#mostrador`.
+`Custodia` no desapareció: bajó a nombrar el tramo `II`, que es donde la palabra
+rinde. Todo el porqué en [ADR 007](architecture/decisions/007-seccion-el-oficio.md).
+
+La forma la eligió el dueño **mirando dos maquetas** con el copy real —la
+etiqueta única y la carta numerada—, no leyendo una propuesta.
+
+⚠️ **NO SE DESPLIEGA, y es el quinto gate.** `EL_CONTACTO_ES_PROVISORIO` está en
+`true`: el WhatsApp publicado es el del desarrollador y el mail todavía no tiene
+dominio. Se suma a la puerta de edad, las seis fichas en 404, las licencias de
+los assets y los 391 KB de fuentes. La constante **también viaja al HTML** como
+`data-contacto-provisorio`, porque `auditor-produccion` audita con `curl` y no
+puede grepear un `.ts`.
+
+⚠️ **Dos defectos que ninguna medición mostró, los dos encontrados abriendo el
+PNG** — quinta vez en este proyecto:
+
+1. **Los párrafos salían pegados en los dos anchos.** El aire vivía en un
+   `p + p` de especificidad (0,1,2) y el `margin: 0` en `.tramo__cuerpo .prosa`,
+   (0,2,0): **el margen no pintaba nunca**. Las columnas, los altos, el
+   `column-rule` y el `scrollWidth` daban todos bien mientras la prosa era un
+   muro.
+2. **`break-inside: avoid-column` desbalanceaba las columnas**: con párrafos
+   atómicos el balanceador no reparte, y el tramo `I` quedaba **3 líneas de un
+   lado y 9 del otro**. Se saca; `orphans`/`widows` en 2 evitan la línea suelta.
+
+⚠️ **Y TRES INSTRUMENTOS DE VERIFICACIÓN MINTIERON EN VERDE.** Es el hallazgo
+más transferible de la tarea:
+
+| Instrumento | Cómo miente |
+|---|---|
+| `grep -i` sobre texto con acentos | Con el locale vacío devuelve **cero en silencio** sobre UTF-8 con tildes; `grep -c` ni imprime número. El control positivo con el dialecto de cata insertado dio **0**. Con `LC_ALL=C.UTF-8` encuentra las tres |
+| `call-site-guard` | Grepea `apps/` entero, `node_modules` y `.next` incluidos. Los **sourcemaps embeben el fuente**, así que un símbolo huérfano aparece "usado" en cuanto corrió un build: dio verde con dos exports que no abría nadie. Misma familia que `generar_verdad.mjs` contando comentarios |
+| `frontera-features.sh` regla 2 | Sólo mira `from '@/features/`. El mismo import escrito **relativo** no bloquea |
+| El propio **gate de deploy**, en su primera versión | `data-x={CONST ? 'true' : undefined}` saca el atributo del DOM pero **no del payload RSC**, que Next serializa en el mismo HTML como `"$undefined"`. Con la constante en `false` el `grep` seguía dando 1: **el gate no distinguía**. Arreglado con un spread condicional y medido en los dos estados — `true` → 2, `false` → 0. Y el comando iba con `grep -c`, que cuenta LÍNEAS y el HTML de Next es una sola |
+
+**Verificado sobre `next build` + `next start`, y mirado renderizado:**
+
+| Qué | Cómo |
+|---|---|
+| Las rutas | `/oficio` **200**, `/custodia` **404**, `/contacto` **308 → `/oficio#mostrador`**. **Control negativo:** `/ruta-inventada-de-control` da 404 |
+| `/oficio` es estática | `next build` la lista con `○`, y `/custodia` ya no aparece |
+| El gate llega al HTML | `curl … | grep -c data-contacto-provisorio` = **1**. Control negativo: en la home da **0** |
+| Dos columnas en escritorio | A 1440: `column-count` **2** con regla dorada de 1px al 22 %; los tres tramos miden **0,50 · 0,58 · 0,53** de viewport, ninguno se pasa |
+| Una sola columna en angosto | A 390: `column-count` **auto**, `column-rule-style` **none**, y `scrollWidth` = `clientWidth` = **390** |
+| El numeral sin firma | `III` con `color: transparent` + `-webkit-text-stroke` 1,2px, **adentro** del `@supports`: sin soporte queda macizo, nunca invisible |
+| Movimiento reducido | `scrollHeight` **2771 = 2771** con y sin la preferencia, animaciones **16 → 0**, y en la captura los filetes están a **ancho completo** |
+| Cero Firestore | Sin `import` de firebase en la feature. **Control positivo:** el mismo grep sí lo encuentra en `src/server/` |
+| Los hooks y los enlaces | arnés **35/35** · **143** enlaces en 54 archivos, todos resuelven |
+| La voz | 565 palabras: **0** exclamaciones, **0** emoji, **0** `tú`/`usted`, **0** del dialecto de cata — con el control positivo pasando primero |
+
 ### El cartucho de la mesa: filete al triple y trazado en dos brazos (2026-09-09)
 
 **El dueño pidió dos cosas mirando la home:** que el marco de *"Después no te
@@ -133,6 +190,12 @@ cinco reglas contra el cajón de sastre en
 que ya existía. Cuatro rutas nuevas —`/vinos`, `/custodia`, `/contacto`,
 `/carrito`— con contenido de placeholder, salvo el carrito, que trae el estado
 vacío REAL de [`voz.md §9.4`](design/voz.md) literal.
+
+> ⚠️ **Dos de esas cuatro rutas ya no existen** (2026-09-09): `/custodia` se
+> borró y `/contacto` redirige 308 a `/oficio#mostrador` — ver la entrada de
+> arriba y [ADR 007](architecture/decisions/007-seccion-el-oficio.md). La línea
+> de acá queda porque cuenta el commit `9865957`, no el estado de hoy. Lo
+> encontró `cazador-de-puertas`, que es exactamente para lo que existe.
 
 ⚠️ **La mudanza rompió DOS hooks en silencio, y ése es el hallazgo caro.**
 `widget-size-guard` medía `src/components/*.tsx` y **dejó de medir nada**;
@@ -237,102 +300,6 @@ silencioso sigue ahí**, así que el próximo BOM vuelve a mentir igual.
 **No se miró renderizada, y esta vez es lo correcto:** es byte por byte la
 página que el dueño ya miró y eligió.
 
-### Una segunda landing, en su propia rama (2026-09-04)
-
-> ⚠️ **Escrito antes de la decisión. Esta es la que ganó**, y desde el
-> 2026-09-08 no está en su propia rama: está en `main`. Lo de abajo cuenta de
-> dónde salió; el estado de hoy es la entrada de arriba.
-
-**El dueño no quedó convencido de [`escenas.md`](design/escenas.md)**, así que
-hay una composición que compite con ella:
-[`design/landing-alternativa.md`](design/landing-alternativa.md), **construida y
-navegable** en la rama `home-parallax`. ~~Sin mergear~~ — **mergeada a `main` el
-2026-09-08**. ⚠️ **Sin desplegar.**
-
-Cuatro objeciones, textuales: *mucha ceremonia y poco vino · el arco narrativo ·
-muy abstracto · los copys son cortos para desktop*. Lo que sale de ahí:
-**cuatro escenas en vez de cinco**, el vino en la **segunda** y son **seis**,
-y ~340 palabras contra ~120.
-
-**El arco deja de ser un recorrido de ánimos** —umbral, origen, sorbo, vitrina,
-mesa— y pasa a ser la secuencia de preguntas que hace alguien que podría
-comprar: el problema que ya vivió, qué hay, por qué nosotros, y qué queda
-después.
-
-**La escena que enseña cambió de tema, y ahí está el arreglo de "abstracto".**
-`escenas.md` enseñaba el color del menisco de una copa: cierto, pero sobre el
-vino, que es justo lo que la marca no puede firmar. Ahora enseña **la custodia**
-—acostada, temperatura pareja, sin luz, con el porqué físico de cada una—, que
-es lo único que bouquet hizo. Y el texto del héroe no se escribió: **estaba en
-[`voz.md §10.2`](design/voz.md)**, enterrado en un ejemplo.
-
-**`parallax.md`, `direccion.md` y `voz.md` no se tocaron.** Lo único que se
-descarta es la composición.
-
-⚠️ **Y ahí apareció el hallazgo más grande: el parallax de los dos documentos
-de diseño NO SE VE, y es aritmética.** `escenas.md §5` acertó el **signo**;
-los dos documentos están mal en la **magnitud**, por un factor de ~7.
-
-Sobre el rango `cover` el scroll avanza `S = viewport + alto de escena` ≈ 200vh,
-y para que un plano vaya a velocidad `v` hace falta `(1 − v)·S`. Para `v = 0.55`
-son **90vh**; `parallax.md §4.1` manda **13,5vh**, con lo que `escenas.md §5`
-llama *"una escala de 30vh, la fuerza de parallax que el documento eligió"*.
-**Esa escala es el error: la amplitud ES la velocidad, no se atenúa.**
-
-Medida la velocidad aparente contra el contenido, que es la unidad que ve el
-ojo: **v = 0.91 / 0.94 / 0.98 / 1.02** con los valores del documento, y
-separación entre planos de **0,021** contra el mínimo de **0,15** que el propio
-`§2.2` fija. Siete veces por debajo de su propio umbral. Corregido:
-**0.54 / 0.69 / 0.85 / 1.00 / 1.15**, separación **0,153**.
-
-⚠️ **Lo encontró el dueño mirando, después de que una verificación mía diera
-verde.** Esa verificación medía que los `translate` cambiaban y que eran
-proporcionales a los tokens — **consistencia interna, no correctitud**. Los
-números eran fieles a unos tokens equivocados. Faltaba una unidad externa.
-
-⚠️ **Y el presupuesto de memoria de `parallax.md §2.2` está subestimado por el
-mismo motivo:** calculó capas del tamaño del viewport, y una capa del tamaño del
-viewport **no puede hacer parallax**. Con sangrado real la capa mide ~180svh.
-
-**Falta la mitad que ninguna aritmética contesta:** scrollearlo con el dedo.
-Y ojo con el navegador: **Firefox sigue en `preview`** —detrás de flag— según
-`mdn/browser-compat-data`, así que ahí no se ve movimiento por diseño y la
-página cae a Tier C.
-
-**Seis defectos que ninguna revisión de código encuentra**, todos hallados
-abriendo el PNG de una captura: la foto de la mesa venía con **marca de agua
-`Unsplash+`** tileada; `.plano > img` no matcheaba porque el `<img>` es hijo de
-`<picture>`, así que las fotos salían a tamaño nativo; el scrim se leía como un
-panel rectangular porque sus radios superaban el borde de la caja; el sangrado
-parejo de 24vh sobre-ampliaba la dirección de arte horizontal; y la página medía
-**9,71 pantallas en móvil** contra el techo de 8. Quedó en **5,88**, y se
-arregló **sin sacar vino**: en pantalla angosta la tarjeta gira a fila.
-
-**El scrim está medido, no razonado.** Decodificando el PNG en cinco puntos del
-scroll: variación de **0,12 puntos**, contra **0,55** del control negativo —la
-misma foto, sin scrim—. Y con `prefers-reduced-motion` el `scrollHeight` es
-**idéntico**: no hay pin, así que no existe el peor defecto de `escenas.md §4.3`.
-
-⚠️ **Y el dueño encontró un segundo defecto mirando, otra vez después de una
-verificación mía en verde:** *"hay textos que parecen estar detrás de una nube
-borgoña"*. Estaban. **`.vinieta` vivía en `z-index: 4`, encima del contenido**, y
-oscurecía el panel dorado del CTA de 0,451 a **0,089** de luminancia — cinco
-veces—, cambiando además con la posición en la escena. `parallax.md §3.1` ya
-prohibía eso en z4: *"área grande, tapar texto"*. La viñeta y la costura bajaron
-a z2. La **brecha** entre el color declarado y el pintado se desplomó: CTA duro
-del **80 % al 2 %**, datos del vino del 67 % al 4 %.
-
-⚠️ **El error de método es lo más caro y lo más transferible:** para buscar velos
-se usó `elementsFromPoint`, que **ignora los elementos con `pointer-events:
-none`** — y toda capa decorativa lo lleva. **El detector era incapaz por
-construcción de encontrar lo que buscaba**, y devolvió "nada encima" en cada
-corrida mientras el velo estaba ahí. Con él ciego se persiguieron seis hipótesis
-falsas y se llegó a invertir el CTA para esquivar el síntoma; esa inversión se
-revirtió. Detalle y tabla en [`landing-alternativa.md §5.1`](design/landing-alternativa.md).
-
-⚠️ **Los seis vinos son INVENTADOS.** `grep -rn LA_SELECCION_ES_DE_MUESTRA`:
-mientras dé `true`, esto no se publica.
-
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
 Existen y **compilan**: `apps/tienda` (Next.js), `apps/admin` (Flutter) y
@@ -361,6 +328,11 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 
 | Qué | Por qué | Quién |
 |---|---|---|
+| ⚠️ **El canal de contacto de `/oficio` es PROVISORIO — quinto gate de deploy** | `EL_CONTACTO_ES_PROVISORIO = true` en `features/oficio/oficio.ts`: el WhatsApp publicado (`+54 9 3548 60-0375`) es el **del desarrollador** y `hola@bouquet.com.ar` no resuelve porque no hay dominio. La constante viaja al HTML como `data-contacto-provisorio`, así que se chequea con `grep` en el repo **y** con `curl` en producción. **Disparador: bloquea el deploy.** Cuando el dueño entregue el WhatsApp real y el dominio: bajar la constante, volver a correr las rutas y el `grep -c` del HTML, y recién ahí desplegar `tienda` — preguntándose antes **qué más se mergeó**, porque el deploy de front reconstruye desde el HEAD pusheado. Desde 2026-09-09. | el dueño + `tienda` |
+| ⚠️ **El numeral hueco del tramo `III` lo tiene que mirar el dueño** | Es la tesis de la página dicha con tipografía —"firmamos dos"— y el riesgo lo marcó él: que se lea como que algo se rompió en vez de como una decisión. Yo lo miré renderizado y se lee como decisión (contorno parejo, más el filete al 50 % y el nombre atenuado acompañando), pero la palabra es suya. **Plan B ya escrito** en el design: numeral macizo, nombre en cursiva y filete al 50 %. **Disparador:** abrir `/oficio` y mirarlo. Desde 2026-09-09. | el dueño |
+| ⚠️ **La vidriera NO tiene sitemap, ninguna ruta** | Lo destapó `cazador-de-puertas` cerrando `/oficio`: no existe `sitemap.ts`, `sitemap.xml` ni `robots.ts` en todo el repo, así que hoy la única cobertura de descubribilidad es la barra de navegación. No se escribió acá a propósito: un `sitemap.ts` necesita una URL base y **todavía no hay dominio**, así que saldría apuntando a un host inventado. **Disparador: el día que exista dominio** — el mismo día que se puede medir la purga de Cloudflare y que se resuelve el mail del mostrador. Desde 2026-09-09. | el dueño + `tienda` |
+| ⚠️ **`frontera-features.sh` no ve los imports RELATIVOS entre features** | Su regla 2 grepea sólo `from '@/features/`. El **mismo** import escrito `from '../landing/seleccion'` **pasa**, medido con los dos controles uno al lado del otro. ADR 006 regla 3 queda a medias: la mide un hook que se esquiva con una ruta relativa. No se tocó en este cambio para no meter una modificación de enforcement adentro de una tarea de feature. **Disparador:** antes de la próxima feature nueva de la vidriera, o el día que alguien escriba un import relativo entre features. Desde 2026-09-09. | el usuario |
+| ⚠️ **`call-site-guard` cuenta los sourcemaps del build como call sites** | Grepea `apps/ packages/ functions/ scripts/` enteros, y ahí adentro están `node_modules` y `.next`. Los `*.js.map` **embeben el fuente**, así que un símbolo que no abre nadie aparece "usado" en cuanto corrió un `next build`: dio verde con dos exports huérfanos que un grep acotado a `src/` sí encontró. Es la misma familia que `generar_verdad.mjs` contando comentarios. Y es O(símbolos × repo): sobre un archivo con 8 exports tarda **más de dos minutos**, así que como PostToolUse frena la escritura. **Disparador:** la próxima vez que el hook tarde o que un huérfano pase. Desde 2026-09-09. | el usuario |
 | ⚠️ **La home NO tiene puerta de edad, y es la única pieza legal obligatoria** | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
 | ⚠️ **Las SEIS tarjetas de la home apuntan a fichas que no existen** | ~~`/vinos` no existe y la home lo apunta dos veces~~ — **resuelto el 2026-09-09**: `/vinos` existe y los dos CTA duros dan 200. Pero contando los `href` del HTML servido aparecieron **seis más**: `/vinos/muestra-01` … `-06`, las tarjetas de `EscenaSeleccion`, todas **404**. El vault decía "dos" y eran **ocho**. No se arreglan con un placeholder: son la ficha, paso 5 de ARQUITECTURA §12, y hacer que `/vinos/<cualquier-cosa>` devuelva 200 es peor que un 404. Y sus datos son inventados mientras `LA_SELECCION_ES_DE_MUESTRA` siga en `true`. **Disparador: bloquea el deploy.** Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **Los 8 assets están commiteados y no tienen `LICENCIAS.md`** | `ambiente`, `botella`, `cava-h/v`, `mesa-h/v`, `rack-h/v`. La única tabla de licencias verificada que existió es la de los **17 assets de `home-parallax-b`**, y **no cubre a éstos**. De esta misma tanda salió la foto con marca de agua `Unsplash+` tileada, que se descubrió **abriendo el PNG**, no leyendo metadatos. `scripts/assets/traer_landing.py` es la herramienta. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |

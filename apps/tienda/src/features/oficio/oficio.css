@@ -1,0 +1,445 @@
+/* oficio.css — la hoja de "El oficio": una carta numerada, no una landing.
+ *
+ * Va ÚLTIMA en la cascada de `globals.css` porque es una feature, y una feature
+ * es lo único con derecho a pisar a `shared/` (ADR 006 §4).
+ *
+ * ⚠️ ACÁ NACEN TRES PIEZAS DE VOCABULARIO DECÓ, y nacen en la feature a
+ * propósito: ADR 006 regla 1 dice que NADA nace en `shared/`. Bajan a
+ * `shared/deco/deco.css` el día que una segunda feature las importe, y esa
+ * bajada es un commit propio, no un favor que se hace de paso.
+ *
+ *   1. Los dos BRAZOS del filete (`.filete--izq` / `.filete--der`), que
+ *      flanquean el numeral con la modulación invertida.
+ *   2. La CAPITULAR del primer párrafo de cada tramo.
+ *   3. El NUMERAL HUECO del tramo que la marca no firma.
+ *
+ * Las tres derivan de lo que `direccion.md §5.1` autoriza —la regla de un solo
+ * trazo, el chaflán, y el trazo modulado que se midió en el isotipo (1,38:1)— y
+ * ninguna toca la lista prohibida de `§5.3`: no hay soles nacientes, zigzags,
+ * galones, abanicos, escalonados, plumas, tipografías decó de display, degradés
+ * dorados con biselado ni ornamentos espejados. El numeral es la misma Fraunces
+ * del resto del sitio, no una display de época.
+ *
+ * El cartucho del sello y el grano se USAN tal cual desde `shared/deco/`. No se
+ * tocan: el sello pide `.cartucho-deco--trazado` y con eso alcanza.
+ */
+
+/* ============================================================== LA PLANCHA = */
+
+.oficio {
+  position: relative;
+  z-index: 1;
+
+  /* La plancha: el ancho que ocupa la carta, reglas incluidas.
+   *
+   * Antes de la maqueta v2 esto eran 68ch (~62rem) para TODO, y el dueño midió
+   * que en escritorio la página desaprovechaba los costados: la prosa topeaba
+   * en su medida y el resto era aire muerto. Ahora las reglas y las dos
+   * columnas llegan hasta acá, y la medida de lectura la fija la COLUMNA. */
+  --plancha: min(1080px, 100%);
+
+  /* ⚠️ LA ESCALA ES LA DE ESTA SECCIÓN Y NO LA DE `tokens.css`, y no es
+   * capricho: la landing pone tres líneas grandes por pantalla, y esta página
+   * pone ~550 palabras de prosa seguidas. Con la escala de la home, el mínimo
+   * de móvil sale más grande de lo que aguanta un párrafo de 34ch — es el
+   * pedido textual del dueño sobre la maqueta: bajar la tipografía en angosto.
+   * Los máximos de escritorio de `--t-h1` y `--t-h2` también bajan, porque un
+   * titular de 5,2rem arriba de una carta la convierte en un afiche.
+   *
+   * En la maqueta esto iba en `cqi` porque el conmutador "Móvil 390" tenía que
+   * simular un viewport que no tenía. Acá el contenedor ES el viewport, así que
+   * va en `vw` — ver el corte de columnas más abajo, que es el mismo arreglo. */
+  --t-rotulo: clamp(0.72rem, 0.69rem + 0.14vw, 0.85rem);
+  --t-cuerpo: clamp(0.97rem, 0.93rem + 0.2vw, 1.14rem);
+  --t-lead: clamp(1.05rem, 0.97rem + 0.38vw, 1.44rem);
+  --t-h3: clamp(1.2rem, 1.02rem + 0.8vw, 1.8rem);
+  --t-h2: clamp(1.4rem, 1.1rem + 1.35vw, 2.5rem);
+  --t-h1: clamp(1.95rem, 1.35rem + 2.6vw, 4.2rem);
+  --t-numeral: clamp(1.9rem, 1.3rem + 2.5vw, 3.6rem);
+
+  /* El mínimo de arriba es `--e-8` y no `--e-7` porque la barra de navegación
+   * es FIJA: mide ~48px en angosto y sin este aire el rótulo le queda debajo.
+   * Es la misma cuenta que hace `.en-obra`. */
+  padding-block: clamp(var(--e-8), 8vw, var(--e-9)) var(--e-9);
+  padding-inline: clamp(var(--e-4), 5vw, var(--e-8));
+
+  /* direccion.md §8: la luz viene de algún lado y está descentrada. El borgoña
+   * entra sólo como CALOR de fondo, nunca como panel: §5.2 midió que un panel
+   * borgoña sobre tinta topea en 2,05:1. */
+  background-image: radial-gradient(
+      120% 62% at 20% -10%,
+      color-mix(in srgb, var(--borgona) 34%, transparent) 0%,
+      transparent 62%
+    ),
+    radial-gradient(
+      85% 48% at 92% 104%,
+      color-mix(in srgb, var(--borgona) 20%, transparent) 0%,
+      transparent 70%
+    );
+}
+
+.oficio__eje {
+  max-width: var(--plancha);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(var(--e-8), 9vw, var(--e-9));
+}
+
+/* ============================================================= LA APERTURA = */
+
+.apertura {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-5);
+  text-align: center;
+}
+
+.apertura__rotulo {
+  margin: 0;
+}
+
+.apertura__titulo {
+  font-size: var(--t-h1);
+  color: var(--marfil);
+}
+
+.apertura__lead {
+  max-width: 44ch;
+  margin: 0;
+}
+
+/* ================================================================ UN TRAMO = */
+
+.tramo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-5);
+  width: 100%;
+}
+
+/* La regla de ancho completo, PARTIDA por el numeral. Es el gesto de una
+ * tarjeta impresa de 1925: el número no se apoya sobre la línea, la interrumpe.
+ * Un número apoyado sobre una regla es una viñeta de lista; uno que la corta es
+ * un capítulo. */
+.tramo__regla {
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--e-4), 3vw, var(--e-6));
+  width: 100%;
+  margin-bottom: var(--e-3);
+}
+
+/* El filete suelto y corto: el de la apertura y el del sello. El base de
+ * `deco.css` mide `min(46ch, 100%)`, que abajo de un titular de 4,2rem se lee
+ * como un subrayado y no como una viñeta de remate. */
+.filete--corto {
+  width: min(14ch, 55%);
+}
+
+/* Los dos brazos. `.filete` de `deco.css` viene con `width: min(46ch, 100%)` y
+ * `margin-inline: auto` —lo que necesita una regla suelta y centrada—, y un
+ * brazo necesita lo contrario: repartirse lo que sobra al lado del numeral. */
+.filete--brazo {
+  width: auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-inline: 0;
+}
+
+/* ⚠️ LA MODULACIÓN SE INVIERTE EN CADA BRAZO, y ahí está todo el punto.
+ * El filete base es grueso en el MEDIO (máscara 26%→74%), que es lo que hace
+ * una regla suelta. Partida en dos, esa máscara deja el peso grueso en el
+ * centro de cada mitad y las cuatro puntas finas: la línea se lee como dos
+ * rayitas, no como una regla interrumpida. Con la modulación invertida el peso
+ * cae del lado del numeral, así que la línea NACE en el número y se va
+ * afinando hacia los bordes de la plancha. */
+.filete--izq::after {
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    var(--negro) 62%,
+    var(--negro) 100%
+  );
+}
+
+.filete--der::after {
+  mask-image: linear-gradient(
+    to left,
+    transparent 0%,
+    var(--negro) 62%,
+    var(--negro) 100%
+  );
+}
+
+.tramo__numeral {
+  font-family: var(--tipo-display);
+  /* WONK 0 y no 1: el eje wonk le mete la itálica arbitraria a las letras, y en
+   * un romano suelto de 3,6rem eso se lee como una I torcida, no como
+   * carácter. */
+  font-variation-settings: 'SOFT' 22, 'WONK' 0;
+  font-weight: 400;
+  font-size: var(--t-numeral);
+  line-height: 1;
+  letter-spacing: 0.08em;
+  color: var(--dorado);
+  margin: 0;
+  flex: none;
+}
+
+.tramo__nombre {
+  margin: 0;
+}
+
+.tramo__titulo {
+  font-size: var(--t-h2);
+  max-width: 26ch;
+  text-align: center;
+  color: var(--marfil);
+}
+
+/* --- El tramo que la marca NO firma ---------------------------------------
+ *
+ * ⚠️ La distinción va por TRES recursos y no por uno, y es a propósito: el
+ * numeral hueco depende de `-webkit-text-stroke`, que no es estándar. Si un día
+ * no está, el filete al 50 % y el nombre atenuado siguen diciendo lo mismo.
+ * El design.md tiene esto anotado como riesgo y su plan B es exactamente esto:
+ * "la distinción no puede depender de un solo recurso".
+ *
+ * Dos de los tres cuelgan de `.tramo__regla--sin-firma` y no de la sección,
+ * porque los dibuja `ReglaNumerada`: el componente que pinta el numeral y los
+ * brazos es el que decide cómo se pintan, y por eso recibe `firmado`. El
+ * tercero —el nombre atenuado— cuelga de `.tramo--sin-firma`, que es de
+ * `Tramo`. Ninguno de los dos duplica el hecho: los dos salen del mismo
+ * booleano de `oficio.ts`. */
+.tramo__regla--sin-firma .filete::after {
+  opacity: 0.5;
+}
+
+.tramo--sin-firma .tramo__nombre {
+  color: color-mix(in srgb, var(--dorado) 72%, transparent);
+}
+
+/* ⚠️ EL `color: transparent` VA ADENTRO DEL `@supports`, JUNTO AL STROKE, Y NO
+ * AFUERA. Separados, un navegador sin `-webkit-text-stroke` se queda con el
+ * `transparent` y el numeral desaparece: un III invisible no se lee como "no lo
+ * firmamos", se lee como un bug. Juntos, la degradación es un numeral macizo,
+ * que es lo correcto. La condición prueba el soporte con un valor real porque
+ * `@supports (-webkit-text-stroke)` sin valor da falso. */
+@supports (-webkit-text-stroke: 1px red) {
+  .tramo__regla--sin-firma .tramo__numeral {
+    color: transparent;
+    -webkit-text-stroke: 1.2px color-mix(in srgb, var(--dorado) 76%, transparent);
+  }
+}
+
+/* ================================================================ LA PROSA = */
+
+.tramo__cuerpo {
+  width: 100%;
+  /* La medida de lectura en una columna. `.prosa` trae `max-width:
+   * var(--medida-ancha)` (62ch) desde `tipografia.css`; acá la medida la fija el
+   * CONTENEDOR, porque en escritorio la fija la columna y el párrafo no puede
+   * pelearle. */
+  max-width: 68ch;
+  margin-top: var(--e-3);
+}
+
+/* ⚠️ EL AIRE ENTRE PÁRRAFOS VA ACÁ, Y ANTES ESTABA EN UN `p + p` QUE NO
+ * PINTABA NADA. `.tramo__cuerpo .prosa` son dos clases —especificidad
+ * (0,2,0)— y `.tramo__cuerpo p + p` es una clase y dos tipos —(0,1,2)—: el
+ * `margin: 0` de acá le ganaba al `margin-top` de allá y los párrafos salían
+ * PEGADOS, en los dos anchos. Ninguna medición lo mostró: las columnas, los
+ * altos y el scrollWidth daban todos bien. Se vio abriendo el PNG.
+ *
+ * Y el aire va ABAJO de cada párrafo y no arriba del siguiente porque en dos
+ * columnas un `margin-top` cae adentro de la columna y desalinea la primera
+ * línea de cada lado. */
+.tramo__cuerpo .prosa {
+  max-width: none;
+  margin: 0 0 var(--e-5);
+}
+
+.tramo__cuerpo .prosa:last-child {
+  margin-bottom: 0;
+}
+
+/* La capitular: el gesto de un libro, no de una app. Va SÓLO en el primer
+ * párrafo de cada tramo — repetida en los cuatro es tipografía de plantilla, y
+ * en un párrafo del medio no marca nada porque no abre nada. */
+.tramo__cuerpo > p:first-child::first-letter {
+  float: left;
+  font-family: var(--tipo-display);
+  font-variation-settings: 'SOFT' 22, 'WONK' 1;
+  font-weight: 400;
+  font-size: 3.05em;
+  line-height: 0.8;
+  padding-right: 0.09em;
+  padding-top: 0.04em;
+  color: var(--dorado);
+}
+
+/* ⚠️ EL CORTE ES `@media` Y NO `@container`, y la diferencia ya costó un
+ * defecto: la maqueta usaba un container query porque su conmutador de ancho
+ * tenía que simular un viewport que no tenía, y la primera versión mezcló las
+ * dos cosas —la caja se achicaba a 390px pero el corte medía el VIEWPORT—, así
+ * que el control decía "estoy mirando el móvil" mientras mostraba escritorio.
+ * Nadie había visto el layout angosto. Acá la página no simula nada: su
+ * contenedor es el viewport, y el container query sería el andamio portado
+ * como si fuera diseño.
+ *
+ * 1000px: a 1080 de plancha, dos columnas dan ~34ch cada una, que es la medida
+ * de párrafo que `direccion.md §5.1` pide. */
+@media (min-width: 1000px) {
+  .tramo__cuerpo {
+    max-width: none;
+    columns: 2;
+    column-gap: var(--e-8);
+    column-rule: var(--filete) solid
+      color-mix(in srgb, var(--dorado) 22%, transparent);
+  }
+
+  /* ⚠️ LOS PÁRRAFOS SE PARTEN ENTRE COLUMNAS, Y ESO ES LO CORRECTO.
+   * Acá había un `break-inside: avoid-column`, que suena a prolijo y hacía lo
+   * contrario: con los párrafos atómicos el balanceador no tiene con qué
+   * repartir, y el tramo I quedaba con 3 líneas de un lado y 9 del otro —una
+   * columna corta al lado de una larga, que se lee como un error de armado—.
+   * Una carta impresa parte el párrafo al pie de la columna y lo sigue arriba
+   * de la otra; es exactamente el gesto que esta página cita.
+   *
+   * `orphans` y `widows` son la contención: el corte no puede dejar una línea
+   * suelta al pie ni una sola línea arriba de la columna siguiente. */
+  .tramo__cuerpo p {
+    orphans: 2;
+    widows: 2;
+  }
+
+  .tramo__titulo {
+    max-width: 30ch;
+  }
+}
+
+/* ================================================== EL SELLO DEL CIERRE ==== */
+
+/* El contacto. `.cartucho-deco` le da el anillo octogonal y `--trazado` lo
+ * dibuja al entrar; acá va sólo lo que el cartucho no sabe. */
+.sello {
+  padding: clamp(var(--e-6), 5vw, var(--e-7)) clamp(var(--e-5), 5vw, var(--e-7));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--e-4);
+  max-width: 46ch;
+  width: 100%;
+  text-align: center;
+  /* `scroll-margin-top` porque `/contacto` redirige a `#mostrador` y la barra
+   * es fija: sin esto el ancla deja el rótulo tapado por la barra. */
+  scroll-margin-top: var(--e-8);
+}
+
+.sello__rotulo {
+  margin: 0;
+}
+
+.sello__linea {
+  font-size: var(--t-h3);
+  color: var(--marfil);
+}
+
+.sello__canales {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  font-family: var(--tipo-texto);
+  font-size: var(--t-cuerpo);
+}
+
+/* El subrayado crece desde el centro en vez de aparecer: es el mismo gesto de
+ * trazado que el cartucho, a escala de una línea. Va por `background-size` y no
+ * por `text-decoration`, que no se puede animar. */
+.sello__canales a {
+  color: var(--marfil);
+  text-decoration: none;
+  padding-bottom: 0.18em;
+  background-image: linear-gradient(var(--dorado), var(--dorado));
+  background-repeat: no-repeat;
+  background-position: 50% 100%;
+  background-size: 0% var(--filete);
+  transition: background-size var(--dur-media) var(--ease-caida),
+    color var(--dur-media) var(--ease-caida);
+}
+
+.sello__canales a:hover,
+.sello__canales a:focus-visible {
+  color: var(--dorado);
+  background-size: 100% var(--filete);
+}
+
+.sello__pendiente {
+  font-family: var(--tipo-texto);
+  font-size: var(--t-rotulo);
+  font-style: italic;
+  color: color-mix(in srgb, var(--marfil) 55%, transparent);
+  margin: 0;
+}
+
+/* ================================================ EL MOVIMIENTO, MEDIDO ==== */
+
+/* Todo lo de acá es SCROLL, no reloj: cero JavaScript, cero estado, cero
+ * observers. Y todo arranca desde el estado VISIBLE, así que el estado base
+ * —sin el `@supports`— es la página dibujada entera: filetes a ancho completo,
+ * numerales opacos, títulos visibles. Firefox tiene los timelines detrás de
+ * flag, y ahí la sección se ve completa y quieta, que es lo correcto.
+ *
+ * direccion.md §8.2: el vino pesa. Nada rebota, nunca. */
+
+@keyframes trazar-brazo {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes asentar {
+  from {
+    opacity: 0;
+    transform: translateY(0.3em);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    /* Los brazos crecen DESDE el numeral hacia afuera, cada uno con su origen
+     * del lado del número: la línea nace ahí y no pasa por debajo. */
+    .filete--izq {
+      transform-origin: 100% 50%;
+    }
+
+    .filete--der {
+      transform-origin: 0% 50%;
+    }
+
+    .filete--brazo {
+      animation: trazar-brazo linear both;
+      animation-timeline: view();
+      animation-range: entry 12% cover 42%;
+    }
+
+    .tramo__numeral,
+    .tramo__nombre,
+    .tramo__titulo {
+      animation: asentar var(--ease-caida) both;
+      animation-timeline: view();
+      animation-range: entry 14% cover 40%;
+    }
+  }
+}

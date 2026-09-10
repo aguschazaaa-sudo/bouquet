@@ -9,6 +9,112 @@
 
 ---
 
+## Salió el 2026-09-09, al nacer la sección `El oficio`
+
+Sexta entrada. **Salió ésta y no la más vieja**, y el criterio importa: su
+propio encabezado ya decía *"escrito antes de la decisión"* — la composición que
+cuenta ganó y vive en `main` desde el 2026-09-08, así que arriba quedaba
+contando dos veces la misma historia. Lo que sigue valiendo es de dónde salió
+la aritmética del parallax y los seis defectos que se encontraron mirando.
+
+### Una segunda landing, en su propia rama (2026-09-04)
+
+> ⚠️ **Escrito antes de la decisión. Esta es la que ganó**, y desde el
+> 2026-09-08 no está en su propia rama: está en `main`. Lo de abajo cuenta de
+> dónde salió; el estado de hoy es la entrada de arriba.
+
+**El dueño no quedó convencido de [`escenas.md`](../design/escenas.md)**, así que
+hay una composición que compite con ella:
+[`design/landing-alternativa.md`](../design/landing-alternativa.md), **construida y
+navegable** en la rama `home-parallax`. ~~Sin mergear~~ — **mergeada a `main` el
+2026-09-08**. ⚠️ **Sin desplegar.**
+
+Cuatro objeciones, textuales: *mucha ceremonia y poco vino · el arco narrativo ·
+muy abstracto · los copys son cortos para desktop*. Lo que sale de ahí:
+**cuatro escenas en vez de cinco**, el vino en la **segunda** y son **seis**,
+y ~340 palabras contra ~120.
+
+**El arco deja de ser un recorrido de ánimos** —umbral, origen, sorbo, vitrina,
+mesa— y pasa a ser la secuencia de preguntas que hace alguien que podría
+comprar: el problema que ya vivió, qué hay, por qué nosotros, y qué queda
+después.
+
+**La escena que enseña cambió de tema, y ahí está el arreglo de "abstracto".**
+`escenas.md` enseñaba el color del menisco de una copa: cierto, pero sobre el
+vino, que es justo lo que la marca no puede firmar. Ahora enseña **la custodia**
+—acostada, temperatura pareja, sin luz, con el porqué físico de cada una—, que
+es lo único que bouquet hizo. Y el texto del héroe no se escribió: **estaba en
+[`voz.md §10.2`](../design/voz.md)**, enterrado en un ejemplo.
+
+**`parallax.md`, `direccion.md` y `voz.md` no se tocaron.** Lo único que se
+descarta es la composición.
+
+⚠️ **Y ahí apareció el hallazgo más grande: el parallax de los dos documentos
+de diseño NO SE VE, y es aritmética.** `escenas.md §5` acertó el **signo**;
+los dos documentos están mal en la **magnitud**, por un factor de ~7.
+
+Sobre el rango `cover` el scroll avanza `S = viewport + alto de escena` ≈ 200vh,
+y para que un plano vaya a velocidad `v` hace falta `(1 − v)·S`. Para `v = 0.55`
+son **90vh**; `parallax.md §4.1` manda **13,5vh**, con lo que `escenas.md §5`
+llama *"una escala de 30vh, la fuerza de parallax que el documento eligió"*.
+**Esa escala es el error: la amplitud ES la velocidad, no se atenúa.**
+
+Medida la velocidad aparente contra el contenido, que es la unidad que ve el
+ojo: **v = 0.91 / 0.94 / 0.98 / 1.02** con los valores del documento, y
+separación entre planos de **0,021** contra el mínimo de **0,15** que el propio
+`§2.2` fija. Siete veces por debajo de su propio umbral. Corregido:
+**0.54 / 0.69 / 0.85 / 1.00 / 1.15**, separación **0,153**.
+
+⚠️ **Lo encontró el dueño mirando, después de que una verificación mía diera
+verde.** Esa verificación medía que los `translate` cambiaban y que eran
+proporcionales a los tokens — **consistencia interna, no correctitud**. Los
+números eran fieles a unos tokens equivocados. Faltaba una unidad externa.
+
+⚠️ **Y el presupuesto de memoria de `parallax.md §2.2` está subestimado por el
+mismo motivo:** calculó capas del tamaño del viewport, y una capa del tamaño del
+viewport **no puede hacer parallax**. Con sangrado real la capa mide ~180svh.
+
+**Falta la mitad que ninguna aritmética contesta:** scrollearlo con el dedo.
+Y ojo con el navegador: **Firefox sigue en `preview`** —detrás de flag— según
+`mdn/browser-compat-data`, así que ahí no se ve movimiento por diseño y la
+página cae a Tier C.
+
+**Seis defectos que ninguna revisión de código encuentra**, todos hallados
+abriendo el PNG de una captura: la foto de la mesa venía con **marca de agua
+`Unsplash+`** tileada; `.plano > img` no matcheaba porque el `<img>` es hijo de
+`<picture>`, así que las fotos salían a tamaño nativo; el scrim se leía como un
+panel rectangular porque sus radios superaban el borde de la caja; el sangrado
+parejo de 24vh sobre-ampliaba la dirección de arte horizontal; y la página medía
+**9,71 pantallas en móvil** contra el techo de 8. Quedó en **5,88**, y se
+arregló **sin sacar vino**: en pantalla angosta la tarjeta gira a fila.
+
+**El scrim está medido, no razonado.** Decodificando el PNG en cinco puntos del
+scroll: variación de **0,12 puntos**, contra **0,55** del control negativo —la
+misma foto, sin scrim—. Y con `prefers-reduced-motion` el `scrollHeight` es
+**idéntico**: no hay pin, así que no existe el peor defecto de `escenas.md §4.3`.
+
+⚠️ **Y el dueño encontró un segundo defecto mirando, otra vez después de una
+verificación mía en verde:** *"hay textos que parecen estar detrás de una nube
+borgoña"*. Estaban. **`.vinieta` vivía en `z-index: 4`, encima del contenido**, y
+oscurecía el panel dorado del CTA de 0,451 a **0,089** de luminancia — cinco
+veces—, cambiando además con la posición en la escena. `parallax.md §3.1` ya
+prohibía eso en z4: *"área grande, tapar texto"*. La viñeta y la costura bajaron
+a z2. La **brecha** entre el color declarado y el pintado se desplomó: CTA duro
+del **80 % al 2 %**, datos del vino del 67 % al 4 %.
+
+⚠️ **El error de método es lo más caro y lo más transferible:** para buscar velos
+se usó `elementsFromPoint`, que **ignora los elementos con `pointer-events:
+none`** — y toda capa decorativa lo lleva. **El detector era incapaz por
+construcción de encontrar lo que buscaba**, y devolvió "nada encima" en cada
+corrida mientras el velo estaba ahí. Con él ciego se persiguieron seis hipótesis
+falsas y se llegó a invertir el CTA para esquivar el síntoma; esa inversión se
+revirtió. Detalle y tabla en [`landing-alternativa.md §5.1`](../design/landing-alternativa.md).
+
+⚠️ **Los seis vinos son INVENTADOS.** `grep -rn LA_SELECCION_ES_DE_MUESTRA`:
+mientras dé `true`, esto no se publica.
+
+---
+
 ## Salió el 2026-09-09, al engrosarse el cartucho
 
 Sexta entrada: entró el trazado de dos brazos y ésta salió por el tope de 5. Lo
