@@ -13,6 +13,10 @@
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",
+    // @bouquet/contratos importa con extensión (`./dinero.ts`): Node 24 corre
+    // ese paquete sin transpilar y lo exige. Sin esta bandera, el primer import
+    // de contratos desde la tienda no compila (ADR 008). Va con noEmit.
+    "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",

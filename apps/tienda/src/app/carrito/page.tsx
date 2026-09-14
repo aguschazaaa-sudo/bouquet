@@ -1,37 +1,40 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
-import { PaginaEnObra } from '@/shared/ui/PaginaEnObra';
+import { PaginaDelCarrito } from '@/features/carrito/PaginaDelCarrito';
+import { VentanaDeBotella } from '@/features/catalogo/VentanaDeBotella';
+import { obtenerCatalogo } from '@/server/catalogo';
+import { COLORES } from '@/shared/tokens/colores';
 
-/* /carrito — el carrito vacío.
+/* /carrito — el pedido. Papel sin excepción (direccion.md §3).
  *
- * ⚠️ Esto NO es un placeholder como las otras tres: es el estado vacío REAL, y
- * va a seguir siéndolo cuando el carrito funcione. El texto no lo escribí yo,
- * está curado en voz.md §9.4 y se copia literal:
+ * El carrito vive en localStorage (ARQUITECTURA §4.4): el servidor no sabe qué
+ * hay adentro. Lo que sí manda es la proyección de hoy, para que el navegador
+ * una cada línea con su precio y su balde, y la ventana de cada botella, que es
+ * del catálogo y llega como elemento (design.md §9). Es la misma proyección de
+ * /vinos: cero lecturas de más.
  *
- *   > No hay nada acá todavía.
- *   > `Ver los vinos`
- *
- * Con su razón al lado, que es la que hay que respetar cuando alguien quiera
- * "mejorarlo": *"un carrito vacío no es el momento de ser encantador — es el
- * momento de dar la salida"*. Por eso no lleva cuerpo.
- *
- * El carrito vive en `localStorage` y no hay colección `carritos` (ADR 004 y
- * ARQUITECTURA §4.4), así que cuando esta página lea de verdad va a leer del
- * navegador: cero lecturas de Firestore, hoy y después.
- */
+ * El estado vacío sigue siendo el de voz.md §9.4, literal: "No hay nada acá
+ * todavía." y `Ver los vinos`. Ahora lo pinta el navegador. */
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Tu pedido — bouquet',
-  /* `robots: noindex` porque un carrito es de una persona, no del buscador. */
+  /* `noindex`: un carrito es de una persona, no del buscador. */
   robots: { index: false, follow: true },
 };
 
-export default function Carrito() {
-  return (
-    <PaginaEnObra
-      rotulo="Tu pedido"
-      titulo="No hay nada acá todavía."
-      salida={{ href: '/vinos', texto: 'Ver los vinos' }}
-    />
+/* La barra del navegador acompaña al papel. */
+export const viewport: Viewport = {
+  themeColor: COLORES.papel,
+  colorScheme: 'light',
+};
+
+export default async function Carrito() {
+  const { productos } = await obtenerCatalogo();
+  const ventanas = Object.fromEntries(
+    productos.map((p) => [p.id, <VentanaDeBotella key={p.id} producto={p} tamano="linea" decorativa />]),
   );
+
+  return <PaginaDelCarrito productos={productos} ventanas={ventanas} />;
 }

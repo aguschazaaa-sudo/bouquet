@@ -27,9 +27,9 @@
  *
  * El WhatsApp de abajo es el del DESARROLLADOR, no el del negocio, y el mail es
  * la forma que va a tener cuando exista el dominio: hoy no resuelve. Es el
- * mismo instrumento que `LA_SELECCION_ES_DE_MUESTRA` con los seis vinos
- * inventados — una constante greppable, no una nota en un documento que nadie
- * relee.
+ * mismo instrumento que usó la home con sus seis vinos inventados, hasta que
+ * pasaron a salir del catálogo — una constante greppable, no una nota en un
+ * documento que nadie relee.
  *
  * Se chequea desde los dos lados, y hacen falta los dos:
  *
@@ -39,7 +39,7 @@
  * El primero dice qué hay en el código de esta máquina. El segundo es el que
  * vale, porque `auditor-produccion` audita PRODUCCIÓN con `curl` y no puede
  * grepear un `.ts`: por eso `SelloDeContacto` emite el atributo en el HTML.
- * `EscenaSeleccion` ya resolvió esto exactamente así con `data-muestra`.
+ * La home y /vinos emiten `data-catalogo-de-muestra` de la misma forma.
  *
  * Mientras dé `true`, esto no se publica. */
 export const EL_CONTACTO_ES_PROVISORIO = true;

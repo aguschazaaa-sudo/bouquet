@@ -1,0 +1,226 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  VARIETALES,
+  armarCatalogo,
+  balde,
+  esCorte,
+  textoDelBalde,
+  tope,
+  type DocumentoCrudo,
+} from '../src/producto.ts';
+
+// Un documento valido de `productos`, con la forma que deja el seed. Cada test
+// rompe UNA cosa, asi el control positivo es el mismo documento sin romper.
+function vino(id: string, cambios: Record<string, unknown> = {}, ficha: Record<string, unknown> = {}): DocumentoCrudo {
+  return {
+    id,
+    datos: {
+      tipo: 'simple',
+      slug: id,
+      nombre: `Vino ${id}`,
+      precio: 1990000,
+      stock: 20,
+      presentacion: { botellas: 1 },
+      imagenes: ['https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media'],
+      publicado: true,
+      fichaVino: {
+        bodegaId: 'rutini',
+        varietales: ['Malbec'],
+        color: 'tinto',
+        organico: false,
+        anada: 2023,
+        region: 'Mendoza',
+        volumenMl: 750,
+        ...ficha,
+      },
+      ...cambios,
+    },
+  };
+}
+
+function sinCampo(doc: DocumentoCrudo, campo: string): DocumentoCrudo {
+  const datos = { ...(doc.datos as Record<string, unknown>) };
+  delete datos[campo];
+  return { id: doc.id, datos };
+}
+
+const BODEGAS: DocumentoCrudo[] = [{ id: 'rutini', datos: { nombre: 'Rutini Wines', slug: 'rutini' } }];
+
+const ids = (docs: DocumentoCrudo[], popularidad?: unknown) =>
+  armarCatalogo(docs, BODEGAS, popularidad).catalogo.productos.map((p) => p.id);
+
+// ------------------------------------------------------------------ corte
+
+test('un solo varietal es cepa; dos o mas, corte', () => {
+  assert.equal(esCorte(['Malbec']), false);
+  assert.equal(esCorte(['Malbec', 'Cabernet Sauvignon']), true);
+
+  const { catalogo } = armarCatalogo(
+    [vino('cepa'), vino('corte', {}, { varietales: ['Malbec', 'Cabernet Sauvignon'] })],
+    BODEGAS,
+    undefined,
+  );
+  const porId = new Map(catalogo.productos.map((p) => [p.id, p]));
+  assert.equal(porId.get('corte')?.esCorte, true, 'la proyeccion lo marca como corte');
+  assert.equal(porId.get('cepa')?.esCorte, false);
+});
+
+// ------------------------------------------------------------------ balde
+
+test('el balde se mide en botellas: tres cajas de 2 ya son pocas', () => {
+  assert.equal(balde({ stock: 3, presentacion: { botellas: 2 } }), 'quedan-pocas', '3 cajas = 6 botellas');
+  // Control: la misma caja con una unidad mas son 8 botellas, y ya no es poco.
+  assert.equal(balde({ stock: 4, presentacion: { botellas: 2 } }), 'disponible');
+  assert.equal(balde({ stock: 6, presentacion: { botellas: 1 } }), 'quedan-pocas', 'el umbral es inclusivo');
+  assert.equal(balde({ stock: 7, presentacion: { botellas: 1 } }), 'disponible');
+});
+
+test('sin stock es agotado, y con una unidad no', () => {
+  assert.equal(balde({ stock: 0, presentacion: { botellas: 1 } }), 'agotado');
+  assert.equal(balde({ stock: -2, presentacion: { botellas: 1 } }), 'agotado', 'un negativo por error de datos');
+  assert.equal(balde({ stock: 1, presentacion: { botellas: 1 } }), 'quedan-pocas');
+});
+
+test('el balde tiene un texto por estado, y disponible no dice nada', () => {
+  assert.equal(textoDelBalde('disponible'), null);
+  assert.equal(textoDelBalde('quedan-pocas'), 'Quedan pocas');
+  assert.equal(textoDelBalde('agotado'), 'Se agotó');
+});
+
+// ------------------------------------------------------------------- tope
+
+test('el tope es max(0, min(stock, 12))', () => {
+  assert.equal(tope({ stock: 48 }), 12, 'stock alto');
+  assert.equal(tope({ stock: 12 }), 12);
+  assert.equal(tope({ stock: 5 }), 5, 'debajo de 12 el tope es el stock');
+  assert.equal(tope({ stock: 0 }), 0);
+  assert.equal(tope({ stock: -2 }), 0, 'un negativo por error de datos no da un tope negativo');
+});
+
+// ------------------------------------------------------------- proyeccion
+
+test('un documento roto no tira el catalogo: queda afuera y en los descartes', () => {
+  const { catalogo, descartes } = armarCatalogo([vino('a'), sinCampo(vino('b'), 'precio')], BODEGAS, undefined);
+  assert.deepEqual(
+    catalogo.productos.map((p) => p.id),
+    ['a'],
+  );
+  assert.equal(descartes.length, 1);
+  assert.equal(descartes[0]?.id, 'b');
+  assert.match(descartes[0]?.motivo ?? '', /precio/);
+
+  // Control: el mismo documento con precio entra.
+  assert.deepEqual(ids([vino('a'), vino('b')]), ['a', 'b']);
+});
+
+test('dos productos con el mismo slug quedan afuera los dos', () => {
+  const { catalogo, descartes } = armarCatalogo(
+    [vino('a', { slug: 'mismo' }), vino('b', { slug: 'mismo' }), vino('c')],
+    BODEGAS,
+    undefined,
+  );
+  assert.deepEqual(
+    catalogo.productos.map((p) => p.id),
+    ['c'],
+  );
+  assert.equal(descartes.filter((d) => /duplicado/.test(d.motivo)).length, 2);
+});
+
+test('la proyeccion no lleva el stock ni las unidades', () => {
+  const { catalogo } = armarCatalogo([vino('a', { stock: 5 })], BODEGAS, { unidades: { a: 30 } });
+  const p = catalogo.productos[0];
+  assert.ok(p);
+  const claves = Object.keys(p);
+  for (const prohibida of ['stock', 'unidades', 'muestra', 'publicado', 'tipo']) {
+    assert.ok(!claves.includes(prohibida), `la proyeccion no puede llevar ${prohibida}`);
+  }
+  // Control: lo que si tiene que llegar.
+  assert.equal(p.balde, 'quedan-pocas');
+  assert.equal(p.tope, 5);
+  assert.equal(p.puesto, 1);
+  assert.equal(p.bodega, 'Rutini Wines');
+});
+
+test('la caja de 2 lleva el precio de la caja y dice cuantas botellas trae', () => {
+  const { catalogo } = armarCatalogo(
+    [vino('caja', { presentacion: { botellas: 2 }, precio: 7600000, stock: 3 })],
+    BODEGAS,
+    undefined,
+  );
+  const p = catalogo.productos[0];
+  assert.equal(p?.botellas, 2);
+  assert.equal(p?.precio, 7600000);
+  assert.equal(p?.balde, 'quedan-pocas');
+  assert.equal(p?.tope, 3);
+});
+
+test('un varietal fuera de la lista cerrada deja el producto afuera', () => {
+  assert.deepEqual(ids([vino('a', {}, { varietales: ['Cab. Sauv.'] })]), []);
+  // Controles: la forma canonica entra, y la tilde de la lista tambien.
+  assert.deepEqual(ids([vino('a', {}, { varietales: ['Cabernet Sauvignon'] })]), ['a']);
+  assert.deepEqual(ids([vino('a', {}, { varietales: ['Torrontés'], color: 'blanco' })]), ['a']);
+});
+
+test('la lista de varietales no repite ninguno', () => {
+  assert.equal(new Set(VARIETALES).size, VARIETALES.length);
+});
+
+test('un compuesto no entra a la vidriera todavia', () => {
+  const compuesto = sinCampo(vino('mixta', { tipo: 'compuesto' }), 'stock');
+  const { catalogo, descartes } = armarCatalogo([compuesto, vino('a')], BODEGAS, undefined);
+  assert.deepEqual(
+    catalogo.productos.map((p) => p.id),
+    ['a'],
+  );
+  assert.match(descartes[0]?.motivo ?? '', /compuesto/);
+
+  // Y un compuesto CON stock es un documento mal cargado, no un simple.
+  const conStock = armarCatalogo([vino('mixta', { tipo: 'compuesto' })], BODEGAS, undefined);
+  assert.match(conStock.descartes[0]?.motivo ?? '', /stock propio/);
+});
+
+test('sin tipo explicito, el producto queda afuera', () => {
+  assert.deepEqual(ids([sinCampo(vino('a'), 'tipo')]), []);
+});
+
+test('una bodega que no existe deja el producto afuera', () => {
+  assert.deepEqual(ids([vino('a', {}, { bodegaId: 'nadie' })]), []);
+});
+
+test('lo no publicado no entra aunque llegue', () => {
+  assert.deepEqual(ids([vino('a', { publicado: false })]), []);
+});
+
+// ------------------------------------------------------------ popularidad
+
+test('sin metricas no hay popularidad ni puestos', () => {
+  for (const popularidad of [undefined, null, { unidades: {} }, { unidades: { a: 0 } }]) {
+    const { catalogo } = armarCatalogo([vino('a'), vino('b')], BODEGAS, popularidad);
+    assert.equal(catalogo.hayPopularidad, false, JSON.stringify(popularidad));
+    assert.ok(catalogo.productos.every((p) => p.puesto === null));
+  }
+});
+
+test('el puesto 1 es el mas vendido, y el empate se resuelve por id', () => {
+  const { catalogo } = armarCatalogo([vino('a'), vino('b'), vino('c')], BODEGAS, {
+    unidades: { a: 5, b: 9, c: 5 },
+  });
+  assert.equal(catalogo.hayPopularidad, true);
+  const puesto = Object.fromEntries(catalogo.productos.map((p) => [p.id, p.puesto]));
+  assert.deepEqual(puesto, { a: 2, b: 1, c: 3 });
+});
+
+test('unas metricas rotas cuentan como ninguna, y se informan', () => {
+  const { catalogo, descartes } = armarCatalogo([vino('a')], BODEGAS, { unidades: { a: -1 } });
+  assert.equal(catalogo.hayPopularidad, false);
+  assert.equal(descartes[0]?.id, 'metricas/popularidad');
+});
+
+// --------------------------------------------------------------- muestra
+
+test('deMuestra delata los datos de prueba, y sin ellos no aparece', () => {
+  assert.equal(armarCatalogo([vino('a', { muestra: true }), vino('b')], BODEGAS, undefined).catalogo.deMuestra, true);
+  assert.equal(armarCatalogo([vino('a'), vino('b')], BODEGAS, undefined).catalogo.deMuestra, false);
+});

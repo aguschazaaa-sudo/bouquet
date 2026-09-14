@@ -16,7 +16,9 @@
 
 ## Dónde está el proyecto
 
-**Fase: `main` ya tiene la home elegida (2026-09-08). Backend: todavía nada.**
+**Fase: el catálogo existe en stage (2026-09-11). Todavía no se cobra nada.**
+`/vinos`, la ficha y el carrito leen 20 vinos de muestra de `bouquet-vinos`;
+`crearOrden` y el checkout son la próxima sesión.
 
 Existe: `git init` en `main`, `CLAUDE.md`, los 10 hooks con su arnés de 30
 casos, `ci.yml`, los ADRs 001-004, y **`packages/contratos`** — la máquina de
@@ -39,9 +41,85 @@ dependencias de test** (ni jest, ni vitest, ni ts-node). La única dependencia
 del repo es `typescript`, para `tsc --noEmit`. En una máquina de 7,9 GB eso no
 es un detalle de gusto.
 
-Lo próximo es el **paso 2** de
-[ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción):
-`firestore.rules` e índices, antes de que haya datos.
+Lo próximo es `crearOrden` y el checkout, con los ocho hallazgos que dejó
+`revisor-pagos` en
+[ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md). Y antes del
+deploy público con el catálogo real, el tramo 4: Cloudflare con purga por tag.
+
+### El catálogo, la ficha y el carrito, en stage y sin cobrar (2026-09-11)
+
+**Nacen `/vinos`, `/vinos/[slug]` y `/carrito`** sobre 20 vinos argentinos de
+muestra en `bouquet-vinos` (stage), con las fotos en Storage. El modelo de stock
+quedó hecho para no migrarlo cuando lleguen `crearOrden` y las cajas: `tipo`
+inmutable, `stock` sólo del servidor y en unidades de venta, y la caja de 2 como
+producto propio. El porqué, en
+[ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md); los tokens del
+papel, en [`tokens.md`](design/tokens.md), que por fin existe.
+
+La forma la eligió el dueño entre **dos maquetas navegables** con los datos de
+stage: ganó **mostrador**, "por mucho". La vidriera se aparta de ella en un solo
+punto, y medido: las cifras.
+
+⚠️ **Cuatro cosas que ningún documento sabía, y aparecieron midiendo:**
+
+1. **La Libre Franklin de Google no tiene cifras tabulares.** "1111" y "8888"
+   dan 74,41 y 106,89 px con `tabular-nums`, igual que sin. Se pasó a Archivo,
+   que da 90,89 y 90,89. El control proporcional al lado es lo que prueba que la
+   medición distingue.
+2. **El lockfile estaba roto.** La `@google-cloud/firestore` de `firebase-admin`
+   pide `@opentelemetry/api` y el lock no la tenía: `npm install` decía "up to
+   date" y el cliente de Firestore no cargaba. Se declaró explícita en la tienda.
+3. **`--window-size=390` en Chrome headless da un viewport de 504.** Las
+   capturas "de teléfono" salían cortadas a la derecha y parecían overflow. Las
+   de verdad van por CDP con emulación de dispositivo.
+4. **La tienda nunca había importado contratos**, y el primer import no
+   compilaba: las extensiones `.ts` que Node exige.
+
+**Verificado sobre `next build` + `next start` contra stage:**
+
+| Qué | Cómo |
+|---|---|
+| Las rutas | `/vinos`, tres fichas y `/carrito` dan **200**; `/vinos/slug-inventado-de-control` da **404** |
+| La caché | `s-maxage=60, stale-while-revalidate=300` y `Cache-Tag: catalogo` (la ficha suma `producto-<slug>`). La home sigue en `s-maxage=31536000` y `/oficio` estática |
+| El HTML sin JavaScript | Los vinos de control aparecen; uno inventado da 0 |
+| El carrito | Portillo en 9 sobre un tope de 5 queda **guardado en 5**, y el total es **$ 183.500,00**, el mismo número calculado a mano |
+| Las reglas | 24 casos contra el emulador, cada requisito con uno aceptado y uno rechazado |
+| Tests, tipos, hooks | 65 de contratos + 11 de la tienda; `tsc` 0 en los dos; arnés 35/35; 159 enlaces |
+| El seed | Dos corridas, verificadas por REST: 20 productos, una foto por carpeta, control positivo y 404 |
+| Mirado | 1440 y 390 px emulados: listado, fichas, caja, agotado, sin foto, el carrito con sus estados feos y vacío. Sin overflow |
+
+⚠️ **Las fotos dan 400: las reglas no están publicadas.** El deploy lo frenó el
+clasificador del modo auto tres veces, y lo tiene que correr el dueño (abajo).
+**La tienda no se despliega**: al tramo 4 se suman los gates que ya existían.
+`revisor-pagos` no encontró nada que bloquee, y dejó ocho puntos para antes de
+`crearOrden`.
+
+**Esa misma tarde, la home dejó de mostrar vinos inventados.** Las seis
+tarjetas de `La selección` salen del catálogo, horneadas en el build: la home
+sigue estática y lee Firestore una vez por deploy, cero por visita
+([ADR 008 §7](architecture/decisions/008-catalogo-stock-y-carrito.md)). Llevan
+la foto en una ventana prendida, y ya no dicen precio ni "guarda".
+
+⚠️ **Dos trampas, las dos encontradas midiendo:**
+
+1. **`unstable_cache` le baja el `revalidate` a la página que lo llama.** Con
+   `obtenerCatalogo`, la home habría pasado sola a ISR de 60 s. Por eso existe
+   `leerCatalogoSinCache`, y un test que falla si la home importa la caché —
+   cuya primera versión dio rojo por el comentario que la nombra.
+2. **La foto agrandaba su ventana.** Con `height: 84%` adentro de la grilla, el
+   alto natural de la foto le ganaba al `aspect-ratio`: en escritorio salían
+   cuellos de botella gigantes. **Lo vio el dueño antes de que yo abriera mi
+   propia captura, que también lo mostraba.** Ahora la foto va
+   `position: absolute`.
+
+| Qué | Cómo |
+|---|---|
+| Sigue estática | `○ /` en el build y `s-maxage=31536000`; `/vinos` da `1m` como control |
+| Lo viejo se fue | 0 "Cuesta del Sauce", 0 `/vinos/muestra-0…`, 0 "Acostada desde marzo" (antes: 2, 6 y 2) |
+| Los seis son reales | Los que predijo la regla antes de mirar; sus seis fichas dan **200** y una ruta inventada **404** |
+| Sin precio | "19.900" da **0** en la home y **4** en `/vinos` |
+| Mirado | 1440 y 390 px emulados, con las fotos reales servidas por intercepción: las seis ventanas miden **0,563** (9:16) en las dos vistas |
+| Tests y docs | 19 de la tienda; `tsc` 0; 168 enlaces; `_verdad.md` regenerado |
 
 ### `El oficio`: la sección que cierra dos placeholders con una sola pieza (2026-09-09)
 
@@ -99,83 +177,6 @@ más transferible de la tarea:
 | Cero Firestore | Sin `import` de firebase en la feature. **Control positivo:** el mismo grep sí lo encuentra en `src/server/` |
 | Los hooks y los enlaces | arnés **35/35** · **143** enlaces en 54 archivos, todos resuelven |
 | La voz | 565 palabras: **0** exclamaciones, **0** emoji, **0** `tú`/`usted`, **0** del dialecto de cata — con el control positivo pasando primero |
-
-### El cartucho de la mesa: filete al triple y trazado en dos brazos (2026-09-09)
-
-**El dueño pidió dos cosas mirando la home:** que el marco de *"Después no te
-vas a acordar del vino"* estaba **muy fino**, y que la aparición al scrollear
-iba **muy rápida** — con el arreglo ya propuesto adentro del pedido: *dos
-inicios, mitad de velocidad, porque se dibuja en dos partes al mismo tiempo.*
-
-**El filete pasó de 1,5 px a 3 px**, y no pisando el default: `.cartucho-deco`
-sigue en `--filete-grueso` para las piezas chicas —la barra hasta lo **baja** a
-`--filete`— y `.mesa` sube a un token nuevo, `--filete-marco`. Un anillo se lee
-en proporción al bloque que encierra, y éste encierra media pantalla.
-
-**El trazado ahora sale de arriba en dos brazos** que se encuentran abajo. Es
-un solo gradiente cónico con los topes simétricos, no dos capas: `--cierre`
-hacia adelante es el brazo horario y `1turn - --cierre` hacia atrás el
-antihorario. `@keyframes` va a **medio giro**, no a uno entero, sobre el mismo
-`animation-range` — o sea que la punta del trazo va exactamente a la mitad de
-la velocidad angular, que es lo pedido.
-
-⚠️ **Y ahí aparecieron dos defectos de geometría que nadie había medido, los
-dos invisibles mientras el filete fue fino.**
-
-1. **`from -90deg` no arrancaba arriba, arrancaba en el borde IZQUIERDO**, con
-   el comentario *"barre desde arriba en sentido horario"* al lado. En
-   `conic-gradient` el ángulo 0 **ya apunta arriba** —no a las 3, como en un
-   `linear-gradient` o en `atan2`—. Con un brazo eso pasa por elección de
-   estilo; con dos, los dos salían del mismo costado y se veía roto. Medido en
-   un banco aislado a 47°: con `-90deg`, 644 y 643 px en las dos mitades
-   izquierdas y **cero** a la derecha; con `0deg`, 625 y 625 arriba y cero
-   abajo.
-2. ⚠️ **El chaflán superior izquierdo del cartucho estaba PARTIDO, y lo está
-   desde que el cartucho existe.** `polygon()` dibuja **un** camino cerrado, no
-   dos: poniendo los ocho vértices de afuera y después los ocho de adentro, el
-   camino tiene que ir y volver entre los dos anillos, y esos dos puentes caen
-   los dos en esa esquina y **se cruzan**. Con `evenodd`, cruzarse invierte el
-   relleno. Medido sobre el cartucho publicado: la banda iba 9 → 1 px → **corte
-   limpio** → 1 → 9, mientras las otras tres esquinas medían 6 px parejos.
-
-   El arreglo es una **ranura de área cero**: se sale y se vuelve por el mismo
-   segmento vertical, arriba al centro. Un segmento recorrido en los dos
-   sentidos no encierra nada, así que la paridad de `evenodd` no se entera. Se
-   probaron tres órdenes de vértices y sólo ése queda plano:
-
-   | orden de vértices | chaflán sup-izq (el anillo mide 6 px) |
-   |---|---|
-   | puentes cruzados (lo que había) | min **0,1** · max 4,4 — roto |
-   | anillo interior espejado | min 1,1 · max **13,9** — peor |
-   | ranura de área cero | **min 5,6 · max 5,6**, y las otras tres igual |
-
-3. Y el vértice interior del chaflán estaba a `--chaflan + --grosor`, que deja
-   la diagonal **1,41 veces más gorda** que los lados rectos. Va a
-   `+0,414 · --grosor` (que es `√2 − 1`), y ahí sí es un offset paralelo. Con
-   1,5 px el error medía 0,6 px; al triple se empezaba a ver.
-
-**Verificado sobre `next build` + `next start`, no sobre `next dev`:**
-
-| Qué | Cómo |
-|---|---|
-| Los dos brazos son simétricos | A medio trazo, **4.144** px dibujados arriba-izquierda contra **4.158** arriba-derecha, y **cero** en las dos mitades de abajo |
-| Y el trazo es la mitad de rápido | `--cierre` barrido a lo largo del scroll: 0° → **180°**, no 0° → 360°, sobre el mismo `animation-range` |
-| El filete llegó a la página | `--grosor` computado en `.mesa` = **3px**; espesor pintado del lado recto = **7 px de dispositivo** a dpr 2, parejo en los nueve puntos medidos |
-| Las cuatro esquinas están sanas | Corrida horizontal de la banda diagonal: **10 · 10 · 9 · 9**, constante fila por fila. Antes: 9 → 1 → corte |
-| La ranura no deja costura | El espesor del lado de arriba en `dx = 0` es **7**, igual que a ±600 px |
-| Controles | **Positivo**: el anillo entero aparece en los cuatro cuadrantes. **Negativo**: la captura vacía contra sí misma da **0** px |
-| Compila y construye | `tsc --noEmit` exit 0 · `next build` con las 6 rutas estáticas |
-| Los hooks y los enlaces | arnés **35/35** · 135 enlaces en 49 archivos, todos resuelven |
-
-⚠️ **La medición por diferencia mintió una vez y hay que saberlo:** el primer
-par de capturas dio **315.087 px distintos** en la mitad de abajo, que no era
-el anillo sino **la foto terminando de decodificar entre una captura y la
-otra**. Un tiro de calentamiento y 2,5 s lo cierran. Sin eso, el control
-positivo da un número enorme y verde por el motivo equivocado.
-
-**Sin desplegar, y correctamente:** el deploy sigue bloqueado por la puerta de
-edad, las seis fichas en 404 y las licencias de los assets. Lo de acá se miró
-renderizado en una build de producción local.
 
 ### La vidriera se ordenó por feature, y ya tiene barra de navegación (2026-09-09)
 
@@ -328,16 +329,20 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 
 | Qué | Por qué | Quién |
 |---|---|---|
+| ⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`** | Ni Firestore ni Storage tienen un release (medido por la API de Rules), y por eso las fotos dan 400: el bucket no tiene reglas. **Desde el 2026-09-11 deja vacías también las seis ventanas de la home.** El clasificador del modo auto frenó el deploy tres veces. **Disparador: ya.** Correr `firebase deploy --only firestore:rules,storage --project bouquet-vinos` y verificar con la API de Rules, no con el mensaje del CLI. Desde 2026-09-11. | el dueño |
+| ⚠️ **El catálogo real no se despliega sin el tramo 4** | Hasta que Cloudflare cachee con purga por tag, las lecturas escalan con las visitas: con 200 vinos, 115 % de la cuota a 250 visitas/día (ADR 008). Y el tramo 4 tiene que invalidar también la caché de Next, que sirve una página vencida hasta 360 s. Y decidir si la home entra a la purga: hoy envejece hasta el próximo deploy (ADR 008 §7). **Disparador: antes del deploy público.** Desde 2026-09-11. | `functions` + `tienda` |
+| **Ocho hallazgos de `revisor-pagos` para antes de `crearOrden`** | Recrear un producto se saltea la inmutabilidad; precio 0; compuesto sin componentes; `PedidoDeCompra` sin validador; carrito sin tope de líneas; la caché de Next contra la purga; los tests de reglas fuera de CI; reglas y validador que no dicen lo mismo. La tabla está en ADR 008. **Disparador: la sesión de `crearOrden`.** Desde 2026-09-11. | `functions` + `reglas` |
 | ⚠️ **El canal de contacto de `/oficio` es PROVISORIO — quinto gate de deploy** | `EL_CONTACTO_ES_PROVISORIO = true` en `features/oficio/oficio.ts`: el WhatsApp publicado (`+54 9 3548 60-0375`) es el **del desarrollador** y `hola@bouquet.com.ar` no resuelve porque no hay dominio. La constante viaja al HTML como `data-contacto-provisorio`, así que se chequea con `grep` en el repo **y** con `curl` en producción. **Disparador: bloquea el deploy.** Cuando el dueño entregue el WhatsApp real y el dominio: bajar la constante, volver a correr las rutas y el `grep -c` del HTML, y recién ahí desplegar `tienda` — preguntándose antes **qué más se mergeó**, porque el deploy de front reconstruye desde el HEAD pusheado. Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **El numeral hueco del tramo `III` lo tiene que mirar el dueño** | Es la tesis de la página dicha con tipografía —"firmamos dos"— y el riesgo lo marcó él: que se lea como que algo se rompió en vez de como una decisión. Yo lo miré renderizado y se lee como decisión (contorno parejo, más el filete al 50 % y el nombre atenuado acompañando), pero la palabra es suya. **Plan B ya escrito** en el design: numeral macizo, nombre en cursiva y filete al 50 %. **Disparador:** abrir `/oficio` y mirarlo. Desde 2026-09-09. | el dueño |
 | ⚠️ **La vidriera NO tiene sitemap, ninguna ruta** | Lo destapó `cazador-de-puertas` cerrando `/oficio`: no existe `sitemap.ts`, `sitemap.xml` ni `robots.ts` en todo el repo, así que hoy la única cobertura de descubribilidad es la barra de navegación. No se escribió acá a propósito: un `sitemap.ts` necesita una URL base y **todavía no hay dominio**, así que saldría apuntando a un host inventado. **Disparador: el día que exista dominio** — el mismo día que se puede medir la purga de Cloudflare y que se resuelve el mail del mostrador. Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **`frontera-features.sh` no ve los imports RELATIVOS entre features** | Su regla 2 grepea sólo `from '@/features/`. El **mismo** import escrito `from '../landing/seleccion'` **pasa**, medido con los dos controles uno al lado del otro. ADR 006 regla 3 queda a medias: la mide un hook que se esquiva con una ruta relativa. No se tocó en este cambio para no meter una modificación de enforcement adentro de una tarea de feature. **Disparador:** antes de la próxima feature nueva de la vidriera, o el día que alguien escriba un import relativo entre features. Desde 2026-09-09. | el usuario |
 | ⚠️ **`call-site-guard` cuenta los sourcemaps del build como call sites** | Grepea `apps/ packages/ functions/ scripts/` enteros, y ahí adentro están `node_modules` y `.next`. Los `*.js.map` **embeben el fuente**, así que un símbolo que no abre nadie aparece "usado" en cuanto corrió un `next build`: dio verde con dos exports huérfanos que un grep acotado a `src/` sí encontró. Es la misma familia que `generar_verdad.mjs` contando comentarios. Y es O(símbolos × repo): sobre un archivo con 8 exports tarda **más de dos minutos**, así que como PostToolUse frena la escritura. **Disparador:** la próxima vez que el hook tarde o que un huérfano pase. Desde 2026-09-09. | el usuario |
 | ⚠️ **La home NO tiene puerta de edad, y es la única pieza legal obligatoria** | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
-| ⚠️ **Las SEIS tarjetas de la home apuntan a fichas que no existen** | ~~`/vinos` no existe y la home lo apunta dos veces~~ — **resuelto el 2026-09-09**: `/vinos` existe y los dos CTA duros dan 200. Pero contando los `href` del HTML servido aparecieron **seis más**: `/vinos/muestra-01` … `-06`, las tarjetas de `EscenaSeleccion`, todas **404**. El vault decía "dos" y eran **ocho**. No se arreglan con un placeholder: son la ficha, paso 5 de ARQUITECTURA §12, y hacer que `/vinos/<cualquier-cosa>` devuelva 200 es peor que un 404. Y sus datos son inventados mientras `LA_SELECCION_ES_DE_MUESTRA` siga en `true`. **Disparador: bloquea el deploy.** Desde 2026-09-09. | el dueño + `tienda` |
+| **La selección de la home la elige una regla, no el dueño** | `elegirSeleccion` toma seis por ventas, sin agotados ni cajas y con los tres colores. La escena dice "los elegimos de a uno", y eso pide un dato que el modelo no tiene: que el dueño marque cuáles, con su campo en contratos, reglas y panel. **Disparador:** cuando el dueño cargue su catálogo real. Desde 2026-09-11. | el dueño + `contratos` |
+| ~~**Las SEIS tarjetas de la home apuntan a fichas que no existen**~~ **Resuelto el 2026-09-11:** salen del catálogo y sus seis fichas dan 200 (ADR 008 §7). | ~~`/vinos` no existe y la home lo apunta dos veces~~ — **resuelto el 2026-09-09**: `/vinos` existe y los dos CTA duros dan 200. Pero contando los `href` del HTML servido aparecieron **seis más**: `/vinos/muestra-01` … `-06`, las tarjetas de `EscenaSeleccion`, todas **404**. El vault decía "dos" y eran **ocho**. No se arreglan con un placeholder: son la ficha, paso 5 de ARQUITECTURA §12, y hacer que `/vinos/<cualquier-cosa>` devuelva 200 es peor que un 404. **Actualizado el 2026-09-11:** `/vinos/[slug]` ya existe, y un slug que no está da 404, que es lo correcto; lo que falta es que las tarjetas apunten a slugs reales. Y sus datos son inventados mientras `LA_SELECCION_ES_DE_MUESTRA` siga en `true`. **Disparador: bloquea el deploy.** Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **Los 8 assets están commiteados y no tienen `LICENCIAS.md`** | `ambiente`, `botella`, `cava-h/v`, `mesa-h/v`, `rack-h/v`. La única tabla de licencias verificada que existió es la de los **17 assets de `home-parallax-b`**, y **no cubre a éstos**. De esta misma tanda salió la foto con marca de agua `Unsplash+` tileada, que se descubrió **abriendo el PNG**, no leyendo metadatos. `scripts/assets/traer_landing.py` es la herramienta. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
 | **391 KB de `woff2` en la primera pantalla, y son de esta composición** | `parallax.md §8` fija **450 KB** para la primera pantalla en móvil: es el único presupuesto que paga el comprador, y arranca con el **87 % gastado antes de la primera imagen**. Salen de `layout.tsx` (Fraunces con `SOFT`+`WONK`+`opsz`, Newsreader roman e itálica con `opsz`). ⚠️ **Medido el 2026-09-08: el arreglo conocido NO sirve acá.** La composición 6 los bajó a **138 KB** sacando `SOFT` y `opsz`, y ésta usa las dos cosas (`font-variation-settings: 'SOFT' 22` en `sistema.css`, itálica de Newsreader en 4 lugares): sacarlos **cambia el dibujo de la página que se eligió mirando**. La palanca es del dueño. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
-| **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. **Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.** | el usuario |
+| **Los hooks no están vivos todavía** | `.claude/` no existía cuando arrancó la sesión, así que el watcher de settings no lo observa. Hay que abrir `/hooks` una vez, o reiniciar. ~~**Verificado: un Write a `packages/contratos/src/` NO fue bloqueado.**~~ **Resuelto el 2026-09-11:** `vault-precheck` frenó dos escrituras en la sesión del catálogo, así que los hooks corren. | el usuario |
 | **`suite_ts` y `suite_dart` nunca corrieron** | Un push a `main` dispara `alcance=rapido`, que **no corre tests**: las dos salen `skipped`. Las suites de `packages/contratos` jamás se ejecutaron en CI. **Disparador:** antes del próximo cambio de lógica, `gh workflow run ci.yml -f alcance=tests`. Desde 2026-09-03. | el usuario |
 | **Los signos de `parallax.md §4.1` contradicen a `escenas.md §5`** | La aritmética dice que un plano lento lleva amplitud **positiva**; el snippet del informe la escribe negativa. **Los dos no pueden tener razón, y no lo midió nadie.** No se editó ningún documento a propósito. **Disparador:** scrollear la maqueta con el dedo en un teléfono. Desde 2026-09-03. | el usuario |
 | **Hay dos landings y sólo se mergea una** | [`escenas.md`](design/escenas.md) y [`landing-alternativa.md`](design/landing-alternativa.md) resuelven la misma pantalla de dos formas incompatibles. La segunda está construida en `home-parallax`; la primera no está construida. **Disparador:** mirar la rama y elegir. La que pierda se archiva en `changelog/`. Desde 2026-09-04. | el usuario |
@@ -356,6 +361,8 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | 004 | Frescura por invalidación on-demand · filtrado del catálogo **en memoria** | [004](architecture/decisions/004-frescura-y-lecturas.md) |
 | 005 | La vidriera va a **Firebase App Hosting detrás de Cloudflare**; la frescura la da la **purga por tag**, no el ISR | [005](architecture/decisions/005-hosting-vidriera.md) |
 | 006 | La vidriera se ordena por **feature**, y `shared/` tiene **cinco reglas** contra el cajón de sastre | [006](architecture/decisions/006-estructura-de-la-tienda.md) |
+| 007 | La sección se llama **El oficio**, cubre tres tramos, y el contacto es su cierre | [007](architecture/decisions/007-seccion-el-oficio.md) |
+| 008 | El **stock** lo escribe sólo el servidor, en unidades de venta; la vidriera lee **una proyección** por minuto, y el carrito vive en `localStorage` | [008](architecture/decisions/008-catalogo-stock-y-carrito.md) |
 
 ---
 

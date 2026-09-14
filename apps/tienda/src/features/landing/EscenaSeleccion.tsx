@@ -1,7 +1,7 @@
 import { Escena } from '@/shared/movimiento/Escena';
 import { Plano } from '@/shared/movimiento/Plano';
 import { TarjetaVino } from './TarjetaVino';
-import { SELECCION, LA_SELECCION_ES_DE_MUESTRA } from '@/features/landing/seleccion';
+import type { VinoDeLaSeleccion } from '@/features/landing/seleccion';
 
 /* Escena 2 — La selección.
  *
@@ -20,7 +20,13 @@ import { SELECCION, LA_SELECCION_ES_DE_MUESTRA } from '@/features/landing/selecc
  * museo, y pertenece a algo que se exhibe, no a algo que se habita.
  */
 
-export function EscenaSeleccion() {
+type Props = {
+  vinos: readonly VinoDeLaSeleccion[];
+  /** Si el catálogo tiene vinos de muestra. Viaja al HTML como gate de deploy. */
+  deMuestra: boolean;
+};
+
+export function EscenaSeleccion({ vinos, deMuestra }: Props) {
   return (
     <Escena id="seleccion" nombre="seleccion" titulo="La selección">
       <Plano
@@ -46,13 +52,15 @@ export function EscenaSeleccion() {
             </p>
           </div>
 
-          {/* data-muestra es la puerta de verificación: mientras esté en true,
-              lo que se ve son datos inventados y la home no se publica. */}
+          {/* La puerta de verificación, el mismo atributo que /vinos: mientras
+              salga en el HTML, lo que se ve son vinos de muestra y la home no se
+              publica. Spread condicional y no `? 'true' : undefined`, que saca
+              el atributo del DOM pero lo deja en el payload RSC (ADR 007). */}
           <div
             className="seleccion__grilla"
-            data-muestra={LA_SELECCION_ES_DE_MUESTRA ? 'true' : undefined}
+            {...(deMuestra ? { 'data-catalogo-de-muestra': '' } : {})}
           >
-            {SELECCION.map((vino) => (
+            {vinos.map((vino) => (
               <TarjetaVino key={vino.slug} vino={vino} />
             ))}
           </div>

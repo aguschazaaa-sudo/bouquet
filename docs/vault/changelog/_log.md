@@ -9,6 +9,89 @@
 
 ---
 
+## Salió el 2026-09-11, al nacer el catálogo
+
+Sexta entrada. **Salió ésta y no la más vieja**: todo lo que enseñó —la ranura de área cero, el `from 0deg` del cónico, el chaflán interior a `0,414 · grosor`— ya vive en [ADR 006](../architecture/decisions/006-estructura-de-la-tienda.md) y en los comentarios de `deco.css`. La más vieja, la de los tres paquetes, sigue arriba porque dice dónde vive Firestore, y eso no se puede cambiar nunca.
+
+### El cartucho de la mesa: filete al triple y trazado en dos brazos (2026-09-09)
+
+**El dueño pidió dos cosas mirando la home:** que el marco de *"Después no te
+vas a acordar del vino"* estaba **muy fino**, y que la aparición al scrollear
+iba **muy rápida** — con el arreglo ya propuesto adentro del pedido: *dos
+inicios, mitad de velocidad, porque se dibuja en dos partes al mismo tiempo.*
+
+**El filete pasó de 1,5 px a 3 px**, y no pisando el default: `.cartucho-deco`
+sigue en `--filete-grueso` para las piezas chicas —la barra hasta lo **baja** a
+`--filete`— y `.mesa` sube a un token nuevo, `--filete-marco`. Un anillo se lee
+en proporción al bloque que encierra, y éste encierra media pantalla.
+
+**El trazado ahora sale de arriba en dos brazos** que se encuentran abajo. Es
+un solo gradiente cónico con los topes simétricos, no dos capas: `--cierre`
+hacia adelante es el brazo horario y `1turn - --cierre` hacia atrás el
+antihorario. `@keyframes` va a **medio giro**, no a uno entero, sobre el mismo
+`animation-range` — o sea que la punta del trazo va exactamente a la mitad de
+la velocidad angular, que es lo pedido.
+
+⚠️ **Y ahí aparecieron dos defectos de geometría que nadie había medido, los
+dos invisibles mientras el filete fue fino.**
+
+1. **`from -90deg` no arrancaba arriba, arrancaba en el borde IZQUIERDO**, con
+   el comentario *"barre desde arriba en sentido horario"* al lado. En
+   `conic-gradient` el ángulo 0 **ya apunta arriba** —no a las 3, como en un
+   `linear-gradient` o en `atan2`—. Con un brazo eso pasa por elección de
+   estilo; con dos, los dos salían del mismo costado y se veía roto. Medido en
+   un banco aislado a 47°: con `-90deg`, 644 y 643 px en las dos mitades
+   izquierdas y **cero** a la derecha; con `0deg`, 625 y 625 arriba y cero
+   abajo.
+2. ⚠️ **El chaflán superior izquierdo del cartucho estaba PARTIDO, y lo está
+   desde que el cartucho existe.** `polygon()` dibuja **un** camino cerrado, no
+   dos: poniendo los ocho vértices de afuera y después los ocho de adentro, el
+   camino tiene que ir y volver entre los dos anillos, y esos dos puentes caen
+   los dos en esa esquina y **se cruzan**. Con `evenodd`, cruzarse invierte el
+   relleno. Medido sobre el cartucho publicado: la banda iba 9 → 1 px → **corte
+   limpio** → 1 → 9, mientras las otras tres esquinas medían 6 px parejos.
+
+   El arreglo es una **ranura de área cero**: se sale y se vuelve por el mismo
+   segmento vertical, arriba al centro. Un segmento recorrido en los dos
+   sentidos no encierra nada, así que la paridad de `evenodd` no se entera. Se
+   probaron tres órdenes de vértices y sólo ése queda plano:
+
+   | orden de vértices | chaflán sup-izq (el anillo mide 6 px) |
+   |---|---|
+   | puentes cruzados (lo que había) | min **0,1** · max 4,4 — roto |
+   | anillo interior espejado | min 1,1 · max **13,9** — peor |
+   | ranura de área cero | **min 5,6 · max 5,6**, y las otras tres igual |
+
+3. Y el vértice interior del chaflán estaba a `--chaflan + --grosor`, que deja
+   la diagonal **1,41 veces más gorda** que los lados rectos. Va a
+   `+0,414 · --grosor` (que es `√2 − 1`), y ahí sí es un offset paralelo. Con
+   1,5 px el error medía 0,6 px; al triple se empezaba a ver.
+
+**Verificado sobre `next build` + `next start`, no sobre `next dev`:**
+
+| Qué | Cómo |
+|---|---|
+| Los dos brazos son simétricos | A medio trazo, **4.144** px dibujados arriba-izquierda contra **4.158** arriba-derecha, y **cero** en las dos mitades de abajo |
+| Y el trazo es la mitad de rápido | `--cierre` barrido a lo largo del scroll: 0° → **180°**, no 0° → 360°, sobre el mismo `animation-range` |
+| El filete llegó a la página | `--grosor` computado en `.mesa` = **3px**; espesor pintado del lado recto = **7 px de dispositivo** a dpr 2, parejo en los nueve puntos medidos |
+| Las cuatro esquinas están sanas | Corrida horizontal de la banda diagonal: **10 · 10 · 9 · 9**, constante fila por fila. Antes: 9 → 1 → corte |
+| La ranura no deja costura | El espesor del lado de arriba en `dx = 0` es **7**, igual que a ±600 px |
+| Controles | **Positivo**: el anillo entero aparece en los cuatro cuadrantes. **Negativo**: la captura vacía contra sí misma da **0** px |
+| Compila y construye | `tsc --noEmit` exit 0 · `next build` con las 6 rutas estáticas |
+| Los hooks y los enlaces | arnés **35/35** · 135 enlaces en 49 archivos, todos resuelven |
+
+⚠️ **La medición por diferencia mintió una vez y hay que saberlo:** el primer
+par de capturas dio **315.087 px distintos** en la mitad de abajo, que no era
+el anillo sino **la foto terminando de decodificar entre una captura y la
+otra**. Un tiro de calentamiento y 2,5 s lo cierran. Sin eso, el control
+positivo da un número enorme y verde por el motivo equivocado.
+
+**Sin desplegar, y correctamente:** el deploy sigue bloqueado por la puerta de
+edad, las seis fichas en 404 y las licencias de los assets. Lo de acá se miró
+renderizado en una build de producción local.
+
+---
+
 ## Salió el 2026-09-09, al nacer la sección `El oficio`
 
 Sexta entrada. **Salió ésta y no la más vieja**, y el criterio importa: su

@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
-import { Fraunces, Newsreader } from 'next/font/google';
+import { Archivo, Fraunces, Newsreader } from 'next/font/google';
+import { AvisoDelCarrito } from '@/features/carrito/AvisoDelCarrito';
+import { ContadorDelCarrito } from '@/features/carrito/ContadorDelCarrito';
 import { BarraPrincipal } from '@/features/navegacion/BarraPrincipal';
 import { COLORES } from '@/shared/tokens/colores';
 import './globals.css';
@@ -17,9 +19,15 @@ import './globals.css';
  * Texto: Newsreader. Dibujada para leer en pantalla, altura de x grande,
  * itálica con personalidad propia.
  *
- * NO entra una tercera familia. El presupuesto de §4.5 reserva una grotesca de
- * cifras tabulares para donde haya un número que no se pueda leer mal, y en
- * esta página no hay ninguno: no hay precio, ni stock, ni número de Orden.
+ * Cifras: Archivo (Omnibus-Type, Buenos Aires). El presupuesto de §4.5
+ * reservaba una grotesca de cifras tabulares para donde hubiera un número que
+ * no se pudiera leer mal, y la landing no tenía ninguno. El catálogo sí:
+ * precio, cantidad y total (tokens.md §5, ADR 008). Va sólo en números.
+ *
+ * ⚠️ La maqueta mostrador traía Libre Franklin, y el archivo que sirve Google
+ * NO tiene cifras tabulares: medido a 40 px, "1111" y "8888" dan 74,41 y
+ * 106,89 px con tabular-nums, igual que sin. Archivo da 90,89 y 90,89. Una
+ * columna de precios con cifras proporcionales baila.
  *
  * next/font las descarga en BUILD y las sirve desde el propio dominio, con el
  * fallback de métricas ajustadas. En runtime no queda ni un pedido a
@@ -43,6 +51,12 @@ const newsreader = Newsreader({
   variable: '--fuente-newsreader',
 });
 
+const archivo = Archivo({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--fuente-archivo',
+});
+
 export const metadata: Metadata = {
   title: 'bouquet — el vino intacto',
   description:
@@ -58,15 +72,19 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es-AR" className={`${fraunces.variable} ${newsreader.variable}`}>
+    <html lang="es-AR" className={`${fraunces.variable} ${newsreader.variable} ${archivo.variable}`}>
       <body>
         {/* La barra va en el layout y no en cada página: es la misma pieza en
             todas las rutas, y duplicarla sería la forma más rápida de que una
             sección quede sin navegación. Se pinta ANTES del contenido para que
             el orden del DOM coincida con el orden de lectura — un usuario de
             teclado llega a la navegación primero, que es donde la espera. */}
-        <BarraPrincipal />
+        {/* El contador llega a la barra como slot: navegacion/ no sabe que
+            existe un carrito, y el layout es el único que compone las dos
+            features (ADR 006, design.md §3). */}
+        <BarraPrincipal contador={<ContadorDelCarrito />} />
         {children}
+        <AvisoDelCarrito />
       </body>
     </html>
   );

@@ -35,9 +35,10 @@ import { EL_CONTACTO_ES_PROVISORIO, SELLO } from './oficio';
  * Next viene en UNA sola línea, y `grep -c` cuenta líneas con coincidencia, así
  * que devuelve 1 aunque el atributo aparezca cinco veces.
  *
- * `EscenaSeleccion` resolvió lo suyo con `data-muestra`, pero ese atributo es
- * incondicional: este es el primero que tiene que APAGARSE, y por eso el
- * problema aparece acá primero.
+ * `EscenaSeleccion` tenía `data-muestra`, pero incondicional: éste fue el
+ * primero que tuvo que APAGARSE, y por eso el problema apareció acá primero.
+ * Desde que la selección sale del catálogo, emite su gate con este mismo
+ * spread (ADR 008 §7).
  */
 
 export function SelloDeContacto() {

@@ -158,7 +158,7 @@ cierra el paréntesis de §1.2: la marca tiene el *antes* de la custodia y el
 | El motor de planos | `apps/tienda/src/shared/movimiento/movimiento.css` | Un `@keyframes`, un timeline, un token por plano |
 | La composición | `apps/tienda/src/features/landing/landing.css` | Layout y la lámpara de cada escena |
 | Los componentes | `apps/tienda/src/features/landing/` | 8 archivos, todos bajo el tope de 200 líneas |
-| Los datos | `apps/tienda/src/features/landing/seleccion.ts` | ⚠️ **De muestra.** §9 |
+| Los datos | `apps/tienda/src/features/landing/seleccion.ts` | Del catálogo, horneados en el build ([ADR 008 §7](../architecture/decisions/008-catalogo-stock-y-carrito.md)) |
 
 ### 3.1 Las fuentes
 
@@ -435,8 +435,8 @@ ningún host de Firestore.
 
 | Qué | Quién | Disparador |
 |---|---|---|
-| ⚠️ **`SELECCION` son datos INVENTADOS** — nombres de vino y de bodega que no existen | — | **Antes de cualquier deploy.** Se chequea con `grep -rn "LA_SELECCION_ES_DE_MUESTRA" apps/tienda/src`: mientras dé `true`, la home no se publica |
-| ⚠️ **`/vinos` no existe** — los dos CTA duros apuntan a un 404 | — | Es el paso 5 de ARQUITECTURA §12 y el próximo trabajo. La landing enlaza donde corresponde; lo que falta es el destino |
+| ~~`SELECCION` son datos INVENTADOS~~ **Resuelto el 2026-09-11:** los seis salen del catálogo, horneados en el build ([ADR 008 §7](../architecture/decisions/008-catalogo-stock-y-carrito.md)). El gate pasó a ser el de `/vinos`: mientras `grep -o data-catalogo-de-muestra` dé algo sobre el HTML de `/`, la home muestra vinos de muestra y no se publica | — | — |
+| ~~`/vinos` no existe~~ **Resuelto:** existe desde el 2026-09-11 con el catálogo, y las seis tarjetas abren fichas que dan 200 | — | — |
 | **`tokens.md` sigue sin existir** | — | Esta rama adelantó la *implementación* de los tokens porque existe para mirar una composición. **El documento sigue siendo el bloqueo** y los nombres de `tokens.css` son provisorios |
 | **`generar_verdad.mjs` cuenta comentarios como call sites** | técnica | Usa `new RegExp('\\b' + nombre + '\\b')` sobre el fuente entero. La palabra `CERO` en un comentario bajó los "sin puerta" de 16 a 15 sin que nadie abriera nada. **Se detectó y se esquivó reformulando el comentario, que es un parche.** Disparador: la próxima vez que el número se mueva sin causa |
 | **La puerta de edad (el telón) NO está** | — | Se dejó afuera a propósito: obliga a un clic en cada recarga y eso es exactamente la fricción que impide juzgar una composición mirándola. Está especificada en `parallax.md §10.2` y `voz.md §9.1`. Disparador: antes de publicar el dominio |
@@ -451,8 +451,11 @@ ningún host de Firestore.
 - **Cuando el dueño elija.** Si gana `escenas.md`, esto pasa al changelog y la
   rama se borra. Si gana esto, `escenas.md` pasa al changelog y este documento
   se vuelve la composición vigente.
-- **Cuando exista `/vinos`:** la escena 2 debería **reusar** la tarjeta de la
-  ficha en vez de tener la suya.
+- ~~**Cuando exista `/vinos`:** la escena 2 debería **reusar** la tarjeta de la
+  ficha en vez de tener la suya.~~ **Pasó el 2026-09-11, y no se reusó:** la
+  tarjeta del catálogo trae el precio y el control de compra, y la home no
+  puede llevar precio porque es estática. Se reusó la receta de la ventana
+  ([ADR 008 §7](../architecture/decisions/008-catalogo-stock-y-carrito.md)).
 - **Cuando existan las fotos propias:** §6 cambia entero y hay que revisar que
   cada plano siga cumpliendo el tratamiento de `parallax.md §3.4`.
 - **Cuando alguien scrollee esto en un teléfono:** ahí se cierra el pendiente de

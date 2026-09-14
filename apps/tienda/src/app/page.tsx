@@ -1,9 +1,12 @@
 import { Copa } from '@/shared/marca/Copa';
+import { describirUvas } from '@/features/catalogo/textos';
 import { EscenaProblema } from '@/features/landing/EscenaProblema';
 import { EscenaSeleccion } from '@/features/landing/EscenaSeleccion';
 import { EscenaCustodia } from '@/features/landing/EscenaCustodia';
 import { EscenaMesa } from '@/features/landing/EscenaMesa';
 import { PieDeLanding } from '@/features/landing/PieDeLanding';
+import { elegirSeleccion } from '@/features/landing/seleccion';
+import { leerCatalogoSinCache } from '@/server/catalogo';
 
 /* La home.
  *
@@ -22,12 +25,22 @@ import { PieDeLanding } from '@/features/landing/PieDeLanding';
  * CTA duro exactamente dos veces (escenas 2 y 4), un CTA blando en la 1, y
  * nada más: coquetear es insinuar, no gritar.
  *
- * Cero lecturas de Firestore por visitante. La página es HTML estático que
- * sólo cambia cuando cambia el diseño, así que no entra al circuito de purga
- * por tag de ADR 005 y no toca el presupuesto de 50.000 lecturas/día.
+ * Cero lecturas de Firestore por visitante. La página es HTML estático: los
+ * seis vinos de la selección se leen UNA vez, al armar el build, y cambian con
+ * el próximo deploy, no con el catálogo (ADR 008 §7). Así no entra al circuito
+ * de purga por tag de ADR 005 ni toca el presupuesto de 50.000 lecturas/día.
+ * Por eso lee con `leerCatalogoSinCache` y NO con `obtenerCatalogo`: la caché
+ * de 60 s la convertiría en ISR sin avisar. apps/tienda/test/revalidacion.test.ts
+ * lo vigila.
+ *
+ * `app/` compone: la elección es de la landing y el texto de las uvas es del
+ * catálogo, y ninguna de las dos features sabe de la otra (ADR 006).
  */
 
-export default function Home() {
+export default async function Home() {
+  const { productos, deMuestra } = await leerCatalogoSinCache();
+  const vinos = elegirSeleccion(productos, describirUvas);
+
   return (
     <>
       <a className="saltar" href="#seleccion">
@@ -36,7 +49,7 @@ export default function Home() {
 
       <main>
         <EscenaProblema />
-        <EscenaSeleccion />
+        <EscenaSeleccion vinos={vinos} deMuestra={deMuestra} />
         <EscenaCustodia />
         <EscenaMesa />
       </main>

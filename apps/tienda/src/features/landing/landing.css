@@ -238,6 +238,40 @@
   width: auto;
 }
 
+/* La ventana con foto se PRENDE. La foto de bodega trae fondo blanco, y el
+ * `multiply` sólo lo absorbe contra algo claro: contra el borgoña de la
+ * tarjeta quedaría un rectángulo blanco. Es la receta de la ventana del
+ * catálogo (catalogo.css): papel con su lámpara, e `isolation` para que la foto
+ * mezcle con ESE papel y no con la página. En la escena más oscura de la home,
+ * seis ventanas prendidas son lo único que brilla, que es lo que ya pedía el
+ * ajuste 1 de abajo. */
+.tarjeta__ventana--foto {
+  position: relative;
+  isolation: isolate;
+  background: radial-gradient(
+    ellipse 70% 62% at 50% 38%,
+    var(--papel-ventana),
+    color-mix(in oklab, var(--papel-ventana) 82%, var(--tinta))
+  );
+}
+
+/* ⚠️ ABSOLUTA, NO EN LA GRILLA (no revertir). Con `height: 84%` como hijo de
+ * la grilla, el alto natural de la foto —cientos de píxeles— entraba al
+ * tamaño de la fila, y el `min-height: auto` de una caja con `aspect-ratio` la
+ * deja crecer: en escritorio cada ventana salía del alto de su foto, con la
+ * botella cortada a sangre. El SVG no lo hacía porque no tiene tamaño propio.
+ * Fuera del flujo, la ventana mide lo que dice su 9:16 y la foto se acomoda
+ * adentro. */
+.tarjeta__foto {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 86%;
+  height: 84%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
 .tarjeta__nombre {
   font-size: var(--t-h3);
   color: var(--marfil);
@@ -253,16 +287,6 @@
   text-align: center;
   margin: 0;
   line-height: 1.7;
-}
-
-.tarjeta__guarda {
-  font-family: var(--tipo-texto);
-  font-size: var(--t-kicker);
-  font-style: italic;
-  font-weight: var(--peso-enfasis);
-  color: color-mix(in srgb, var(--marfil) 80%, transparent);
-  text-align: center;
-  margin: 0;
 }
 
 /* ================================================== 3 · LA CUSTODIA ==== */
@@ -592,8 +616,7 @@
   }
 
   .tarjeta__nombre,
-  .tarjeta__datos,
-  .tarjeta__guarda {
+  .tarjeta__datos {
     text-align: left;
   }
 

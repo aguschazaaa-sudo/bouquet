@@ -58,8 +58,7 @@
   --t-numeral: clamp(1.9rem, 1.3rem + 2.5vw, 3.6rem);
 
   /* El mínimo de arriba es `--e-8` y no `--e-7` porque la barra de navegación
-   * es FIJA: mide ~48px en angosto y sin este aire el rótulo le queda debajo.
-   * Es la misma cuenta que hace `.en-obra`. */
+   * es FIJA: mide ~48px en angosto y sin este aire el rótulo le queda debajo. */
   padding-block: clamp(var(--e-8), 8vw, var(--e-9)) var(--e-9);
   padding-inline: clamp(var(--e-4), 5vw, var(--e-8));
 

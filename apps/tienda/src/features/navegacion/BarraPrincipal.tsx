@@ -1,9 +1,11 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 
 import { Copa } from '@/shared/marca/Copa';
 
+import { EnlaceCarrito } from './EnlaceCarrito';
 import { EnlaceDeSeccion } from './EnlaceDeSeccion';
-import { CARRITO, SECCIONES } from './secciones';
+import { SECCIONES } from './secciones';
 
 /* La barra principal: un cartucho fijo, no una franja pegada al borde.
  *
@@ -43,7 +45,13 @@ import { CARRITO, SECCIONES } from './secciones';
  * detalle está en `navegacion.css`.
  */
 
-export function BarraPrincipal() {
+type Props = {
+  /** El número del carrito. Lo arma `app/layout.tsx` con `carrito/`: la barra
+   *  no sabe de dónde sale (ADR 006). */
+  contador?: ReactNode;
+};
+
+export function BarraPrincipal({ contador }: Props) {
   return (
     <header className="barra">
       <nav className="barra__cartucho cartucho-deco" aria-label="Principal">
@@ -61,7 +69,7 @@ export function BarraPrincipal() {
         </ul>
 
         <div className="barra__carrito">
-          <EnlaceDeSeccion seccion={CARRITO} />
+          <EnlaceCarrito contador={contador} />
         </div>
       </nav>
     </header>

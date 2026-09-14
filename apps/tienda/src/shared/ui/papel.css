@@ -1,0 +1,61 @@
+/* papel.css — el modo papel: la superficie clara de la transacción.
+ * direccion.md §3, tokens.md §4.
+ *
+ * `/carrito` entero y la mitad de abajo de la ficha. En shared/ui porque lo
+ * usan catalogo y carrito (ADR 006 regla 1), y porque no sabe de vino: sabe de
+ * superficie.
+ *
+ * ⚠️ La regla que no se negocia: sobre papel el dorado NUNCA es texto (1,83:1).
+ * Las primitivas que en cava pintan texto dorado —el rótulo, el enlace blando,
+ * el foco— pasan al borgoña, y el dorado queda en las líneas.
+ *
+ * ⚠️ direccion.md §3.2 dice que el papel respeta `prefers-color-scheme`. Esto
+ * NO lo hace todavía, y es a propósito: specs/vidriera-carrito pide fondo
+ * claro, y el papel oscuro necesita sus propios tokens. Queda en ADR 008. */
+
+.papel {
+  background: var(--papel);
+  color: var(--tinta-1);
+  color-scheme: light;
+}
+
+.papel .rotulo {
+  color: var(--acento);
+}
+
+.papel .prosa {
+  color: var(--tinta-2);
+}
+
+.papel :focus-visible {
+  outline-color: var(--acento);
+}
+
+.papel .enlace-blando {
+  color: var(--acento);
+  border-bottom-color: var(--filete-papel);
+}
+
+.papel .enlace-blando:hover,
+.papel .enlace-blando:focus-visible {
+  color: var(--tinta-1);
+}
+
+/* El botón duro sobre papel: un bloque borgoña con el texto en marfil. La
+ * versión cava —filete dorado y relleno tinta— sobre claro se lee como un
+ * agujero. */
+.papel .boton,
+.papel .boton:hover,
+.papel .boton:focus-visible {
+  color: var(--marfil);
+}
+
+.papel .boton::before,
+.papel .boton::after {
+  background: var(--acento);
+}
+
+.papel .boton:hover::after,
+.papel .boton:focus-visible::after {
+  background: var(--tinta);
+}

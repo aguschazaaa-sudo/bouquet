@@ -1,31 +1,49 @@
 import type { Metadata } from 'next';
 
-import { PaginaEnObra } from '@/shared/ui/PaginaEnObra';
+import { ControlDeCompra } from '@/features/carrito/ControlDeCompra';
+import { ListadoDeVinos } from '@/features/catalogo/ListadoDeVinos';
+import { TEXTOS } from '@/features/catalogo/textos';
+import { obtenerCatalogo } from '@/server/catalogo';
 
-/* /vinos — el catálogo.
+/* /vinos — el catálogo. ADR 008, design.md §9.
  *
- * Es la ruta que la home apunta DOS veces: los CTA duros de EscenaSeleccion y
- * de EscenaMesa. Hasta este commit las dos tiraban 404, que es el defecto que
- * el vault llama "terminada y sin puerta".
+ * ISR de 60 s: Next arma solo `s-maxage=60, stale-while-revalidate=300` con el
+ * `expireTime` de next.config.ts, y el `Cache-Tag` sale de ahí también. El
+ * literal tiene que estar ACÁ: Next lee la configuración de la ruta sin
+ * ejecutar el módulo, así que no puede importar `SEGUNDOS_DE_CATALOGO`.
  *
- * ⚠️ Vacía a propósito. El catálogo es el paso 5 de ARQUITECTURA §12 y
- * necesita `scripts/seed` antes: los seis vinos de la portada son INVENTADOS
- * mientras `LA_SELECCION_ES_DE_MUESTRA` siga en true, y una página de catálogo
- * con datos falsos es peor que una que dice que todavía no está.
- */
+ * `app/` compone: arma el control de compra de cada vino (de `carrito/`) y se
+ * lo pasa al listado (de `catalogo/`) como elemento. Ninguna de las dos
+ * features sabe de la otra (ADR 006).
+ *
+ * `data-catalogo-de-muestra` es un gate de deploy: sale en el HTML si hay
+ * datos de muestra, así `auditor-produccion` lo ve con curl. Va con spread
+ * condicional y no con `? '' : undefined`, que sale del DOM pero se queda en
+ * el payload RSC (lo midió la sección El oficio). */
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: 'Los vinos — bouquet',
-  description: 'La selección de bouquet.',
+  description: 'Tintos, blancos y rosados argentinos, por cepa o corte, con el precio a la vista.',
 };
 
-export default function Vinos() {
+export default async function Vinos() {
+  const { productos, hayPopularidad, deMuestra } = await obtenerCatalogo();
+  const controles = Object.fromEntries(
+    productos.map((p) => [
+      p.id,
+      <ControlDeCompra key={p.id} productoId={p.id} nombre={p.nombre} tope={p.tope} botellas={p.botellas} />,
+    ]),
+  );
+
   return (
-    <PaginaEnObra
-      rotulo="La selección"
-      titulo="Todavía no"
-      cuerpo="Estamos eligiendo qué entra y qué no, que es la parte lenta. Cuando la selección esté cerrada, va a estar acá."
-      salida={{ href: '/', texto: 'Volver a la portada' }}
-    />
+    <main className="pagina-vinos contenedor-vinos" {...(deMuestra ? { 'data-catalogo-de-muestra': '' } : {})}>
+      <header className="cabecera-vinos">
+        <h1 className="display">{TEXTOS.titulo}</h1>
+        <p>{TEXTOS.bajada}</p>
+      </header>
+      <ListadoDeVinos productos={productos} hayPopularidad={hayPopularidad} controles={controles} />
+    </main>
   );
 }

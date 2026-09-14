@@ -12,3 +12,5 @@
 export * from './orden.ts';
 export * from './proyeccion.ts';
 export * from './dinero.ts';
+export * from './producto.ts';
+export * from './carrito.ts';

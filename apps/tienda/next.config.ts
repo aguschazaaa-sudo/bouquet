@@ -9,6 +9,32 @@ const nextConfig: NextConfig = {
   // el build con un error de sintaxis.
   transpilePackages: ['@bouquet/contratos'],
 
+  /* La caché de las páginas del catálogo (ADR 008). `/vinos`, `/vinos/[slug]`
+   * y `/carrito` son ISR con `revalidate = 60`, y Next les arma el
+   * Cache-Control solo: `s-maxage={revalidate}, stale-while-revalidate=
+   * {expireTime - revalidate}` (node_modules/next/dist/docs/01-app/02-guides/
+   * cdn-caching.md). Con 360 sale `s-maxage=60, stale-while-revalidate=300`.
+   * No se escribe a mano en headers(): el Cache-Control de una página lo pone
+   * Next al renderizarla.
+   *
+   * Afecta a TODA página con `revalidate`, y hoy son sólo esas tres. La home y
+   * /oficio son estáticas y siguen con `s-maxage=31536000`. */
+  expireTime: 360,
+
+  /* `Cache-Tag` es lo que va a purgar Cloudflare en el tramo 4 (ADR 005).
+   *
+   * ⚠️ La ficha lleva el SLUG, no el id del producto: acá la ruta sólo conoce
+   * el slug, y un header de next.config no puede buscar nada. El trigger de
+   * purga tiene el documento de antes y el de después, así que conoce los dos
+   * slugs si cambia (ADR 008). */
+  async headers() {
+    return [
+      { source: '/vinos', headers: [{ key: 'Cache-Tag', value: 'catalogo' }] },
+      { source: '/vinos/:slug', headers: [{ key: 'Cache-Tag', value: 'catalogo, producto-:slug' }] },
+      { source: '/carrito', headers: [{ key: 'Cache-Tag', value: 'catalogo' }] },
+    ];
+  },
+
   /* ⚠️ `/contacto` YA NO ES UNA SECCIÓN, PERO SU URL SIGUE VIVA.
    *
    * El contacto se plegó como cierre de `/oficio` —el arco de esa página

@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-09 - commit `d794239` **+ cambios sin commitear** - huella del cuerpo `cebb868ec257`
+> **Generado:** 2026-09-11 - commit `6385a87` **+ cambios sin commitear** - huella del cuerpo `32f507a0f0f7`
 
 ---
 
@@ -72,10 +72,10 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | Paquete | Version | Ruta | Scripts |
 |---|---|---|---|
 | `@bouquet/contratos` | 0.1.0 | `packages/contratos` | `test`, `generar` |
-| `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck` |
+| `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.15.1
+### Scripts de la raiz - `bouquet` 0.16.0
 
 | Script | Comando |
 |---|---|
@@ -92,10 +92,17 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | Archivo | Casos |
 |---|---|
 | `apps/admin/test/core/contratos/estados_orden_test.dart` | 9 |
+| `apps/tienda/test/almacen.test.ts` | 1 |
+| `apps/tienda/test/filtros.test.ts` | 10 |
+| `apps/tienda/test/revalidacion.test.ts` | 3 |
+| `apps/tienda/test/seleccion.test.ts` | 5 |
+| `packages/contratos/test/carrito.test.ts` | 20 |
 | `packages/contratos/test/dinero.test.ts` | 7 |
 | `packages/contratos/test/orden.test.ts` | 13 |
+| `packages/contratos/test/producto.test.ts` | 19 |
 | `packages/contratos/test/proyeccion.test.ts` | 6 |
-| **total** | **35** |
+| `scripts/reglas/productos.test.mjs` | 24 |
+| **total** | **117** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -121,7 +128,7 @@ Los 11 hooks apuntan a scripts que existen. Que existan no prueba que midan: eso
 
 ### Permisos del harness
 
-- **deny**: `Bash(flutter analyze:*)`, `Bash(flutter test:*)`, `Bash(flutter build:*)`, `PowerShell(flutter analyze:*)`, `PowerShell(flutter test:*)`, `PowerShell(flutter build:*)`, `Bash(npx jest:*)`, `PowerShell(npx jest:*)`, `Bash(firebase deploy:*)`, `PowerShell(firebase deploy:*)`
+- **deny**: `Bash(flutter analyze:*)`, `Bash(flutter test:*)`, `Bash(flutter build:*)`, `PowerShell(flutter analyze:*)`, `PowerShell(flutter test:*)`, `PowerShell(flutter build:*)`, `Bash(npx jest:*)`, `PowerShell(npx jest:*)`, `PowerShell(firebase deploy:*)`
 - **ask**: `Bash(gh workflow run:*)`, `Bash(gh run rerun:*)`, `Bash(git push:*)`, `PowerShell(git push:*)`
 - **allow**: -
 
@@ -195,17 +202,61 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `proyectarEstadoPublico` | funcion | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
 | `ROTULOS` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
 | `REQUIEREN_ACCION` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
-| `Centavos` | tipo | **SIN PUERTA - nadie** | - |
-| `centavos` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
+| `Centavos` | tipo | abierto | `apps/tienda/src/shared/ui/Precio.tsx` |
+| `centavos` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/shared/ui/Precio.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts` |
 | `CERO` | valor | **SIN PUERTA - nadie** | - |
-| `desdePesos` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
-| `sumar` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
+| `desdePesos` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts` |
+| `sumar` | funcion | abierto | `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/dinero.test.ts` |
 | `porCantidad` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
-| `formatearARS` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
+| `formatearARS` | funcion | abierto | `apps/tienda/src/shared/ui/Precio.tsx`, `packages/contratos/test/dinero.test.ts` |
+| `TIPOS_DE_PRODUCTO` | valor | **SIN PUERTA - nadie** | - |
+| `TipoDeProducto` | tipo | **SIN PUERTA - nadie** | - |
+| `COLORES` | valor | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/app/layout.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/src/shared/tokens/colores.ts` |
+| `Color` | tipo | abierto | `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts` |
+| `VARIETALES` | valor | abierto | `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_varietales.mjs` |
+| `Varietal` | tipo | abierto | `apps/tienda/src/features/landing/seleccion.ts` |
+| `FichaVino` | tipo | **SIN PUERTA - nadie** | - |
+| `ProductoSimple` | tipo | **SIN PUERTA - nadie** | - |
+| `ProductoCompuesto` | tipo | **SIN PUERTA - nadie** | - |
+| `Producto` | tipo | abierto | `apps/tienda/src/features/navegacion/secciones.ts` |
+| `BALDES` | valor | **SIN PUERTA - nadie** | - |
+| `Balde` | tipo | **SIN PUERTA - nadie** | - |
+| `UMBRAL_QUEDAN_POCAS` | valor | **SIN PUERTA - nadie** | - |
+| `TOPE_POR_PEDIDO` | valor | **SIN PUERTA - nadie** | - |
+| `balde` | funcion | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `tope` | funcion | abierto | `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `textoDelBalde` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `packages/contratos/test/producto.test.ts` |
+| `esCorte` | funcion | abierto | `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `Validacion` | tipo | **SIN PUERTA - nadie** | - |
+| `validarProducto` | funcion | abierto | `scripts/seed/seed.mjs` |
+| `ProductoPublicado` | tipo | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `proyectarProducto` | funcion | **SIN PUERTA - nadie** | - |
+| `DocumentoCrudo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
+| `Descarte` | tipo | **SIN PUERTA - nadie** | - |
+| `Catalogo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts` |
+| `CatalogoArmado` | tipo | **SIN PUERTA - nadie** | - |
+| `armarCatalogo` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
+| `VERSION_DEL_CARRITO` | valor | **SIN PUERTA - nadie** | - |
+| `LineaDeCarrito` | tipo | **SIN PUERTA - nadie** | - |
+| `Carrito` | tipo | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/carrito/useCarrito.ts`, `apps/tienda/src/features/navegacion/secciones.ts`, `packages/contratos/test/carrito.test.ts` |
+| `parsearCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/test/almacen.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `carritoVacio` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/test/almacen.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `Cambio` | tipo | **SIN PUERTA - nadie** | - |
+| `fijarCantidad` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx` |
+| `agregar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/reglas/productos.test.mjs` |
+| `quitar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts` |
+| `unidadesEnCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/carrito.test.ts` |
+| `ESTADOS_DE_LINEA` | valor | **SIN PUERTA - nadie** | - |
+| `EstadoDeLinea` | tipo | **SIN PUERTA - nadie** | - |
+| `LineaResuelta` | tipo | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx` |
+| `CarritoResuelto` | tipo | abierto | `apps/tienda/src/features/carrito/TotalDelCarrito.tsx` |
+| `resolverCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `packages/contratos/test/carrito.test.ts` |
+| `LineaDePedido` | tipo | **SIN PUERTA - nadie** | - |
+| `PedidoDeCompra` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/carrito.test.ts` |
 
-**28 simbolos exportados. 16 SIN PUERTA.**
+**72 simbolos exportados. 32 SIN PUERTA.**
 
-Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `Centavos`, `centavos`, `CERO`, `desdePesos`, `sumar`, `porCantidad`, `formatearARS`.
+Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `BALDES`, `Balde`, `UMBRAL_QUEDAN_POCAS`, `TOPE_POR_PEDIDO`, `Validacion`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `Cambio`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `LineaDePedido`, `PedidoDeCompra`.
 
 Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
@@ -228,4 +279,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 37. Archivos de test: 4. Casos de test: 35.
+Archivos de codigo recorridos: 85. Archivos de test: 11. Casos de test: 117.

@@ -1,0 +1,448 @@
+{
+  "proyecto": "bouquet-vinos",
+  "nota": "Datos de MUESTRA para stage. Precios en centavos, stock en unidades de venta, unidades = ventas simuladas de 90 dias. foto: archivo en scripts/seed/fotos/ (no se commitea) o null a proposito.",
+  "bodegas": [
+    {
+      "id": "muestra-rutini-wines",
+      "nombre": "Rutini Wines",
+      "slug": "rutini-wines"
+    },
+    {
+      "id": "muestra-catena-zapata",
+      "nombre": "Catena Zapata",
+      "slug": "catena-zapata"
+    },
+    {
+      "id": "muestra-latitud-33",
+      "nombre": "Latitud 33",
+      "slug": "latitud-33"
+    },
+    {
+      "id": "muestra-bodegas-salentein",
+      "nombre": "Bodegas Salentein",
+      "slug": "bodegas-salentein"
+    },
+    {
+      "id": "muestra-familia-zuccardi",
+      "nombre": "Familia Zuccardi",
+      "slug": "familia-zuccardi"
+    },
+    {
+      "id": "muestra-domaine-bousquet",
+      "nombre": "Domaine Bousquet",
+      "slug": "domaine-bousquet"
+    },
+    {
+      "id": "muestra-nieto-senetiner",
+      "nombre": "Nieto Senetiner",
+      "slug": "nieto-senetiner"
+    },
+    {
+      "id": "muestra-bodegas-callia",
+      "nombre": "Bodegas Callia",
+      "slug": "bodegas-callia"
+    },
+    {
+      "id": "muestra-bodega-amalaya",
+      "nombre": "Bodega Amalaya",
+      "slug": "bodega-amalaya"
+    },
+    {
+      "id": "muestra-el-esteco",
+      "nombre": "El Esteco",
+      "slug": "el-esteco"
+    },
+    {
+      "id": "muestra-susana-balbo-wines",
+      "nombre": "Susana Balbo Wines",
+      "slug": "susana-balbo-wines"
+    }
+  ],
+  "vinos": [
+    {
+      "id": "muestra-trumpeter-malbec",
+      "slug": "trumpeter-malbec",
+      "nombre": "Trumpeter Malbec",
+      "bodegaId": "muestra-rutini-wines",
+      "color": "tinto",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Tupungato, Mendoza",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 1990000,
+      "stock": 48,
+      "botellas": 1,
+      "unidades": 142,
+      "foto": "trumpeter-malbec.png"
+    },
+    {
+      "id": "muestra-trumpeter-cabernet-sauvignon",
+      "slug": "trumpeter-cabernet-sauvignon",
+      "nombre": "Trumpeter Cabernet Sauvignon",
+      "bodegaId": "muestra-rutini-wines",
+      "color": "tinto",
+      "varietales": [
+        "Cabernet Sauvignon"
+      ],
+      "organico": false,
+      "region": "Tupungato, Mendoza",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 1990000,
+      "stock": 22,
+      "botellas": 1,
+      "unidades": 61,
+      "foto": "trumpeter-cabernet-sauvignon.png"
+    },
+    {
+      "id": "muestra-alamos-malbec",
+      "slug": "alamos-malbec",
+      "nombre": "Alamos Malbec",
+      "bodegaId": "muestra-catena-zapata",
+      "color": "tinto",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 1650000,
+      "stock": 60,
+      "botellas": 1,
+      "unidades": 128,
+      "foto": "alamos-malbec.jpg"
+    },
+    {
+      "id": "muestra-latitud-33-malbec",
+      "slug": "latitud-33-malbec",
+      "nombre": "Latitud 33° Malbec",
+      "bodegaId": "muestra-latitud-33",
+      "color": "tinto",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 1290000,
+      "stock": 35,
+      "botellas": 1,
+      "unidades": 97,
+      "foto": "latitud-33-malbec.jpg"
+    },
+    {
+      "id": "muestra-portillo-malbec",
+      "slug": "portillo-malbec",
+      "nombre": "Portillo Malbec",
+      "bodegaId": "muestra-bodegas-salentein",
+      "color": "tinto",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Valle de Uco, Mendoza",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 1450000,
+      "stock": 5,
+      "botellas": 1,
+      "unidades": 74,
+      "foto": "portillo-malbec.png"
+    },
+    {
+      "id": "muestra-santa-julia-organica-malbec",
+      "slug": "santa-julia-organica-malbec",
+      "nombre": "Santa Julia Orgánica Malbec",
+      "bodegaId": "muestra-familia-zuccardi",
+      "color": "tinto",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": true,
+      "region": "Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1390000,
+      "stock": 30,
+      "botellas": 1,
+      "unidades": 55,
+      "foto": "santa-julia-organica-malbec.jpg"
+    },
+    {
+      "id": "muestra-domaine-bousquet-malbec",
+      "slug": "domaine-bousquet-malbec",
+      "nombre": "Domaine Bousquet Malbec",
+      "bodegaId": "muestra-domaine-bousquet",
+      "color": "tinto",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": true,
+      "region": "Tupungato, Valle de Uco",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 2200000,
+      "stock": 18,
+      "botellas": 1,
+      "unidades": 40,
+      "foto": "domaine-bousquet-malbec.jpg"
+    },
+    {
+      "id": "muestra-nieto-senetiner-bonarda",
+      "slug": "nieto-senetiner-bonarda",
+      "nombre": "Nieto Senetiner Bonarda",
+      "bodegaId": "muestra-nieto-senetiner",
+      "color": "tinto",
+      "varietales": [
+        "Bonarda"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 1550000,
+      "stock": 0,
+      "botellas": 1,
+      "unidades": 33,
+      "foto": "nieto-senetiner-bonarda.png"
+    },
+    {
+      "id": "muestra-callia-syrah",
+      "slug": "callia-syrah",
+      "nombre": "Callia Syrah",
+      "bodegaId": "muestra-bodegas-callia",
+      "color": "tinto",
+      "varietales": [
+        "Syrah"
+      ],
+      "organico": false,
+      "region": "Valle de Tulum, San Juan",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 990000,
+      "stock": 40,
+      "botellas": 1,
+      "unidades": 88,
+      "foto": "callia-syrah.jpg"
+    },
+    {
+      "id": "muestra-amalaya-tinto",
+      "slug": "amalaya-tinto",
+      "nombre": "Amalaya Tinto",
+      "bodegaId": "muestra-bodega-amalaya",
+      "color": "tinto",
+      "varietales": [
+        "Malbec",
+        "Cabernet Sauvignon",
+        "Tannat"
+      ],
+      "organico": false,
+      "region": "Valles Calchaquíes, Salta",
+      "anada": 2023,
+      "volumenMl": 750,
+      "precio": 2100000,
+      "stock": 14,
+      "botellas": 1,
+      "unidades": 49,
+      "foto": "amalaya-tinto.png"
+    },
+    {
+      "id": "muestra-rutini-cabernet-malbec-caja-2",
+      "slug": "rutini-cabernet-malbec-caja-2",
+      "nombre": "Rutini Cabernet-Malbec",
+      "bodegaId": "muestra-rutini-wines",
+      "color": "tinto",
+      "varietales": [
+        "Cabernet Sauvignon",
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2022,
+      "volumenMl": 750,
+      "precio": 7600000,
+      "stock": 3,
+      "botellas": 2,
+      "unidades": 21,
+      "foto": "rutini-cabernet-malbec-caja-2.png"
+    },
+    {
+      "id": "muestra-don-nicanor-blend-caja-2",
+      "slug": "don-nicanor-blend-caja-2",
+      "nombre": "Don Nicanor Blend",
+      "bodegaId": "muestra-nieto-senetiner",
+      "color": "tinto",
+      "varietales": [
+        "Malbec",
+        "Cabernet Sauvignon",
+        "Merlot"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2022,
+      "volumenMl": 750,
+      "precio": 5200000,
+      "stock": 10,
+      "botellas": 2,
+      "unidades": 26,
+      "foto": "don-nicanor-blend-caja-2.jpg"
+    },
+    {
+      "id": "muestra-trumpeter-chardonnay",
+      "slug": "trumpeter-chardonnay",
+      "nombre": "Trumpeter Chardonnay",
+      "bodegaId": "muestra-rutini-wines",
+      "color": "blanco",
+      "varietales": [
+        "Chardonnay"
+      ],
+      "organico": false,
+      "region": "Tupungato, Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1990000,
+      "stock": 20,
+      "botellas": 1,
+      "unidades": 45,
+      "foto": "trumpeter-chardonnay.png"
+    },
+    {
+      "id": "muestra-don-david-torrontes",
+      "slug": "don-david-torrontes",
+      "nombre": "Don David Torrontés",
+      "bodegaId": "muestra-el-esteco",
+      "color": "blanco",
+      "varietales": [
+        "Torrontés"
+      ],
+      "organico": false,
+      "region": "Cafayate, Salta",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1750000,
+      "stock": 26,
+      "botellas": 1,
+      "unidades": 52,
+      "foto": "don-david-torrontes.png"
+    },
+    {
+      "id": "muestra-latitud-33-chardonnay",
+      "slug": "latitud-33-chardonnay",
+      "nombre": "Latitud 33° Chardonnay",
+      "bodegaId": "muestra-latitud-33",
+      "color": "blanco",
+      "varietales": [
+        "Chardonnay"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1290000,
+      "stock": 24,
+      "botellas": 1,
+      "unidades": 38,
+      "foto": "latitud-33-chardonnay.jpg"
+    },
+    {
+      "id": "muestra-portillo-sauvignon-blanc",
+      "slug": "portillo-sauvignon-blanc",
+      "nombre": "Portillo Sauvignon Blanc",
+      "bodegaId": "muestra-bodegas-salentein",
+      "color": "blanco",
+      "varietales": [
+        "Sauvignon Blanc"
+      ],
+      "organico": false,
+      "region": "Valle de Uco, Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1450000,
+      "stock": 4,
+      "botellas": 1,
+      "unidades": 30,
+      "foto": "portillo-sauvignon-blanc.png"
+    },
+    {
+      "id": "muestra-domaine-bousquet-chardonnay",
+      "slug": "domaine-bousquet-chardonnay",
+      "nombre": "Domaine Bousquet Chardonnay",
+      "bodegaId": "muestra-domaine-bousquet",
+      "color": "blanco",
+      "varietales": [
+        "Chardonnay"
+      ],
+      "organico": true,
+      "region": "Tupungato, Valle de Uco",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 2100000,
+      "stock": 16,
+      "botellas": 1,
+      "unidades": 19,
+      "foto": "domaine-bousquet-chardonnay.jpg"
+    },
+    {
+      "id": "muestra-crios-rose-de-malbec",
+      "slug": "crios-rose-de-malbec",
+      "nombre": "Crios Rosé of Malbec",
+      "bodegaId": "muestra-susana-balbo-wines",
+      "color": "rosado",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1890000,
+      "stock": 22,
+      "botellas": 1,
+      "unidades": 58,
+      "foto": "crios-rose-de-malbec.jpg"
+    },
+    {
+      "id": "muestra-trumpeter-rose",
+      "slug": "trumpeter-rose",
+      "nombre": "Trumpeter Reserve Rosé",
+      "bodegaId": "muestra-rutini-wines",
+      "color": "rosado",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Tupungato, Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1990000,
+      "stock": 12,
+      "botellas": 1,
+      "unidades": 36,
+      "foto": "trumpeter-rose.png"
+    },
+    {
+      "id": "muestra-santa-julia-rose",
+      "slug": "santa-julia-rose",
+      "nombre": "Santa Julia Rosé",
+      "bodegaId": "muestra-familia-zuccardi",
+      "color": "rosado",
+      "varietales": [
+        "Malbec"
+      ],
+      "organico": false,
+      "region": "Mendoza",
+      "anada": 2024,
+      "volumenMl": 750,
+      "precio": 1250000,
+      "stock": 28,
+      "botellas": 1,
+      "unidades": 27,
+      "foto": null
+    }
+  ]
+}

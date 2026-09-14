@@ -141,6 +141,11 @@ jobs:
         # Sin esto, contratos.json envejece y el test de Dart pasa contra un
         # contrato que ya no existe: el test se vuelve teatro.
         run: node scripts/ci/auditar_estados.mjs
+      - name: Los varietales de las reglas son los de contratos
+        # Las reglas no importan TypeScript: la lista cerrada vive dos veces.
+        # Si difieren, o el panel ofrece una uva que rebota, o la vidriera
+        # descarta en silencio un vino que se guardo bien (ADR 008).
+        run: node scripts/ci/auditar_varietales.mjs
 
   suite_ts:
     needs: [contexto, tipos]
@@ -169,7 +174,7 @@ jobs:
           npm test 2>&1 | tee /tmp/suite.txt
           N=$(grep -oE 'tests [0-9]+' /tmp/suite.txt | head -1 | grep -oE '[0-9]+')
           echo "tests ejecutados: ${N:-0}"
-          [ "${N:-0}" -ge 26 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 26"; exit 1; }
+          [ "${N:-0}" -ge 64 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 64"; exit 1; }
 
   suite_dart:
     needs: contexto

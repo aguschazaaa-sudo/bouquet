@@ -4,8 +4,8 @@ rules_version = '2';
 // bouquet - reglas de Firestore.  ARQUITECTURA §9.
 //
 // LA POSTURA: TODO DENEGADO para el navegador anonimo.  Y no es paranoia: es
-// que NO LO NECESITA.  La vidriera renderiza del lado servidor (ISR +
-// revalidacion por trigger, ADR 004), asi que el visitante NUNCA tiene un SDK
+// que NO LO NECESITA.  La vidriera renderiza del lado servidor (SSR con cache
+// de borde purgada por tag, ADR 005), asi que el visitante NUNCA tiene un SDK
 // de Firestore en la mano.  El dia que haga falta una lectura desde el
 // cliente, se abre ESA lectura a proposito y se escribe por que.
 //
@@ -42,32 +42,23 @@ service cloud.firestore {
       return request.auth != null && request.auth.token.rol == 'admin';
     }
 
-    // Campos que SOLO escribe el servidor (Admin SDK), nunca el panel.
-    // El Admin SDK NO pasa por estas reglas, asi que prohibirlos aca no le
-    // saca capacidad a nadie que la necesite: le saca la posibilidad de que
-    // un bug del panel los pise.
-    function noTocaCamposDelServidor(campos) {
-      return !campos.hasAny([
-        'numero',        // secuencial, asignado en la transaccion de creacion
-        'busqueda',      // tokens generados por trigger (§5.2)
-        'creadaEn',
-        'estadoPago'     // el eje de plata: se mueve por callable auditada
-      ]);
-    }
-
     function editaSolo(permitidos) {
       return request.resource.data.diff(resource.data).affectedKeys()
                .hasOnly(permitidos);
     }
 
+    function esSlug(s) {
+      return s is string && s.matches('[a-z0-9]+(-[a-z0-9]+)*');
+    }
+
     // ------------------------------------------------------------ productos
     //
-    // §5.2 - las trampas que se cierran ACA, en la creacion:
+    // §5.2 y ADR 008 - las trampas que se cierran ACA:
     //
     //  · `publicado` SIEMPRE presente.  `where('publicado','==',true)` NO
     //    devuelve los documentos donde el campo no existe.  Somos greenfield,
     //    asi que la defensa correcta no es un backfill: es que NINGUN
-    //    documento pueda nacer sin el campo.  Esta regla lo hace imposible.
+    //    documento pueda nacer sin el campo.
     //
     //  · `precio` ENTERO en centavos de ARS.  Nunca float, nunca string.
     //    `is int` rechaza 1250.50 y rechaza "1250".
@@ -76,42 +67,140 @@ service cloud.firestore {
     //    campos `photoUrl` -uno anidado y uno en la raiz- desde el commit
     //    inicial, y aun con la subida arreglada la foto nueva no se veia en
     //    ningun otro lado, PARA SIEMPRE.  Un dato, una ruta.
+    //
+    //  · LOS OBLIGATORIOS SE EXIGEN EN TODO UPDATE, NO "SI VIENEN".  La
+    //    version anterior validaba `precio` solo si estaba en el documento
+    //    resultante, asi que un update que lo BORRABA pasaba: un producto
+    //    publicado sin precio. Ahora create y update pasan por la misma
+    //    `productoValido`, que exige los obligatorios y cierra el documento
+    //    con hasOnly -tambien adentro de los mapas: affectedKeys() no mira
+    //    adentro de un mapa, asi que cada mapa se valida entero-.
+    //
+    //  · `stock` y `muestra` son del SERVIDOR.  El panel crea un simple con
+    //    stock == 0 y la reposicion llega por callable con increment.  La
+    //    regla ve el documento RESULTANTE, no la operacion: no distingue un
+    //    increment(10) de un valor absoluto calculado sobre un dato viejo, y
+    //    por eso el panel no escribe stock en absoluto.
+    //
+    //  · `tipo` y `presentacion` son INMUTABLES.  Una botella suelta que pasa
+    //    a caja de 2 cambia lo que significa cada unidad de `stock`: es otro
+    //    producto, no una edicion.  Y `tipo` existe para que nadie deduzca
+    //    "compuesto" por la falta de `stock`, que dejaria a la venta un
+    //    producto mal cargado.
+
+    // VARIETALES: la MISMA lista que packages/contratos/src/producto.ts.
+    // scripts/ci/auditar_varietales.mjs compara las dos y sale con 1 si
+    // difieren.  Agregar una uva es un cambio en los dos lugares.
+    function varietalesValidos(v) {
+      return v is list
+        && v.size() > 0
+        && v.toSet().size() == v.size()
+        && v.hasOnly([
+          // varietales:inicio
+          'Malbec',
+          'Cabernet Sauvignon',
+          'Cabernet Franc',
+          'Bonarda',
+          'Syrah',
+          'Merlot',
+          'Pinot Noir',
+          'Tannat',
+          'Petit Verdot',
+          'Tempranillo',
+          'Criolla',
+          'Chardonnay',
+          'Torrontés',
+          'Sauvignon Blanc',
+          'Semillón',
+          'Viognier',
+          'Pinot Gris'
+          // varietales:fin
+        ]);
+    }
+
+    function fichaValida(f) {
+      return f is map
+        && f.keys().hasAll(['bodegaId', 'varietales', 'color', 'organico', 'region', 'volumenMl'])
+        && f.keys().hasOnly(['bodegaId', 'varietales', 'color', 'organico', 'anada', 'region', 'volumenMl'])
+        && f.bodegaId is string && f.bodegaId.size() > 0
+        && varietalesValidos(f.varietales)
+        && f.color in ['tinto', 'blanco', 'rosado']
+        && f.organico is bool
+        && (!('anada' in f) || f.anada == null || (f.anada is int && f.anada > 1800))
+        && f.region is string && f.region.size() > 0
+        && f.volumenMl is int && f.volumenMl > 0;
+    }
+
+    function productoValido(d) {
+      return d.keys().hasAll(['tipo', 'slug', 'nombre', 'precio', 'presentacion', 'imagenes', 'publicado', 'fichaVino'])
+        && d.keys().hasOnly(['tipo', 'slug', 'nombre', 'precio', 'stock', 'presentacion', 'imagenes', 'publicado', 'muestra', 'fichaVino'])
+        && d.tipo in ['simple', 'compuesto']
+        && esSlug(d.slug)
+        && d.nombre is string && d.nombre.size() > 0
+        && d.precio is int && d.precio >= 0
+        && d.presentacion is map
+        && d.presentacion.keys().hasOnly(['botellas'])
+        && d.presentacion.botellas is int && d.presentacion.botellas >= 1
+        && d.imagenes is list && d.imagenes.size() <= 10
+        && d.publicado is bool
+        && fichaValida(d.fichaVino)
+        // El simple lleva stock entero; el compuesto no tiene stock propio:
+        // lo deriva de sus componentes.
+        && ((d.tipo == 'simple' && 'stock' in d && d.stock is int && d.stock >= 0)
+            || (d.tipo == 'compuesto' && !('stock' in d)));
+    }
+
     match /productos/{productoId} {
       allow read: if esAdmin();
 
       allow create: if esAdmin()
-        && request.resource.data.publicado is bool
-        && request.resource.data.precio is int
-        && request.resource.data.precio >= 0
-        && request.resource.data.imagenes is list
-        && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() > 0
-        && noTocaCamposDelServidor(request.resource.data.keys());
+        && productoValido(request.resource.data)
+        && !('muestra' in request.resource.data)
+        // Nace sin stock: el primero llega por la reposicion, del servidor.
+        && request.resource.data.get('stock', 0) == 0;
 
       allow update: if esAdmin()
-        && noTocaCamposDelServidor(
-             request.resource.data.diff(resource.data).affectedKeys())
-        // Si vienen, tienen que seguir siendo del tipo correcto.  Un update
-        // parcial que convierta `precio` en string es exactamente el bug que
-        // no se ve hasta que alguien ordena por precio.
-        && (!('precio' in request.resource.data)
-              || (request.resource.data.precio is int
-                  && request.resource.data.precio >= 0))
-        && (!('publicado' in request.resource.data)
-              || request.resource.data.publicado is bool)
-        && (!('imagenes' in request.resource.data)
-              || request.resource.data.imagenes is list);
+        && productoValido(request.resource.data)
+        && request.resource.data.tipo == resource.data.tipo
+        && request.resource.data.presentacion == resource.data.presentacion
+        && request.resource.data.get('stock', null) == resource.data.get('stock', null)
+        && request.resource.data.get('muestra', null) == resource.data.get('muestra', null);
 
       allow delete: if esAdmin();
     }
 
     // -------------------------------------------------------------- bodegas
+    //
+    // El panel las da de alta.  La forma se cierra en `nombre` y `slug`: la
+    // vidriera las lee ENTERAS en cada reconstruccion del catalogo, y cada
+    // campo de mas es peso en esa lectura.  `muestra` es del servidor, igual
+    // que en productos.
     match /bodegas/{bodegaId} {
       allow read: if esAdmin();
-      allow create, update: if esAdmin()
+      allow create: if esAdmin()
+        && request.resource.data.keys().hasOnly(['nombre', 'slug'])
         && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() > 0;
+        && request.resource.data.nombre.size() > 0
+        && esSlug(request.resource.data.slug);
+      allow update: if esAdmin()
+        && request.resource.data.keys().hasOnly(['nombre', 'slug', 'muestra'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() > 0
+        && esSlug(request.resource.data.slug)
+        && request.resource.data.get('muestra', null) == resource.data.get('muestra', null);
       allow delete: if esAdmin();
+    }
+
+    // ------------------------------------------------------------- metricas
+    //
+    // `metricas/popularidad`: UN documento que se RECALCULA entero sobre una
+    // ventana de tiempo y nunca se acumula (ADR 008).  Un contador que suma de
+    // a una venta se infla con cada reintento del trigger; uno recalculado da
+    // lo mismo si corre dos veces.  Lo escribe solo el servidor; el panel lo
+    // lee.  La vidriera recibe el PUESTO, nunca las unidades.
+    match /metricas/{documento} {
+      allow read: if esAdmin();
+      allow write: if false;
     }
 
     // -------------------------------------------------------------- ordenes

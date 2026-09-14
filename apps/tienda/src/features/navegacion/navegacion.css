@@ -130,7 +130,15 @@
  *
  * `min-width: 0` es obligatorio: en un flex item `min-width: auto` vale
  * min-content y GANA sobre `max-width`, así que sin esto el wordmark se
- * negaría a colapsar y el bug sería invisible en el CSS. */
+ * negaría a colapsar y el bug sería invisible en el CSS.
+ *
+ * ⚠️ Y por eso `flex-shrink: 0` es igual de obligatorio. El mismo
+ * `min-width: 0` que deja colapsar el wordmark A PROPÓSITO también deja que
+ * flexbox comprima la marca ENTERA cuando la fila no entra —copa incluida—,
+ * que es un colapso por accidente. Medido por CDP a 325px de viewport: la
+ * copa (14px) quedaba en 3,97px; a 320px, en 0. La marca ya controla su
+ * propio ancho con `max-width` arriba: no necesita que flexbox la achique
+ * también. Ver EnlaceCarrito.tsx para la otra mitad del arreglo. */
 .barra__marca {
   display: flex;
   align-items: center;
@@ -140,6 +148,7 @@
   opacity: var(--asiento);
   overflow: hidden;
   min-width: 0;
+  flex-shrink: 0;
   /* El tope es generoso a propósito: `max-width` sólo recorta, así que a
    * `--asiento: 1` el wordmark mide lo suyo y no lo que diga este número.
    * Lo único que cambia si el nombre creciera es cuándo termina de revelarse. */
@@ -233,6 +242,38 @@
   opacity: var(--filete-fuerte);
 }
 
+/* ========================================================== EL ÍCONO DEL CARRITO */
+
+/* Ícono + palabra, uno al lado del otro. Ver EnlaceCarrito.tsx: bajo 480px la
+ * palabra se recorta a 1px (sr-only, más abajo) y queda sólo el ícono. */
+.barra__enlace--carrito {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--e-1);
+}
+
+.carrito-svg {
+  display: block;
+  overflow: visible;
+}
+
+/* `miter` + `butt`, no `round` como BotellaSvg: eso dibuja vidrio, blando a
+ * propósito; esto dibuja facetas —el mismo lenguaje recto que el chaflán del
+ * cartucho—, y una faceta con la punta redondeada deja de leerse como corte. */
+.carrito-svg__trazo {
+  stroke: currentColor;
+  stroke-width: var(--filete-grueso);
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  vector-effect: non-scaling-stroke;
+}
+
+.barra__icono-carrito {
+  width: clamp(16px, 1.8vw, 20px);
+  height: auto;
+  flex: none;
+}
+
 /* ================================================================ EL ASIENTO */
 
 @keyframes asentar-barra {
@@ -260,7 +301,10 @@
 }
 
 /* En pantalla angosta el nombre se va y queda la copa: la identidad sobrevive
- * y las tres secciones entran sin apretarse. */
+ * y las tres secciones entran sin apretarse. La palabra "Carrito" se va con
+ * el mismo criterio, y queda el glifo — es el bloque más grande de la fila,
+ * y liberarlo es lo que hace entrar a las cuatro cosas sin comprimir la copa
+ * (ver `.barra__marca` y EnlaceCarrito.tsx). */
 @media (max-width: 30rem) {
   .barra__nombre {
     display: none;
@@ -268,5 +312,20 @@
 
   .barra__cartucho {
     --aire: var(--e-3);
+  }
+
+  /* sr-only: recortada a 1px, no `display: none`. El enlace al carrito es el
+   * paso antes de pagar — necesita nombre accesible en todos los anchos, y
+   * `display: none` se lo sacaría también al lector de pantalla. */
+  .barra__texto-carrito {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }

@@ -53,6 +53,11 @@ build/
 .flutter-plugins-dependencies
 *.g.dart.lock
 
+# --- Datos de muestra --------------------------------------------------------
+# Las fotos que sube scripts/seed/seed.mjs. Son de bodegas y vinotecas: se usan
+# en stage y no se commitean.
+scripts/seed/fotos/
+
 # --- SO / editor -------------------------------------------------------------
 .DS_Store
 Thumbs.db

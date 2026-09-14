@@ -1,0 +1,405 @@
+/* carrito.css — el control de compra, el contador, el aviso y /carrito.
+ *
+ * /carrito es papel sin excepción (direccion.md §3). ⚠️ El dorado no es color
+ * de texto en NINGUNA regla de esta hoja, tampoco en las que caen sobre tinta:
+ * specs/vidriera-carrito lo mide con un grep, y una excepción "que sobre tinta
+ * sí vale" es la que después se copia a papel. El dorado va en filetes. */
+
+/* ======================================================== EL CONTROL */
+
+.control-compra {
+  flex: none;
+}
+
+.control-compra__agregar {
+  font-size: 1.12rem;
+  padding: 0.45rem 1.25rem;
+}
+
+/* El selector: dos capas recortadas, como el botón. */
+.control-compra__selector {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: stretch;
+  height: 2.75rem;
+}
+
+.control-compra__selector::before,
+.control-compra__selector::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  --ch: var(--chaflan-boton);
+  clip-path: polygon(
+    var(--ch) 0,
+    100% 0,
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    0 100%,
+    0 var(--ch)
+  );
+}
+
+.control-compra__selector::before {
+  inset: 0;
+  background: var(--oro-filete);
+}
+
+.control-compra__selector::after {
+  inset: var(--filete);
+  --ch: calc(var(--chaflan-boton) - 1px);
+  background: var(--tinta-honda);
+}
+
+.control-compra__menos,
+.control-compra__mas,
+.control-compra__selector output {
+  position: relative;
+  z-index: 1;
+  color: var(--marfil-1);
+}
+
+.control-compra__menos,
+.control-compra__mas {
+  width: 2.75rem;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  transition: color var(--dur-media) var(--ease-caida);
+}
+
+/* El − y el +, dibujados con filetes: son del mismo trazo que el resto. */
+.control-compra__menos::before,
+.control-compra__mas::before,
+.control-compra__mas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 0.8rem;
+  height: var(--filete-grueso);
+  background: currentColor;
+}
+
+.control-compra__mas::after {
+  transform: rotate(90deg);
+}
+
+.control-compra__menos:hover,
+.control-compra__mas:hover:not(:disabled) {
+  color: var(--marfil);
+}
+
+.control-compra__mas:disabled {
+  cursor: default;
+  color: color-mix(in srgb, var(--marfil) 24%, transparent);
+}
+
+.control-compra__selector output {
+  min-width: 2.1rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+/* Sobre papel: el filete oscurecido (3,37:1) y el hueco en papel. */
+.papel .control-compra__selector::before {
+  background: var(--filete-papel);
+}
+
+.papel .control-compra__selector::after {
+  background: var(--papel);
+}
+
+.papel .control-compra__menos,
+.papel .control-compra__mas,
+.papel .control-compra__selector output {
+  color: var(--tinta-1);
+}
+
+.papel .control-compra__menos:hover,
+.papel .control-compra__mas:hover:not(:disabled) {
+  color: var(--acento);
+}
+
+.papel .control-compra__mas:disabled {
+  color: color-mix(in srgb, var(--tinta) 22%, transparent);
+}
+
+.control-compra--ficha {
+  display: grid;
+  justify-items: end;
+  gap: var(--e-2);
+}
+
+.control-compra__nota {
+  margin: 0;
+  font-size: 0.95rem;
+  font-style: italic;
+  text-align: end;
+  color: var(--tinta-3);
+}
+
+.control-compra__nota a {
+  color: var(--acento);
+}
+
+/* ======================================================== EL CONTADOR */
+
+.contador-carrito {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.4rem;
+  padding-inline: 0.3rem;
+  margin-inline-start: 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--marfil);
+  border: var(--filete) solid var(--oro-filete);
+}
+
+/* ========================================================== EL AVISO */
+
+.aviso-carrito {
+  position: fixed;
+  z-index: 6;
+  inset-inline: 0;
+  bottom: calc(3.9rem + env(safe-area-inset-bottom));
+  width: min(34rem, 100% - 2 * var(--e-4));
+  margin-inline: auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  gap: var(--e-4);
+  align-items: baseline;
+  justify-content: space-between;
+  background: var(--tinta-honda);
+  border-top: var(--filete-grueso) solid var(--oro-filete);
+  color: var(--marfil-1);
+  font-size: 0.98rem;
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition:
+    opacity 480ms var(--ease-caida),
+    transform 480ms var(--ease-caida);
+}
+
+.aviso-carrito--visible {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.aviso-carrito .enlace-blando {
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+/* ========================================================== /carrito */
+
+body:has(.pagina-carrito) {
+  background: var(--papel);
+}
+
+.pagina-carrito {
+  min-height: 100svh;
+  padding-block: clamp(6rem, 11vw, 8rem) var(--e-8);
+}
+
+.pagina-carrito__contenedor {
+  width: min(56rem, 100% - 2 * var(--e-4));
+  margin-inline: auto;
+}
+
+.pagina-carrito h1 {
+  font-size: var(--t-h2);
+  margin: 0 0 var(--e-2);
+  color: var(--tinta-1);
+}
+
+.pagina-carrito__reservado {
+  min-height: 40svh;
+}
+
+.pagina-carrito__vacio {
+  padding-block: var(--e-6) var(--e-7);
+}
+
+.pagina-carrito__vacio p {
+  font-size: var(--t-h3);
+  margin: 0 0 var(--e-5);
+  color: var(--tinta-1);
+}
+
+.pagina-carrito__lineas {
+  list-style: none;
+  margin: var(--e-5) 0 0;
+  padding: 0;
+  border-top: var(--filete) solid var(--regla);
+}
+
+.linea-carrito {
+  display: grid;
+  grid-template-columns: 5.25rem minmax(0, 1fr);
+  gap: var(--e-3) var(--e-4);
+  padding-block: var(--e-5);
+  border-bottom: var(--filete) solid var(--regla);
+}
+
+.linea-carrito__ventana {
+  grid-row: span 2;
+}
+
+.linea-carrito__nombre {
+  font-size: 1.4rem;
+  margin: 0 0 0.2rem;
+  color: var(--tinta-1);
+}
+
+.linea-carrito__nombre a {
+  color: var(--tinta-1);
+  text-decoration: none;
+  transition: color var(--dur-media) var(--ease-caida);
+}
+
+.linea-carrito__nombre a:hover {
+  color: var(--acento);
+}
+
+.linea-carrito__datos {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--tinta-2);
+}
+
+.linea-carrito__estado {
+  margin: var(--e-2) 0 0;
+  font-size: 0.92rem;
+  letter-spacing: var(--tracking-rotulo);
+  color: var(--acento);
+}
+
+.linea-carrito__quitar {
+  margin-top: var(--e-2);
+  padding: 0.55rem 0;
+  background: none;
+  border: 0;
+  border-bottom: var(--filete) solid var(--filete-papel);
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--tinta-2);
+  transition: color var(--dur-media) var(--ease-caida);
+}
+
+.linea-carrito__quitar:hover {
+  color: var(--acento);
+}
+
+.linea-carrito__accion {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+}
+
+.linea-carrito__subtotal {
+  font-size: 1.1rem;
+}
+
+.linea-carrito__no-suma {
+  font-style: italic;
+  color: var(--tinta-3);
+}
+
+.linea-carrito__aviso {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-left: var(--e-3);
+  border-left: var(--filete-grueso) solid var(--filete-papel);
+  font-style: italic;
+  font-size: 0.98rem;
+  color: var(--acento);
+}
+
+.linea-carrito--agotada .ventana-botella__foto,
+.linea-carrito--no-disponible .ventana-botella__foto {
+  filter: grayscale(0.9);
+  opacity: 0.45;
+}
+
+.linea-carrito--agotada .linea-carrito__nombre a {
+  color: var(--tinta-2);
+}
+
+.total-carrito {
+  margin-top: var(--e-5);
+  padding-top: var(--e-4);
+  border-top: var(--filete-grueso) solid var(--filete-papel);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+}
+
+.total-carrito__rotulo {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.total-carrito__rotulo small {
+  display: block;
+  font-size: 0.8em;
+  color: var(--tinta-3);
+}
+
+.total-carrito__monto {
+  margin: 0;
+  font-size: clamp(1.8rem, 1.4rem + 1.6vw, 2.5rem);
+}
+
+.total-carrito__nota {
+  width: 100%;
+  margin: 0;
+  font-style: italic;
+  color: var(--tinta-3);
+}
+
+.pagina-carrito__seguir {
+  margin-top: var(--e-6);
+}
+
+@media (min-width: 720px) {
+  .linea-carrito {
+    grid-template-columns: 6rem minmax(0, 1fr) auto;
+  }
+
+  .linea-carrito__accion {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 1100px) {
+  .aviso-carrito {
+    bottom: var(--e-5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aviso-carrito,
+  .control-compra__menos,
+  .control-compra__mas,
+  .linea-carrito__nombre a,
+  .linea-carrito__quitar {
+    transition: none;
+  }
+}

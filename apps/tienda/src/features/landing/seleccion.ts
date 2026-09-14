@@ -1,116 +1,85 @@
+import { COLORES, type Color, type ProductoPublicado, type Varietal } from '@bouquet/contratos';
+
 import type { FormaDeBotella } from './BotellaSvg';
 
-/* ⚠️⚠️  DATOS DE MUESTRA. NADA DE ESTO ES REAL.  ⚠️⚠️
+/* Los vinos de la escena 2, sacados del catálogo publicado. ADR 008 §7.
  *
- * Los nombres de vino y de bodega son INVENTADOS. Sirven para mirar la
- * composición, no para publicarla. voz.md §6 prohíbe afirmar lo que no se
- * puede sostener, y un nombre de bodega escrito a mano en un archivo de
- * diseño es exactamente por donde entra un hecho falso a producción.
+ * Eran seis inventados, y el comentario que los acompañaba ya decía cómo
+ * reemplazarlos: la landing NO lee Firestore por visitante (ADR 004). La
+ * proyección se lee UNA vez, al armar el build —una lectura por deploy, cero
+ * por visita—, y por eso la home no entra al circuito de purga por tag de
+ * ADR 005.
  *
- * Antes de cualquier deploy hay que reemplazar esto por la proyección
- * publicada del catálogo. La sustitución es barata a propósito: la landing
- * NO lee Firestore por visitante (ADR 004). Los datos se hornean en build
- * —una lectura por deploy, cero por visita— y por eso la home no entra al
- * circuito de purga por tag de ADR 005.
- *
- * Se puede verificar que se hizo con:
- *     grep -rn "LA_SELECCION_ES_DE_MUESTRA" apps/tienda/src
- * Mientras devuelva `true`, la home no se publica.
- *
- * Y hay UN campo que no se hornea nunca, ni para descartarlo después: el
- * PRECIO. La defensa contra la fuga no es CSS, es que el build no lea el
- * campo. Si esta estructura crece un `precio`, la garantía de estática de la
- * landing ya es falsa y nadie se enteró.
+ * Y hay UN campo que no se hornea nunca: el PRECIO. En una página estática
+ * quedaría viejo hasta el próximo deploy, y el que vale es el de la ficha, que
+ * sí se invalida. La defensa no es CSS: `VinoDeLaSeleccion` se arma campo por
+ * campo y el precio no está. Si esta estructura crece un `precio`, la garantía
+ * de estática de la landing ya es falsa y nadie se enteró —
+ * apps/tienda/test/seleccion.test.ts lo mide.
  */
-export const LA_SELECCION_ES_DE_MUESTRA = true;
+
+const LUGARES = 6;
 
 export type VinoDeLaSeleccion = {
-  slug: string;
-  nombre: string;
-  bodega: string;
-  varietal: string;
-  anada: number;
-  region: string;
-  forma: FormaDeBotella;
-  /** Tinte del vidrio. Materia, no dato: define qué token lo pinta. */
-  vidrio: 'tinto' | 'blanco' | 'rosado';
-  /**
-   * La tercera línea de la tarjeta, y la única que sólo bouquet puede
-   * escribir: un hecho de CUSTODIA, no una nota de cata.
-   *
-   * voz.md §3.2 — bouquet nunca firma una descripción sensorial del líquido
-   * que no probó. Pero sí puede decir desde cuándo está acostada, porque eso
-   * lo hizo. Es la diferencia entre repetir la gacetilla de otro y decir algo
-   * propio y falsable.
-   */
-  guarda: string;
+  readonly slug: string;
+  readonly nombre: string;
+  readonly bodega: string;
+  /** "Malbec", o "Corte de…". Lo escribe el catálogo: la home y la ficha dicen lo mismo. */
+  readonly uvas: string;
+  readonly anada: number | null;
+  readonly region: string;
+  /** Tiñe el vidrio de la silueta cuando no hay foto. */
+  readonly color: Color;
+  readonly foto: string | null;
+  readonly forma: FormaDeBotella;
 };
 
-export const SELECCION: readonly VinoDeLaSeleccion[] = [
-  {
-    slug: 'muestra-01',
-    nombre: 'Cuesta del Sauce',
-    bodega: 'Finca Los Álamos',
-    varietal: 'Malbec',
-    anada: 2019,
-    region: 'Valle de Uco, Mendoza',
-    forma: 'bordelesa',
-    vidrio: 'tinto',
-    guarda: 'Acostada desde marzo',
-  },
-  {
-    slug: 'muestra-02',
-    nombre: 'Piedra Partida',
-    bodega: 'Bodega del Zonda',
-    varietal: 'Cabernet Franc',
-    anada: 2020,
-    region: 'Pedernal, San Juan',
-    forma: 'bordelesa',
-    vidrio: 'tinto',
-    guarda: 'Once meses en reposo',
-  },
-  {
-    slug: 'muestra-03',
-    nombre: 'Vuelta de Año',
-    bodega: 'Casa Verano',
-    varietal: 'Chardonnay',
-    anada: 2022,
-    region: 'Tupungato, Mendoza',
-    forma: 'borgonona',
-    vidrio: 'blanco',
-    guarda: 'Llegó en junio, sin luz',
-  },
-  {
-    slug: 'muestra-04',
-    nombre: 'El Callejón',
-    bodega: 'Viñedo Alto Grande',
-    varietal: 'Pinot Noir',
-    anada: 2021,
-    region: 'Valle de Río Negro',
-    forma: 'borgonona',
-    vidrio: 'tinto',
-    guarda: 'A temperatura pareja desde enero',
-  },
-  {
-    slug: 'muestra-05',
-    nombre: 'Segunda Tarde',
-    bodega: 'Finca Los Álamos',
-    varietal: 'Rosado de Malbec',
-    anada: 2023,
-    region: 'Luján de Cuyo, Mendoza',
-    forma: 'bordelesa',
-    vidrio: 'rosado',
-    guarda: 'La más joven que guardamos',
-  },
-  {
-    slug: 'muestra-06',
-    nombre: 'La Que Esperaba',
-    bodega: 'Bodega del Zonda',
-    varietal: 'Cabernet Sauvignon',
-    anada: 2017,
-    region: 'Valle Calchaquí, Salta',
-    forma: 'bordelesa',
-    vidrio: 'tinto',
-    guarda: 'Cuatro años acostada acá',
-  },
-];
+/** Hombro caído. El resto del vino argentino va en bordelesa (BotellaSvg). */
+const EN_BORGONONA: readonly Varietal[] = ['Pinot Noir', 'Chardonnay'];
+
+function aVino(p: ProductoPublicado, uvas: string): VinoDeLaSeleccion {
+  return {
+    slug: p.slug,
+    nombre: p.nombre,
+    bodega: p.bodega,
+    uvas,
+    anada: p.anada,
+    region: p.region,
+    color: p.color,
+    foto: p.imagenes[0] ?? null,
+    forma: !p.esCorte && p.varietales.every((v) => EN_BORGONONA.includes(v)) ? 'borgonona' : 'bordelesa',
+  };
+}
+
+/**
+ * Los seis de la home. Ninguno agotado ni en caja —la tarjeta dibuja UNA
+ * botella—, los tres colores si el catálogo los tiene, y el resto por puesto de
+ * venta con desempate por id: dos builds sobre los mismos datos dan la misma
+ * home.
+ *
+ * ⚠️ Es una regla provisoria. La escena dice "los elegimos de a uno", y eso
+ * pide un dato que el modelo todavía no tiene: que el dueño marque cuáles.
+ *
+ * `describirUvas` llega de afuera porque es texto del catálogo, y la landing no
+ * importa otra feature (ADR 006 regla 3): se la pasa `app/`.
+ */
+export function elegirSeleccion(
+  productos: readonly ProductoPublicado[],
+  describirUvas: (p: Pick<ProductoPublicado, 'varietales' | 'esCorte'>) => string,
+): VinoDeLaSeleccion[] {
+  const candidatos = productos
+    .filter((p) => p.balde !== 'agotado' && p.botellas === 1)
+    .sort((a, b) => (a.puesto ?? Infinity) - (b.puesto ?? Infinity) || a.id.localeCompare(b.id));
+
+  const elegidos = new Set<ProductoPublicado>();
+  for (const color of COLORES) {
+    const primero = candidatos.find((p) => p.color === color);
+    if (primero) elegidos.add(primero);
+  }
+  for (const p of candidatos) {
+    if (elegidos.size >= LUGARES) break;
+    elegidos.add(p);
+  }
+
+  return candidatos.filter((p) => elegidos.has(p)).map((p) => aVino(p, describirUvas(p)));
+}

@@ -1,0 +1,158 @@
+/* ficha.css — /vinos/[slug]: cava arriba, papel abajo (direccion.md §3).
+ * La superficie de papel la da shared/ui/papel.css; acá sólo la forma. */
+
+.ficha__cava {
+  padding-block: clamp(5.5rem, 10vw, 7rem) var(--e-6);
+}
+
+.ficha__volver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  margin-bottom: var(--e-3);
+  font-size: 1.12rem;
+}
+
+.ficha__volver::before {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-left: var(--filete-grueso) solid var(--dorado);
+  border-bottom: var(--filete-grueso) solid var(--dorado);
+  transform: rotate(45deg);
+}
+
+.ficha__heroe {
+  display: grid;
+  gap: var(--e-5);
+}
+
+.ficha__nombre {
+  font-size: clamp(2.2rem, 1.6rem + 2.6vw, 4.2rem);
+  margin-bottom: var(--e-3);
+  color: var(--marfil-1);
+  hyphens: auto;
+}
+
+.ficha__cava .vino-datos {
+  font-size: 1.02rem;
+}
+
+.ficha__marcas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--e-4);
+  margin: var(--e-3) 0 0;
+  font-size: 0.95rem;
+  letter-spacing: var(--tracking-rotulo);
+  color: var(--dorado);
+}
+
+/* El mostrador: en el teléfono va pegado al borde de abajo mientras se lee la
+ * ficha, y encaja en su lugar al llegar. */
+.ficha__mostrador {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  border-top: var(--filete-grueso) solid var(--filete-papel);
+  padding-block: var(--e-3) calc(var(--e-3) + env(safe-area-inset-bottom));
+}
+
+.ficha__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-2) var(--e-4);
+}
+
+.ficha__precio {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.ficha__monto {
+  font-size: 1.45rem;
+  color: var(--tinta-1);
+}
+
+.ficha__unidad {
+  font-size: 0.88rem;
+  color: var(--tinta-3);
+}
+
+/* El balde sobre papel: el acento es borgoña, nunca dorado. */
+.papel .vino-estado {
+  margin: var(--e-1) 0 0;
+  min-height: 0;
+}
+
+.papel .vino-estado span {
+  color: var(--tinta-2);
+}
+
+.papel .vino-estado__balde--quedan-pocas,
+.papel .vino-estado__balde--agotado {
+  color: var(--acento) !important;
+}
+
+.ficha__papel {
+  padding-block: var(--e-6) var(--e-8);
+}
+
+.ficha__grilla {
+  display: grid;
+  gap: var(--e-6);
+}
+
+.ficha__papel .rotulo {
+  margin-bottom: var(--e-3);
+}
+
+.hoja-vino__datos {
+  margin: 0;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+}
+
+.hoja-vino__datos dt,
+.hoja-vino__datos dd {
+  margin: 0;
+  padding-block: 0.7rem;
+  border-bottom: var(--filete) solid var(--regla);
+}
+
+.hoja-vino__datos dt {
+  font-size: 0.98rem;
+  padding-right: var(--e-5);
+  color: var(--tinta-3);
+}
+
+.hoja-vino__datos dd {
+  color: var(--tinta-1);
+}
+
+.ficha__custodia {
+  margin: 0;
+  max-width: 34ch;
+  font-style: italic;
+  line-height: var(--interlinea-prosa);
+  color: var(--tinta-2);
+}
+
+@media (min-width: 860px) {
+  .ficha__heroe {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    gap: var(--e-7);
+    align-items: center;
+  }
+
+  .ficha__mostrador {
+    position: relative;
+  }
+
+  .ficha__grilla {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  }
+}

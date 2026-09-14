@@ -24,4 +24,6 @@
 export const COLORES = {
   /** El fondo del modo cava. Espejo de `--tinta` en tokens.css. */
   tinta: '#1a1210',
+  /** El fondo del modo papel (/carrito). Espejo de `--papel`, que es `--marfil`. */
+  papel: '#f5efe4',
 } as const;

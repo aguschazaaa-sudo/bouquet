@@ -6,12 +6,16 @@
 @import '../shared/movimiento/movimiento.css';
 @import '../shared/ui/tipografia.css';
 @import '../shared/ui/boton.css';
-@import '../shared/ui/en-obra.css';
+@import '../shared/ui/cifras.css';
+@import '../shared/ui/papel.css';
 @import '../shared/marca/marca.css';
 @import '../shared/deco/deco.css';
 @import '../features/navegacion/navegacion.css';
 @import '../features/landing/landing.css';
 @import '../features/oficio/oficio.css';
+@import '../features/catalogo/catalogo.css';
+@import '../features/catalogo/ficha.css';
+@import '../features/carrito/carrito.css';
 
 /* globals.css — reset y el suelo del modo cava.
  *
@@ -82,4 +86,18 @@ img {
 .saltar:focus {
   left: var(--e-4);
   top: var(--e-4);
+}
+
+/* Sólo para lectores de pantalla: recortado a 1 px, NUNCA `display: none`, que
+ * le saca el nombre accesible al control que lo lleva. */
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }

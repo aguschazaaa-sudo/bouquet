@@ -1,0 +1,708 @@
+/* catalogo.css — /vinos y la tarjeta del vino.
+ *
+ * La maqueta mostrador, elegida por el dueño el 2026-09-11 (design.md §9),
+ * llevada a los tokens del repo. Modo cava, pero calmo (direccion.md §3).
+ *
+ * Se suma a la escala de z de navegacion.css:
+ *   z6   la barra del pulgar (abajo, en angosto)
+ *   z10  el velo de la hoja de filtros
+ *   z11  la hoja de filtros
+ * La barra principal (z7) queda debajo de la hoja: mientras se filtra, la
+ * navegación no se toca. */
+
+/* ================================================================ LA PÁGINA */
+
+.contenedor-vinos {
+  width: min(1320px, 100% - 2 * var(--e-4));
+  margin-inline: auto;
+}
+
+.pagina-vinos {
+  padding-block: clamp(6rem, 11vw, 8rem) var(--e-8);
+}
+
+.cabecera-vinos {
+  display: grid;
+  gap: var(--e-3);
+  margin-bottom: var(--e-5);
+}
+
+.cabecera-vinos h1 {
+  font-size: var(--t-h2);
+  color: var(--marfil-1);
+}
+
+.cabecera-vinos p {
+  margin: 0;
+  max-width: 40ch;
+  font-size: var(--t-cuerpo);
+  line-height: var(--interlinea-prosa);
+  color: var(--marfil-2);
+}
+
+/* ============================================================ LAS PESTAÑAS */
+
+.pestanas-color {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 clamp(var(--e-4), 3vw, var(--e-6));
+  margin: 0 0 var(--e-5);
+  padding: 0;
+  border: 0;
+  border-bottom: var(--filete) solid var(--oro-tenue);
+}
+
+.pestanas-color__opcion {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding-block: 0.7rem;
+  margin-bottom: -1px;
+  cursor: pointer;
+  color: var(--marfil-3);
+  border-bottom: var(--filete-grueso) solid transparent;
+  transition:
+    color var(--dur-media) var(--ease-caida),
+    border-color var(--dur-media) var(--ease-caida);
+}
+
+.pestanas-color__opcion input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pestanas-color__opcion .versalita {
+  font-size: 1.12rem;
+}
+
+.pestanas-color__opcion .cifra {
+  font-size: 0.78rem;
+}
+
+.pestanas-color__opcion:hover,
+.pestanas-color__opcion:has(input:checked) {
+  color: var(--marfil-1);
+}
+
+.pestanas-color__opcion:has(input:checked) {
+  border-bottom-color: var(--dorado);
+}
+
+.pestanas-color__opcion:has(input:focus-visible) {
+  outline: 2px solid var(--dorado);
+  outline-offset: 2px;
+}
+
+/* ========================================================= CUERPO Y FILTROS */
+
+.catalogo__resultados {
+  min-width: 0;
+}
+
+.panel-filtros__velo {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--tinta-honda) 62%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-media) var(--ease-caida);
+}
+
+.panel-filtros__velo--visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* La hoja: sube desde abajo, porque es donde está el pulgar. */
+.panel-filtros {
+  position: fixed;
+  z-index: 11;
+  inset: auto 0 0;
+  max-height: 82svh;
+  overflow: auto;
+  padding: var(--e-5) var(--e-4) calc(var(--e-4) + env(safe-area-inset-bottom));
+  background: var(--tinta-honda);
+  border-top: var(--filete-grueso) solid var(--oro-filete);
+  transform: translateY(102%);
+  transition: transform 560ms var(--ease-caida);
+}
+
+.panel-filtros--abierto {
+  transform: none;
+}
+
+.panel-filtros__cabeza {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--e-4);
+}
+
+.panel-filtros__cabeza h2 {
+  font-size: var(--t-h3);
+  color: var(--marfil-1);
+}
+
+.panel-filtros__cerrar,
+.panel-filtros__limpiar {
+  background: none;
+  border: 0;
+  border-bottom: var(--filete) solid var(--oro-tenue);
+  padding: 0.6rem 0;
+  cursor: pointer;
+  font-size: 1rem;
+  color: var(--marfil-2);
+}
+
+.panel-filtros__grupo {
+  border: 0;
+  padding: 0;
+  margin: 0 0 var(--e-5);
+}
+
+.panel-filtros__grupo legend {
+  padding: 0;
+  margin: 0 0 var(--e-2);
+}
+
+.panel-filtros__nota {
+  margin: 0 0 var(--e-2);
+  font-size: 0.92rem;
+  font-style: italic;
+  color: var(--marfil-3);
+}
+
+.panel-filtros__pie {
+  position: sticky;
+  bottom: calc(-1 * (var(--e-4) + env(safe-area-inset-bottom)));
+  display: flex;
+  gap: var(--e-4);
+  align-items: center;
+  justify-content: space-between;
+  padding-block: var(--e-3) var(--e-4);
+  background: var(--tinta-honda);
+}
+
+/* La casilla: un octógono chico, el mismo chaflán que el cartucho. El foco va
+ * en el renglón entero: un outline sobre algo recortado con clip-path se
+ * recorta con él. */
+.opcion-filtro {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 2.75rem;
+  cursor: pointer;
+  color: var(--marfil-1);
+}
+
+.opcion-filtro input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.opcion-filtro:has(input:focus-visible) {
+  outline: 2px solid var(--dorado);
+  outline-offset: 2px;
+}
+
+.opcion-filtro__caja,
+.opcion-filtro__caja::before,
+.opcion-filtro__caja::after {
+  --ch: 4px;
+  clip-path: polygon(
+    var(--ch) 0,
+    calc(100% - var(--ch)) 0,
+    100% var(--ch),
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    var(--ch) 100%,
+    0 calc(100% - var(--ch)),
+    0 var(--ch)
+  );
+}
+
+.opcion-filtro__caja {
+  position: relative;
+  flex: none;
+  width: 1.05rem;
+  height: 1.05rem;
+  background: var(--oro-filete);
+}
+
+.opcion-filtro__caja::before,
+.opcion-filtro__caja::after {
+  content: '';
+  position: absolute;
+}
+
+.opcion-filtro__caja::before {
+  inset: var(--filete-grueso);
+  --ch: 3px;
+  background: var(--tinta-honda);
+}
+
+.opcion-filtro__caja::after {
+  inset: 4px;
+  --ch: 2px;
+  background: var(--dorado);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--dur-media) var(--ease-caida),
+    transform var(--dur-media) var(--ease-caida);
+}
+
+.opcion-filtro:has(input:checked) .opcion-filtro__caja::after {
+  opacity: 1;
+  transform: none;
+}
+
+.opcion-filtro__texto {
+  flex: 1;
+}
+
+.opcion-filtro__cuenta {
+  font-size: 0.82rem;
+  color: var(--marfil-3);
+}
+
+.opcion-filtro--vacia .opcion-filtro__texto {
+  color: var(--marfil-3);
+}
+
+/* ======================================================= LA BARRA DEL PULGAR */
+
+.barra-pulgar {
+  position: fixed;
+  z-index: 6;
+  inset: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: var(--e-3);
+  padding: 0.5rem var(--e-4) calc(0.5rem + env(safe-area-inset-bottom));
+  background: color-mix(in srgb, var(--tinta-honda) 96%, transparent);
+  border-top: var(--filete-grueso) solid var(--oro-filete);
+}
+
+.barra-pulgar__filtros {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0 0.2rem;
+  background: none;
+  border: 0;
+  border-bottom: var(--filete) solid color-mix(in srgb, var(--dorado) 55%, transparent);
+  cursor: pointer;
+  font-size: 1.12rem;
+  color: var(--marfil-1);
+}
+
+.barra-pulgar__filtros .cifra {
+  font-size: 0.8rem;
+  color: var(--dorado);
+}
+
+.barra-pulgar__cuenta {
+  margin: 0 auto 0 0;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  color: var(--marfil-3);
+}
+
+.barra-pulgar__cuenta .cifra {
+  color: var(--marfil-2);
+}
+
+.orden-vinos {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.orden-vinos__rotulo {
+  font-size: 0.98rem;
+  color: var(--marfil-3);
+}
+
+.orden-vinos__select {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  cursor: pointer;
+  min-height: 2.75rem;
+  max-width: 11.5rem;
+  padding: 0 1.4rem 0 0.2rem;
+  font-size: 1.05rem;
+  color: var(--marfil-1);
+  border-bottom: var(--filete) solid color-mix(in srgb, var(--dorado) 55%, transparent);
+}
+
+.orden-vinos__select option {
+  color: var(--tinta);
+  background: var(--marfil);
+  font-variant-caps: normal;
+}
+
+/* El chevron, monolineal: dos filetes y no un glifo. */
+.orden-vinos::after {
+  content: '';
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  width: 0.45rem;
+  height: 0.45rem;
+  pointer-events: none;
+  border-right: var(--filete-grueso) solid var(--dorado);
+  border-bottom: var(--filete-grueso) solid var(--dorado);
+  transform: translateY(-70%) rotate(45deg);
+}
+
+/* ================================================================ LA GRILLA */
+
+/* 1 · 2 · 3, nunca 4: una grilla densa dice "volumen"; una de 3 dice
+ * "selección" (direccion.md §7.2). */
+.catalogo__grilla {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--e-7) var(--e-6);
+}
+
+.vino {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vino__enlace {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.vino__enlace:focus-visible {
+  outline-offset: 6px;
+}
+
+.vino__nombre {
+  font-size: var(--t-h3);
+  margin: var(--e-4) 0 var(--e-2);
+  color: var(--marfil-1);
+  hyphens: auto;
+  transition: color var(--dur-media) var(--ease-caida);
+}
+
+.vino__enlace:hover .vino__nombre {
+  color: var(--dorado);
+}
+
+.vino-datos {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--marfil-2);
+}
+
+.vino-datos span + span::before {
+  content: ' · ';
+  color: var(--marfil-3);
+}
+
+.vino__mostrador {
+  margin-top: auto;
+  padding-top: var(--e-4);
+}
+
+.vino-estado {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--e-4);
+  min-height: 1.6rem;
+  margin: 0 0 var(--e-2);
+}
+
+.vino-estado span {
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-rotulo);
+  font-weight: var(--peso-versalita);
+  font-size: 0.95rem;
+  color: var(--marfil-2);
+}
+
+/* Sobre tinta el dorado sí es texto a tamaño de etiqueta: 8,80:1. */
+.vino-estado__balde--quedan-pocas {
+  color: var(--dorado) !important;
+}
+
+.vino__renglon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--e-3);
+  min-height: 3.6rem;
+  padding-top: var(--e-3);
+  border-top: var(--filete) solid var(--oro-tenue);
+}
+
+.vino__precio {
+  margin: 0;
+  display: grid;
+  gap: 0.1rem;
+}
+
+.vino__monto {
+  font-size: 1.22rem;
+  color: var(--marfil-1);
+}
+
+.vino__unidad {
+  font-size: 0.88rem;
+  color: var(--marfil-3);
+}
+
+.vino--agotado .ventana-botella__foto,
+.vino--agotado .ventana-botella__sin-foto {
+  filter: grayscale(0.85);
+  opacity: 0.5;
+}
+
+.vino--agotado .vino__nombre {
+  color: var(--marfil-2);
+}
+
+.vino--agotado .vino__monto {
+  color: var(--marfil-3);
+}
+
+/* ========================================================== LA VENTANA */
+
+/* Dos capas recortadas, como el botón: el fondo del elemento es el anillo y el
+ * ::before, 1,5 px adentro, es el papel con su lámpara. `isolation` hace que
+ * el `multiply` de la foto mezcle con ESE papel y no con la página. */
+.ventana-botella,
+.ventana-botella::before {
+  clip-path: polygon(
+    var(--ch) 0,
+    calc(100% - var(--ch)) 0,
+    100% var(--ch),
+    100% calc(100% - var(--ch)),
+    calc(100% - var(--ch)) 100%,
+    var(--ch) 100%,
+    0 calc(100% - var(--ch)),
+    0 var(--ch)
+  );
+}
+
+.ventana-botella {
+  --alto-ventana: 18rem;
+  --alto-botella: 15rem;
+  --ch: var(--chaflan-ventana);
+  position: relative;
+  isolation: isolate;
+  height: var(--alto-ventana);
+  display: grid;
+  place-items: center;
+  background: var(--oro-filete);
+}
+
+.ventana-botella::before {
+  content: '';
+  position: absolute;
+  inset: var(--filete-grueso);
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 70% 62% at 50% 38%,
+    var(--papel-ventana),
+    color-mix(in oklab, var(--papel-ventana) 82%, var(--tinta))
+  );
+  transition: filter 600ms var(--ease-caida);
+}
+
+.vino__enlace:hover .ventana-botella::before {
+  filter: brightness(1.05);
+}
+
+.ventana-botella__foto {
+  height: var(--alto-botella);
+  width: 86%;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+}
+
+.ventana-botella__sin-foto {
+  display: grid;
+  justify-items: center;
+  gap: var(--e-3);
+  color: color-mix(in srgb, var(--tinta) 42%, transparent);
+}
+
+.silueta-botella {
+  height: calc(var(--alto-botella) * 0.78);
+  width: auto;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+/* 4,81:1 sobre la ventana: el piso de texto con información. */
+.ventana-botella__sin-foto .versalita {
+  font-size: 0.9rem;
+  color: var(--tinta-3);
+}
+
+.ventana-botella--ficha {
+  --alto-ventana: min(24rem, 44svh);
+  --alto-botella: calc(var(--alto-ventana) - 3.25rem);
+  --ch: var(--chaflan-marco);
+}
+
+.ventana-botella--linea {
+  --alto-ventana: 7.5rem;
+  --alto-botella: 6.4rem;
+  --ch: 6px;
+}
+
+.ventana-botella--linea .ventana-botella__sin-foto .versalita {
+  display: none;
+}
+
+/* ============================================================ SIN RESULTADOS */
+
+.sin-resultados {
+  max-width: 34rem;
+  padding-block: var(--e-6) var(--e-8);
+}
+
+.sin-resultados h2 {
+  font-size: var(--t-h3);
+  margin: 0 0 var(--e-3);
+  color: var(--marfil-1);
+}
+
+.sin-resultados__salidas {
+  list-style: none;
+  margin: 0 0 var(--e-5);
+  padding: 0;
+  display: grid;
+  gap: var(--e-3);
+  justify-items: start;
+}
+
+.sin-resultados button.enlace-blando {
+  background: none;
+  border: 0;
+  border-bottom: var(--filete) solid color-mix(in srgb, var(--dorado) 55%, transparent);
+  padding: 0 0 var(--e-1);
+  cursor: pointer;
+  font-size: 1.12rem;
+}
+
+/* ================================================================== ANCHOS */
+
+@media (max-width: 479.98px) {
+  .orden-vinos__rotulo {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  .orden-vinos__select {
+    max-width: 9.5rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .catalogo__grilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 860px) {
+  .ventana-botella--ficha {
+    --alto-ventana: min(30rem, 62svh);
+  }
+}
+
+/* En angosto, la barra del pulgar no puede tapar la última tarjeta. */
+@media (max-width: 1099.98px) {
+  .pagina-vinos {
+    padding-bottom: calc(var(--e-8) + 4rem);
+  }
+}
+
+@media (min-width: 1100px) {
+  .catalogo__cuerpo {
+    display: grid;
+    grid-template-columns: 14.5rem minmax(0, 1fr);
+    gap: var(--e-7);
+    align-items: start;
+  }
+
+  .panel-filtros {
+    position: sticky;
+    z-index: 1;
+    inset: auto;
+    top: 6rem;
+    transform: none;
+    max-height: none;
+    overflow: visible;
+    padding: 0;
+    background: none;
+    border: 0;
+    transition: none;
+  }
+
+  .panel-filtros__cabeza h2 {
+    font-size: 1.35rem;
+  }
+
+  .panel-filtros__cerrar,
+  .panel-filtros__ver,
+  .panel-filtros__velo,
+  .barra-pulgar__filtros {
+    display: none;
+  }
+
+  .panel-filtros__pie {
+    position: static;
+    padding: 0;
+    background: none;
+  }
+
+  .barra-pulgar {
+    position: static;
+    padding: 0 0 var(--e-3);
+    margin-bottom: var(--e-6);
+    background: none;
+    border: 0;
+    border-bottom: var(--filete) solid var(--oro-tenue);
+  }
+
+  .catalogo__grilla {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel-filtros,
+  .panel-filtros__velo,
+  .pestanas-color__opcion,
+  .opcion-filtro__caja::after,
+  .vino__nombre,
+  .ventana-botella::before {
+    transition: none;
+  }
+}

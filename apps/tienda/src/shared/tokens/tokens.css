@@ -4,12 +4,11 @@
  * Cualquier otro archivo de apps/tienda/src usa var() o color-mix(), y eso es
  * a propósito: un color suelto no aparece en ninguna auditoría de tema.
  *
- * ⚠️ Esto NO es docs/vault/design/tokens.md. Ese documento —el paso 2 de
- * /disenio— sigue sin existir, y direccion.md §12 lo pone como bloqueo para
- * escribir componentes. Acá se adelantó la capa de implementación porque la
- * rama existe para MIRAR una composición, no para publicarla. Los valores
- * salen de direccion.md §2 (medidos del PNG del logo) y §4; los nombres son
- * provisorios hasta que el documento los fije.
+ * Los nombres los fija docs/vault/design/tokens.md, el paso 2 de /disenio
+ * (escrito el 2026-09-11): un token que está acá y no allá, o al revés, es un
+ * defecto. Los valores salen de direccion.md §2 (medidos del PNG del logo) y
+ * §4. Los del papel salen de la maqueta mostrador, con los contrastes
+ * recalculados: dos de los que traía la maqueta estaban mal.
  */
 
 :root {
@@ -31,15 +30,46 @@
   --negro: #000000;
   --blanco: #ffffff;
 
+  /* --- La escala de marfil sobre tinta (cava). tokens.md §3 ------------ */
+  /* Contraste sobre --tinta: 14,29 · 9,59 · 6,02. El 58 % es el piso de un
+   * texto con información; por debajo, sólo filetes. */
+  --marfil-1: color-mix(in srgb, var(--marfil) 94%, var(--tinta));
+  --marfil-2: color-mix(in srgb, var(--marfil) 76%, var(--tinta));
+  --marfil-3: color-mix(in srgb, var(--marfil) 58%, var(--tinta));
+  --oro-filete: color-mix(in srgb, var(--dorado) 85%, transparent);
+  --oro-tenue: color-mix(in srgb, var(--dorado) 34%, transparent);
+
+  /* --- El modo PAPEL. direccion.md §3: la transacción es de papel ------ */
+  /* /carrito y la mitad de abajo de la ficha. Todo sale de color-mix() sobre
+   * los colores de arriba: el papel no trae un literal nuevo. Contrastes
+   * sobre --papel, en tokens.md §4. */
+  --papel: var(--marfil);
+  --papel-hondo: color-mix(in oklab, var(--marfil) 92%, var(--dorado));
+  --papel-ventana: color-mix(in oklab, var(--marfil) 84%, var(--dorado));
+  --tinta-1: var(--tinta); /* 16,13 */
+  --tinta-2: color-mix(in srgb, var(--tinta) 80%, var(--marfil)); /* 9,11 */
+  --tinta-3: color-mix(in srgb, var(--tinta) 64%, var(--marfil)); /* 5,27: el piso de texto */
+  --regla: color-mix(in srgb, var(--tinta) 16%, var(--marfil)); /* 1,40: sin información */
+  /* ⚠️ Sobre papel el dorado es SÓLO línea: a tamaño de texto da 1,83:1. Y la
+   * línea tampoco llegaba: al 80 %, como venía de la maqueta, daba 2,81:1,
+   * debajo del 3:1 que WCAG 1.4.11 pide a lo que delimita un control. Al 72 %
+   * da 3,37 sobre papel y 3,08 sobre la ventana. */
+  --filete-papel: color-mix(in oklab, var(--dorado) 72%, var(--tinta));
+  --acento: var(--borgona); /* 8,40: éste sí es texto */
+
   /* --- Tipografía. direccion.md §4 ------------------------------------- */
   /* Display: Fraunces — old-style con esqueleto sólido. Es la recomendación
    * de §4.2; la alternativa Bodoni Moda sigue abierta y la decide el dueño.
    * Texto: Newsreader, dibujada para pantalla, aguanta el fondo oscuro.
-   * Tercera familia (grotesca de cifras): NO entra. La landing no tiene un
-   * solo número que se pueda leer mal — no hay precio ni stock. */
+   * Cifras: Archivo, la tercera familia que §4.5 reservaba para donde hubiera
+   * un número que no se pudiera leer mal. Entró con el catálogo, que tiene
+   * precio, cantidad y total (tokens.md §5). SÓLO en números, y siempre con
+   * tabular-nums. La maqueta traía Libre Franklin, y el archivo de Google no
+   * tiene `tnum`: medido, no alinea (tokens.md §5). */
   --tipo-display: var(--fuente-fraunces), 'Iowan Old Style', 'Palatino Linotype',
     Palatino, Georgia, serif;
   --tipo-texto: var(--fuente-newsreader), Georgia, 'Times New Roman', serif;
+  --tipo-cifras: var(--fuente-archivo), 'Helvetica Neue', Arial, sans-serif;
 
   /* Escala: cuarta justa (1.333) en display, tercera menor (1.2) en texto.
    * Fluida entre 380px y 1440px de viewport. */

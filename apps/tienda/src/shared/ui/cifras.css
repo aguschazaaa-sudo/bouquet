@@ -1,0 +1,28 @@
+/* cifras.css — los números de la vidriera. tokens.md §5.
+ *
+ * En shared/ui porque los usan catalogo y carrito (ADR 006 regla 1). Van en la
+ * grotesca y SIEMPRE tabulares: en una columna de precios, un 1 más angosto
+ * que un 8 hace bailar la cifra entera. */
+
+.cifra,
+.precio-cifra {
+  font-family: var(--tipo-cifras);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  font-variant-caps: normal;
+  letter-spacing: 0;
+}
+
+.precio-cifra {
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* Los centavos, más tenues: el formateador los escribe, el ojo compara la
+ * parte entera. Opacidad y no color, para que sirva igual en cava y en papel:
+ * al 62 % sigue arriba de 5:1 en los dos. */
+.precio-cifra__centavos {
+  font-weight: 400;
+  opacity: 0.62;
+}

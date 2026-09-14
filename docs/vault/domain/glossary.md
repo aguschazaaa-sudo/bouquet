@@ -14,8 +14,10 @@
 ## Catálogo
 
 ### Producto
-Lo que se vende. Tiene `slug`, `nombre`, `precio`, `stock`, `imagenes[]`,
-`publicado` y una `fichaVino` opcional.
+Lo que se vende. Tiene `tipo`, `slug`, `nombre`, `precio`, `stock`,
+`presentacion`, `imagenes[]`, `publicado` y `fichaVino`. El modelo entero, con
+quién escribe cada campo, está en
+[ADR 008](../architecture/decisions/008-catalogo-stock-y-carrito.md).
 
 **No se llama `Vino` a propósito.** Una vinoteca vende también espumantes,
 destilados, copas y cajas de regalo. Si la entidad se llama `Vino`, el día que
@@ -23,9 +25,14 @@ entre la primera copa Riedel hay dos caminos y los dos son malos: una tabla
 paralela, o un `Vino` que no es un vino.
 
 ### FichaVino
-Sub-objeto **opcional** del Producto: `bodega`, `varietales[]`, `region`,
-`anada`, `graduacion`, `volumenMl`. Un producto sin ficha (una copa, una caja) es
-un producto válido.
+Sub-objeto del Producto: `bodegaId`, `varietales[]`, `color`, `organico`,
+`region`, `anada` y `volumenMl`.
+
+⚠️ **Hoy es obligatoria, y este glosario decía que era opcional.** Las reglas y
+`validarProducto` la exigen desde ADR 008: el catálogo es sólo de vinos, y un
+vino sin color no se puede filtrar. El día que entre lo primero que no es vino
+—una copa, un destilado— se abre con un `tipo` propio, no aflojando la regla de
+los vinos. `graduacion` todavía no está en el modelo: entra con el panel.
 
 ### Bodega
 El productor. Entidad propia porque tiene página indexable (`/bodega/<slug>`) y
@@ -55,12 +62,47 @@ existe**, y esconde productos en silencio. Un verificador de CI cuenta los
 productos sin el campo y sale con exit 1.
 
 ### Balde de stock
-Lo que la vidriera **muestra** del stock: `disponible` · `últimas unidades` ·
-`agotado`. No es el número.
+Lo que la vidriera **muestra** del stock: `disponible` · `quedan-pocas` ·
+`agotado`. No es el número. Se cuenta en **botellas**: con 6 o menos es
+`quedan-pocas`, así que tres cajas de 2 ya son pocas. Los textos —*Quedan
+pocas*, *Se agotó*, y nada para `disponible`— viven en contratos, junto al
+cálculo.
 
 §7.4: *"Últimas 3 botellas"* **afirma un número exacto**; *"poco stock"* no. Si
 las dos redacciones conviven en el mismo pool, la mitad de las veces se miente.
 El balde es el dato público; el número es interno.
+
+### Tipo
+`simple` o `compuesto`. **Explícito e inmutable.** Nadie deduce "compuesto"
+porque falte el `stock`: ésa es la forma de dejar a la venta un producto mal
+cargado.
+
+### Unidad de venta
+Lo que se agrega al carrito y lo que cuenta `stock`: una botella suelta, o una
+caja entera. El `precio` es el de la unidad de venta.
+
+### Caja de 2
+Un producto **simple** que viene sólo así: `presentacion.botellas = 2`, con su
+propio stock, contado en cajas. `presentacion` es inmutable: una botella que
+pasa a caja es otro producto. Si la caja comparte botellas con otro producto,
+no es esto: es un compuesto.
+
+### Compuesto
+Una caja armada con otros productos. **No tiene stock propio**: lo deriva de sus
+componentes simples. Está previsto en el modelo y todavía no existe ninguno; la
+vidriera lo deja afuera hasta que sepa calcular ese stock.
+
+### Tope
+Cuánto se puede llevar de un producto en un pedido: `min(stock, 12)` unidades
+de venta. Por debajo de 12 **es** el stock exacto, y por eso la pantalla nunca
+lo dice: el `+` se traba, y listo.
+
+### Popularidad
+El puesto de cada vino por unidades vendidas en una ventana de tiempo. Es un
+documento que se **recalcula** entero, nunca un contador que suma, para que el
+job que la calcule —todavía no existe— pueda correr dos veces sin inflarla. Hoy
+la escribe sólo el seed, marcada `simulada: true`. La vidriera recibe el puesto
+y nunca las unidades, y sin métricas el orden por popularidad no se ofrece.
 
 ---
 
@@ -78,6 +120,12 @@ Una compra **confirmada**. No existe una Orden en borrador: el carrito vive en
 Entero secuencial, asignado en la transacción de creación contra
 `contadores/ordenes`. Es lo que el cliente dice por WhatsApp; el `ordenId` de
 Firestore no se le muestra nunca.
+
+### idCompra
+La clave de idempotencia de una compra. Nace en el navegador junto con el
+carrito, y `crearOrden` la va a usar para que el mismo pedido mandado dos veces
+—un doble toque, un reintento de red— sea **una** Orden. Se renueva después de
+cada compra.
 
 ### Ítem
 Una línea de la Orden: `{productoId, nombre, precioUnitario, cantidad}`.
