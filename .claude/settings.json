@@ -88,7 +88,6 @@
       "PowerShell(flutter build:*)",
       "Bash(npx jest:*)",
       "PowerShell(npx jest:*)",
-      "Bash(firebase deploy:*)",
       "PowerShell(firebase deploy:*)"
     ],
     "ask": [
