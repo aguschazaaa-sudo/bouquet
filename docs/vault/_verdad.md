@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-11 - commit `6385a87` **+ cambios sin commitear** - huella del cuerpo `32f507a0f0f7`
+> **Generado:** 2026-09-14 - commit `7df10e2` **+ cambios sin commitear** - huella del cuerpo `ce0d558021ee`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.16.0
+### Scripts de la raiz - `bouquet` 0.17.2
 
 | Script | Comando |
 |---|---|
@@ -211,8 +211,8 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `formatearARS` | funcion | abierto | `apps/tienda/src/shared/ui/Precio.tsx`, `packages/contratos/test/dinero.test.ts` |
 | `TIPOS_DE_PRODUCTO` | valor | **SIN PUERTA - nadie** | - |
 | `TipoDeProducto` | tipo | **SIN PUERTA - nadie** | - |
-| `COLORES` | valor | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/app/layout.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/src/shared/tokens/colores.ts` |
-| `Color` | tipo | abierto | `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts` |
+| `COLORES` | valor | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/app/layout.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/src/shared/tokens/colores.ts` |
+| `Color` | tipo | abierto | `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts` |
 | `VARIETALES` | valor | abierto | `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_varietales.mjs` |
 | `Varietal` | tipo | abierto | `apps/tienda/src/features/landing/seleccion.ts` |
 | `FichaVino` | tipo | **SIN PUERTA - nadie** | - |
@@ -223,13 +223,13 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `Balde` | tipo | **SIN PUERTA - nadie** | - |
 | `UMBRAL_QUEDAN_POCAS` | valor | **SIN PUERTA - nadie** | - |
 | `TOPE_POR_PEDIDO` | valor | **SIN PUERTA - nadie** | - |
-| `balde` | funcion | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
-| `tope` | funcion | abierto | `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `balde` | funcion | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `tope` | funcion | abierto | `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
 | `textoDelBalde` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `packages/contratos/test/producto.test.ts` |
-| `esCorte` | funcion | abierto | `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `esCorte` | funcion | abierto | `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
 | `Validacion` | tipo | **SIN PUERTA - nadie** | - |
 | `validarProducto` | funcion | abierto | `scripts/seed/seed.mjs` |
-| `ProductoPublicado` | tipo | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `ProductoPublicado` | tipo | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/carrito.test.ts` |
 | `proyectarProducto` | funcion | **SIN PUERTA - nadie** | - |
 | `DocumentoCrudo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
 | `Descarte` | tipo | **SIN PUERTA - nadie** | - |

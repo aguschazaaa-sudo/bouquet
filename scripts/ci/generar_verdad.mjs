@@ -120,6 +120,20 @@ function esDirectorio(p) {
   }
 }
 
+// Orden por CODIGO, no por idioma. `localeCompare` y el `readdirSync` crudo
+// dependen del entorno, y este archivo se genera en una maquina y se VERIFICA
+// en otra: cualquier diferencia entre las dos deja `main` en rojo sin que haya
+// cambiado una linea de codigo.
+//
+// ⚠️ Medido el 2026-09-14, corrida 34877352392. NTFS devuelve el directorio ya
+// ordenado sin distinguir mayusculas —`filtros.ts` antes que
+// `PestanasDeColor.tsx`—; ext4 en el runner devuelve el orden del inodo, que
+// ahi salio al reves. Ocho lineas faltaban y ocho sobraban, y eran las MISMAS
+// ocho: sólo cambiaba el orden de los consumidores adentro de cada celda.
+//
+// `<` compara unidades UTF-16: misma respuesta en las dos maquinas, siempre.
+const porCodigo = (a, b) => (a < b ? -1 : a > b ? 1 : 0);
+
 function caminar(dir, aceptar, salida = []) {
   let entradas;
   try {
@@ -127,6 +141,7 @@ function caminar(dir, aceptar, salida = []) {
   } catch {
     return salida;
   }
+  entradas.sort((a, b) => porCodigo(a.name, b.name));
   for (const e of entradas) {
     if (IGNORAR_NOMBRE.has(e.name)) continue;
     const p = join(dir, e.name);
@@ -161,7 +176,9 @@ function paquetes() {
     if (g.endsWith('/*')) {
       const base = join(RAIZ, g.slice(0, -2));
       try {
-        for (const e of readdirSync(base, { withFileTypes: true })) {
+        const entradas = readdirSync(base, { withFileTypes: true });
+        entradas.sort((a, b) => porCodigo(a.name, b.name));
+        for (const e of entradas) {
           if (e.isDirectory() && existsSync(join(base, e.name, 'package.json'))) {
             dirs.push(join(base, e.name));
           }
@@ -277,7 +294,7 @@ const RE_TEST = /(^|[^.\w$])(test|it)\s*\(/g;
 function tests(archivosTest) {
   return archivosTest
     .map((p) => ({ r: rel(p), n: (leer(p) ?? '').match(RE_TEST)?.length ?? 0 }))
-    .sort((a, b) => a.r.localeCompare(b.r));
+    .sort((a, b) => porCodigo(a.r, b.r));
 }
 
 // --- hooks ------------------------------------------------------------------
@@ -319,7 +336,7 @@ function agentes(dir) {
         bash: tools.includes('Bash'),
       };
     })
-    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+    .sort((a, b) => porCodigo(a.nombre, b.nombre));
 }
 
 // ===========================================================================
@@ -604,8 +621,8 @@ if (!lock?.skills) {
   linea();
   linea('| Origen | Cuantas | Cuales |');
   linea('|---|---|---|');
-  for (const [o, ns] of [...porOrigen].sort((a, b) => a[0].localeCompare(b[0]))) {
-    linea(`| \`${o}\` | ${ns.length} | ${lista(ns.sort())} |`);
+  for (const [o, ns] of [...porOrigen].sort((a, b) => porCodigo(a[0], b[0]))) {
+    linea(`| \`${o}\` | ${ns.length} | ${lista(ns.sort(porCodigo))} |`);
   }
   linea();
   const dirSkills = join(RAIZ, '.claude', 'skills');
@@ -615,7 +632,7 @@ if (!lock?.skills) {
   const nuestras = enDisco.filter((n) => !lock.skills[n]);
   linea(
     nuestras.length
-      ? `Propias del proyecto, commiteadas porque mencionan nuestro dominio: ${lista(nuestras.sort())}.`
+      ? `Propias del proyecto, commiteadas porque mencionan nuestro dominio: ${lista(nuestras.sort(porCodigo))}.`
       : 'No hay skills propias en `.claude/skills/`.',
   );
   // El conteo de carpetas EN DISCO no puede vivir en el documento. En la
