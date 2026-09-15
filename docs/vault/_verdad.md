@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-14 - commit `362e4f5` **+ cambios sin commitear** - huella del cuerpo `11259329463a`
+> **Generado:** 2026-09-15 - commit `3b217d6` **+ cambios sin commitear** - huella del cuerpo `95b3d94b3d4a`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.17.2
+### Scripts de la raiz - `bouquet` 0.18.1
 
 | Script | Comando |
 |---|---|
@@ -97,14 +97,14 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/tienda/test/revalidacion.test.ts` | 5 |
 | `apps/tienda/test/seleccion.test.ts` | 5 |
 | `packages/contratos/test/caja.test.ts` | 25 |
-| `packages/contratos/test/cajas.test.ts` | 30 |
+| `packages/contratos/test/cajas.test.ts` | 31 |
 | `packages/contratos/test/carrito.test.ts` | 20 |
 | `packages/contratos/test/dinero.test.ts` | 7 |
 | `packages/contratos/test/orden.test.ts` | 13 |
 | `packages/contratos/test/producto.test.ts` | 19 |
 | `packages/contratos/test/proyeccion.test.ts` | 6 |
 | `scripts/reglas/productos.test.mjs` | 26 |
-| **total** | **176** |
+| **total** | **177** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -239,7 +239,6 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `CatalogoArmado` | tipo | **SIN PUERTA - nadie** | - |
 | `armarCatalogo` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
 | `VERSION_DEL_CARRITO` | valor | **SIN PUERTA - nadie** | - |
-| `MAX_BOTELLAS_POR_UNIDAD` | valor | **SIN PUERTA - nadie** | - |
 | `LineaDeCarrito` | tipo | **SIN PUERTA - nadie** | - |
 | `ProductoDelCarrito` | tipo | **SIN PUERTA - nadie** | - |
 | `Carrito` | tipo | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/carrito/useCarrito.ts`, `apps/tienda/src/features/navegacion/secciones.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
@@ -277,9 +276,9 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `resolverCajasSugeridas` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/cajas.test.ts` |
 | `llenarConLaCaja` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `packages/contratos/test/cajas.test.ts` |
 
-**93 simbolos exportados. 43 SIN PUERTA.**
+**92 simbolos exportados. 42 SIN PUERTA.**
 
-Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `BALDES`, `Balde`, `UMBRAL_QUEDAN_POCAS`, `TOPE_POR_PEDIDO`, `Validacion`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `VERSION_DEL_CARRITO`, `MAX_BOTELLAS_POR_UNIDAD`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `sePuedeCobrar`, `LineaDePedido`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`.
+Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `BALDES`, `Balde`, `UMBRAL_QUEDAN_POCAS`, `TOPE_POR_PEDIDO`, `Validacion`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `sePuedeCobrar`, `LineaDePedido`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`.
 
 Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
@@ -302,4 +301,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 92. Archivos de test: 13. Casos de test: 176.
+Archivos de codigo recorridos: 92. Archivos de test: 13. Casos de test: 177.

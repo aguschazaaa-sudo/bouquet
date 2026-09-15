@@ -62,11 +62,11 @@
 
 ## 8. Cerrar
 
-- [ ] 8.1 Correr `cazador-de-puertas`: que el carril tenga call site y que nada quede escrito sin quien lo abra
-- [ ] 8.2 Correr `revisor-pagos` — **obligatorio en Workflow D**, aunque acá no se cobre todavía
+- [x] 8.1 Correr `cazador-de-puertas`: que el carril tenga call site y que nada quede escrito sin quien lo abra
+- [x] 8.2 Correr `revisor-pagos` — **obligatorio en Workflow D**, aunque acá no se cobre todavía
 - [x] 8.3 `post-task-doc`: ADR nuevo con el presupuesto de lecturas adentro; `_index.md` al tope de 5; el pendiente de `crearOrden` con su noveno punto
 - [x] 8.4 Agregar al glosario: `Caja sugerida`, y corregir `Compuesto` para que diga que sigue sin usarse y por qué
-- [ ] 8.5 `/commit`, leyendo el diff en conversación
+- [x] 8.5 `/commit`, leyendo el diff en conversación
 
 ## 9. Desplegar y verificar producción
 
