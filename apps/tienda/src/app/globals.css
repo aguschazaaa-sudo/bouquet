@@ -16,6 +16,7 @@
 @import '../features/catalogo/catalogo.css';
 @import '../features/catalogo/ficha.css';
 @import '../features/carrito/carrito.css';
+@import '../features/carrito/checkout/checkout.css';
 
 /* globals.css — reset y el suelo del modo cava.
  *

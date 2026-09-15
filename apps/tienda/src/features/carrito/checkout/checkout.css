@@ -1,0 +1,468 @@
+/* checkout.css — terminar la compra. Papel sin excepción (direccion.md §3).
+ *
+ * Vive al lado de `carrito.css` y no adentro: es la misma feature, pero la
+ * hoja del carrito ya mide 444 líneas y juntarlas haría el archivo que ADR 006
+ * describe como el origen del cajón — uno que se llama "sistema" y acepta
+ * cualquier cosa.
+ *
+ * ⚠️ Ni un color literal, igual que el resto: el dorado sobre papel es SÓLO
+ * línea (1,83:1 a tamaño de texto), y lo que es texto y acento va en borgoña.
+ * Los campos no son cajas redondeadas: son un rótulo y un filete, porque
+ * direccion.md §6 no deja card ni pill en ningún lado. */
+
+/* ======================================================== LA PÁGINA */
+
+body:has(.pagina-checkout) {
+  background: var(--papel);
+}
+
+.pagina-checkout {
+  min-height: 100svh;
+  padding-block: clamp(6rem, 11vw, 8rem) var(--e-8);
+}
+
+.pagina-checkout__contenedor {
+  width: min(64rem, 100% - 2 * var(--e-4));
+  margin-inline: auto;
+}
+
+.pagina-checkout__reservado {
+  min-height: 60svh;
+}
+
+.pagina-checkout__cabecera {
+  margin-bottom: var(--e-6);
+}
+
+.pagina-checkout h1 {
+  font-size: var(--t-h2);
+  margin: 0;
+  color: var(--tinta-1);
+}
+
+.pagina-checkout__bajada {
+  margin: var(--e-3) 0 0;
+  max-width: 38ch;
+  color: var(--tinta-2);
+}
+
+.pagina-checkout__vacio {
+  padding-block: var(--e-6) var(--e-7);
+}
+
+.pagina-checkout__vacio p {
+  font-size: var(--t-h3);
+  margin: 0 0 var(--e-5);
+}
+
+.pagina-checkout__columnas {
+  display: grid;
+  gap: var(--e-6);
+  align-items: start;
+}
+
+.pagina-checkout__volver {
+  margin: var(--e-6) 0 0;
+}
+
+@media (min-width: 900px) {
+  .pagina-checkout__columnas {
+    grid-template-columns: minmax(0, 1fr) 20.5rem;
+    gap: var(--e-7);
+  }
+}
+
+/* ========================================================= LAS PARTES */
+
+.parte-checkout {
+  border-top: var(--filete) solid var(--regla);
+  padding-block: var(--e-5);
+}
+
+.parte-checkout:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.parte-checkout__titulo {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-3);
+  font-size: var(--t-h3);
+  margin: 0 0 var(--e-5);
+  color: var(--tinta-1);
+}
+
+.parte-checkout__numero {
+  min-width: 1.6rem;
+  font-size: 0.9rem;
+  letter-spacing: var(--tracking-rotulo);
+  color: var(--acento);
+}
+
+.parte-checkout__cuerpo {
+  padding-left: calc(1.6rem + var(--e-3));
+}
+
+@media (max-width: 560px) {
+  .parte-checkout__cuerpo {
+    padding-left: 0;
+  }
+}
+
+/* ============================================================ CAMPOS */
+
+.campos {
+  display: grid;
+  gap: var(--e-4);
+  grid-template-columns: minmax(0, 1fr);
+}
+
+@media (min-width: 620px) {
+  .campos--par {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .campo--ancho {
+    grid-column: 1 / -1;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-1);
+  min-width: 0;
+  margin: 0;
+}
+
+.campo__rotulo {
+  font-size: 0.95rem;
+  color: var(--tinta-2);
+}
+
+.campo__rotulo em {
+  font-style: normal;
+  font-variant-caps: normal;
+  letter-spacing: 0;
+  font-family: var(--tipo-texto);
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--tinta-3);
+  margin-left: 0.4em;
+}
+
+.campo__control {
+  appearance: none;
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: var(--filete-grueso) solid var(--filete-papel);
+  border-radius: 0;
+  padding: 0.4rem 0 0.35rem;
+  font-family: var(--tipo-texto);
+  font-size: 1.05rem;
+  color: var(--tinta-1);
+  transition: border-color var(--dur-corta) var(--ease-caida);
+}
+
+.campo__control::placeholder {
+  color: color-mix(in srgb, var(--tinta) 32%, var(--papel));
+}
+
+.campo__control:focus {
+  border-bottom-color: var(--acento);
+}
+
+select.campo__control {
+  /* La flecha del sistema se va con el resto de la caja; el chevron lo dibuja
+   * el gradiente, que es una línea del mismo trazo que todo lo demás. */
+  padding-right: 1.4rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position:
+    calc(100% - 0.7rem) 1.05rem,
+    calc(100% - 0.36rem) 1.05rem;
+  background-size: 0.36rem 0.36rem;
+  background-repeat: no-repeat;
+}
+
+.campo__eco {
+  margin: var(--e-1) 0 0;
+  min-height: 1.5em;
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--tinta-3);
+}
+
+/* ======================================================= CÓMO VIAJA */
+
+.como-viaja {
+  margin-top: var(--e-6);
+}
+
+.como-viaja .rotulo {
+  margin-bottom: var(--e-3);
+}
+
+.como-viaja__opciones {
+  border-block: var(--filete) solid var(--regla);
+}
+
+.como-viaja__cargando {
+  margin: var(--e-6) 0 0;
+  font-style: italic;
+  color: var(--tinta-3);
+}
+
+.como-viaja__problema {
+  margin-top: var(--e-6);
+  padding: var(--e-4);
+  background: var(--papel-hondo);
+  border-left: var(--filete-grueso) solid var(--acento);
+}
+
+.como-viaja__titulo {
+  font-size: 1.2rem;
+  margin: 0 0 var(--e-2);
+}
+
+.como-viaja__que-hacer {
+  margin: 0 0 var(--e-3);
+  color: var(--tinta-2);
+}
+
+/* --------------------------------------------------- una opción */
+
+.opcion-entrega {
+  position: relative;
+  display: grid;
+  /* ⚠️ Las cuatro posiciones, explícitas. Con `grid-row: 1` en el precio y
+   * `grid-column: 2` en el detalle, el auto-placement ponía el PRECIO en la
+   * primera columna: salía antes que la marca y que el nombre. Se vio en la
+   * captura; el CSS se leía razonable. */
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'marca nombre precio'
+    '.     detalle detalle';
+  align-items: baseline;
+  gap: var(--e-2) var(--e-3);
+  padding: var(--e-4) var(--e-4) var(--e-4) var(--e-3);
+  border-bottom: var(--filete) solid var(--regla);
+  border-left: var(--filete-grueso) solid transparent;
+  cursor: pointer;
+  transition: background var(--dur-corta) var(--ease-caida);
+}
+
+.opcion-entrega:last-child {
+  border-bottom: 0;
+}
+
+.opcion-entrega--sola {
+  cursor: default;
+}
+
+.opcion-entrega:hover {
+  background: color-mix(in srgb, var(--papel-hondo) 55%, var(--papel));
+}
+
+.opcion-entrega__radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.opcion-entrega__marca {
+  grid-area: marca;
+  position: relative;
+  top: 0.3rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  border: var(--filete-grueso) solid var(--filete-papel);
+  border-radius: 50%;
+}
+
+.opcion-entrega__nombre {
+  grid-area: nombre;
+  font-size: 1.15rem;
+}
+
+.opcion-entrega__precio {
+  grid-area: precio;
+  font-size: 1.05rem;
+}
+
+.opcion-entrega__detalle {
+  grid-area: detalle;
+  font-size: 0.96rem;
+  color: var(--tinta-3);
+}
+
+.opcion-entrega:has(:checked) {
+  background: var(--papel-hondo);
+  border-left-color: var(--acento);
+}
+
+.opcion-entrega:has(:checked) .opcion-entrega__marca {
+  border-color: var(--acento);
+  background: radial-gradient(circle at center, var(--acento) 0 42%, transparent 44%);
+}
+
+.opcion-entrega:has(:checked) .opcion-entrega__detalle {
+  color: var(--tinta-2);
+}
+
+.opcion-entrega:has(:focus-visible) {
+  outline: 2px solid var(--acento);
+  outline-offset: -2px;
+}
+
+/* =========================================================== EL RESUMEN */
+
+.resumen {
+  background: var(--papel-hondo);
+  padding: var(--e-5) var(--e-4);
+  border-top: var(--filete-grueso) solid var(--filete-papel);
+}
+
+@media (min-width: 900px) {
+  .resumen {
+    position: sticky;
+    top: var(--e-5);
+  }
+}
+
+.resumen__titulo {
+  font-size: 1.25rem;
+  margin: 0 0 var(--e-3);
+}
+
+.resumen__lineas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.resumen__linea {
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr) auto;
+  gap: var(--e-2);
+  align-items: baseline;
+  padding-block: var(--e-3);
+  border-top: var(--filete) solid color-mix(in srgb, var(--tinta) 12%, transparent);
+  font-size: 0.98rem;
+}
+
+.resumen__cantidad {
+  font-size: 0.92rem;
+  color: var(--tinta-3);
+}
+
+.resumen__nombre {
+  line-height: 1.35;
+}
+
+.resumen__nombre small {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--tinta-3);
+}
+
+.resumen__bultos {
+  margin: var(--e-3) 0 0;
+  padding-top: var(--e-3);
+  border-top: var(--filete) solid color-mix(in srgb, var(--tinta) 12%, transparent);
+  font-size: 0.95rem;
+  color: var(--tinta-2);
+}
+
+.resumen__cuenta {
+  margin-top: var(--e-4);
+}
+
+.resumen__renglon {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--e-4);
+  margin: 0;
+  padding-block: var(--e-2);
+  font-size: 0.98rem;
+  color: var(--tinta-2);
+}
+
+.resumen__pendiente {
+  font-style: italic;
+  color: var(--tinta-3);
+  font-size: 0.95rem;
+}
+
+.resumen__total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--e-3);
+  margin: var(--e-2) 0 0;
+  padding-top: var(--e-3);
+  border-top: var(--filete-grueso) solid var(--filete-papel);
+}
+
+.resumen__total .versalita {
+  font-size: 1.2rem;
+}
+
+.resumen__monto-total {
+  font-size: clamp(1.6rem, 1.3rem + 1.3vw, 2.1rem);
+}
+
+.resumen__accion {
+  margin: var(--e-5) 0 0;
+}
+
+.resumen__impedimento {
+  margin: var(--e-3) 0 0;
+  font-style: italic;
+  font-size: 0.95rem;
+  color: var(--tinta-3);
+}
+
+.resumen__nota {
+  margin: var(--e-4) 0 0;
+  font-size: 0.96rem;
+  color: var(--tinta-3);
+}
+
+/* El gate, a la vista. Si esto se ve en producción, alguien publicó de más. */
+.resumen__gate {
+  margin-top: var(--e-4);
+  padding: var(--e-4);
+  border: var(--filete) solid var(--filete-papel);
+  background: var(--papel);
+}
+
+.resumen__gate p {
+  margin: 0 0 var(--e-2);
+  font-size: 0.96rem;
+  color: var(--tinta-2);
+}
+
+.resumen__gate-titulo {
+  font-size: 1.1rem;
+  color: var(--acento);
+}
+
+.resumen__legal {
+  margin: var(--e-4) 0 0;
+  padding-left: var(--e-3);
+  border-left: var(--filete-grueso) solid var(--filete-papel);
+  font-size: 0.96rem;
+  color: var(--tinta-2);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .campo__control,
+  .opcion-entrega {
+    transition: none;
+  }
+}

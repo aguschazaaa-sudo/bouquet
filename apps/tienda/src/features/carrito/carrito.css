@@ -409,8 +409,14 @@ body:has(.pagina-carrito) {
   color: var(--tinta-3);
 }
 
-.pagina-carrito__seguir {
+/* La puerta al checkout. Sale sólo con la caja cerrada: lo decide
+ * `sePuedeCobrar`, no esta hoja. */
+.pagina-carrito__terminar {
   margin-top: var(--e-6);
+}
+
+.pagina-carrito__seguir {
+  margin-top: var(--e-5);
 }
 
 @media (min-width: 720px) {

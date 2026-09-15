@@ -9,6 +9,105 @@
 
 ---
 
+## Salió el 2026-09-15, al entrar el checkout
+
+Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el criterio de
+siempre: aquélla dice dónde vive Firestore —`southamerica-east1`, que no se
+puede cambiar nunca—, mientras que la decisión de ésta ya vive entera en
+[ADR 006](../architecture/decisions/006-estructura-de-la-tienda.md), el hook que
+la hace cumplir corre desde entonces, y la barra que describe está en `main`.
+
+Y hay una razón más para moverla hoy: el checkout la **tocó**. `checkout/` no
+nació como feature propia —la regla 3 lo impedía— y eso está razonado en
+[ADR 010](../architecture/decisions/010-el-checkout.md), que es donde hay que
+leerlo ahora.
+
+### La vidriera se ordenó por feature, y ya tiene barra de navegación (2026-09-09)
+
+**`apps/tienda/src` pasó de capas técnicas a `features/` + `shared/`**, con las
+cinco reglas contra el cajón de sastre en
+[ADR 006](../architecture/decisions/006-estructura-de-la-tienda.md), enlazado desde
+`CLAUDE.md`. La regla que se viola en una línea —`shared/` no importa de
+`features/`, las features no se importan entre sí— **la mide un hook**,
+`frontera-features.sh`, con 5 casos en el arnés, que pasó de 30 a **35**.
+
+**La barra es un cartucho fijo, no una franja al ras.** Reusa `.cartucho-deco`,
+que ya existía. Cuatro rutas nuevas —`/vinos`, `/custodia`, `/contacto`,
+`/carrito`— con contenido de placeholder, salvo el carrito, que trae el estado
+vacío REAL de [`voz.md §9.4`](../design/voz.md) literal.
+
+> ⚠️ **Dos de esas cuatro rutas ya no existen** (2026-09-09): `/custodia` se
+> borró y `/contacto` redirige 308 a `/oficio#mostrador` — ver la entrada de
+> arriba y [ADR 007](../architecture/decisions/007-seccion-el-oficio.md). La línea
+> de acá queda porque cuenta el commit `9865957`, no el estado de hoy. Lo
+> encontró `cazador-de-puertas`, que es exactamente para lo que existe.
+
+⚠️ **La mudanza rompió DOS hooks en silencio, y ése es el hallazgo caro.**
+`widget-size-guard` medía `src/components/*.tsx` y **dejó de medir nada**;
+`no-hardcoded-colors` exceptuaba `src/tokens/*` y habría **bloqueado el propio
+archivo de tokens**. El primero es peor: *un hook que no aplica no falla,
+**pasa***. Los dos arreglados, con control positivo y negativo directos sobre
+los globs nuevos —no sólo con el arnés, que también pasaba con el glob roto—.
+
+**El parallax y la barra fija no pelean, y está verificado, no razonado.**
+`parallax.md §3.1` ya lo tenía decidido (*UI, fija, sin parallax*), y
+técnicamente no puede romperse: el motor son timelines de scroll de CSS sobre
+el scroller nativo, no un `transform` sobre un contenedor —que es lo que
+rompería `position: fixed`—. `.grano` (z9) y `.marca-progreso` (z8) ya lo
+probaban antes de esta barra.
+
+**Verificado, y las tres cosas que valen salieron de MIRAR:**
+
+| Qué | Cómo |
+|---|---|
+| Compila y construye | `tsc --noEmit` exit 0 con **control positivo** (`--listFiles` muestra los 8 archivos nuevos); `next build` con las 5 rutas **estáticas** |
+| Las rutas existen | 200 en las cuatro; **control negativo**: `/ruta-inventada-de-control` da 404 |
+| Los dos CTA muertos revivieron | 3 `href="/vinos"` en la home (2 CTA + barra), contados sobre el HTML servido |
+| El mecanismo del asiento | `--asiento` 0 → 1, fondo transparente → opaco, wordmark 0 → 1, medido por CDP en las dos posiciones |
+| Los hooks siguen midiendo | arnés 35/35, **más** 4 controles directos sobre los globs que cambié |
+| Los enlaces de la doc | 133 enlaces, 49 archivos, todos resuelven |
+
+⚠️ **Tres defectos que ningún número mostró y aparecieron abriendo el PNG**, que
+es la tercera vez que pasa en este proyecto: la barra estirada a 1440px **no
+leía como cartucho** sino como franja con borde; el fondo asentado al 82 %
+**dejaba leer el texto de la página a través de la barra**; y el cartucho de
+sección partía el título por ancho. Los tres arreglados y re-capturados. La
+barra asentada quedó **opaca**, no en el alfa mínimo que "casi" tapa: es la
+misma familia de defecto que la viñeta en z4, y las dos veces anteriores una
+verificación numérica había dado verde.
+
+⚠️ **Y el dueño encontró DOS defectos más mirando, otra vez después de que mis
+capturas estuvieran bien.** Van cuatro veces en este proyecto, y el patrón ya no
+es anecdótico: *lo que verifico yo y lo que se ve son cosas distintas.*
+
+1. **La placa se veía descentrada en el primer píxel de la página.** Yo había
+   reservado el hueco del wordmark con `opacity` para evitar un salto de
+   layout — argumento correcto para un toggle discreto y **mal aplicado acá**,
+   donde el ancho lo interpola el mismo reloj de scroll: no es un salto, es un
+   revelado continuo. Ahora colapsa el ancho y la placa queda centrada sobre
+   sus cuatro ítems. Medido: `anchoMarca` 0 → 83 px, y la distancia al borde
+   izquierdo menos la del derecho da **0 en los dos estados**.
+2. ⚠️ **Cuatro triangulitos negros en las esquinas, visibles recién con el zoom
+   del navegador al 200 %.** El anillo del cartucho es un octógono pero el
+   elemento sigue siendo un RECTÁNGULO: mientras el cartucho fue transparente
+   —como nació, sobre la foto de la mesa— no se notaba, y el día que le puse
+   `background` el fondo pintó las cuatro esquinas que el anillo deja afuera.
+   **El arreglo NO fue en la barra:** `.cartucho-deco` ahora publica la forma
+   como `--octogono`, así que el próximo que pinte un cartucho recorta con ella
+   y hereda el mismo chaflán. Ninguna de mis capturas al 100 % lo mostraba: a
+   9 px el triángulo se pierde.
+
+⚠️ **Y apareció un agujero que el vault contaba mal: la home tiene OCHO
+enlaces muertos, no dos.** Los dos CTA a `/vinos` ya están; los otros seis son
+las tarjetas, que apuntan a `/vinos/muestra-01…06` y **siguen dando 404**.
+Abajo, con disparador.
+
+**Medido en 360×780:** la barra ocupa 48 px (6,2 % de cada pantalla, para
+siempre) y la home da **6,26 pantallas** contra el techo de 8. Una barra fija
+no suma alto de scroll.
+
+---
+
 ## Salió el 2026-09-14, al entrar la venta por caja
 
 Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el mismo motivo

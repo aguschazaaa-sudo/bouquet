@@ -16,9 +16,11 @@
 
 ## Dónde está el proyecto
 
-**Fase: el catálogo existe en stage y el vino se vende de a 6 (2026-09-14).
-Todavía no se cobra nada.** `/vinos`, la ficha y el carrito leen 20 vinos de
-muestra de `bouquet-vinos`; `crearOrden` y el checkout son la próxima sesión.
+**Fase: la vidriera está entera hasta el botón de pagar (2026-09-15). Todavía
+no se cobra nada.** `/vinos`, la ficha, `/carrito` y ahora `/pedido` leen 20
+vinos de muestra de `bouquet-vinos`. El checkout pide los datos y cotiza el
+envío **con un cotizador simulado**; falta `crearOrden`, la preferencia de
+Mercado Pago y su webhook.
 
 **Las reglas de Firestore y Storage YA ESTÁN PUBLICADAS** (2026-09-14), medido
 por la API de Rules con quota project: dos releases. **Las fotos dan 200
@@ -46,10 +48,73 @@ dependencias de test** (ni jest, ni vitest, ni ts-node). La única dependencia
 del repo es `typescript`, para `tsc --noEmit`. En una máquina de 7,9 GB eso no
 es un detalle de gusto.
 
-Lo próximo es `crearOrden` y el checkout, con los ocho hallazgos que dejó
+Lo próximo es `crearOrden` y el cobro, con los nueve hallazgos que dejó
 `revisor-pagos` en
 [ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md). Y antes del
 deploy público con el catálogo real, el tramo 4: Cloudflare con purga por tag.
+
+### El checkout existe, y no cobra (2026-09-15)
+
+**Nace `/pedido` — terminar la compra.** Quién lo recibe, a dónde va, cuánto
+sale el envío y un botón `Ir a pagar` que **está apagado a propósito**:
+`crearOrden` no existe, no hay preferencia de Mercado Pago y no hay webhook. El
+porqué de cada decisión, en [ADR 010](architecture/decisions/010-el-checkout.md).
+`/carrito` estrena su puerta: el botón sale **sólo con la caja cerrada**.
+
+La forma la eligió el dueño **mirando dos maquetas navegables** con los vinos de
+stage — *el remito* y *el mostrador*. Ganó el remito.
+
+**Cuatro decisiones del dueño, y las cuatro cambian la pantalla:** envío a todo
+el país más reparto propio en Punilla · **no hay retiro** · Mercado Pago desde
+el día 0 · el envío **se suma** al precio.
+
+⚠️ **Una de ellas borró una pantalla entera.** El glosario dice que una
+dirección fuera de toda zona *"no puede comprar"* y `voz.md §9.3` tiene el texto
+escrito. Con envío nacional **nadie queda fuera de zona**: `Zona` pasa a
+significar *hasta dónde repartimos nosotros*. El glosario quedó desactualizado
+(abajo, con disparador).
+
+⚠️ **Y Mercado Pago borró otra: la de elegir cómo pagar.** Con Checkout Pro eso
+pasa en la pantalla de ellos. Lo que sí aparecen son **tres finales y no dos**,
+porque un pago puede volver `approved`, `rejected` **o** `in_process` — y ése ya
+tenía su estado en la máquina (`en_proceso`, ADR 002).
+
+**El puerto `ProveedorDeEnvio` nace en contratos con una sola implementación:
+`CotizadorSimulado`, en `server/`, con números inventados y la forma real.** El
+día del proveedor se reemplaza el cuerpo y la pantalla no se entera. La
+investigación de los dos proveedores quedó escrita: **no es "Envíos Pack", es
+[Envíopack](architecture/proveedores/enviopack.md)** (hay otra empresa con
+nombre casi igual que hace paquetería a Cuba), y
+[Mercado Pago](architecture/proveedores/mercado-pago.md) **ya no tiene
+sandbox**: nunca usar `sandbox_init_point`.
+
+⚠️ **SEIS defectos aparecieron mirando el PNG, y ninguno lo agarraba el diff**
+—séptima vez en este proyecto—:
+
+| Qué se vio | Por qué pasaba |
+|---|---|
+| **El botón salía sin texto**: un bloque borgoña vacío | `.boton` necesita su label en un `<span>` con z-index propio, o el relleno `::after` lo pinta encima. **Está escrito con una advertencia adentro de `boton.css`** y aun así lo repetí |
+| **El botón apagado se veía encendido** | `.papel .boton::after` y `.boton[disabled]::after` empatan en especificidad y `papel.css` se importa después: ganaba el acento. La regla del apagado tuvo que mudarse a `papel.css` |
+| **El precio salía ANTES del nombre** en cada opción de envío | `grid-row: 1` deja la columna al auto-placement. Las cuatro posiciones ahora son explícitas |
+| **La localidad de un código postal anterior quedaba pegada** | Un pedido a 1425 seguía diciendo "Villa Giardino": la dirección mezclaba dos lugares |
+| **"Cordoba", sin tilde**, en el selector de provincia | El paquete escribe sus comentarios sin acentos y se me contagió a una cadena **que lee un comprador** |
+| **`9999` cotizaba como si existiera** | Con el cotizador simulado, cualquier número de 4 cifras era válido: el estado *"ese código postal no nos suena"* era **UI que nadie podía abrir**. Se le puso el rango argentino (1000–9431) para que se pueda disparar y probar |
+
+**Verificado sobre `next build` + `next start` contra stage, con el carrito
+sembrado en `localStorage`:**
+
+| Qué | Cómo |
+|---|---|
+| Las rutas | `/pedido` da **200**; una ruta inventada, **404** |
+| La home no se volvió ISR | `○ /` sin revalidate en la tabla del build, con `/vinos` y `/pedido` en `1m` como control |
+| Punilla | `5176` → **una** opción (reparto propio), provincia `X` y localidad puestas solas |
+| El resto del país | `1425` → **dos** opciones; a sucursal siempre más barata |
+| Las cajas | 12 botellas cuestan **más** que 6 y **menos** que el doble, con test |
+| El estado feo | `9999` → el aviso, **0** opciones, y el total vuelve a *falta la dirección* |
+| El gate | `data-checkout-simulado` aparece **1** vez y el botón sale `disabled` |
+| Teléfono | 390 px **emulados**: `scrollWidth = clientWidth = 390`, sin overflow |
+| Tests y tipos | **143** de contratos (eran 121) + **30** de la tienda (eran 21); `tsc` 0 en los dos; arnés 35/35; 203 enlaces |
+| Mirado | 1440 y 390 px, con los datos reales de stage |
 
 ### El vino se vende de a 6, y hay cajas armadas (2026-09-14)
 
@@ -236,90 +301,6 @@ más transferible de la tarea:
 | Los hooks y los enlaces | arnés **35/35** · **143** enlaces en 54 archivos, todos resuelven |
 | La voz | 565 palabras: **0** exclamaciones, **0** emoji, **0** `tú`/`usted`, **0** del dialecto de cata — con el control positivo pasando primero |
 
-### La vidriera se ordenó por feature, y ya tiene barra de navegación (2026-09-09)
-
-**`apps/tienda/src` pasó de capas técnicas a `features/` + `shared/`**, con las
-cinco reglas contra el cajón de sastre en
-[ADR 006](architecture/decisions/006-estructura-de-la-tienda.md), enlazado desde
-`CLAUDE.md`. La regla que se viola en una línea —`shared/` no importa de
-`features/`, las features no se importan entre sí— **la mide un hook**,
-`frontera-features.sh`, con 5 casos en el arnés, que pasó de 30 a **35**.
-
-**La barra es un cartucho fijo, no una franja al ras.** Reusa `.cartucho-deco`,
-que ya existía. Cuatro rutas nuevas —`/vinos`, `/custodia`, `/contacto`,
-`/carrito`— con contenido de placeholder, salvo el carrito, que trae el estado
-vacío REAL de [`voz.md §9.4`](design/voz.md) literal.
-
-> ⚠️ **Dos de esas cuatro rutas ya no existen** (2026-09-09): `/custodia` se
-> borró y `/contacto` redirige 308 a `/oficio#mostrador` — ver la entrada de
-> arriba y [ADR 007](architecture/decisions/007-seccion-el-oficio.md). La línea
-> de acá queda porque cuenta el commit `9865957`, no el estado de hoy. Lo
-> encontró `cazador-de-puertas`, que es exactamente para lo que existe.
-
-⚠️ **La mudanza rompió DOS hooks en silencio, y ése es el hallazgo caro.**
-`widget-size-guard` medía `src/components/*.tsx` y **dejó de medir nada**;
-`no-hardcoded-colors` exceptuaba `src/tokens/*` y habría **bloqueado el propio
-archivo de tokens**. El primero es peor: *un hook que no aplica no falla,
-**pasa***. Los dos arreglados, con control positivo y negativo directos sobre
-los globs nuevos —no sólo con el arnés, que también pasaba con el glob roto—.
-
-**El parallax y la barra fija no pelean, y está verificado, no razonado.**
-`parallax.md §3.1` ya lo tenía decidido (*UI, fija, sin parallax*), y
-técnicamente no puede romperse: el motor son timelines de scroll de CSS sobre
-el scroller nativo, no un `transform` sobre un contenedor —que es lo que
-rompería `position: fixed`—. `.grano` (z9) y `.marca-progreso` (z8) ya lo
-probaban antes de esta barra.
-
-**Verificado, y las tres cosas que valen salieron de MIRAR:**
-
-| Qué | Cómo |
-|---|---|
-| Compila y construye | `tsc --noEmit` exit 0 con **control positivo** (`--listFiles` muestra los 8 archivos nuevos); `next build` con las 5 rutas **estáticas** |
-| Las rutas existen | 200 en las cuatro; **control negativo**: `/ruta-inventada-de-control` da 404 |
-| Los dos CTA muertos revivieron | 3 `href="/vinos"` en la home (2 CTA + barra), contados sobre el HTML servido |
-| El mecanismo del asiento | `--asiento` 0 → 1, fondo transparente → opaco, wordmark 0 → 1, medido por CDP en las dos posiciones |
-| Los hooks siguen midiendo | arnés 35/35, **más** 4 controles directos sobre los globs que cambié |
-| Los enlaces de la doc | 133 enlaces, 49 archivos, todos resuelven |
-
-⚠️ **Tres defectos que ningún número mostró y aparecieron abriendo el PNG**, que
-es la tercera vez que pasa en este proyecto: la barra estirada a 1440px **no
-leía como cartucho** sino como franja con borde; el fondo asentado al 82 %
-**dejaba leer el texto de la página a través de la barra**; y el cartucho de
-sección partía el título por ancho. Los tres arreglados y re-capturados. La
-barra asentada quedó **opaca**, no en el alfa mínimo que "casi" tapa: es la
-misma familia de defecto que la viñeta en z4, y las dos veces anteriores una
-verificación numérica había dado verde.
-
-⚠️ **Y el dueño encontró DOS defectos más mirando, otra vez después de que mis
-capturas estuvieran bien.** Van cuatro veces en este proyecto, y el patrón ya no
-es anecdótico: *lo que verifico yo y lo que se ve son cosas distintas.*
-
-1. **La placa se veía descentrada en el primer píxel de la página.** Yo había
-   reservado el hueco del wordmark con `opacity` para evitar un salto de
-   layout — argumento correcto para un toggle discreto y **mal aplicado acá**,
-   donde el ancho lo interpola el mismo reloj de scroll: no es un salto, es un
-   revelado continuo. Ahora colapsa el ancho y la placa queda centrada sobre
-   sus cuatro ítems. Medido: `anchoMarca` 0 → 83 px, y la distancia al borde
-   izquierdo menos la del derecho da **0 en los dos estados**.
-2. ⚠️ **Cuatro triangulitos negros en las esquinas, visibles recién con el zoom
-   del navegador al 200 %.** El anillo del cartucho es un octógono pero el
-   elemento sigue siendo un RECTÁNGULO: mientras el cartucho fue transparente
-   —como nació, sobre la foto de la mesa— no se notaba, y el día que le puse
-   `background` el fondo pintó las cuatro esquinas que el anillo deja afuera.
-   **El arreglo NO fue en la barra:** `.cartucho-deco` ahora publica la forma
-   como `--octogono`, así que el próximo que pinte un cartucho recorta con ella
-   y hereda el mismo chaflán. Ninguna de mis capturas al 100 % lo mostraba: a
-   9 px el triángulo se pierde.
-
-⚠️ **Y apareció un agujero que el vault contaba mal: la home tiene OCHO
-enlaces muertos, no dos.** Los dos CTA a `/vinos` ya están; los otros seis son
-las tarjetas, que apuntan a `/vinos/muestra-01…06` y **siguen dando 404**.
-Abajo, con disparador.
-
-**Medido en 360×780:** la barra ocupa 48 px (6,2 % de cada pantalla, para
-siempre) y la home da **6,26 pantallas** contra el techo de 8. Una barra fija
-no suma alto de scroll.
-
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
 Existen y **compilan**: `apps/tienda` (Next.js), `apps/admin` (Flutter) y
@@ -349,6 +330,14 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | Qué | Por qué | Quién |
 |---|---|---|
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
+| ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `curl` en producción. Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
+| ⚠️ **El glosario quedó DESACTUALIZADO en `Zona` y `Envío`** | Dice que una dirección fuera de toda zona *"no puede comprar"* y que se le avisa antes del carrito, y que el MVP es *"sólo envío a domicilio"*. Con envío a todo el país **eso ya no es cierto**: nadie queda afuera, `Zona` pasa a ser *hasta dónde repartimos nosotros*, y el texto de [`voz.md §9.3`](design/voz.md) queda sin pantalla. No se editó en este cambio a propósito: tocar el glosario adentro de una tarea de feature esconde la decisión adentro del diff de otra cosa. **Disparador:** antes de `crearOrden`, que es quien va a guardar el `Envío`. Desde 2026-09-15. | `vault` |
+| ⚠️ **Tres números del envío son INVENTADOS y uno puede cobrar de menos** | (a) El **peso de la caja** son 8 kg de catálogo de proveedores, no medidos — hay que **pesar una caja real**. (b) Los **códigos postales de Punilla** de `server/envios.ts` salieron de memoria: un CP mal puesto manda al reparto propio un pedido que había que despachar, y **no falla ruidosamente**, sale más barato y no llega; hay que confrontarlos uno por uno con el buscador del Correo Argentino, con control negativo. (c) Los **precios del cotizador** son puro invento. **Disparador: antes del primer cobro.** Desde 2026-09-15. | el dueño + `tienda` |
+| ⚠️ **Nadie confirmó que se pueda despachar alcohol, ni cuánto cobra Mercado Pago** | Ningún correo prohíbe el vino por escrito **y ninguno lo permite por escrito**: es zona gris y se resuelve preguntándole a Envíopack por contacto comercial, no leyendo más documentación. Y la comisión de Mercado Pago no se pudo verificar: las páginas oficiales de costos devuelven **403** y las fuentes de terceros se contradicen entre 2,99 % y 6,99 % + IVA — hay que mirarlo en el panel de la cuenta real. Los dos están en [`proveedores/`](architecture/proveedores/). **Disparador:** antes de contratar y antes de fijar precios. Desde 2026-09-15. | el dueño |
+| **El umbral de envío sin cargo no existe, y el lugar donde va ya está** | El dueño lo dejó abierto: *"no sé desde qué monto me conviene"*. Cuando haya tarifas reales, el renglón es el de la entrega más un empujón arriba del total (*"te faltan $X para que el envío salga sin cargo"*). La cuenta ya soporta `precio: 0` y lo dice con palabras, no con un cero. **Disparador:** cuando existan las tarifas del proveedor. Desde 2026-09-15. | el dueño |
+| **El comprobante vive en una URL que todavía no existe** | [ADR 010](architecture/decisions/010-el-checkout.md) §6 decide que el comprobante **no va por mail**: va a `/pedido/<numero>` y el link viaja por WhatsApp. Esa ruta no está escrita — hoy no hay número de orden que mostrar. **Disparador:** la sesión de `crearOrden`. Desde 2026-09-15. | `tienda` |
+| ⚠️ **`server-only-guard` ofrece una salida que su propia regla no permite** | Su mensaje dice *"Para tipos usá `import type`"*, pero su expresión regular (`import\s+.*['\"]@/server/`) **también bloquea un `import type`**. No molestó en el checkout —la Server Action llega por props, que es mejor—, pero el hook promete algo que no cumple, y eso es exactamente lo que `CLAUDE.md` llama un verde que dice algo falso. Arreglarlo pide un caso nuevo en `probar_hooks.sh`, con su par positivo y negativo. **Disparador:** la próxima vez que alguien necesite un tipo de `server/` en un componente cliente. Desde 2026-09-15. | el usuario |
+| **En teléfono, el total del checkout queda abajo de todo el formulario** | La maqueta *el remito* tenía una barra fija con el total y el botón; no se construyó porque hoy el botón está apagado y una barra fija con un botón que no se puede apretar es ruido pegado a la pantalla. **Disparador:** el día que se apague `EL_CHECKOUT_NO_COBRA`. Desde 2026-09-15. | `tienda` |
 | ⚠️ **El catálogo real no se despliega sin el tramo 4** | Hasta que Cloudflare cachee con purga por tag, las lecturas escalan con las visitas: con 200 vinos, 115 % de la cuota a 250 visitas/día (ADR 008). Y el tramo 4 tiene que invalidar también la caché de Next, que sirve una página vencida hasta 360 s. Y decidir si la home entra a la purga: hoy envejece hasta el próximo deploy (ADR 008 §7). **Disparador: antes del deploy público.** Desde 2026-09-11. | `functions` + `tienda` |
 | **NUEVE hallazgos de `revisor-pagos` para antes de `crearOrden`** | Recrear un producto se saltea la inmutabilidad; precio 0; compuesto sin componentes; `PedidoDeCompra` sin validador; carrito sin tope de líneas; la caché de Next contra la purga; los tests de reglas fuera de CI; reglas y validador que no dicen lo mismo. **El noveno (2026-09-14):** rechazar todo pedido que no sume un múltiplo de `BOTELLAS_POR_CAJA` botellas, recalculado en el servidor ([ADR 009](architecture/decisions/009-venta-por-caja.md)). La tabla está en ADR 008. **Disparador: la sesión de `crearOrden`.** Desde 2026-09-11. | `functions` + `reglas` |
 | **El carril de cajas no se miró en un teléfono de verdad** | Se miró a 390 px **emulados** por CDP, que es lo que esta máquina puede: el Chrome headless no baja de 504 px sin emulación. La pista scrollea de lado dentro de su contenedor y eso se juzga con el dedo, no con `scrollWidth`. **Disparador:** la próxima vez que el dueño abra `/vinos` en su teléfono. Desde 2026-09-14. | el dueño |
@@ -384,6 +373,7 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | 007 | La sección se llama **El oficio**, cubre tres tramos, y el contacto es su cierre | [007](architecture/decisions/007-seccion-el-oficio.md) |
 | 008 | El **stock** lo escribe sólo el servidor, en unidades de venta; la vidriera lee **una proyección** por minuto, y el carrito vive en `localStorage` | [008](architecture/decisions/008-catalogo-stock-y-carrito.md) |
 | 009 | El vino se vende **sólo de a 6 botellas**; una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
+| 010 | El **código postal** decide cómo viaja el pedido —nadie queda fuera de zona—; se cobra con **Mercado Pago Checkout Pro** y el comprobante **no va por mail** | [010](architecture/decisions/010-el-checkout.md) |
 
 ---
 
@@ -404,7 +394,7 @@ Los cuatro que bloquean algo:
 | Deploy desde tag en vez de rama | Antes del primer deploy que incluya cobro | 2026-09-01 |
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
-| ⚠️ **La venta por caja viaja de POLIZÓN**: está commiteada (`v0.18.1`) y **no desplegada**. Cinco gates siguen abiertos — puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
+| ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
 
 ---
 

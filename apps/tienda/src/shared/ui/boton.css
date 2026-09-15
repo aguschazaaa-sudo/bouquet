@@ -131,6 +131,26 @@
   background: var(--dorado);
 }
 
+/* Apagado. Nace acá y no en la feature porque un botón que no se puede apretar
+ * es una propiedad del botón. El relleno pierde el acento y el label baja a un
+ * gris de papel: tiene que leerse —dice por qué está apagado quien lo rodea—
+ * sin parecer apretable. */
+.boton[disabled],
+.boton[disabled]:hover {
+  cursor: not-allowed;
+  color: color-mix(in srgb, var(--marfil) 70%, transparent);
+}
+
+.boton[disabled]::before,
+.boton[disabled]:hover::before {
+  background: var(--regla);
+}
+
+.boton[disabled]::after,
+.boton[disabled]:hover::after {
+  background: color-mix(in srgb, var(--tinta) 58%, var(--marfil));
+}
+
 /* El CTA blando no es un botón: es una línea de texto con un filete abajo.
  * "Coquetear es insinuar, no gritar" — parallax.md §10.1. */
 .enlace-blando {

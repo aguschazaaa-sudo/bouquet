@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { quitar, resolverCarrito, type ProductoPublicado } from '@bouquet/contratos';
+import { quitar, resolverCarrito, sePuedeCobrar, type ProductoPublicado } from '@bouquet/contratos';
 
 import { carritoActual, guardarCarrito } from './almacen';
 import { EstadoDeLaCaja } from './EstadoDeLaCaja';
@@ -12,8 +12,11 @@ import { TotalDelCarrito } from './TotalDelCarrito';
 import { useCarrito, useHidratado } from './useCarrito';
 
 /* /carrito: el pedido contra la proyección de hoy. Papel, sin excepción
- * (direccion.md §3), y SIN botón de terminar la compra: el checkout y
- * `crearOrden` todavía no existen (specs/vidriera-carrito).
+ * (direccion.md §3).
+ *
+ * Desde 2026-09-15 SÍ tiene botón de terminar la compra, y lleva a /pedido.
+ * `crearOrden` sigue sin existir: lo que hay del otro lado es el checkout
+ * armado con el cobro apagado (`EL_CHECKOUT_NO_COBRA`).
  *
  * Si el tope de un vino bajó desde que se agregó, la cantidad se ajusta y se
  * GUARDA: el total nunca se calcula con la cantidad vieja. El aviso de ajuste
@@ -67,6 +70,19 @@ export function PaginaDelCarrito({ productos, ventanas }: Props) {
         </ul>
         <EstadoDeLaCaja resuelto={resuelto} />
         <TotalDelCarrito resuelto={resuelto} />
+        {/* El botón aparece SÓLO con la caja cerrada, y la frase de arriba ya
+         * dice qué falta: un botón apagado obliga a explicar dos veces lo
+         * mismo, y uno encendido que rebota en /pedido es peor. La misma
+         * precondición la repite el checkout sobre su propia proyección, y la
+         * va a repetir `crearOrden`: un número de botellas que manda el
+         * navegador no se cree. */}
+        {sePuedeCobrar(resuelto) ? (
+          <p className="pagina-carrito__terminar">
+            <Link className="boton" href="/pedido">
+              <span>{TEXTOS.terminar}</span>
+            </Link>
+          </p>
+        ) : null}
         <p className="pagina-carrito__seguir">
           <Link className="enlace-blando" href="/vinos">
             {TEXTOS.seguir}

@@ -28,6 +28,7 @@ export const TEXTOS = {
   noSumanFuera: (n: number) =>
     n === 1 ? 'Un vino del pedido no suma: ya no se puede llevar.' : `${n} vinos del pedido no suman: ya no se pueden llevar.`,
   seguir: 'Seguir viendo vinos',
+  terminar: 'Terminar la compra',
   laCaja: (n: number) => `la caja de ${botellas(n)}`,
   laBotella: 'la botella',
 

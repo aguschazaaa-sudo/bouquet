@@ -15,3 +15,4 @@ export * from './dinero.ts';
 export * from './producto.ts';
 export * from './carrito.ts';
 export * from './cajas.ts';
+export * from './envio.ts';

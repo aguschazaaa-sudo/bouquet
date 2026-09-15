@@ -41,6 +41,21 @@
   color: var(--tinta-1);
 }
 
+/* ⚠️ Y el apagado, ACÁ y no en boton.css. `.papel .boton::after` y
+ * `.boton[disabled]::after` empatan en especificidad (0,2,1), y esta hoja se
+ * importa después: sin esta regla el botón deshabilitado se pinta con el acento
+ * y se ve exactamente igual que uno que se puede apretar. Se vio en la captura
+ * del checkout, no leyendo el CSS. */
+.papel .boton[disabled]::after,
+.papel .boton[disabled]:hover::after,
+.papel .boton[disabled]:focus-visible::after {
+  background: color-mix(in srgb, var(--tinta) 58%, var(--marfil));
+}
+
+.papel .boton[disabled]::before {
+  background: var(--regla);
+}
+
 /* El botón duro sobre papel: un bloque borgoña con el texto en marfil. La
  * versión cava —filete dorado y relleno tinta— sobre claro se lee como un
  * agujero. */
