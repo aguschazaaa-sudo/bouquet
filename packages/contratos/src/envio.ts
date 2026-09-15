@@ -24,10 +24,19 @@ import type { Validacion } from './producto.ts';
 /**
  * Peso y medidas de UNA caja de seis, con las botellas adentro.
  *
- * ⚠️ SON ESTIMADOS, no medidos. Salen de proveedores de cajas y de una
- * vinoteca argentina que factura el envio por caja de 8 kg. Se usan para
- * cotizar, asi que un error de medio kilo es un error de precio: hay que
- * pesar una caja real antes del primer cobro. El disparador esta en el ADR.
+ * EL PESO YA NO ES UN NUMERO DE CATALOGO. El dueno peso una botella el
+ * 2026-09-15: **1,118 kg**. Seis dan 6,666 kg, mas la caja y el relleno queda
+ * en ~7 kg, y sube o baja segun la botella -- una borgonesa pesada no pesa lo
+ * mismo que una bordelesa liviana.
+ *
+ * Se deja en 8 A PROPOSITO, del lado seguro: un correo que repesa el bulto y
+ * lo encuentra mas pesado de lo declarado cobra la diferencia al vendedor,
+ * mientras que declarar de mas solo puede caer en el escalon de peso de
+ * arriba. El dia que existan tarifas reales hay que mirar DONDE caen los
+ * escalones: si 7 y 8 estan en el mismo, esto no cuesta nada; si no, cuesta
+ * en cada pedido.
+ *
+ * ⚠️ Las MEDIDAS siguen siendo de catalogo de proveedores, no medidas.
  */
 export const CAJA_KG = 8;
 /* NO se exporta: `bultosDelPedido` ya devuelve las medidas por bulto, que es

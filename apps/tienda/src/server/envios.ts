@@ -38,12 +38,27 @@ import {
 const DEMORA_MS = 220;
 
 /**
- * El valle de Punilla: lo repartimos nosotros.
+ * ⚠️ EL REPARTO PROPIO ESTÁ APAGADO (2026-09-15, decisión del dueño: *"de
+ * momento no lo vamos a hacer nosotros"*). Con esto en `false`, **todo sale por
+ * correo**, también Punilla, y la modalidad `propio` de contratos queda sin uso
+ * — como `tipo: 'compuesto'`, y por la misma razón: el camino existe entero y
+ * se prende con esta línea.
  *
- * ⚠️ ESTOS CÓDIGOS POSTALES NO ESTÁN VERIFICADOS uno por uno. Hay que
- * confrontarlos con el buscador del Correo Argentino antes de cobrar: un CP mal
- * puesto acá manda un pedido al reparto propio que en realidad hay que
- * despachar, y eso no falla ruidosamente — sale más barato y no llega.
+ * Y apagarlo desactiva el riesgo de la tabla de abajo, que era el peor de los
+ * tres números inventados: un código postal mal puesto mandaba al reparto
+ * propio un pedido que había que despachar, y eso **no falla ruidosamente** —
+ * sale más barato y no llega. Con el reparto apagado, lo peor que hace un CP
+ * equivocado es prellenar mal una localidad que el comprador corrige.
+ */
+const REPARTIMOS_NOSOTROS = false;
+
+/**
+ * El valle de Punilla. Hoy sólo sirve para prellenar la localidad; el día que
+ * `REPARTIMOS_NOSOTROS` vuelva a `true` es además la cobertura.
+ *
+ * ⚠️ ESTOS CÓDIGOS POSTALES NO ESTÁN VERIFICADOS uno por uno. Antes de
+ * prenderlo hay que confrontarlos con el buscador del Correo Argentino, con un
+ * control negativo: un CP que NO es de Punilla no puede dar reparto propio.
  */
 const PUNILLA: Readonly<Record<string, string>> = {
   '5152': 'Villa Carlos Paz',
@@ -175,9 +190,10 @@ export async function cotizarEnvio(codigoPostal: string, botellas: number): Prom
   const numero = Number(cp);
   if (numero < 1000 || numero > 9431) return { ok: false, motivo: 'codigo-postal' };
 
-  const propio = cp in PUNILLA;
+  const propio = REPARTIMOS_NOSOTROS && cp in PUNILLA;
   const adivinada = BANDA[cp[0] as string];
-  const provincia: ProvinciaIso = propio ? 'X' : esProvinciaIso(adivinada) ? adivinada : 'B';
+  const deCordoba = propio || cp in PUNILLA;
+  const provincia: ProvinciaIso = deCordoba ? 'X' : esProvinciaIso(adivinada) ? adivinada : 'B';
 
   const destino: DestinoDeEnvio = {
     codigoPostal: cp,

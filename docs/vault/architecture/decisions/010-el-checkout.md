@@ -59,6 +59,20 @@ Lo único que puede fallar es que **no sepamos el precio todavía** —un códig
 postal que la tabla no reconoce, o el proveedor caído—, y para eso la salida es
 escribirnos, no cerrar la puerta.
 
+⚠️ **Y el reparto propio nació apagado, el mismo día** (decisión del dueño:
+*"de momento no lo vamos a hacer nosotros"*). `REPARTIMOS_NOSOTROS = false` en
+`server/envios.ts`: hoy **todo sale por correo**, Punilla incluida, y la
+modalidad `propio` queda escrita sin uso — igual que `tipo: 'compuesto'` en
+[ADR 009](009-venta-por-caja.md), y por la misma razón: el camino existe entero
+y se prende con una línea.
+
+Eso **desactiva el peor de los números inventados**. La tabla de códigos
+postales de Punilla salió de memoria, y con el reparto prendido un CP mal puesto
+mandaba al reparto propio un pedido que había que despachar: no falla
+ruidosamente, sale más barato y no llega. Apagado, lo peor que hace es
+prellenar mal una localidad que el comprador corrige. La tabla se queda porque
+sigue sirviendo para eso.
+
 ### 2. El checkout vive adentro de `carrito/`, no en una feature propia
 
 [ADR 006](006-estructura-de-la-tienda.md) dejaba `checkout/` anotado como
@@ -105,9 +119,19 @@ plata o precio equivocado:
 el doble: cotizar siempre una sola caja era el defecto que tenía la maqueta, y
 el pedido grande viajaba a precio de chico.
 
-`CAJA_KG = 8` y `34×24×18 cm` son **estimados, no medidos** — salen de
-proveedores de cajas y de una vinoteca argentina que factura por caja de 8 kg.
-Un error de medio kilo es un error de precio.
+**`CAJA_KG = 8`, y el 8 ya no es de catálogo.** El dueño pesó una botella el
+2026-09-15: **1,118 kg**. Seis dan **6,666 kg**, más la caja y el relleno queda
+en **~7 kg**, y se mueve según la botella — una borgoñesa pesada no pesa lo
+mismo que una bordelesa liviana.
+
+Se deja en **8, del lado seguro**: un correo que repesa el bulto y lo encuentra
+más pesado de lo declarado le cobra la diferencia al vendedor, mientras que
+declarar de más como mucho cae en el escalón de peso de arriba. Cuál de los dos
+riesgos es más caro **depende de dónde caigan los escalones**, y eso sólo se
+sabe con tarifas reales: si 7 y 8 están en el mismo escalón, este margen no
+cuesta nada; si no, cuesta en cada pedido.
+
+⚠️ Las **medidas** (34×24×18 cm) siguen siendo de catálogo de proveedores.
 
 El precio del segundo bulto es **sublineal** (×1,6 y no ×2): un correo cobra
 por escalón de peso. El 0,6 es inventado; la forma, no.
@@ -222,8 +246,8 @@ presupuesto, no un detalle de la interfaz.
 
 | Qué | Cómo | Disparador |
 |---|---|---|
-| El peso real de una caja de 6 | Pesarla. Los 8 kg son de catálogo de proveedores | Antes del primer cobro |
-| Los códigos postales de Punilla | Uno por uno contra el buscador del Correo Argentino, con un control negativo (un CP que NO es de Punilla y no debe dar reparto propio) | Antes del primer cobro |
+| ~~El peso real de una caja de 6~~ | **Medido el 2026-09-15**: 1,118 kg la botella → 6,666 kg las seis → ~7 kg con caja y relleno. Queda declarado 8, del lado seguro (§4). Lo que falta es **dónde caen los escalones de peso del correo** | Con las tarifas reales |
+| Los códigos postales de Punilla | Uno por uno contra el buscador del Correo Argentino, con un control negativo (un CP que NO es de Punilla y no debe dar reparto propio). **Dejó de ser urgente** al apagarse el reparto propio: hoy sólo prellenan una localidad | Antes de poner `REPARTIMOS_NOSOTROS` en `true` |
 | Que se pueda despachar alcohol | Preguntárselo a Envíopack por contacto comercial. Ningún correo lo prohíbe por escrito **y ninguno lo permite por escrito** | Antes de contratar |
 | La comisión de Mercado Pago | En el panel de la cuenta real: las páginas públicas de costos devuelven 403 y las fuentes de terceros se contradicen entre 2,99 % y 6,99 % | Antes de fijar precios |
 | El umbral de envío sin cargo | Con costos reales en la mano: cuál es el ticket desde el que conviene | Cuando existan las tarifas |

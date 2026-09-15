@@ -10,16 +10,16 @@ import { cotizarEnvio } from '../src/server/envios.ts';
  * El caso que motivó el archivo es el de las dos cajas: la maqueta cotizaba
  * siempre un pedido de seis, así que un pedido de doce viajaba gratis la mitad. */
 
-test('un codigo postal de Punilla lo llevamos nosotros, y es UNA sola opcion', async () => {
+test('HOY Punilla tambien sale por correo: el reparto propio esta apagado', async () => {
+  // `REPARTIMOS_NOSOTROS = false` (decision del dueno, 2026-09-15). Lo que
+  // queda de la tabla de Punilla es el prellenado de la localidad.
   const r = await cotizarEnvio('5176', 6);
   assert.ok(r.ok);
-  assert.equal(r.destino.propio, true);
+  assert.equal(r.destino.propio, false);
   assert.equal(r.destino.localidad, 'Villa Giardino');
   assert.equal(r.destino.provincia, 'X');
-  assert.equal(r.opciones.length, 1);
-  assert.equal(r.opciones[0]?.modalidad, 'propio');
-  // Y no lleva transportista: no hay correo en el medio.
-  assert.equal(r.opciones[0]?.transportista, null);
+  assert.equal(r.opciones.length, 2);
+  assert.ok(r.opciones.every((o) => o.modalidad !== 'propio'));
 });
 
 test('un codigo postal de afuera va por correo, con dos formas de recibirlo', async () => {
