@@ -1,4 +1,4 @@
-import { totalConEnvio, type Centavos, type CarritoResuelto } from '@bouquet/contratos';
+import { SIN_CARGO, totalConEnvio, type Centavos, type CarritoResuelto } from '@bouquet/contratos';
 
 import { Precio } from '@/shared/ui/Precio';
 
@@ -40,7 +40,7 @@ export function ElResumen({ resuelto, envio, cajas, pesoKg, impedimento, whatsap
               {l.producto?.nombre}
               <small>{l.producto?.bodega}</small>
             </span>
-            <Precio centavos={l.subtotal} className="resumen__monto" />
+            <Precio centavos={l.subtotal} />
           </li>
         ))}
       </ul>
@@ -56,7 +56,7 @@ export function ElResumen({ resuelto, envio, cajas, pesoKg, impedimento, whatsap
           <span>{TEXTOS.laEntrega}</span>
           {envio === null ? (
             <span className="resumen__pendiente">{TEXTOS.faltaLaDireccion}</span>
-          ) : envio === 0 ? (
+          ) : envio === SIN_CARGO ? (
             <span className="versalita">{TEXTOS.sinCargo}</span>
           ) : (
             <Precio centavos={envio} />

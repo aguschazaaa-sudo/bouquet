@@ -113,7 +113,7 @@ sembrado en `localStorage`:**
 | El estado feo | `9999` → el aviso, **0** opciones, y el total vuelve a *falta la dirección* |
 | El gate | `data-checkout-simulado` aparece **1** vez y el botón sale `disabled` |
 | Teléfono | 390 px **emulados**: `scrollWidth = clientWidth = 390`, sin overflow |
-| Tests y tipos | **143** de contratos (eran 121) + **30** de la tienda (eran 21); `tsc` 0 en los dos; arnés 35/35; 203 enlaces |
+| Tests y tipos | **143** de contratos (eran 121) + **30** de la tienda (eran 21); `tsc` 0 en los dos; arnés 35/35; 212 enlaces |
 | Mirado | 1440 y 390 px, con los datos reales de stage |
 
 ### El vino se vende de a 6, y hay cajas armadas (2026-09-14)

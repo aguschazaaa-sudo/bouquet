@@ -61,6 +61,14 @@ body:has(.pagina-checkout) {
   align-items: start;
 }
 
+/* La columna del formulario. `min-width: 0` no es decorativo: un hijo de grid
+ * trae `min-width: auto` y una localidad larga lo empujaría más ancho que su
+ * columna. Antes esta clase estaba en el HTML sin una sola regla — la encontró
+ * `cazador-de-puertas`. */
+.pagina-checkout__partes {
+  min-width: 0;
+}
+
 .pagina-checkout__volver {
   margin: var(--e-6) 0 0;
 }

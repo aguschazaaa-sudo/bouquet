@@ -30,7 +30,10 @@ import type { Validacion } from './producto.ts';
  * pesar una caja real antes del primer cobro. El disparador esta en el ADR.
  */
 export const CAJA_KG = 8;
-export const CAJA_CM = { largo: 34, ancho: 24, alto: 18 } as const;
+/* NO se exporta: `bultosDelPedido` ya devuelve las medidas por bulto, que es
+ * como las pide un correo. Un export que nadie abre no esta entregado, esta
+ * escrito. */
+const CAJA_CM = { largo: 34, ancho: 24, alto: 18 } as const;
 
 export interface Bulto {
   readonly pesoKg: number;

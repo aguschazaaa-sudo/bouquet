@@ -1,4 +1,4 @@
-import { formatearARS, type OpcionDeEnvio } from '@bouquet/contratos';
+import { formatearARS, SIN_CARGO, type OpcionDeEnvio } from '@bouquet/contratos';
 
 import { TEXTOS } from './textos';
 
@@ -19,7 +19,7 @@ type Props = {
 };
 
 export function OpcionDeEntrega({ opcion, elegida, alElegir, sola }: Props) {
-  const gratis = opcion.precio === 0;
+  const gratis = opcion.precio === SIN_CARGO;
 
   return (
     <label className={`opcion-entrega${sola ? ' opcion-entrega--sola' : ''}`}>

@@ -6,6 +6,11 @@
  * "terminar la compra" (voz.md §7.3). Y "Envío"/"Zona" tampoco: lee "la
  * entrega" y "a dónde va". */
 
+/* El plural de la caja, una sola vez. Estaba escrito dos: como `TEXTOS.cajas`,
+ * que no abria nadie, y repetido adentro de `viajaEn`. Es el defecto que `voz`
+ * encontro la vez pasada con `vaDeA`. */
+const cajas = (n: number) => (n === 1 ? 'una caja' : `${n} cajas`);
+
 export const TEXTOS = {
   titulo: 'Terminar la compra',
   bajada: 'Dos cosas: quién lo recibe y a dónde va. Después te llevamos a pagar.',
@@ -62,9 +67,8 @@ export const TEXTOS = {
   todaviaNoSeCobraPorque: 'Esta pantalla está armada y el cobro todavía no. Si querés el pedido ahora, escribinos y lo cerramos a mano.',
 
   // --- cuentas ---
-  cajas: (n: number) => (n === 1 ? 'una caja' : `${n} cajas`),
-  botellas: (n: number) => `${n} ${n === 1 ? 'botella' : 'botellas'}`,
-  viajaEn: (cajas: number, kg: number) => `Viaja en ${cajas === 1 ? 'una caja' : `${cajas} cajas`} · ${kg} kg`,
+  cajas,
+  viajaEn: (n: number, kg: number) => `Viaja en ${cajas(n)} · ${kg} kg`,
 } as const;
 
 /**

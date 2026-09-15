@@ -12,8 +12,8 @@
   porque `checkout/` **no** nace como feature propia; y
   [ADR 009](009-venta-por-caja.md), que ahora tiene su consumidor: la caja
   cerrada es lo que abre la puerta
-- **Hace cumplir:** `packages/contratos` (142 tests, eran 121), `apps/tienda`
-  (29, eran 21), y los hooks `server-only-guard`, `frontera-features` y
+- **Hace cumplir:** `packages/contratos` (143 tests, eran 121), `apps/tienda`
+  (30, eran 21), y los hooks `server-only-guard`, `frontera-features` y
   `widget-size-guard`, que bloquearon de verdad durante este cambio
 - **Proveedores:** [`enviopack.md`](../proveedores/enviopack.md) y
   [`mercado-pago.md`](../proveedores/mercado-pago.md), escritos en este mismo

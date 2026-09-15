@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-15 - commit `c82115a` **+ cambios sin commitear** - huella del cuerpo `354853054056`
+> **Generado:** 2026-09-15 - commit `4fbf750` **+ cambios sin commitear** - huella del cuerpo `ce9fd307fbee`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.18.2
+### Scripts de la raiz - `bouquet` 0.19.0
 
 | Script | Comando |
 |---|---|
@@ -278,7 +278,6 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `resolverCajasSugeridas` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/cajas.test.ts` |
 | `llenarConLaCaja` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `packages/contratos/test/cajas.test.ts` |
 | `CAJA_KG` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/envio.test.ts` |
-| `CAJA_CM` | valor | **SIN PUERTA - nadie** | - |
 | `Bulto` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
 | `cajasADespachar` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/envio.test.ts` |
 | `bultosDelPedido` | funcion | abierto | `apps/tienda/src/server/envios.ts`, `packages/contratos/test/envio.test.ts` |
@@ -293,16 +292,16 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `OpcionDeEnvio` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/ComoViaja.tsx`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `apps/tienda/src/server/envios.ts` |
 | `ProveedorDeEnvio` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
 | `totalConEnvio` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `packages/contratos/test/envio.test.ts` |
-| `SIN_CARGO` | valor | **SIN PUERTA - nadie** | - |
+| `SIN_CARGO` | valor | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx` |
 | `normalizarTelefonoAR` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/envio.test.ts` |
 | `DatosDeEntrega` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts` |
 | `validarDatosDeEntrega` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/test/envio.test.ts` |
 | `MotivoSinCotizacion` | tipo | **SIN PUERTA - nadie** | - |
 | `ResultadoDeCotizacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts` |
 
-**114 simbolos exportados. 47 SIN PUERTA.**
+**113 simbolos exportados. 45 SIN PUERTA.**
 
-Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `BALDES`, `Balde`, `UMBRAL_QUEDAN_POCAS`, `TOPE_POR_PEDIDO`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `LineaDePedido`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `CAJA_KG`, `CAJA_CM`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `SIN_CARGO`, `normalizarTelefonoAR`, `MotivoSinCotizacion`.
+Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `BALDES`, `Balde`, `UMBRAL_QUEDAN_POCAS`, `TOPE_POR_PEDIDO`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `LineaDePedido`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `CAJA_KG`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `normalizarTelefonoAR`, `MotivoSinCotizacion`.
 
 Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
