@@ -68,7 +68,11 @@ export const TEXTOS = {
   sinAnada: 'Sin añada',
 
   // --- la venta por caja y el carril ---
-  seVendeDeA: (n: number) => `El vino se vende en cajas de ${n} botellas. Elegí las que quieras y armá la tuya.`,
+  /* La regla va en tres piezas y no en una frase: la cifra se compone aparte
+   * para que pueda ser una CIFRA y no una palabra (ver ReglaDeLaCaja). */
+  reglaRotulo: 'Se vende por caja',
+  reglaUnidad: 'botellas',
+  reglaNota: 'Elegí las que quieras y armá la tuya.',
   cajasTitulo: 'Cajas armadas',
   cuantasBotellas: (n: number) => `${n} botellas`,
   cajasBajada: 'Si no querés elegir de a uno, empezá por una de éstas. Después la cambiás.',

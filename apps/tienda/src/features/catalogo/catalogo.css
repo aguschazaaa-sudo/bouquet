@@ -32,12 +32,55 @@
   color: var(--marfil-1);
 }
 
-.cabecera-vinos p {
+/* ⚠️ HIJO DIRECTO, no descendiente, y la victima NO es la que yo habia
+   escrito. La cabecera dejo de tener solo texto: la placa de la regla vive
+   adentro y trae tres <p> propios, asi que `.cabecera-vinos p` (0,1,1) les
+   gana a las clases de la placa (0,1,0).
+
+   Escribi que se rompia la cifra y la MEDICION dijo que no: la cifra es un
+   <span> adentro del <p>, no un <p>, y sale a 57,12 px con la regla vieja
+   puesta o sacada. Lo que se rompia era el ROTULO — poniendo y sacando la
+   regla vieja sobre el DOM del build, a 1440:
+
+       rotulo   13,60 px y dorado  ->  19,04 px y marfil-2   (deja de ser rotulo)
+       nota     max-width 314,7 px ->  419,6 px              (40ch en vez de 30ch)
+       cifra    57,12 px           ->  57,12 px              (no la tocaba)
+
+   Un razonamiento de cascada se escribe igual que una medicion de cascada. */
+.cabecera-vinos > p {
   margin: 0;
   max-width: 40ch;
   font-size: var(--t-cuerpo);
   line-height: var(--interlinea-prosa);
   color: var(--marfil-2);
+}
+
+/* En desktop la regla se muda a la mitad derecha, que estaba vacia, y deja de
+   leerse como el tercer renglon de la bajada. Las cuatro posiciones son
+   explicitas a proposito. */
+@media (min-width: 60rem) {
+  .cabecera-vinos {
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--e-7);
+    align-items: start;
+  }
+
+  .cabecera-vinos > h1 {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .cabecera-vinos > p {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .cabecera-vinos > .regla-caja {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    justify-self: end;
+    max-width: 26rem;
+  }
 }
 
 /* ============================================================ LAS PESTAÑAS */
@@ -707,17 +750,130 @@
   }
 }
 
-/* ===================================================== EL AVISO DE LA CAJA */
+/* ===================================================== LA REGLA DE LA CAJA */
 
 /* Va en la cabecera, ANTES de cualquier tarjeta: una compra que se entera en
    el carrito de que el vino va de a seis es una compra que se abandona. Una
    vez por listado, no por tarjeta -veinte veces la misma frase deja de ser
-   informacion y pasa a ser ruido-. */
-.cabecera-vinos__caja {
-  max-width: 44ch;
-  padding-inline-start: var(--e-3);
-  border-inline-start: var(--filete-grueso) solid var(--oro-filete);
+   informacion y pasa a ser ruido-.
+
+   ⚠️ ESTO ERA UN PARRAFO, y el dueño lo llamó "muy tenue para ser la regla
+   base de la transaccion". Tenia razon y la captura lo confirma: salia al
+   mismo cuerpo que la bajada, debajo de ella, con un filete a la izquierda —o
+   sea, con la forma tipografica de una ACLARACION—. En la misma pantalla
+   `CAJAS ARMADAS`, que es una seccion opcional, pesaba mas.
+
+   Tres cosas le dan el peso, y ninguna es "mas grande":
+     1. El numero es una CIFRA (Archivo, tabular), no una palabra adentro de
+        una frase. Es para lo que existe la tercera familia.
+     2. El marco es el anillo del cartucho, que en cava es el unico tono medio
+        de la pagina (deco.css) — o sea, lo que la casa usa para decir "esto
+        encierra algo".
+     3. Deja de compartir renglon con la bajada: en desktop ocupa la mitad
+        derecha de la cabecera, que estaba vacia. */
+
+/* ⚠️ La base tiene SOLO lo comun a las dos variantes, y eso no es prolijidad:
+   con el layout de la placa metido aca, `.regla-caja--placa` quedaba escrita
+   en el markup y sin una sola regla CSS. Hoy no se veia —la base ya hacia el
+   trabajo— y por eso es peor: es la misma forma de `.caja-sugerida--incompleta`
+   y `.control-caja`, que tambien estaban "bien" hasta que alguien toco la base.
+   Lo encontro `cazador-de-puertas`. */
+.regla-caja {
+  /* Pisa los dos valores del cartucho grande: este encierra tres renglones,
+     no media pantalla. El chaflan chico es el de la ventana. */
+  --chaflan: var(--chaflan-ventana);
+  --grosor: var(--filete-grueso);
+  margin: 0;
+  display: grid;
+}
+
+/* La placa: los tres renglones apilados, para la cabecera de /vinos. */
+.regla-caja--placa {
+  gap: var(--e-1);
+  align-content: center;
+  padding: var(--e-4) var(--e-5);
+}
+
+.regla-caja__rotulo {
+  margin: 0;
+}
+
+.regla-caja__cuenta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--e-2);
+  margin: 0;
+}
+
+.regla-caja__cifra {
+  font-size: var(--t-h2);
+  font-weight: 600;
+  line-height: 1;
+  color: var(--marfil);
+}
+
+.regla-caja__unidad {
+  font-family: var(--tipo-display);
+  font-size: var(--t-lead);
   color: var(--marfil-1);
+}
+
+.regla-caja__nota {
+  max-width: 30ch;
+  margin: 0;
+  font-size: var(--t-cuerpo);
+  line-height: var(--interlinea-prosa);
+  color: var(--marfil-2);
+}
+
+/* La franja: la misma regla acostada, para el mostrador de la ficha. Ese
+   bloque es `position: sticky` en el telefono, asi que una placa de tres
+   renglones ahi se come la pantalla que tiene que mostrar el vino. */
+.regla-caja--franja {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: var(--e-4);
+  row-gap: var(--e-1);
+  align-items: center;
+  padding: var(--e-3) var(--e-4);
+}
+
+.regla-caja--franja .regla-caja__rotulo {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.regla-caja--franja .regla-caja__cuenta {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  /* ⚠️ Las cuatro posiciones van explicitas. Dejar una al auto-placement es
+     lo que puso el precio ANTES del nombre en las opciones de envio. */
+  align-self: center;
+}
+
+.regla-caja--franja .regla-caja__nota {
+  grid-column: 2;
+  grid-row: 2;
+  max-width: none;
+  font-size: 0.95rem;
+}
+
+/* Sobre papel el dorado es SOLO linea, y la del anillo tiene su propio token
+   medido (3,37:1 sobre papel). El 88 % del cartucho esta calibrado contra
+   tinta, no contra marfil: sin esta regla el marco de la ficha sale lavado. */
+.papel .regla-caja::before {
+  background: var(--filete-papel);
+}
+
+.papel .regla-caja__cifra {
+  color: var(--tinta-1);
+}
+
+.papel .regla-caja__unidad {
+  color: var(--tinta-1);
+}
+
+.papel .regla-caja__nota {
+  color: var(--tinta-2);
 }
 
 /* ========================================================= EL CARRIL */

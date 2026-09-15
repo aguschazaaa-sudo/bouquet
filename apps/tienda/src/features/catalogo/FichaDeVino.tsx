@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { BOTELLAS_POR_CAJA, type ProductoPublicado } from '@bouquet/contratos';
+import type { ProductoPublicado } from '@bouquet/contratos';
 
 import { Precio } from '@/shared/ui/Precio';
 
 import { DatosDelVino } from './DatosDelVino';
 import { EstadoDelVino } from './EstadoDelVino';
 import { HojaDelVino } from './HojaDelVino';
+import { ReglaDeLaCaja } from './ReglaDeLaCaja';
 import { COLOR_SINGULAR, TEXTOS, unidadDeVenta } from './textos';
 import { VentanaDeBotella } from './VentanaDeBotella';
 
@@ -56,10 +57,13 @@ export function FichaDeVino({ producto, control }: Props) {
             <span className="ficha__unidad versalita">{unidadDeVenta(producto)}</span>
             <EstadoDelVino producto={producto} />
           </div>
+          {/* La regla va ENTRE el precio y el control, no debajo de los dos:
+              es la condición bajo la cual ese precio se puede pagar, y el
+              lugar donde se lee es el camino del ojo del monto al botón.
+              Enterarse de que el vino va de a seis después de agregar es
+              enterarse tarde. */}
+          <ReglaDeLaCaja variante="franja" />
           {agotado ? null : control}
-          {/* El aviso va JUNTO al control, no al pie: enterarse de que el vino
-              va de a seis después de agregar es enterarse tarde. */}
-          <p className="ficha__caja">{TEXTOS.seVendeDeA(BOTELLAS_POR_CAJA)}</p>
         </div>
       </section>
 

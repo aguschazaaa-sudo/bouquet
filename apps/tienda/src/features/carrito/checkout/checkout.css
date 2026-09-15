@@ -428,11 +428,24 @@ select.campo__control {
   margin: var(--e-5) 0 0;
 }
 
+/* ⚠️ Esto es lo UNICO que explica por que el boton de pagar esta muerto, y
+   salia en `tinta-3` —el piso de texto legible— en italica de 0,95 rem, debajo
+   de un total de 2,1 rem. La misma inversion que el dueño marcó en el catalogo
+   el 2026-09-15: lo que impide la transaccion se susurra (ADR 009 §9).
+
+   Uno de los tres mensajes que pasan por aca ES la regla de la caja ("El vino
+   viaja de a seis"); los otros dos son datos que faltan. Los tres merecen lo
+   mismo: son la razon por la que no se puede pagar.
+
+   NO lleva filete ni recuadro a proposito. Abajo esta `.resumen__gate`, que ya
+   es una caja enmarcada y tambien dice "no se puede pagar": dos marcos
+   apilados diciendo lo mismo es ruido, no enfasis. El peso va por cuerpo y
+   tinta, que es lo que faltaba. */
 .resumen__impedimento {
   margin: var(--e-3) 0 0;
-  font-style: italic;
-  font-size: 0.95rem;
-  color: var(--tinta-3);
+  font-size: var(--t-cuerpo);
+  line-height: var(--interlinea-prosa);
+  color: var(--tinta-1);
 }
 
 .resumen__nota {

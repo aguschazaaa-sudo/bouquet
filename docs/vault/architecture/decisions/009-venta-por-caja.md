@@ -1,10 +1,15 @@
 # ADR 009 — La venta por caja de seis
 
 - **Fecha:** 2026-09-14
+- **Ampliada:** 2026-09-15 con el **§9**, cómo se DICE la regla. Lo pidió el
+  dueño mirando la pantalla: la regla base de la transacción salía al cuerpo de
+  una nota al pie
 - **Estado:** aceptada y **aplicada en stage**. Las reglas están **publicadas**;
-  la tienda **no se despliega** (los cinco gates de siempre siguen abiertos)
-- **Decide:** que el vino se venda sólo de a 6 botellas, dónde vive esa regla, y
-  qué es una caja que ofrece el vendedor
+  la tienda **no se despliega** — y el 2026-09-15 se verificó por CLI que **no
+  hay a dónde**: `apphosting:backends:list` de `bouquet-vinos` devuelve la tabla
+  vacía y `bouquet-vinos.web.app` da **404 Site Not Found**
+- **Decide:** que el vino se venda sólo de a 6 botellas, dónde vive esa regla,
+  cómo se dice, y qué es una caja que ofrece el vendedor
 - **Toca:** [ADR 008](008-catalogo-stock-y-carrito.md) — el carrito sube a
   `version: 2` y guarda `botellas` por línea; `tipo: 'compuesto'` queda
   explícitamente sin uso
@@ -136,6 +141,77 @@ invisible que ese archivo evita con el custom claim. Lo verifica
 `verificarComposicion` del lado del servidor, y el seed se niega a sembrar una
 caja que no cierra.
 
+### 9. La regla se DICE con peso, y eso es parte de la decisión (2026-09-15)
+
+⚠️ **Este ADR decidió la regla y no decidió cómo se dice, y por eso salió
+susurrada.** El dueño lo marcó mirando la pantalla: *"la regla de las 6
+botellas está muy tenue para ser la regla base de la transacción."* Tenía
+razón, y las capturas lo miden:
+
+| Dónde | Cómo salía | Qué había al lado |
+|---|---|---|
+| Cabecera de `/vinos` | Un `<p>` a `--t-cuerpo`, **debajo** de la bajada, con un filete a la izquierda: la forma tipográfica de una aclaración | `CAJAS ARMADAS`, que es una sección **opcional**, pesaba más |
+| Mostrador de la ficha | `.ficha__caja`, 0,92 rem en `tinta-2`, **debajo** del precio y del botón | El monto a 1,45 rem y `LA BOTELLA` al lado: lo más grande del mostrador prometía una unidad que no se puede comprar sola |
+| `/carrito` | `4 de 6` a 1,5 rem y la frase a 1 rem en `tinta-2`, entre dos filetes finos | El total a **2,5 rem**. La pantalla gritaba un número que no se puede cobrar y susurraba por qué |
+
+**La decisión: el número deja de ser una palabra adentro de una frase y pasa a
+ser una CIFRA** —Archivo tabular, 57 px a 1440—, dentro del anillo del
+cartucho. Las tres piezas (`Se vende por caja` · `6` · `botellas` · la
+invitación) viven en `ReglaDeLaCaja`, con dos variantes: `placa` para la cava y
+`franja` para el mostrador de papel.
+
+Tres cosas que se decidieron con esto, y el porqué de cada una:
+
+1. **El marco es `.cartucho-deco`, no un borde nuevo.** El anillo octogonal con
+   la ranura de área cero ya está medido en `shared/deco/`; escribir otro era
+   volver a cometer la muesca del chaflán que ese archivo documenta. La placa
+   sólo pisa `--chaflan` y el `padding`.
+2. **En la ficha va ENTRE el monto y el botón**, no debajo de los dos: ocupa el
+   hueco que a 1440 quedaba vacío, que es justo por donde pasa el ojo del
+   precio al `Agregar`.
+3. **En `/carrito` la cifra queda un escalón POR DEBAJO del total** (2,1 contra
+   2,5 rem). El total es el resultado; la caja es la condición. Si empatan no
+   hay jerarquía, hay ruido.
+
+| Alternativa | Por qué no |
+|---|---|
+| Subirle el cuerpo y el color al párrafo | Es lo que ya era, más grande. Un párrafo con más puntos sigue siendo prosa, y la prosa no compite con un número de 2,5 rem |
+| Repetir la regla en cada tarjeta del listado | Veinte veces la misma frase deja de ser información y pasa a ser ruido. Se dice **una vez por listado**, como estaba |
+| Pintar la placa con un fondo | `deco.css` lo advierte: un `background` sobre el cartucho pinta las cuatro esquinas que el anillo deja afuera y aparecen los triangulitos. Se puede hacer con `clip-path: var(--octogono)`, pero el anillo dorado ya es el único tono medio de la página: el relleno no compraba nada |
+| Un color de alarma para la caja incompleta | La casa no reta. El borgoña queda para la caja **cerrada**, que es donde rima con el botón `Terminar la compra` que aparece abajo |
+
+⚠️ **En el teléfono se cae la invitación, y es medido.** El mostrador de la
+ficha es `position: sticky`: lo que mida se lo come a la foto del vino durante
+todo el scroll. A 390×844, con la nota puesta mide **223 px (26,4 % de la
+pantalla)**; sin ella, **186 px (22 %)**. Se cae la cortesía —*"Elegí las que
+quieras y armá la tuya"*, que además se dice entera en la cabecera de `/vinos`,
+que es por donde se llega a la ficha— y **nunca la regla**: abajo de 480 px se
+sigue leyendo `SE VENDE POR CAJA · 6 botellas`.
+
+⚠️ **Había un CUARTO lugar y este ADR no lo sabía: el checkout.** Lo encontró
+`cazador-de-puertas` barriendo el cambio. `TEXTOS.cajaIncompleta` —*"El vino
+viaja de a seis. Volvé al pedido y completá la caja."*— sale por
+`.resumen__impedimento`, que estaba en `tinta-3` —el **piso** de texto legible—
+en itálica de 0,95 rem, debajo de un total de 2,1 rem y de un `Ir a pagar`
+muerto. Es la misma inversión, en la pantalla donde se mueve la plata.
+
+Se le subió el peso (cuerpo y `tinta-1`, sin itálica) y **no** se le puso marco:
+justo abajo vive `.resumen__gate`, que ya es una caja enmarcada diciendo
+*"Todavía no se puede pagar"*. Dos marcos apilados diciendo lo mismo es ruido,
+no énfasis. El mismo tratamiento le toca a los otros dos impedimentos —faltan
+datos, falta el envío— porque los tres contestan la misma pregunta: por qué el
+botón no anda.
+
+Esa pantalla **no es alcanzable con la caja abierta desde el flujo normal** —el
+botón de `/carrito` sale sólo con la caja cerrada—, pero sí desde un marcador o
+un enlace viejo, que es exactamente cuando nadie tiene el contexto para
+entender un susurro.
+
+**El copy pasó por `voz`**, que lo aprobó sin editar: el reflexivo *"se vende"*
+no es la voz de trámite que `voz.md §5` prohíbe —ésa oculta quién actúa sobre
+un pedido del cliente—, y el propio §9.5 ya usa esa construcción en un texto
+aprobado.
+
 ## Presupuesto de lecturas
 
 Campo obligatorio. Lo cuantificó `presupuesto-lecturas` y **corrigió el encuadre
@@ -210,6 +286,9 @@ ninguna caja cargada. El manejo tiene precedente: `leerUnidades` tolera un
 | **Un test viejo habría pasado por el motivo equivocado** | Usaba `version: 1` literal para probar cantidades inválidas; con la versión nueva lo rechazaba la **versión**, no la cantidad |
 | **`grep` sobre el HTML da 2, no 1** | El string viaja en el DOM **y** en el payload RSC. Contar líneas con `grep -c` daría 1: el HTML de Next es una sola línea |
 | ⚠️ **La tarjeta decía seis y el botón entregaba cinco** | Lo encontró `revisor-pagos`. `llenarConLaCaja` respetaba el `tope` y `resolverCajasSugeridas` **no**: con un id repetido y stock para uno solo, la tarjeta decía *"6 botellas, completa"* y cobraba seis en la vitrina. Dos cuentas de lo mismo que no coinciden — LECCIONES 6.4, el motivo por el que ese archivo comparte `esProductoId` en vez de copiarlo. **Y lo delataba su propio test**, que construía el fixture exacto, asertaba el carrito y nunca la tarjeta |
+| ⚠️ **Mi verificador de contraste devolvía basura en vez de fallar** (2026-09-15) | Midiendo la placa sobre papel. El helper parseaba el color con `match(/\d+/g)`, y un `color-mix()` computado NO sale `rgb(26, 18, 16)`: sale `color(srgb 0.273726 0.243922 0.22902)`. El regex se comía los dígitos sueltos y el contraste daba **12.880.882:1**. Un número absurdo se ve; el peligro es que el mismo bug, con otro color, da un número **plausible**. Los valores que sí se leyeron (rótulo 8,40 · cifra 16,13) son los que salieron en `rgb()` |
+| **El canario apareció 4 veces y la documentación decía 2** | `curl` sobre `/vinos`. No era un bug del conteo: la cadena estaba en un `aria-label` **y** en el `<p>`, por dos (DOM + payload RSC). Destapó que el `aria-label` era redundante —un lector de pantalla oía el rótulo dos veces seguidas—, se borró, y el conteo volvió a **2**. El número que no cerraba era el síntoma, no el problema |
+| ⚠️ **DOS veces escribí un razonamiento con la forma de una medición**, y las dos las agarró medir | (a) *"el mostrador sin la nota mide 169 px"* era una **resta** —altura total menos la placa—; medido da **186**, 17 px más. (b) *"la regla descendiente le gana a `.regla-caja__cifra` y la cifra sale al cuerpo de la bajada"* es **falso**: la cifra es un `<span>` adentro del `<p>`, no un `<p>`, y sale a 57,12 px con la regla vieja puesta o sacada. La víctima real era el **rótulo** (13,60 px dorado → 19,04 px marfil-2: dejaba de ser un rótulo). El arreglo estaba bien por el motivo equivocado, que es la peor forma de tener razón. **Una resta y una medición se escriben igual**, y un razonamiento de cascada también |
 | **Dos clases CSS escritas que no existían** | `cazador-de-puertas`. `.caja-sugerida--incompleta` y `.control-caja` se escribían y no tenían regla: una caja incompleta se veía **idéntica** a una completa, y yo había mirado el PNG sin notarlo porque el aviso en palabras me tapó la ausencia |
 
 ## Lo que hay que medir antes de creerle a este ADR

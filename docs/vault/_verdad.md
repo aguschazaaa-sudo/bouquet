@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-15 - commit `e07d387` **+ cambios sin commitear** - huella del cuerpo `ff9a8e696147`
+> **Generado:** 2026-09-15 - commit `65c541f` **+ cambios sin commitear** - huella del cuerpo `11f7da712aa9`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.20.1
+### Scripts de la raiz - `bouquet` 0.21.0
 
 | Script | Comando |
 |---|---|
@@ -257,7 +257,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `LineaResuelta` | tipo | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx` |
 | `CarritoResuelto` | tipo | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx` |
 | `resolverCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `BOTELLAS_POR_CAJA` | valor | abierto | `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `packages/contratos/test/caja.test.ts` |
+| `BOTELLAS_POR_CAJA` | valor | abierto | `apps/tienda/src/features/catalogo/ReglaDeLaCaja.tsx`, `packages/contratos/test/caja.test.ts` |
 | `botellasEnCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
 | `botellasGuardadas` | funcion | abierto | `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
 | `EstadoDeLaCaja` | tipo | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx` |
@@ -324,4 +324,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 107. Archivos de test: 15. Casos de test: 208.
+Archivos de codigo recorridos: 108. Archivos de test: 15. Casos de test: 208.

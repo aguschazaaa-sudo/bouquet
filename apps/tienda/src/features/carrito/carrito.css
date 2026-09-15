@@ -173,31 +173,50 @@
 
 /* ================================================== EL ESTADO DE LA CAJA */
 
+/* ⚠️ ESTE BLOQUE SE PESÓ CONTRA EL TOTAL, no contra sí mismo.
+ *
+ * Medido en la captura de `/carrito` con 4 botellas: el total salía a 2,5 rem
+ * y la única condición que impide pagarlo —"4 de 6, faltan 2"— a 1,5 y 1 rem,
+ * en tinta-2, entre dos filetes finos. La pantalla gritaba un número que no se
+ * puede cobrar y susurraba por qué. El dueño lo dijo del lado del catálogo
+ * ("muy tenue para ser la regla base de la transacción") y acá el desbalance
+ * era peor, porque acá el que mira ya decidió comprar.
+ *
+ * La cifra queda un escalón POR DEBAJO del total a propósito: el total es el
+ * resultado, la caja es la condición. Si empatan, no hay jerarquía, hay ruido.
+ *
+ * El filete de arriba sube a grueso y empareja con el del total: los dos
+ * juntos son lo que convierte al bloque en un compartimento y no en un
+ * renglón. El de abajo NO se escribe — es el del total, que ya está. */
 .estado-caja {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--e-2) var(--e-3);
+  gap: var(--e-2) var(--e-4);
   align-items: baseline;
   margin: var(--e-5) 0 0;
-  padding-block: var(--e-3);
-  border-top: var(--filete) solid var(--filete-papel);
+  padding-block: var(--e-4);
+  border-top: var(--filete-grueso) solid var(--filete-papel);
 }
 
 .estado-caja__avance {
-  font-size: var(--t-lead);
+  font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2.1rem);
   font-weight: 600;
+  line-height: 1;
   color: var(--tinta-1);
   white-space: nowrap;
 }
 
 .estado-caja__frase {
-  font-size: var(--t-cuerpo);
+  font-size: var(--t-lead);
   line-height: var(--interlinea-prosa);
-  color: var(--tinta-2);
+  color: var(--tinta-1);
 }
 
+/* La caja cerrada se dice con el borgoña —el único acento que sobre papel
+   puede ser texto (8,40:1)—, igual que el enlace y el rótulo. El dorado acá
+   sería 1,83:1: línea, nunca palabra. */
 .estado-caja--completa .estado-caja__frase {
-  color: var(--tinta-1);
+  color: var(--acento);
 }
 
 /* ========================================================== EL AVISO */

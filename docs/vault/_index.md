@@ -132,6 +132,25 @@ agregar** —en el listado y en la ficha, sin JavaScript—, y `/vinos` estrena 
 carril de **cajas armadas** que el vendedor ofrece. El porqué, en
 [ADR 009](architecture/decisions/009-venta-por-caja.md).
 
+⚠️ **La regla se dice MUCHO más fuerte desde el 2026-09-15, y lo pidió el
+dueño:** *"está muy tenue para ser la regla base de la transacción."* Salía como
+un párrafo al cuerpo de la bajada en `/vinos` y como la línea más chica del
+mostrador de la ficha —debajo del precio **y** del botón—, mientras `/carrito`
+gritaba un total de 2,5 rem que no se podía cobrar y susurraba por qué en 1 rem.
+Ahora el número es una **cifra** de 57 px adentro del anillo del cartucho
+(`ReglaDeLaCaja`, dos variantes), y en la ficha vive **entre** el monto y el
+botón. En el teléfono se cae la invitación y no la regla: el mostrador es
+sticky, y con la nota puesta se comía el **26,4 %** de la pantalla contra el
+**22 %** sin ella. Sigue sin costar una lectura: es presentación, no datos.
+
+⚠️ **Y había un cuarto lugar que ningún documento contaba: el checkout.** Lo
+encontró `cazador-de-puertas`. *"El vino viaja de a seis"* salía por
+`.resumen__impedimento` en `tinta-3` —el **piso** de texto legible— en itálica,
+debajo de un `Ir a pagar` muerto: lo único que explica por qué el botón no anda,
+dicho en el tono más bajo de la paleta. También subió de peso. El detalle y las
+alternativas descartadas, en
+[ADR 009 §9](architecture/decisions/009-venta-por-caja.md).
+
 **Una caja armada NO es un producto.** Es una lista de `productoId` que llena el
 carrito; no tiene precio propio ni stock propio, porque **no hay descuento**. El
 diseño cambió de forma dos veces en el brainstorm y las dos versiones

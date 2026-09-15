@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 
-import { BOTELLAS_POR_CAJA } from '@bouquet/contratos';
-
 import { ControlDeCaja } from '@/features/carrito/ControlDeCaja';
 import { ControlDeCompra } from '@/features/carrito/ControlDeCompra';
 import { CarrilDeCajas } from '@/features/catalogo/CarrilDeCajas';
 import { ListadoDeVinos } from '@/features/catalogo/ListadoDeVinos';
+import { ReglaDeLaCaja } from '@/features/catalogo/ReglaDeLaCaja';
 import { TEXTOS } from '@/features/catalogo/textos';
 import { obtenerVidriera } from '@/server/catalogo';
 
@@ -48,7 +47,7 @@ export default async function Vinos() {
       <header className="cabecera-vinos">
         <h1 className="display">{TEXTOS.titulo}</h1>
         <p>{TEXTOS.bajada}</p>
-        <p className="cabecera-vinos__caja">{TEXTOS.seVendeDeA(BOTELLAS_POR_CAJA)}</p>
+        <ReglaDeLaCaja />
       </header>
       <CarrilDeCajas cajas={cajas} controles={controlesDeCaja} />
       <ListadoDeVinos productos={productos} hayPopularidad={hayPopularidad} controles={controles} />

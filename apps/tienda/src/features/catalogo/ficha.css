@@ -157,15 +157,46 @@
   }
 }
 
-/* El aviso de venta por caja, al lado del precio y del control. Va en la ficha
-   Y en el listado -- una compra que se entera en el carrito es una compra que
-   se abandona. */
-.ficha__caja {
-  flex-basis: 100%;
-  margin: 0;
-  padding-top: var(--e-3);
-  border-top: var(--filete) solid var(--filete-papel);
-  font-size: 0.92rem;
-  line-height: var(--interlinea-prosa);
-  color: var(--tinta-2);
+/* La regla de venta por caja, en el mostrador. Va en la ficha Y en el listado
+   -- una compra que se entera en el carrito es una compra que se abandona.
+
+   ⚠️ Antes era `.ficha__caja`: una linea de 0,92 rem en tinta-2 DEBAJO del
+   precio y del boton, o sea el texto mas chico de una pantalla donde el monto
+   mide 1,45 rem y dice `LA BOTELLA` al lado. Lo mas grande del mostrador
+   prometia una unidad que no se puede comprar sola.
+
+   Ahora ocupa el hueco que a 1440 quedaba vacio ENTRE el monto y el boton, que
+   es por donde pasa el ojo de uno al otro. En el telefono el mostrador es
+   sticky, asi que ahi se acuesta a todo el ancho y suma dos renglones, no
+   cuatro. */
+.ficha__fila .regla-caja {
+  flex: 1 1 22rem;
+  max-width: 34rem;
+}
+
+@media (max-width: 859.98px) {
+  .ficha__fila .regla-caja {
+    flex-basis: 100%;
+    order: 1;
+  }
+}
+
+/* ⚠️ En el telefono la invitacion se cae, y el numero es medido, no estimado.
+   El mostrador es STICKY: lo que mida se lo come a la foto del vino durante
+   todo el scroll. Medido a 390x844 sobre el build, tapando y destapando la
+   nota en el mismo DOM:
+
+       con la nota   223 px   26,4 % de la pantalla
+       sin la nota   186 px   22,0 %
+
+   (La primera version de este comentario decia 169 px y era una RESTA, no una
+   medicion. Daba 17 px de menos.)
+
+   Se cae la nota y no la regla: "6 botellas" es la condicion de compra, "armá
+   la tuya" es una cortesia que ademas ya esta dicha entera en la cabecera de
+   /vinos, que es por donde se llega a la ficha. */
+@media (max-width: 479.98px) {
+  .ficha__fila .regla-caja__nota {
+    display: none;
+  }
 }
