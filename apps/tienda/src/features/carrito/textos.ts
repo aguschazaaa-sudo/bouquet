@@ -30,4 +30,14 @@ export const TEXTOS = {
   seguir: 'Seguir viendo vinos',
   laCaja: (n: number) => `la caja de ${botellas(n)}`,
   laBotella: 'la botella',
+
+  // --- la venta por caja ---
+  avance: (hay: number, meta: number) => `${hay} de ${meta}`,
+  avanceLargo: (hay: number, meta: number) => `${botellas(hay)} de ${meta} en tu pedido`,
+  cajaCompleta: 'La caja está completa.',
+  cajasCompletas: (n: number) => `Tenés ${n} cajas completas.`,
+  faltan: (n: number) =>
+    n === 1 ? 'Falta una botella para cerrar la caja.' : `Faltan ${n} botellas para cerrar la caja.`,
+  sobran: (n: number) =>
+    n === 1 ? 'Sobra una botella. La podés sacar y la caja cierra.' : `Sobran ${n} botellas. Las podés sacar y la caja cierra.`,
 } as const;

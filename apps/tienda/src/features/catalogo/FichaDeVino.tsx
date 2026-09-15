@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import type { ProductoPublicado } from '@bouquet/contratos';
+import { BOTELLAS_POR_CAJA, type ProductoPublicado } from '@bouquet/contratos';
 
 import { Precio } from '@/shared/ui/Precio';
 
@@ -57,6 +57,9 @@ export function FichaDeVino({ producto, control }: Props) {
             <EstadoDelVino producto={producto} />
           </div>
           {agotado ? null : control}
+          {/* El aviso va JUNTO al control, no al pie: enterarse de que el vino
+              va de a seis después de agregar es enterarse tarde. */}
+          <p className="ficha__caja">{TEXTOS.seVendeDeA(BOTELLAS_POR_CAJA)}</p>
         </div>
       </section>
 

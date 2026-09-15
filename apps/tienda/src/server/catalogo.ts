@@ -1,6 +1,13 @@
 import { unstable_cache } from 'next/cache';
 import type { QuerySnapshot } from 'firebase-admin/firestore';
-import { armarCatalogo, type Catalogo, type DocumentoCrudo } from '@bouquet/contratos';
+import {
+  armarCatalogo,
+  resolverCajasSugeridas,
+  validarCajasSugeridas,
+  type CajaSugeridaResuelta,
+  type Catalogo,
+  type DocumentoCrudo,
+} from '@bouquet/contratos';
 
 import { db } from './firebase-admin';
 
@@ -10,7 +17,8 @@ import { db } from './firebase-admin';
  *
  * La consumen /vinos, /vinos/[slug] y /carrito, así que las tres pantallas
  * dicen el mismo precio. Cuesta P + B + 1 lecturas por reconstrucción
- * (productos publicados, bodegas enteras y la métrica de popularidad), y se
+ * (productos publicados, bodegas enteras y la métrica de popularidad) —P + B +
+ * 2 con las cajas sugeridas, ver `leerVidrieraSinCache`—, y se
  * reconstruye como mucho una vez por minuto POR INSTANCIA: la caché de datos
  * de Next vive en la memoria de cada instancia de Cloud Run, no se comparte
  * entre instancias ni se purga desde afuera. La home la lee sin caché, una vez
@@ -57,7 +65,63 @@ export async function leerCatalogoSinCache(): Promise<Catalogo> {
   return catalogo;
 }
 
-export const obtenerCatalogo = unstable_cache(leerCatalogoSinCache, ['catalogo'], {
+/**
+ * Lo que necesita `/vinos`: la proyección y las cajas que ofrece el vendedor.
+ *
+ * Las dos juntas a propósito. Ver `leerVidrieraSinCache`.
+ */
+export interface Vidriera {
+  readonly catalogo: Catalogo;
+  readonly cajas: readonly CajaSugeridaResuelta[];
+}
+
+/**
+ * El catálogo MÁS las cajas sugeridas: P + B + 2.
+ *
+ * ⚠️ Tres cosas que este cuerpo tiene que hacer y que no se ven mirándolo:
+ *
+ * 1. **La lectura de cajas NO va adentro de `leerCatalogoSinCache`.** A ésa la
+ *    llama la home, que no dibuja ningún carril: pagaría una lectura por un
+ *    documento que no renderiza.
+ * 2. **Tampoco va en un `unstable_cache` propio.** Un segundo `unstable_cache`
+ *    con `revalidate` numérico le baja el `revalidate` a la página que lo
+ *    llama; si lo tocara la home, la ruta más visitada pasaría sola a ISR de
+ *    60 s y leería Firestore por visita, sin un error ni un aviso.
+ * 3. **El join de las cajas con sus vinos va EN MEMORIA**, nunca con un `get()`
+ *    por id: seis ids por caja y seis cajas serían 36 lecturas por
+ *    reconstrucción —32 → 68, más que el doble— y 133 % de la cuota con el
+ *    catálogo del MVP a 250 visitas.
+ */
+async function leerVidrieraSinCache(): Promise<Vidriera> {
+  const [catalogo, crudo] = await Promise.all([
+    leerCatalogoSinCache(),
+    db().doc('cajasSugeridas/publicas').get(),
+  ]);
+
+  // Un documento ausente son cero cajas, no un error: el vendedor todavía no
+  // cargó ninguna. (La lectura se cobra igual, exista o no.)
+  const { cajas, descartes: deForma } = validarCajasSugeridas(crudo.data());
+  const { cajas: resueltas, descartes: deComposicion } = resolverCajasSugeridas(cajas, catalogo.productos);
+
+  for (const d of [...deForma, ...deComposicion]) {
+    console.error(`[cajas] descartada ${d.id}: ${d.motivo}`);
+  }
+
+  // El seed marca el documento con `muestra: true`, y ese campo tiene que
+  // llegar al gate de deploy: si no, es un campo que SE LEE COMO gate y no lo
+  // es, justo sobre la superficie que el gate existe para proteger.
+  const cajasDeMuestra = crudo.get('muestra') === true && resueltas.length > 0;
+
+  return {
+    catalogo: { ...catalogo, deMuestra: catalogo.deMuestra || cajasDeMuestra },
+    cajas: resueltas,
+  };
+}
+
+export const obtenerVidriera = unstable_cache(leerVidrieraSinCache, ['catalogo'], {
   revalidate: SEGUNDOS_DE_CATALOGO,
   tags: ['catalogo'],
 });
+
+/** Las rutas que no dibujan carril piden sólo la proyección. Misma entrada de caché. */
+export const obtenerCatalogo = async (): Promise<Catalogo> => (await obtenerVidriera()).catalogo;

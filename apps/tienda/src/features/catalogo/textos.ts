@@ -66,6 +66,16 @@ export const TEXTOS = {
   si: 'Sí',
   no: 'No',
   sinAnada: 'Sin añada',
+
+  // --- la venta por caja y el carril ---
+  seVendeDeA: (n: number) => `El vino se vende en cajas de ${n} botellas. Elegí las que quieras y armá la tuya.`,
+  cajasTitulo: 'Cajas armadas',
+  cuantasBotellas: (n: number) => `${n} botellas`,
+  cajasBajada: 'Si no querés elegir de a uno, empezá por una de éstas. Después la cambiás.',
+  cajaIncompleta: 'Hoy no está completa',
+  lugarAgotado: 'Se agotó',
+  lugarSinSuficiente: 'No alcanza para otra',
+  lugarSinVino: 'Ya no está',
 } as const;
 
 export const COLOR_SINGULAR: Readonly<Record<Color, string>> = {

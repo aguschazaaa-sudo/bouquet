@@ -24,7 +24,7 @@ const CLAVE = 'bouquet.carrito';
  * idempotencia y la orden de uno le llegaría a otro. Así, rebota
  * (revisor-pagos, 2026-09-11; lo prueba apps/tienda/test/almacen.test.ts).
  */
-export const CARRITO_DEL_SERVIDOR: Carrito = { version: 1, idCompra: 'sin-hidratar', lineas: [] };
+export const CARRITO_DEL_SERVIDOR: Carrito = { version: 2, idCompra: 'sin-hidratar', lineas: [] };
 
 let actual: Carrito | null = null;
 const oyentes = new Set<() => void>();

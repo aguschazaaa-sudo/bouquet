@@ -1,6 +1,6 @@
 {
   "proyecto": "bouquet-vinos",
-  "nota": "Datos de MUESTRA para stage. Precios en centavos, stock en unidades de venta, unidades = ventas simuladas de 90 dias. foto: archivo en scripts/seed/fotos/ (no se commitea) o null a proposito.",
+  "nota": "Datos de MUESTRA para stage. Precios en centavos, stock en unidades de venta, unidades = ventas simuladas de 90 dias. foto: archivo en scripts/seed/fotos/ (no se commitea) o null a proposito. cajasSugeridas: listas de productoId; un id repetido son dos botellas de ese vino, y cada lista tiene que sumar BOTELLAS_POR_CAJA botellas.",
   "bodegas": [
     {
       "id": "muestra-rutini-wines",
@@ -443,6 +443,56 @@
       "botellas": 1,
       "unidades": 27,
       "foto": null
+    }
+  ],
+  "cajasSugeridas": [
+    {
+      "slug": "seis-tintos",
+      "nombre": "Seis tintos",
+      "productoIds": [
+        "muestra-trumpeter-malbec",
+        "muestra-alamos-malbec",
+        "muestra-latitud-33-malbec",
+        "muestra-santa-julia-organica-malbec",
+        "muestra-callia-syrah",
+        "muestra-amalaya-tinto"
+      ]
+    },
+    {
+      "slug": "mitad-y-mitad",
+      "nombre": "Mitad y mitad",
+      "productoIds": [
+        "muestra-trumpeter-malbec",
+        "muestra-domaine-bousquet-malbec",
+        "muestra-callia-syrah",
+        "muestra-trumpeter-chardonnay",
+        "muestra-don-david-torrontes",
+        "muestra-latitud-33-chardonnay"
+      ]
+    },
+    {
+      "slug": "los-tres-colores",
+      "nombre": "Los tres colores",
+      "nota": "Lleva el Bonarda con stock 0 A PROPOSITO: es el unico lugar donde el estado 'agotado' del carril se puede MIRAR en stage.",
+      "productoIds": [
+        "muestra-nieto-senetiner-bonarda",
+        "muestra-amalaya-tinto",
+        "muestra-trumpeter-chardonnay",
+        "muestra-domaine-bousquet-chardonnay",
+        "muestra-crios-rose-de-malbec",
+        "muestra-santa-julia-rose"
+      ]
+    },
+    {
+      "slug": "dos-y-dos",
+      "nombre": "Dos y dos",
+      "nota": "Cuatro entradas, SEIS botellas: los dos packs de 2 aportan 2 cada uno. Es el caso que prueba que la cuenta va en botellas y no en unidades.",
+      "productoIds": [
+        "muestra-rutini-cabernet-malbec-caja-2",
+        "muestra-don-nicanor-blend-caja-2",
+        "muestra-trumpeter-chardonnay",
+        "muestra-crios-rose-de-malbec"
+      ]
     }
   ]
 }

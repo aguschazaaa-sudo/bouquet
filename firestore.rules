@@ -203,6 +203,29 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ------------------------------------------------------ cajas sugeridas
+    //
+    // `cajasSugeridas/publicas`: UN documento con las cajas que el vendedor
+    // ofrece ya armadas.  Mismo patron que `metricas/popularidad` -- se
+    // reescribe entero, asi que cargarlo dos veces da lo mismo.
+    //
+    // Una caja sugerida NO es un producto: no tiene precio ni stock propio, es
+    // una lista de `productoId` que LLENA EL CARRITO.  El precio sale de la
+    // proyeccion del momento, como en cualquier linea.
+    //
+    // POR QUE LA ESCRITURA ESTA CERRADA INCLUSO PARA EL ADMIN: la unica regla
+    // que importa de una caja es que SUME una caja, y eso solo se sabe mirando
+    // `presentacion.botellas` de cada producto.  Comprobarlo aca serian SEIS
+    // `get()` FACTURADOS POR ESCRITURA, que es exactamente el costo invisible
+    // que estas reglas evitan con el custom claim.  La composicion la verifica
+    // `verificarComposicion` en contratos, del lado del servidor.
+    //
+    // La vidriera lo lee con el Admin SDK: no pasa por aca.
+    match /cajasSugeridas/{documento} {
+      allow read: if esAdmin();
+      allow write: if false;
+    }
+
     // -------------------------------------------------------------- ordenes
     //
     // El operador LEE y puede mover la ENTREGA a mano desde el panel.  Lo que

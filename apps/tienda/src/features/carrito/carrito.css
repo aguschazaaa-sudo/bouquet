@@ -151,14 +151,53 @@
 .contador-carrito {
   display: inline-grid;
   place-items: center;
+  /* "4 de 6" es mas ancho que "4": el minimo alcanza para los dos y el
+     padding hace el resto, asi que la placa no salta al completar la caja. */
   min-width: 1.5rem;
   height: 1.4rem;
-  padding-inline: 0.3rem;
+  padding-inline: 0.35rem;
   margin-inline-start: 0.2rem;
   font-size: 0.8rem;
   font-weight: 600;
+  white-space: nowrap;
   color: var(--marfil);
   border: var(--filete) solid var(--oro-filete);
+}
+
+/* La caja cerrada se dice con el filete, no con un color nuevo: el dorado ya
+   es el material estructural de la casa (direccion.md §5.2). */
+.contador-carrito--completa {
+  border-width: var(--filete-grueso);
+  color: var(--marfil);
+}
+
+/* ================================================== EL ESTADO DE LA CAJA */
+
+.estado-caja {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-3);
+  align-items: baseline;
+  margin: var(--e-5) 0 0;
+  padding-block: var(--e-3);
+  border-top: var(--filete) solid var(--filete-papel);
+}
+
+.estado-caja__avance {
+  font-size: var(--t-lead);
+  font-weight: 600;
+  color: var(--tinta-1);
+  white-space: nowrap;
+}
+
+.estado-caja__frase {
+  font-size: var(--t-cuerpo);
+  line-height: var(--interlinea-prosa);
+  color: var(--tinta-2);
+}
+
+.estado-caja--completa .estado-caja__frase {
+  color: var(--tinta-1);
 }
 
 /* ========================================================== EL AVISO */

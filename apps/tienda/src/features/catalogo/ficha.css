@@ -156,3 +156,16 @@
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
   }
 }
+
+/* El aviso de venta por caja, al lado del precio y del control. Va en la ficha
+   Y en el listado -- una compra que se entera en el carrito es una compra que
+   se abandona. */
+.ficha__caja {
+  flex-basis: 100%;
+  margin: 0;
+  padding-top: var(--e-3);
+  border-top: var(--filete) solid var(--filete-papel);
+  font-size: 0.92rem;
+  line-height: var(--interlinea-prosa);
+  color: var(--tinta-2);
+}

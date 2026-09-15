@@ -16,11 +16,41 @@
 import { CERO, porCantidad, sumar, type Centavos } from './dinero.ts';
 import { TOPE_POR_PEDIDO, type ProductoPublicado, type Validacion } from './producto.ts';
 
-export const VERSION_DEL_CARRITO = 1;
+/**
+ * 2 desde las cajas de seis: la linea guarda tambien `botellas`. Un carrito
+ * `version: 1` NO se migra, se DESCARTA -- se cambio antes de que la tienda se
+ * desplegara, asi que no habia un solo carrito real al que le pasara.
+ */
+export const VERSION_DEL_CARRITO = 2;
 
 export interface LineaDeCarrito {
   readonly productoId: string;
   readonly cantidad: number;
+  /**
+   * Botellas por unidad de venta de ESE producto.
+   *
+   * Es lo UNICO del producto que el carrito guarda, y la excepcion esta
+   * razonada. ADR 008 prohibe guardar precio y nombre porque "un carrito viejo
+   * no puede recordar un precio que ya no existe"; `presentacion` es INMUTABLE
+   * por regla de Firestore, asi que esto no es un snapshot que envejece, es un
+   * hecho que no se mueve.
+   *
+   * Existe porque el contador de la barra vive en TODAS las rutas y solo lee
+   * `localStorage`: sin este campo no puede decir cuantas botellas hay, y con
+   * un pack de 2 en el carrito mostraria un numero distinto al de la pagina.
+   *
+   * NO es la fuente de verdad: `resolverCarrito` lo recalcula contra la
+   * proyeccion y lo corrige si no coincide.
+   */
+  readonly botellas: number;
+}
+
+/** Lo que hace falta saber de un producto para ponerlo en el carrito. */
+export interface ProductoDelCarrito {
+  readonly productoId: string;
+  readonly botellas: number;
+  /** Unidades de venta, no botellas: `min(stock, 12)`. */
+  readonly tope: number;
 }
 
 export interface Carrito {
@@ -39,7 +69,12 @@ const PRODUCTO_ID = /^[A-Za-z0-9_-]{1,128}$/;
 /** Firestore reserva los ids `__…__`: ninguno es un producto. */
 const RESERVADO = /^__.*__$/;
 
-const esProductoId = (x: unknown): x is string => typeof x === 'string' && PRODUCTO_ID.test(x) && !RESERVADO.test(x);
+/**
+ * Exportado para que `cajas.ts` valide los ids con ESTA regla y no con una
+ * copia. LECCIONES 6.4: dos validadores del mismo dato se desincronizan.
+ */
+export const esProductoId = (x: unknown): x is string =>
+  typeof x === 'string' && PRODUCTO_ID.test(x) && !RESERVADO.test(x);
 
 /** `crypto.randomUUID()` da 36; el rango deja lugar sin aceptar basura. */
 const ID_COMPRA = /^[A-Za-z0-9_-]{16,64}$/;
@@ -80,8 +115,8 @@ export function parsearCarrito(entrada: unknown): Validacion<Carrito> {
   const vistos = new Set<string>();
   const lineas: LineaDeCarrito[] = [];
   for (const l of valor.lineas) {
-    if (!esObjeto(l) || !soloClaves(l, ['productoId', 'cantidad'])) {
-      return { ok: false, motivo: 'una linea no tiene la forma {productoId, cantidad}' };
+    if (!esObjeto(l) || !soloClaves(l, ['productoId', 'cantidad', 'botellas'])) {
+      return { ok: false, motivo: 'una linea no tiene la forma {productoId, cantidad, botellas}' };
     }
     if (!esProductoId(l.productoId)) {
       return { ok: false, motivo: `productoId invalido: ${String(l.productoId)}` };
@@ -92,7 +127,22 @@ export function parsearCarrito(entrada: unknown): Validacion<Carrito> {
     if (!(typeof c === 'number' && Number.isInteger(c) && c >= 1 && c <= TOPE_POR_PEDIDO)) {
       return { ok: false, motivo: `cantidad invalida en ${l.productoId}: ${String(c)}` };
     }
-    lineas.push({ productoId: l.productoId, cantidad: c });
+    const b = l.botellas;
+    // ⚠️ SIN techo por arriba, y es deliberado. Se probo ponerle uno (24) y
+    // fue PEOR: `validarProducto` y `firestore.rules` no lo tienen, asi que un
+    // producto legitimo de 25 botellas lo escribe `fijarCantidad` sin chistar y
+    // despues este parser rechaza el carrito ENTERO al releerlo -- se pierden
+    // tambien los otros cinco vinos, y rota el idCompra. Lo encontro
+    // revisor-pagos el 2026-09-14.
+    //
+    // La regla general: un validador no puede rechazar lo que su propio
+    // escritor produce legitimamente. Si alguna vez se quiere el techo, va en
+    // `validarProducto` Y en las reglas, para que un producto asi no llegue
+    // nunca a la proyeccion.
+    if (!(typeof b === 'number' && Number.isInteger(b) && b >= 1)) {
+      return { ok: false, motivo: `botellas invalidas en ${l.productoId}: ${String(b)}` };
+    }
+    lineas.push({ productoId: l.productoId, cantidad: c, botellas: b });
   }
   return { ok: true, valor: { version: VERSION_DEL_CARRITO, idCompra: valor.idCompra, lineas } };
 }
@@ -111,28 +161,32 @@ export interface Cambio {
 }
 
 /** Deja la linea en `cantidad`, sin pasar el tope. Con tope 0 (agotado) no agrega nada. */
-export function fijarCantidad(carrito: Carrito, productoId: string, cantidad: number, topeDelProducto: number): Cambio {
+export function fijarCantidad(carrito: Carrito, producto: ProductoDelCarrito, cantidad: number): Cambio {
+  const { productoId, botellas, tope } = producto;
   if (!esProductoId(productoId)) throw new RangeError(`productoId invalido: ${productoId}`);
+  if (!Number.isInteger(botellas) || botellas < 1) {
+    throw new RangeError(`botellas va entero y >= 1; llego ${botellas}`);
+  }
   if (!Number.isInteger(cantidad) || cantidad < 1) {
     throw new RangeError(`la cantidad va entera y >= 1; llego ${cantidad}`);
   }
-  if (topeDelProducto <= 0) return { carrito, alTope: true };
+  if (tope <= 0) return { carrito, alTope: true };
 
-  const nueva = Math.min(cantidad, topeDelProducto);
+  const nueva = Math.min(cantidad, tope);
   const existe = carrito.lineas.some((l) => l.productoId === productoId);
   const lineas = existe
-    ? carrito.lineas.map((l) => (l.productoId === productoId ? { productoId, cantidad: nueva } : l))
-    : [...carrito.lineas, { productoId, cantidad: nueva }];
-  return { carrito: { ...carrito, lineas }, alTope: cantidad > topeDelProducto };
+    ? carrito.lineas.map((l) => (l.productoId === productoId ? { productoId, cantidad: nueva, botellas } : l))
+    : [...carrito.lineas, { productoId, cantidad: nueva, botellas }];
+  return { carrito: { ...carrito, lineas }, alTope: cantidad > tope };
 }
 
 /** Suma `cantidad` a lo que ya habia de ese vino, sin pasar su tope. */
-export function agregar(carrito: Carrito, productoId: string, cantidad: number, topeDelProducto: number): Cambio {
+export function agregar(carrito: Carrito, producto: ProductoDelCarrito, cantidad: number): Cambio {
   if (!Number.isInteger(cantidad) || cantidad < 1) {
     throw new RangeError(`se agrega de a enteros >= 1; llego ${cantidad}`);
   }
-  const actual = carrito.lineas.find((l) => l.productoId === productoId)?.cantidad ?? 0;
-  return fijarCantidad(carrito, productoId, actual + cantidad, topeDelProducto);
+  const actual = carrito.lineas.find((l) => l.productoId === producto.productoId)?.cantidad ?? 0;
+  return fijarCantidad(carrito, producto, actual + cantidad);
 }
 
 export function quitar(carrito: Carrito, productoId: string): Carrito {
@@ -202,15 +256,129 @@ export function resolverCarrito(carrito: Carrito, productos: readonly ProductoPu
     };
   });
 
-  const ajustado = lineas.some((l) => l.ajustada);
+  // Las `botellas` guardadas se RECALCULAN contra la proyeccion. El campo
+  // existe para que el contador de la barra no tenga que leer Firestore, no
+  // para ser la verdad: si un producto se borro y se recreo con otra
+  // presentacion -el hallazgo 1 de revisor-pagos-, aca se corrige y se guarda.
+  // De un vino que ya no esta se conserva lo guardado: no hay con que mejorarlo.
+  const reconstruidas = lineas.map(({ productoId, cantidad, producto }, i) => ({
+    productoId,
+    cantidad,
+    botellas: producto?.botellas ?? carrito.lineas[i]!.botellas,
+  }));
+
+  const cambio = reconstruidas.some(
+    (l, i) => l.cantidad !== carrito.lineas[i]!.cantidad || l.botellas !== carrito.lineas[i]!.botellas,
+  );
+
   return {
     lineas,
     total: sumar(...lineas.map((l) => l.subtotal)),
-    carrito: ajustado
-      ? { ...carrito, lineas: lineas.map(({ productoId, cantidad }) => ({ productoId, cantidad })) }
-      : carrito,
-    ajustado,
+    carrito: cambio ? { ...carrito, lineas: reconstruidas } : carrito,
+    ajustado: cambio,
   };
+}
+
+// ------------------------------------------------------------------ la caja
+
+/**
+ * El vino viaja en cajas FISICAS de esta cantidad de botellas: no se despacha
+ * suelto, porque una botella sola no tiene con que viajar.
+ *
+ * El numero vive SOLO aca. El dia que se consigan cajas de 3, se cambia esta
+ * linea y sus tests, y nada mas: ningun otro archivo escribe el 6 para esta
+ * regla.
+ */
+export const BOTELLAS_POR_CAJA = 6;
+
+/**
+ * Botellas vigentes del carrito: `cantidad x presentacion.botellas`.
+ *
+ * Cuenta BOTELLAS, no unidades de venta. Un producto de 2 botellas aporta 2, y
+ * el catalogo de muestra ya tiene dos de esos sobre veinte: contar unidades
+ * daria el numero equivocado desde el primer dia. Es la misma unidad en la que
+ * `balde` mide el stock.
+ *
+ * Las lineas agotadas y las de un vino que ya no esta NO cuentan, igual que no
+ * suman al total: una botella que no se puede vender no llena una caja.
+ */
+export function botellasEnCarrito(resuelto: CarritoResuelto): number {
+  let botellas = 0;
+  for (const l of resuelto.lineas) {
+    if (l.estado !== 'vigente' || l.producto === null) continue;
+    botellas += l.cantidad * l.producto.botellas;
+  }
+  return botellas;
+}
+
+/**
+ * Las botellas segun lo GUARDADO, sin catalogo. Es lo que puede saber el
+ * contador de la barra, que vive en todas las rutas y no lee Firestore.
+ *
+ * No distingue lo agotado de lo vigente -para eso hace falta la proyeccion-,
+ * asi que puede decir un numero mas alto que el de `/carrito`, que es la
+ * fuente de verdad. Es el precio de que la barra cueste cero lecturas.
+ */
+export function botellasGuardadas(carrito: Carrito): number {
+  return carrito.lineas.reduce((n, l) => n + l.cantidad * l.botellas, 0);
+}
+
+export interface EstadoDeLaCaja {
+  readonly botellas: number;
+  readonly cajasCompletas: number;
+  /** Cuantas faltan para el proximo multiplo. 0 si ya es multiplo. */
+  readonly faltan: number;
+  /** Cuantas sobran sobre el ultimo multiplo. 0 si ya es multiplo. */
+  readonly sobran: number;
+}
+
+/**
+ * La aritmetica sola, con el tamano por parametro.
+ *
+ * Existe separada para poder probar cajas de 3 sin mutar una constante: la
+ * garantia que interesa no es "hoy da 6", es "la regla es parametrica", y eso
+ * solo se prueba corriendola con dos tamanos distintos.
+ */
+export function contarCaja(botellas: number, porCaja: number = BOTELLAS_POR_CAJA): EstadoDeLaCaja {
+  if (!Number.isInteger(porCaja) || porCaja < 1) {
+    throw new RangeError(`la caja va entera y >= 1; llego ${porCaja}`);
+  }
+  const resto = botellas % porCaja;
+  return {
+    botellas,
+    cajasCompletas: Math.floor(botellas / porCaja),
+    faltan: resto === 0 ? 0 : porCaja - resto,
+    sobran: resto,
+  };
+}
+
+/**
+ * Lo que la pantalla necesita para decir UNA sola frase. Derivado, nunca
+ * guardado.
+ *
+ * Devuelve `faltan` Y `sobran` a proposito: con 7 botellas las dos son ciertas
+ * -faltan 5, sobra 1- y cual de las dos decir es una decision de la vidriera,
+ * no de este archivo.
+ */
+export function estadoDeLaCaja(resuelto: CarritoResuelto): EstadoDeLaCaja {
+  return contarCaja(botellasEnCarrito(resuelto));
+}
+
+/**
+ * La precondicion de COBRO. NO es una precondicion de validez: un carrito de 4
+ * botellas es alguien comprando, y `parsearCarrito` lo acepta -- si lo
+ * rechazara, el carrito a medio llenar se descartaria entero en la visita
+ * siguiente, porque el parser rechaza en vez de corregir.
+ *
+ * `crearOrden` la va a repetir sobre SU PROPIA proyeccion: un numero de
+ * botellas que mande el navegador no se cree.
+ *
+ * Un carrito vacio no es cobrable. Cero es multiplo de seis, pero no hay nada
+ * que despachar.
+ */
+export function sePuedeCobrar(resuelto: CarritoResuelto): boolean {
+  const botellas = botellasEnCarrito(resuelto);
+  return botellas > 0 && botellas % BOTELLAS_POR_CAJA === 0;
 }
 
 // ------------------------------------------------------- pedido de compra

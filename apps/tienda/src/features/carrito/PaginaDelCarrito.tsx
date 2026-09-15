@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { quitar, resolverCarrito, type ProductoPublicado } from '@bouquet/contratos';
 
 import { carritoActual, guardarCarrito } from './almacen';
+import { EstadoDeLaCaja } from './EstadoDeLaCaja';
 import { LineaDelCarrito } from './LineaDelCarrito';
 import { TEXTOS } from './textos';
 import { TotalDelCarrito } from './TotalDelCarrito';
@@ -64,6 +65,7 @@ export function PaginaDelCarrito({ productos, ventanas }: Props) {
             />
           ))}
         </ul>
+        <EstadoDeLaCaja resuelto={resuelto} />
         <TotalDelCarrito resuelto={resuelto} />
         <p className="pagina-carrito__seguir">
           <Link className="enlace-blando" href="/vinos">

@@ -1,4 +1,4 @@
-import type { CarritoResuelto } from '@bouquet/contratos';
+import { botellasEnCarrito, type CarritoResuelto } from '@bouquet/contratos';
 
 import { Precio } from '@/shared/ui/Precio';
 
@@ -12,9 +12,10 @@ type Props = {
 };
 
 export function TotalDelCarrito({ resuelto }: Props) {
-  const vigentes = resuelto.lineas.filter((l) => l.estado === 'vigente');
-  const botellas = vigentes.reduce((s, l) => s + (l.producto?.botellas ?? 1) * l.cantidad, 0);
-  const fuera = resuelto.lineas.length - vigentes.length;
+  // La misma cuenta que la regla de la caja: repetirla acá fue el origen de
+  // que hubiera dos. Vive en contratos, junto a `estadoDeLaCaja`.
+  const botellas = botellasEnCarrito(resuelto);
+  const fuera = resuelto.lineas.filter((l) => l.estado !== 'vigente').length;
 
   return (
     <div className="total-carrito">

@@ -88,9 +88,39 @@ pasa a caja es otro producto. Si la caja comparte botellas con otro producto,
 no es esto: es un compuesto.
 
 ### Compuesto
-Una caja armada con otros productos. **No tiene stock propio**: lo deriva de sus
-componentes simples. Está previsto en el modelo y todavía no existe ninguno; la
-vidriera lo deja afuera hasta que sepa calcular ese stock.
+Una caja armada con otros productos, **con precio propio**. No tiene stock
+propio: lo derivaría de sus componentes simples.
+
+⚠️ **Sigue sin usarse, y eso es una decisión, no un olvido.** Las cajas que
+ofrece la tienda no son compuestos: no tienen precio propio —el precio es la
+suma de lo que queda en el carrito—, así que no necesitan un documento en
+`productos`. Ver *Caja sugerida*. El tipo se deja en el modelo para el día que
+exista una caja de regalo con su propio precio; sacarlo sería la migración que
+[ADR 008](../architecture/decisions/008-catalogo-stock-y-carrito.md) se ahorró a
+propósito.
+
+### Venta por caja
+El vino **no se vende suelto**: lo que se cobra tiene que sumar un múltiplo de
+`BOTELLAS_POR_CAJA` botellas, porque ésa es la caja física con la que se
+despacha. Hoy son **6**; si aparecen cajas de 3, es una constante y sus tests.
+
+Se cuenta en **botellas**, no en unidades de venta: tres packs de 2 son una caja
+completa. Y es una precondición de **cobro**, no de validez — un carrito de 4
+botellas es alguien comprando, y `parsearCarrito` lo acepta.
+
+### Caja sugerida
+Una caja que el vendedor ofrece **ya armada**: un nombre, un slug y una lista de
+`productoId`. Un id repetido son dos botellas de ese vino.
+
+**No es un producto.** No tiene precio propio, ni stock propio, ni documento en
+`productos`: elegirla **llena el carrito**, y desde ahí el comprador cambia lo
+que quiera. Viven todas en un solo documento reescrito entero,
+`cajasSugeridas/publicas`, con el patrón de `metricas/popularidad`.
+
+Si uno de sus vinos se despublica o se agota, la caja **se muestra igual** con
+ese lugar marcado: cinco vinos siguen siendo una idea válida. Sólo se descarta
+cuando se la puede juzgar mal —todos sus vinos existen y aun así no suman una
+caja—.
 
 ### Tope
 Cuánto se puede llevar de un producto en un pedido: `min(stock, 12)` unidades

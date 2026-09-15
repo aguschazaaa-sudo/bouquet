@@ -34,13 +34,42 @@ test('la home lee el catálogo sin la caché de 60 s: con ella pasaría sola a I
   // rojo con el código bien. Los dos controles: /vinos sí lo importa, así que
   // el patrón detecta un import de verdad; y la home sí lee el catálogo, así
   // que no pasa por estar leyendo el archivo equivocado.
-  const IMPORTA_LA_CACHE = /import\s*\{[^}]*\bobtenerCatalogo\b[^}]*\}\s*from/;
+  const IMPORTA_LA_CACHE = /import\s*\{[^}]*\b(obtenerCatalogo|obtenerVidriera)\b[^}]*\}\s*from/;
   assert.match(leer('src/app/vinos/page.tsx'), IMPORTA_LA_CACHE);
 
   const home = leer('src/app/page.tsx');
   assert.match(home, /leerCatalogoSinCache\(\)/);
   assert.doesNotMatch(home, IMPORTA_LA_CACHE);
   assert.doesNotMatch(home, /export const revalidate/);
+});
+
+test('la home no paga la lectura de las cajas sugeridas', () => {
+  // La home llama a `leerCatalogoSinCache` y NO dibuja carril: si la lectura
+  // de `cajasSugeridas` viviera ahí, pagaría por un documento que no
+  // renderiza. Tiene que vivir en `leerVidrieraSinCache`, más abajo.
+  const fuente = leer('src/server/catalogo.ts');
+
+  const sinCache = fuente.indexOf('async function leerCatalogoSinCache');
+  const vidriera = fuente.indexOf('async function leerVidrieraSinCache');
+  const cajas = fuente.indexOf('cajasSugeridas/publicas');
+
+  // Control positivo: las tres cosas existen y están en este orden.
+  assert.ok(sinCache > 0, 'no encontré leerCatalogoSinCache');
+  assert.ok(vidriera > sinCache, 'no encontré leerVidrieraSinCache después');
+  assert.ok(cajas > vidriera, 'la lectura de cajas quedó ANTES de leerVidrieraSinCache');
+
+  // Y una sola vez: dos lecturas del mismo documento serían dos lecturas.
+  assert.equal(fuente.split('cajasSugeridas/publicas').length - 1, 1);
+
+  // La home tampoco la nombra por su cuenta.
+  assert.doesNotMatch(leer('src/app/page.tsx'), /cajasSugeridas/);
+});
+
+test('las cajas se leen en la MISMA entrada de caché que el catálogo', () => {
+  // Un segundo unstable_cache con revalidate numérico le baja el revalidate a
+  // la página que lo llama. Tiene que haber exactamente uno.
+  const fuente = leer('src/server/catalogo.ts');
+  assert.equal(fuente.split('unstable_cache(').length - 1, 1, 'hay más de un unstable_cache');
 });
 
 test('expireTime deja el stale-while-revalidate en 300 s', () => {

@@ -16,9 +16,16 @@ import type { ProductoPublicado } from '../src/producto.ts';
 
 const ID_COMPRA = '3f2b9c1e-7a4d-4e8f-9b21-5c6d7e8f9a0b';
 
-function carrito(lineas: { productoId: string; cantidad: number }[]): Carrito {
-  return { version: 1, idCompra: ID_COMPRA, lineas };
+function carrito(lineas: { productoId: string; cantidad: number; botellas?: number }[]): Carrito {
+  return {
+    version: 2,
+    idCompra: ID_COMPRA,
+    lineas: lineas.map((l) => ({ productoId: l.productoId, cantidad: l.cantidad, botellas: l.botellas ?? 1 })),
+  };
 }
+
+/** Un producto para `agregar`/`fijarCantidad`, con botellas 1 salvo que se diga. */
+const enElCarrito = (productoId: string, tope: number, botellas = 1) => ({ productoId, botellas, tope });
 
 function publicado(id: string, cambios: Partial<ProductoPublicado> = {}): ProductoPublicado {
   return {
@@ -69,13 +76,19 @@ test('una linea repetida se rechaza', () => {
 });
 
 test('una version desconocida se rechaza', () => {
-  assert.equal(parsearCarrito({ ...carrito([]), version: 2 }).ok, false);
+  assert.equal(parsearCarrito({ ...carrito([]), version: 3 }).ok, false);
   assert.equal(parsearCarrito({ idCompra: ID_COMPRA, lineas: [] }).ok, false, 'sin version tampoco');
+  // La 1 es la de antes de las cajas de seis: se DESCARTA, no se migra. Se
+  // cambio con la tienda sin desplegar, o sea sin un solo carrito real.
+  assert.equal(parsearCarrito({ ...carrito([]), version: 1 }).ok, false, 'la 1 ya no vale');
+  // Control positivo: la vigente si pasa, asi que el rechazo es por la version
+  // y no porque el parser este rechazando todo.
+  assert.equal(parsearCarrito(carrito([])).ok, true);
 });
 
 test('cantidades no enteras, cero o por encima del tope por pedido se rechazan', () => {
   for (const cantidad of [2.5, 0, 13, '2', null]) {
-    const r = parsearCarrito({ version: 1, idCompra: ID_COMPRA, lineas: [{ productoId: 'a', cantidad }] });
+    const r = parsearCarrito({ version: 2, idCompra: ID_COMPRA, lineas: [{ productoId: 'a', cantidad, botellas: 1 }] });
     assert.equal(r.ok, false, `cantidad ${String(cantidad)}`);
   }
   // Control: el borde de arriba entra.
@@ -114,29 +127,29 @@ test('carritoVacio exige un idCompra con forma', () => {
 
 test('agregar por encima del tope deja la linea en el tope y lo avisa', () => {
   const con4 = carrito([{ productoId: 'a', cantidad: 4 }]);
-  const r = agregar(con4, 'a', 3, 5);
+  const r = agregar(con4, enElCarrito('a', 5), 3);
   assert.equal(r.carrito.lineas[0]?.cantidad, 5);
   assert.equal(r.alTope, true);
 
   // Control: llegar justo al tope no es pasarlo.
-  const justo = agregar(con4, 'a', 1, 5);
+  const justo = agregar(con4, enElCarrito('a', 5), 1);
   assert.equal(justo.carrito.lineas[0]?.cantidad, 5);
   assert.equal(justo.alTope, false);
 });
 
 test('agregar un agotado no agrega nada', () => {
   const vacio = carrito([]);
-  const r = agregar(vacio, 'a', 1, 0);
+  const r = agregar(vacio, enElCarrito('a', 0), 1);
   assert.equal(r.carrito.lineas.length, 0);
   assert.equal(r.alTope, true);
 });
 
 test('agregar un vino nuevo crea su linea, y el contador suma todo', () => {
   let c = carrito([{ productoId: 'a', cantidad: 2 }]);
-  c = agregar(c, 'b', 3, 12).carrito;
+  c = agregar(c, enElCarrito('b', 12), 3).carrito;
   assert.deepEqual(c.lineas, [
-    { productoId: 'a', cantidad: 2 },
-    { productoId: 'b', cantidad: 3 },
+    { productoId: 'a', cantidad: 2, botellas: 1 },
+    { productoId: 'b', cantidad: 3, botellas: 1 },
   ]);
   assert.equal(unidadesEnCarrito(c), 5);
   assert.equal(parsearCarrito(c).ok, true, 'lo que produce agregar vuelve a pasar el parser');
@@ -150,7 +163,7 @@ test('quitar saca la linea y deja las demas', () => {
     ]),
     'a',
   );
-  assert.deepEqual(c.lineas, [{ productoId: 'b', cantidad: 1 }]);
+  assert.deepEqual(c.lineas, [{ productoId: 'b', cantidad: 1, botellas: 1 }]);
 });
 
 // ----------------------------------------------- carrito contra proyeccion

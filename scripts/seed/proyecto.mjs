@@ -26,6 +26,7 @@ export function rutasSembradas(catalogo) {
     ...catalogo.bodegas.map((b) => `bodegas/${b.id}`),
     ...catalogo.vinos.map((v) => `productos/${v.id}`),
     'metricas/popularidad',
+    'cajasSugeridas/publicas',
   ];
 }
 

@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 
+import { BOTELLAS_POR_CAJA } from '@bouquet/contratos';
+
+import { ControlDeCaja } from '@/features/carrito/ControlDeCaja';
 import { ControlDeCompra } from '@/features/carrito/ControlDeCompra';
+import { CarrilDeCajas } from '@/features/catalogo/CarrilDeCajas';
 import { ListadoDeVinos } from '@/features/catalogo/ListadoDeVinos';
 import { TEXTOS } from '@/features/catalogo/textos';
-import { obtenerCatalogo } from '@/server/catalogo';
+import { obtenerVidriera } from '@/server/catalogo';
 
 /* /vinos — el catálogo. ADR 008, design.md §9.
  *
@@ -29,20 +33,24 @@ export const metadata: Metadata = {
 };
 
 export default async function Vinos() {
-  const { productos, hayPopularidad, deMuestra } = await obtenerCatalogo();
+  const { catalogo, cajas } = await obtenerVidriera();
+  const { productos, hayPopularidad, deMuestra } = catalogo;
   const controles = Object.fromEntries(
     productos.map((p) => [
       p.id,
       <ControlDeCompra key={p.id} productoId={p.id} nombre={p.nombre} tope={p.tope} botellas={p.botellas} />,
     ]),
   );
+  const controlesDeCaja = Object.fromEntries(cajas.map((c) => [c.slug, <ControlDeCaja key={c.slug} caja={c} />]));
 
   return (
     <main className="pagina-vinos contenedor-vinos" {...(deMuestra ? { 'data-catalogo-de-muestra': '' } : {})}>
       <header className="cabecera-vinos">
         <h1 className="display">{TEXTOS.titulo}</h1>
         <p>{TEXTOS.bajada}</p>
+        <p className="cabecera-vinos__caja">{TEXTOS.seVendeDeA(BOTELLAS_POR_CAJA)}</p>
       </header>
+      <CarrilDeCajas cajas={cajas} controles={controlesDeCaja} />
       <ListadoDeVinos productos={productos} hayPopularidad={hayPopularidad} controles={controles} />
     </main>
   );

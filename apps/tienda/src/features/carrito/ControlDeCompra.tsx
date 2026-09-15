@@ -36,11 +36,13 @@ export function ControlDeCompra({ productoId, nombre, tope, botellas, variante =
 
   const fijar = (cantidad: number) => {
     guardarCarrito(
-      cantidad < 1 ? quitar(carritoActual(), productoId) : fijarCantidad(carritoActual(), productoId, cantidad, tope).carrito,
+      cantidad < 1
+        ? quitar(carritoActual(), productoId)
+        : fijarCantidad(carritoActual(), { productoId, botellas, tope }, cantidad).carrito,
     );
   };
   const agregarUna = () => {
-    guardarCarrito(agregar(carritoActual(), productoId, 1, tope).carrito);
+    guardarCarrito(agregar(carritoActual(), { productoId, botellas, tope }, 1).carrito);
     avisar(TEXTOS.quedoEnTuPedido(nombre));
   };
 

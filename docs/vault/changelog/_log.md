@@ -9,6 +9,57 @@
 
 ---
 
+## Salió el 2026-09-14, al entrar la venta por caja
+
+Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el mismo motivo
+que la vez pasada: aquélla dice dónde vive Firestore —`southamerica-east1`, y
+eso no se puede cambiar nunca—, mientras que la decisión de esta entrada ya vive
+en [`landing-alternativa.md`](../design/landing-alternativa.md), la página que
+describe está en `main` byte por byte, y lo que enseñó de más —el BOM de
+`package.json` que rompe `JSON.parse` en silencio— quedó anotado donde se
+tropieza con él.
+
+### La composición elegida: la de cuatro escenas, y `main` la tiene (2026-09-08)
+
+**El dueño eligió entre las seis composiciones que llegaron a existir, y ganó la
+segunda:** [`landing-alternativa.md`](../design/landing-alternativa.md) — cuatro
+escenas, problema → selección → custodia → mesa. **Era la primera que se pudo
+mirar corriendo**, y es la que ahora vive en `main`.
+
+**Cómo llegó:** `main` era **ancestro** de `home-parallax`, así que fue un
+fast-forward de un comando, no un merge.
+
+⚠️ **Y por eso este archivo NO sabe lo que aprendieron las composiciones 3 a 6**
+(del 2026-09-04 al 07, en `home-parallax-b`, `-c` y `-d`). Fue decisión
+explícita del dueño: son **dos días** de trabajo y quedan vivos en sus ramas.
+Lo que sí bajó son las **cuatro cosas que le faltan a la página que quedó
+publicada** — abajo, con disparador. El resto se recupera con
+`git show <rama>:<ruta>`.
+
+⚠️ **El fast-forward revivió un bug que ya estaba arreglado**, y conviene que se
+note porque es el costo real de volver a un commit viejo: **el BOM UTF-8 de
+`package.json`**, que entró en `v0.7.2` y se había quitado en un commit
+posterior que `main` ya no incluye. Rompe `JSON.parse`, y el `catch {}` de
+`generar_verdad.mjs` se traga el error: la sección 2 entera salía como *"No
+verificado: la raíz no declara `workspaces`"*, una **ausencia inventada,
+indistinguible de un hallazgo real**. Se quitó de nuevo acá. ⚠️ **El `catch`
+silencioso sigue ahí**, así que el próximo BOM vuelve a mentir igual.
+
+**Verificado, no supuesto:**
+
+| Qué | Cómo |
+|---|---|
+| Compila | `tsc --noEmit --project apps/tienda`, exit 0 |
+| Los enlaces resuelven | `verificar_enlaces.mjs`: 121 enlaces, 45 archivos. Control positivo: una corrida previa marcó **6 rotos** |
+| El informe no miente | `generar_verdad.mjs --check`, **exit 0** — y de paso destapó que estaba viejo desde `v0.7.0` |
+| Las 9 piezas tienen call site | `page.tsx` abre 5, las escenas abren las otras 4 |
+| Los 8 assets tienen consumidor | ⚠️ Las rutas se arman en runtime (`/landing/${base}.webp`), así que **el grep literal dio vacío**. Hubo que enumerar las bases: 5, tres con `dosDirecciones` → 8 archivos exactos |
+
+**No se miró renderizada, y esta vez es lo correcto:** es byte por byte la
+página que el dueño ya miró y eligió.
+
+---
+
 ## Salió el 2026-09-11, al nacer el catálogo
 
 Sexta entrada. **Salió ésta y no la más vieja**: todo lo que enseñó —la ranura de área cero, el `from 0deg` del cónico, el chaflán interior a `0,414 · grosor`— ya vive en [ADR 006](../architecture/decisions/006-estructura-de-la-tienda.md) y en los comentarios de `deco.css`. La más vieja, la de los tres paquetes, sigue arriba porque dice dónde vive Firestore, y eso no se puede cambiar nunca.

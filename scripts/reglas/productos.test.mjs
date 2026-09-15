@@ -1,5 +1,6 @@
-// productos.test.mjs - las reglas de productos, bodegas y metricas contra el
-// emulador.  ADR 008, specs/catalogo-producto.
+// productos.test.mjs - las reglas de productos, bodegas, metricas y cajas
+// sugeridas contra el emulador.  ADR 008, specs/catalogo-producto;
+// openspec/changes/cajas-de-seis/specs/cajas-sugeridas.
 //
 // Corre con:
 //   firebase emulators:exec --only firestore --project demo-bouquet \
@@ -269,5 +270,30 @@ describe('bodegas: la forma cerrada', () => {
     await sembrar('bodegas/rutini', { nombre: 'Rutini Wines', slug: 'rutini', muestra: true });
     await assertSucceeds(updateDoc(bodega(admin), { nombre: 'Rutini' }));
     await assertFails(updateDoc(bodega(admin), { muestra: false }));
+  });
+});
+
+// -------------------------------------------------------- cajas sugeridas
+
+describe('las cajas sugeridas son un documento del servidor', () => {
+  const cajas = {
+    cajas: [
+      { slug: 'variada', nombre: 'Caja variada', productoIds: ['a', 'b', 'c', 'd', 'e', 'f'] },
+    ],
+  };
+
+  test('nadie las escribe desde el navegador, ni siendo admin', async () => {
+    await assertFails(setDoc(doc(admin, 'cajasSugeridas', 'publicas'), cajas));
+    await assertFails(setDoc(doc(anonimo, 'cajasSugeridas', 'publicas'), cajas));
+    await assertFails(setDoc(doc(comprador, 'cajasSugeridas', 'publicas'), cajas));
+  });
+
+  test('el admin las lee; el anonimo y el comprador no', async () => {
+    await sembrar('cajasSugeridas/publicas', cajas);
+    // Control positivo: sin este, una regla que niega TODO pasaria los dos
+    // rechazos de abajo y el test seria teatro.
+    await assertSucceeds(getDoc(doc(admin, 'cajasSugeridas', 'publicas')));
+    await assertFails(getDoc(doc(anonimo, 'cajasSugeridas', 'publicas')));
+    await assertFails(getDoc(doc(comprador, 'cajasSugeridas', 'publicas')));
   });
 });

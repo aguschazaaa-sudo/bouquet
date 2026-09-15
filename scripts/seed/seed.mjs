@@ -18,6 +18,9 @@
 //   4. Cada producto pasa por `validarProducto` de contratos antes de
 //      escribirse: si el seed no cumple el contrato, la vidriera lo descartaria
 //      en silencio.
+//   5. Cada caja sugerida pasa por `validarCajasSugeridas` y
+//      `verificarComposicion`: una caja que no suma una caja no se siembra.
+//      Mismo motivo que 4 -- la vidriera la descartaria sin avisar.
 
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -26,6 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 import sharp from 'sharp';
 
+import { validarCajasSugeridas, verificarComposicion } from '../../packages/contratos/src/cajas.ts';
 import { validarProducto } from '../../packages/contratos/src/producto.ts';
 import { BUCKET, conectar, leerCatalogo, rutasSembradas } from './proyecto.mjs';
 
@@ -161,8 +165,43 @@ lote.set(db.doc('metricas/popularidad'), {
   unidades: Object.fromEntries(catalogo.vinos.map((v) => [v.id, v.unidades])),
 });
 
+// ------------------------------------------------------ cajas sugeridas
+//
+// Mismo patron que la popularidad: UN documento reescrito entero.
+//
+// Se verifica la composicion ANTES de escribir, igual que `validarProducto`
+// con cada vino: una caja que no suma una caja la vidriera la descartaria en
+// silencio, y "en silencio" es el modo de falla que este seed existe para no
+// tener. `nota` no viaja: es un comentario para el que lee el JSON.
+const botellasPorProducto = new Map(catalogo.vinos.map((v) => [v.id, v.botellas]));
+const cajasSugeridas = (catalogo.cajasSugeridas ?? []).map(({ slug, nombre, productoIds }) => ({
+  slug,
+  nombre,
+  productoIds,
+}));
+
+const { cajas, descartes } = validarCajasSugeridas({ cajas: cajasSugeridas });
+if (descartes.length) {
+  console.error(`::error::cajas sugeridas mal formadas:\n  ${descartes.map((d) => `${d.id}: ${d.motivo}`).join('\n  ')}`);
+  process.exit(1);
+}
+for (const caja of cajas) {
+  const v = verificarComposicion(caja, botellasPorProducto);
+  if (!v.ok) {
+    console.error(`::error::${v.motivo}`);
+    process.exit(1);
+  }
+}
+
+lote.set(db.doc('cajasSugeridas/publicas'), {
+  muestra: true,
+  actualizadoEn: Timestamp.now(),
+  cajas: cajas.map((c) => ({ slug: c.slug, nombre: c.nombre, productoIds: [...c.productoIds] })),
+});
+
 await lote.commit();
 console.log(
   `sembrado en ${db.projectId}: ${catalogo.vinos.length} productos (${conFoto} con foto), ` +
-    `${catalogo.bodegas.length} bodegas y metricas/popularidad (simulada)`,
+    `${catalogo.bodegas.length} bodegas, metricas/popularidad (simulada) y ` +
+    `${cajas.length} cajas sugeridas`,
 );

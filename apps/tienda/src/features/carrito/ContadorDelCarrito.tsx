@@ -1,22 +1,42 @@
 'use client';
 
-import { unidadesEnCarrito } from '@bouquet/contratos';
+import { botellasGuardadas, contarCaja } from '@bouquet/contratos';
 
 import { TEXTOS } from './textos';
 import { useCarrito } from './useCarrito';
 
-/* El número de la barra: la suma de las cantidades, leída de localStorage.
- * Vive en el layout, o sea en TODAS las rutas y en todas las visitas, y por eso
- * no lee Firestore (ADR 006, presupuesto de lecturas: 0). Llega a la barra como
- * slot desde `app/layout.tsx`: navegacion/ no sabe que existe un carrito. */
+/* El avance de la caja en la barra: se lee de localStorage y vive en TODAS las
+ * rutas, así que no lee Firestore (ADR 006, presupuesto: 0 lecturas). Llega a
+ * la barra como slot desde `app/layout.tsx`: navegacion/ no sabe que existe un
+ * carrito.
+ *
+ * Cuenta BOTELLAS, no unidades, y por eso la línea guarda `botellas`: con un
+ * pack de 2 en el pedido, contar unidades diría 3 donde hay 6 y alguien
+ * seguiría comprando una caja que ya está cerrada.
+ *
+ * ⚠️ Lo guardado no distingue lo agotado: para eso hace falta la proyección, y
+ * traerla acá costaría una lectura en cada ruta. `/carrito` es la fuente de
+ * verdad y ahí el número se recalcula. */
 
 export function ContadorDelCarrito() {
-  const n = unidadesEnCarrito(useCarrito());
-  if (n === 0) return null;
+  const botellas = botellasGuardadas(useCarrito());
+  if (botellas === 0) return null;
+
+  const { faltan, cajasCompletas } = contarCaja(botellas);
+  const meta = botellas + faltan;
+
   return (
-    <span className="contador-carrito cifra">
-      {n}
-      <span className="sr"> {TEXTOS.enElPedido}</span>
+    <span className={`contador-carrito${faltan === 0 ? ' contador-carrito--completa' : ''}`}>
+      <span className="cifra">{faltan === 0 ? botellas : TEXTOS.avance(botellas, meta)}</span>
+      <span className="sr">
+        {' '}
+        {TEXTOS.avanceLargo(botellas, meta)}.{' '}
+        {faltan === 0
+          ? cajasCompletas === 1
+            ? TEXTOS.cajaCompleta
+            : TEXTOS.cajasCompletas(cajasCompletas)
+          : TEXTOS.faltan(faltan)}
+      </span>
     </span>
   );
 }

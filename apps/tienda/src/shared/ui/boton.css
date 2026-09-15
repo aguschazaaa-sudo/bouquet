@@ -41,7 +41,24 @@
  * lleva: era incapaz por construcción de encontrar lo que buscaba, y devolvió
  * "nada encima" en cada corrida. La inversión se revirtió cuando apareció la
  * causa real. Las capas se enumeran por z-index, no preguntándole al hit-test. */
+/* ⚠️ TERCER DEFECTO, y se vio AMPLIANDO el botón de una caja sugerida
+ * (2026-09-14): cuatro triangulitos GRISES en las esquinas.
+ *
+ * Es la misma familia que los del cartucho: el anillo es un octógono pero el
+ * elemento sigue siendo un RECTÁNGULO, así que lo que haya detrás pinta las
+ * esquinas que el `clip-path` deja afuera. Acá lo que había detrás era el
+ * propio `<button>`: el navegador le da un `background-color` de sistema —un
+ * gris medio, medido con los tres canales en 107— y `appearance: auto`, y este
+ * archivo nunca los reseteaba porque las dos capas se dibujan con
+ * pseudo-elementos.
+ *
+ * Le pasaba a TODOS los botones de la vidriera desde que existen, incluido el
+ * `Agregar` de cada vino; a 30 px de ancho el triángulo no se nota, a 200 sí.
+ * Por eso el arreglo va acá y no en la caja sugerida. */
 .boton {
+  appearance: none;
+  background: transparent;
+  border: 0;
   position: relative;
   isolation: isolate;
   display: inline-block;

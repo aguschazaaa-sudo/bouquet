@@ -706,3 +706,165 @@
     transition: none;
   }
 }
+
+/* ===================================================== EL AVISO DE LA CAJA */
+
+/* Va en la cabecera, ANTES de cualquier tarjeta: una compra que se entera en
+   el carrito de que el vino va de a seis es una compra que se abandona. Una
+   vez por listado, no por tarjeta -veinte veces la misma frase deja de ser
+   informacion y pasa a ser ruido-. */
+.cabecera-vinos__caja {
+  max-width: 44ch;
+  padding-inline-start: var(--e-3);
+  border-inline-start: var(--filete-grueso) solid var(--oro-filete);
+  color: var(--marfil-1);
+}
+
+/* ========================================================= EL CARRIL */
+
+/* Las cajas armadas sobre el mostrador, las botellas en el estante. El carril
+   NO responde a los filtros: son filtros de botellas -color, cepa, organico- y
+   una caja es multiple en los tres. */
+.carril {
+  margin-bottom: var(--e-6);
+  padding-bottom: var(--e-5);
+  border-bottom: var(--filete) solid var(--regla);
+}
+
+.carril__encabezado {
+  display: grid;
+  gap: var(--e-2);
+  margin-bottom: var(--e-4);
+}
+
+.carril__titulo {
+  margin: 0;
+  font-size: var(--t-rotulo);
+  letter-spacing: var(--tracking-versalita);
+  color: var(--dorado);
+}
+
+.carril__bajada {
+  margin: 0;
+  max-width: 48ch;
+  font-size: var(--t-cuerpo);
+  line-height: var(--interlinea-prosa);
+  color: var(--marfil-2);
+}
+
+/* Una pista que se arrastra en angosto y se acomoda en grilla en ancho. El
+   scroll horizontal es de ESTE contenedor: la pagina nunca scrollea de lado. */
+.carril__pista {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(19rem, 78%);
+  gap: var(--e-4);
+  margin: 0;
+  padding: 0 var(--e-4) var(--e-3) 0;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-inline: contain;
+}
+
+.carril__pista > * {
+  scroll-snap-align: start;
+}
+
+@media (min-width: 60rem) {
+  .carril__pista {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-auto-columns: auto;
+    overflow-x: visible;
+    padding-inline-end: 0;
+  }
+}
+
+/* ================================================== LA CAJA SUGERIDA */
+
+.caja-sugerida {
+  display: flex;
+  flex-direction: column;
+  gap: var(--e-3);
+  padding: var(--e-4);
+  border: var(--filete) solid var(--regla);
+}
+
+.caja-sugerida__nombre {
+  margin: 0;
+  font-size: var(--t-h3);
+  line-height: var(--interlinea-titulo);
+  color: var(--marfil-1);
+}
+
+.caja-sugerida__cuantas {
+  margin: calc(-1 * var(--e-2)) 0 0;
+  font-size: var(--t-rotulo);
+  letter-spacing: var(--tracking-versalita);
+  color: var(--dorado);
+}
+
+.caja-sugerida__vinos {
+  flex: 1;
+  display: grid;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.caja-sugerida__vino {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--e-2);
+  align-items: baseline;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--marfil-2);
+}
+
+/* Lo que hoy no se puede llevar se marca, no se esconde: cinco vinos siguen
+   siendo una idea valida, y borrar el sexto seria contar mal la caja. */
+.caja-sugerida__vino--fuera .caja-sugerida__titulo {
+  color: var(--marfil-3);
+  text-decoration: line-through;
+  text-decoration-thickness: var(--filete);
+}
+
+.caja-sugerida__multiplo,
+.caja-sugerida__nota {
+  font-size: 0.8rem;
+  color: var(--marfil-3);
+}
+
+.caja-sugerida__nota {
+  font-style: italic;
+}
+
+.caja-sugerida__mostrador {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--e-2) var(--e-3);
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--e-3);
+  border-top: var(--filete) solid var(--regla);
+}
+
+.caja-sugerida__aviso {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--marfil-3);
+}
+
+.caja-sugerida__precio {
+  margin: 0;
+}
+
+.caja-sugerida__monto {
+  font-size: var(--t-lead);
+  color: var(--marfil-1);
+}

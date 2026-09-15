@@ -16,9 +16,14 @@
 
 ## Dónde está el proyecto
 
-**Fase: el catálogo existe en stage (2026-09-11). Todavía no se cobra nada.**
-`/vinos`, la ficha y el carrito leen 20 vinos de muestra de `bouquet-vinos`;
-`crearOrden` y el checkout son la próxima sesión.
+**Fase: el catálogo existe en stage y el vino se vende de a 6 (2026-09-14).
+Todavía no se cobra nada.** `/vinos`, la ficha y el carrito leen 20 vinos de
+muestra de `bouquet-vinos`; `crearOrden` y el checkout son la próxima sesión.
+
+**Las reglas de Firestore y Storage YA ESTÁN PUBLICADAS** (2026-09-14), medido
+por la API de Rules con quota project: dos releases. **Las fotos dan 200
+`image/webp`**, así que las ventanas del catálogo y de la home dejaron de estar
+vacías.
 
 Existe: `git init` en `main`, `CLAUDE.md`, los 10 hooks con su arnés de 30
 casos, `ci.yml`, los ADRs 001-004, y **`packages/contratos`** — la máquina de
@@ -45,6 +50,59 @@ Lo próximo es `crearOrden` y el checkout, con los ocho hallazgos que dejó
 `revisor-pagos` en
 [ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md). Y antes del
 deploy público con el catálogo real, el tramo 4: Cloudflare con purga por tag.
+
+### El vino se vende de a 6, y hay cajas armadas (2026-09-14)
+
+**Nace la venta por caja.** El carrito tiene que sumar un múltiplo de
+`BOTELLAS_POR_CAJA` botellas para poder cobrarse, el aviso se dice **antes de
+agregar** —en el listado y en la ficha, sin JavaScript—, y `/vinos` estrena un
+carril de **cajas armadas** que el vendedor ofrece. El porqué, en
+[ADR 009](architecture/decisions/009-venta-por-caja.md).
+
+**Una caja armada NO es un producto.** Es una lista de `productoId` que llena el
+carrito; no tiene precio propio ni stock propio, porque **no hay descuento**. El
+diseño cambió de forma dos veces en el brainstorm y las dos versiones
+descartadas están en el ADR — incluida la del `compuesto` con `componentes[]`,
+que arrastraba media docena de piezas.
+
+⚠️ **El carrito subió a `version: 2` y guarda `botellas` por línea.** Es la única
+excepción a "el carrito no guarda nada del producto", y está razonada:
+`presentacion` es inmutable por regla, así que no es un snapshot que envejece.
+Sin ese campo el contador de la barra mostraría **3 donde hay 6**. Los carritos
+`version: 1` se descartan — se cambió con la tienda sin desplegar, o sea sin un
+solo carrito real.
+
+⚠️ **Siete cosas aparecieron midiendo, y tres son transferibles:**
+
+| Instrumento | Cómo mintió |
+|---|---|
+| Mi script de la API de Rules | Un **403** por falta de quota project se leyó como *"ningún release"*. Una lista vacía por error de lectura confirma cualquier cosa |
+| `next build \| head` | El pipe cerrado le manda **SIGPIPE** a la build y la corta: la página quedó pidiendo un CSS que daba **404** y el arreglo "no aparecía" |
+| Un test de `carrito.test.ts` | Usaba `version: 1` literal para probar cantidades inválidas. Con la versión nueva lo rechazaba la **versión**, no la cantidad: habría pasado por el motivo equivocado |
+
+Y **el defecto más caro apareció abriendo el PNG**, sexta vez en este proyecto:
+**todos los botones de la vidriera tenían cuatro triangulitos grises en las
+esquinas**. `<button>` trae `background-color` de sistema y `appearance: auto`, y
+`.boton` nunca los reseteaba porque sus dos capas son pseudo-elementos. Le
+pasaba al `Agregar` de cada vino **desde que existe**: a 30 px no se nota, a 200
+sí. Arreglado en `shared/ui`, medido antes y después.
+
+**Verificado sobre `next build` + `next start` contra stage:**
+
+| Qué | Cómo |
+|---|---|
+| La home no se volvió ISR | `○ /` **sin revalidate** en la tabla del build, con `/vinos` en `1m` como control. Es la trampa de `unstable_cache` que el ADR 008 documenta |
+| Las lecturas | **33** medidas contra stage (20 + 11 + 1 + 1); control sin carril: **32**. +0,5 puntos de cuota en el peor renglón |
+| El aviso, sin JavaScript | `/vinos` y las dos fichas dan **2** (DOM + payload RSC); `/oficio` y `/` dan **0**; un slug inventado, **404**. El canario se verificó nuevo con `git grep` en `HEAD` **antes** de usarlo |
+| El carril | 4 tarjetas, 1 lugar marcado. Sin el documento sembrado **no se renderiza** |
+| Sin overflow | `scrollWidth = clientWidth` a 1440 y 390; la pista scrollea **dentro** de su contenedor (1131 sobre 358) |
+| Las reglas | **26** casos contra el emulador (eran 24), con control positivo |
+| Tests y tipos | **116** de contratos (eran 65) + **21** de la tienda; `tsc` 0 en los dos; arnés 35/35; 176 enlaces |
+| El seed | Dos corridas, verificado por REST: 4 cajas, control negativo **404** |
+| Mirado | 1440 y 390 px emulados, con los datos reales de stage |
+
+**`voz` curó el copy** y de paso encontró una cadena que nadie abría (`vaDeA`):
+se borró.
 
 ### El catálogo, la ficha y el carrito, en stage y sin cobrar (2026-09-11)
 
@@ -262,45 +320,6 @@ Abajo, con disparador.
 siempre) y la home da **6,26 pantallas** contra el techo de 8. Una barra fija
 no suma alto de scroll.
 
-### La composición elegida: la de cuatro escenas, y `main` la tiene (2026-09-08)
-
-**El dueño eligió entre las seis composiciones que llegaron a existir, y ganó la
-segunda:** [`landing-alternativa.md`](design/landing-alternativa.md) — cuatro
-escenas, problema → selección → custodia → mesa. **Era la primera que se pudo
-mirar corriendo**, y es la que ahora vive en `main`.
-
-**Cómo llegó:** `main` era **ancestro** de `home-parallax`, así que fue un
-fast-forward de un comando, no un merge.
-
-⚠️ **Y por eso este archivo NO sabe lo que aprendieron las composiciones 3 a 6**
-(del 2026-09-04 al 07, en `home-parallax-b`, `-c` y `-d`). Fue decisión
-explícita del dueño: son **dos días** de trabajo y quedan vivos en sus ramas.
-Lo que sí bajó son las **cuatro cosas que le faltan a la página que quedó
-publicada** — abajo, con disparador. El resto se recupera con
-`git show <rama>:<ruta>`.
-
-⚠️ **El fast-forward revivió un bug que ya estaba arreglado**, y conviene que se
-note porque es el costo real de volver a un commit viejo: **el BOM UTF-8 de
-`package.json`**, que entró en `v0.7.2` y se había quitado en un commit
-posterior que `main` ya no incluye. Rompe `JSON.parse`, y el `catch {}` de
-`generar_verdad.mjs` se traga el error: la sección 2 entera salía como *"No
-verificado: la raíz no declara `workspaces`"*, una **ausencia inventada,
-indistinguible de un hallazgo real**. Se quitó de nuevo acá. ⚠️ **El `catch`
-silencioso sigue ahí**, así que el próximo BOM vuelve a mentir igual.
-
-**Verificado, no supuesto:**
-
-| Qué | Cómo |
-|---|---|
-| Compila | `tsc --noEmit --project apps/tienda`, exit 0 |
-| Los enlaces resuelven | `verificar_enlaces.mjs`: 121 enlaces, 45 archivos. Control positivo: una corrida previa marcó **6 rotos** |
-| El informe no miente | `generar_verdad.mjs --check`, **exit 0** — y de paso destapó que estaba viejo desde `v0.7.0` |
-| Las 9 piezas tienen call site | `page.tsx` abre 5, las escenas abren las otras 4 |
-| Los 8 assets tienen consumidor | ⚠️ Las rutas se arman en runtime (`/landing/${base}.webp`), así que **el grep literal dio vacío**. Hubo que enumerar las bases: 5, tres con `dosDirecciones` → 8 archivos exactos |
-
-**No se miró renderizada, y esta vez es lo correcto:** es byte por byte la
-página que el dueño ya miró y eligió.
-
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
 Existen y **compilan**: `apps/tienda` (Next.js), `apps/admin` (Flutter) y
@@ -329,9 +348,10 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 
 | Qué | Por qué | Quién |
 |---|---|---|
-| ⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`** | Ni Firestore ni Storage tienen un release (medido por la API de Rules), y por eso las fotos dan 400: el bucket no tiene reglas. **Desde el 2026-09-11 deja vacías también las seis ventanas de la home.** El clasificador del modo auto frenó el deploy tres veces. **Disparador: ya.** Correr `firebase deploy --only firestore:rules,storage --project bouquet-vinos` y verificar con la API de Rules, no con el mensaje del CLI. Desde 2026-09-11. | el dueño |
+| ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **El catálogo real no se despliega sin el tramo 4** | Hasta que Cloudflare cachee con purga por tag, las lecturas escalan con las visitas: con 200 vinos, 115 % de la cuota a 250 visitas/día (ADR 008). Y el tramo 4 tiene que invalidar también la caché de Next, que sirve una página vencida hasta 360 s. Y decidir si la home entra a la purga: hoy envejece hasta el próximo deploy (ADR 008 §7). **Disparador: antes del deploy público.** Desde 2026-09-11. | `functions` + `tienda` |
-| **Ocho hallazgos de `revisor-pagos` para antes de `crearOrden`** | Recrear un producto se saltea la inmutabilidad; precio 0; compuesto sin componentes; `PedidoDeCompra` sin validador; carrito sin tope de líneas; la caché de Next contra la purga; los tests de reglas fuera de CI; reglas y validador que no dicen lo mismo. La tabla está en ADR 008. **Disparador: la sesión de `crearOrden`.** Desde 2026-09-11. | `functions` + `reglas` |
+| **NUEVE hallazgos de `revisor-pagos` para antes de `crearOrden`** | Recrear un producto se saltea la inmutabilidad; precio 0; compuesto sin componentes; `PedidoDeCompra` sin validador; carrito sin tope de líneas; la caché de Next contra la purga; los tests de reglas fuera de CI; reglas y validador que no dicen lo mismo. **El noveno (2026-09-14):** rechazar todo pedido que no sume un múltiplo de `BOTELLAS_POR_CAJA` botellas, recalculado en el servidor ([ADR 009](architecture/decisions/009-venta-por-caja.md)). La tabla está en ADR 008. **Disparador: la sesión de `crearOrden`.** Desde 2026-09-11. | `functions` + `reglas` |
+| **El carril de cajas no se miró en un teléfono de verdad** | Se miró a 390 px **emulados** por CDP, que es lo que esta máquina puede: el Chrome headless no baja de 504 px sin emulación. La pista scrollea de lado dentro de su contenedor y eso se juzga con el dedo, no con `scrollWidth`. **Disparador:** la próxima vez que el dueño abra `/vinos` en su teléfono. Desde 2026-09-14. | el dueño |
 | ⚠️ **El canal de contacto de `/oficio` es PROVISORIO — quinto gate de deploy** | `EL_CONTACTO_ES_PROVISORIO = true` en `features/oficio/oficio.ts`: el WhatsApp publicado (`+54 9 3548 60-0375`) es el **del desarrollador** y `hola@bouquet.com.ar` no resuelve porque no hay dominio. La constante viaja al HTML como `data-contacto-provisorio`, así que se chequea con `grep` en el repo **y** con `curl` en producción. **Disparador: bloquea el deploy.** Cuando el dueño entregue el WhatsApp real y el dominio: bajar la constante, volver a correr las rutas y el `grep -c` del HTML, y recién ahí desplegar `tienda` — preguntándose antes **qué más se mergeó**, porque el deploy de front reconstruye desde el HEAD pusheado. Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **El numeral hueco del tramo `III` lo tiene que mirar el dueño** | Es la tesis de la página dicha con tipografía —"firmamos dos"— y el riesgo lo marcó él: que se lea como que algo se rompió en vez de como una decisión. Yo lo miré renderizado y se lee como decisión (contorno parejo, más el filete al 50 % y el nombre atenuado acompañando), pero la palabra es suya. **Plan B ya escrito** en el design: numeral macizo, nombre en cursiva y filete al 50 %. **Disparador:** abrir `/oficio` y mirarlo. Desde 2026-09-09. | el dueño |
 | ⚠️ **La vidriera NO tiene sitemap, ninguna ruta** | Lo destapó `cazador-de-puertas` cerrando `/oficio`: no existe `sitemap.ts`, `sitemap.xml` ni `robots.ts` en todo el repo, así que hoy la única cobertura de descubribilidad es la barra de navegación. No se escribió acá a propósito: un `sitemap.ts` necesita una URL base y **todavía no hay dominio**, así que saldría apuntando a un host inventado. **Disparador: el día que exista dominio** — el mismo día que se puede medir la purga de Cloudflare y que se resuelve el mail del mostrador. Desde 2026-09-09. | el dueño + `tienda` |
@@ -363,6 +383,7 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | 006 | La vidriera se ordena por **feature**, y `shared/` tiene **cinco reglas** contra el cajón de sastre | [006](architecture/decisions/006-estructura-de-la-tienda.md) |
 | 007 | La sección se llama **El oficio**, cubre tres tramos, y el contacto es su cierre | [007](architecture/decisions/007-seccion-el-oficio.md) |
 | 008 | El **stock** lo escribe sólo el servidor, en unidades de venta; la vidriera lee **una proyección** por minuto, y el carrito vive en `localStorage` | [008](architecture/decisions/008-catalogo-stock-y-carrito.md) |
+| 009 | El vino se vende **sólo de a 6 botellas**; una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
 
 ---
 
