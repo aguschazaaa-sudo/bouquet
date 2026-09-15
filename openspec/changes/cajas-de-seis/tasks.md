@@ -58,7 +58,7 @@
 - [x] 7.4 Verificar que el canario del aviso es **nuevo**: grepear el repo antes de usarlo como control
 - [x] 7.5 Mirar renderizado a 1440 y 390 px: el carril con cajas, sin cajas, con un lugar agotado, y el carrito en 4, 6 y 7 botellas
 - [x] 7.6 `bash scripts/hooks/probar_hooks.sh` sigue en verde, y `node scripts/ci/verificar_enlaces.mjs .`
-- [ ] 7.7 `gh workflow run ci.yml -f alcance=tests` — **es lógica, no UI**, así que no alcanza con el `rapido` del push
+- [x] 7.7 `gh workflow run ci.yml -f alcance=tests` — **es lógica, no UI**, así que no alcanza con el `rapido` del push
 
 ## 8. Cerrar
 
@@ -73,5 +73,5 @@
 - [x] 9.1 Desplegar `reglas` — primero, siempre
 - [x] 9.2 Verificar las reglas con la **API de Rules**, no con el mensaje del CLI
 - [x] 9.3 Correr la lectura real del documento contra stage por REST, con control negativo (una ruta inventada da 404)
-- [ ] 9.4 ⚠️ **La tienda NO se despliega todavía**: siguen abiertos los cinco gates (reglas de Storage, puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes). Anotar el cambio como **polizón pendiente** con fecha y disparador, y preguntarse **qué más se mergeó** el día que se publique
+- [x] 9.4 ⚠️ **La tienda NO se despliega todavía**: siguen abiertos los cinco gates (reglas de Storage, puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes). Anotar el cambio como **polizón pendiente** con fecha y disparador, y preguntarse **qué más se mergeó** el día que se publique
 - [ ] 9.5 Cuando la tienda se despliegue: verificar el aviso y el carril con `curl` sobre producción, con control positivo y negativo, y recién ahí `/opsx:archive`

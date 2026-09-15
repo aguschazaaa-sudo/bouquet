@@ -97,7 +97,7 @@ sí. Arreglado en `shared/ui`, medido antes y después.
 | El carril | 4 tarjetas, 1 lugar marcado. Sin el documento sembrado **no se renderiza** |
 | Sin overflow | `scrollWidth = clientWidth` a 1440 y 390; la pista scrollea **dentro** de su contenedor (1131 sobre 358) |
 | Las reglas | **26** casos contra el emulador (eran 24), con control positivo |
-| Tests y tipos | **116** de contratos (eran 65) + **21** de la tienda; `tsc` 0 en los dos; arnés 35/35; 176 enlaces |
+| Tests y tipos | **121** de contratos (eran 65) + **21** de la tienda; `tsc` 0 en los dos; arnés 35/35; 183 enlaces. En CI, sobre el HEAD pusheado: 121 + 21, 0 fallas |
 | El seed | Dos corridas, verificado por REST: 4 cajas, control negativo **404** |
 | Mirado | 1440 y 390 px emulados, con los datos reales de stage |
 
@@ -404,6 +404,7 @@ Los cuatro que bloquean algo:
 | Deploy desde tag en vez de rama | Antes del primer deploy que incluya cobro | 2026-09-01 |
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
+| ⚠️ **La venta por caja viaja de POLIZÓN**: está commiteada (`v0.18.1`) y **no desplegada**. Cinco gates siguen abiertos — puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
 
 ---
 
