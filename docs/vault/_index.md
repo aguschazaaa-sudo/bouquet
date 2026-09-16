@@ -53,6 +53,40 @@ Lo próximo es `crearOrden` y el cobro, con los nueve hallazgos que dejó
 [ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md). Y antes del
 deploy público con el catálogo real, el tramo 4: Cloudflare con purga por tag.
 
+**El panel tiene plan desde el 2026-09-16**, y su primer hito —cargar el
+catálogo real— no espera a `crearOrden`.
+
+### El panel tiene plan: 11 épicas, 49 historias, ninguna construida (2026-09-16)
+
+**Nace el backlog de la app de gestión** en
+[`features/panel/`](features/panel/overview.md): épicas que agrupan historias
+de usuario, cada una con lo que **ya está decidido** y la restringe, enlazado a
+su ADR. Son dos capas de tres: los **requerimientos** se escriben historia por
+historia, en el change de `/opsx:propose` que la tome. El documento **no tiene
+casillas** a propósito: el estado de una historia sale de un `grep` de su ID en
+`openspec/changes/`.
+
+**Tres hitos:** cargar el catálogo real —que **no** espera a `crearOrden`—,
+atender pedidos —que sí, y cuyos requerimientos se escriben con el spec de
+`crearOrden`— y curar la vidriera.
+
+⚠️ **Planificar encontró siete cosas que ningún documento sabía.** Las tres que
+más pesan:
+
+1. **Una foto subida desde el panel llega cruda**, y la vidriera espera WebP
+   recortado: hoy ese recorte lo hace sólo el seed, con `sharp`.
+2. **Las reglas de `ordenes` no validan la transición de `estadoEntrega`**, y
+   no dejan guardar ni el seguimiento ni el motivo de una entrega fallida.
+3. **La reposición de stock y `crearOrden` escriben el mismo campo**: se
+   diseñan juntas.
+
+| Qué | Cómo |
+|---|---|
+| El mapa dice la verdad | **49** encabezados `HU-` en las épicas contra los 49 de la tabla, épica por épica; **0** IDs repetidos (control positivo del `uniq -d` al lado) y **0** referencias a historias que no existen |
+| Los enlaces | **374** resuelven, anclas incluidas. **Control negativo:** un ancla inventada en ARQUITECTURA la rechaza el verificador, y la real con tilde pasa |
+
+Son documentos: no se despliega nada.
+
 ### El checkout existe, y no cobra (2026-09-15)
 
 **Nace `/pedido` — terminar la compra.** Quién lo recibe, a dónde va, cuánto
@@ -310,63 +344,6 @@ la foto en una ventana prendida, y ya no dicen precio ni "guarda".
 | Mirado | 1440 y 390 px emulados, con las fotos reales servidas por intercepción: las seis ventanas miden **0,563** (9:16) en las dos vistas |
 | Tests y docs | 19 de la tienda; `tsc` 0; 168 enlaces; `_verdad.md` regenerado |
 
-### `El oficio`: la sección que cierra dos placeholders con una sola pieza (2026-09-09)
-
-**Nace `/oficio`** —tres tramos, `I Elegir · II Guardar · III Abrir`, de los que
-la marca **firma dos**— y con ella se van las dos secciones vacías que la barra
-venía nombrando desde `v0.15.0`. `/custodia` **se borró** (nada estaba
-desplegado: no hay enlace entrante que preservar) y `/contacto` **se plegó** como
-cierre de la página, con la URL vieja redirigiendo **308** a `/oficio#mostrador`.
-`Custodia` no desapareció: bajó a nombrar el tramo `II`, que es donde la palabra
-rinde. Todo el porqué en [ADR 007](architecture/decisions/007-seccion-el-oficio.md).
-
-La forma la eligió el dueño **mirando dos maquetas** con el copy real —la
-etiqueta única y la carta numerada—, no leyendo una propuesta.
-
-⚠️ **NO SE DESPLIEGA, y es el quinto gate.** `EL_CONTACTO_ES_PROVISORIO` está en
-`true`: el WhatsApp publicado es el del desarrollador y el mail todavía no tiene
-dominio. Se suma a la puerta de edad, las seis fichas en 404, las licencias de
-los assets y los 391 KB de fuentes. La constante **también viaja al HTML** como
-`data-contacto-provisorio`, porque `auditor-produccion` audita con `curl` y no
-puede grepear un `.ts`.
-
-⚠️ **Dos defectos que ninguna medición mostró, los dos encontrados abriendo el
-PNG** — quinta vez en este proyecto:
-
-1. **Los párrafos salían pegados en los dos anchos.** El aire vivía en un
-   `p + p` de especificidad (0,1,2) y el `margin: 0` en `.tramo__cuerpo .prosa`,
-   (0,2,0): **el margen no pintaba nunca**. Las columnas, los altos, el
-   `column-rule` y el `scrollWidth` daban todos bien mientras la prosa era un
-   muro.
-2. **`break-inside: avoid-column` desbalanceaba las columnas**: con párrafos
-   atómicos el balanceador no reparte, y el tramo `I` quedaba **3 líneas de un
-   lado y 9 del otro**. Se saca; `orphans`/`widows` en 2 evitan la línea suelta.
-
-⚠️ **Y TRES INSTRUMENTOS DE VERIFICACIÓN MINTIERON EN VERDE.** Es el hallazgo
-más transferible de la tarea:
-
-| Instrumento | Cómo miente |
-|---|---|
-| `grep -i` sobre texto con acentos | Con el locale vacío devuelve **cero en silencio** sobre UTF-8 con tildes; `grep -c` ni imprime número. El control positivo con el dialecto de cata insertado dio **0**. Con `LC_ALL=C.UTF-8` encuentra las tres |
-| `call-site-guard` | Grepea `apps/` entero, `node_modules` y `.next` incluidos. Los **sourcemaps embeben el fuente**, así que un símbolo huérfano aparece "usado" en cuanto corrió un build: dio verde con dos exports que no abría nadie. Misma familia que `generar_verdad.mjs` contando comentarios |
-| `frontera-features.sh` regla 2 | Sólo mira `from '@/features/`. El mismo import escrito **relativo** no bloquea |
-| El propio **gate de deploy**, en su primera versión | `data-x={CONST ? 'true' : undefined}` saca el atributo del DOM pero **no del payload RSC**, que Next serializa en el mismo HTML como `"$undefined"`. Con la constante en `false` el `grep` seguía dando 1: **el gate no distinguía**. Arreglado con un spread condicional y medido en los dos estados — `true` → 2, `false` → 0. Y el comando iba con `grep -c`, que cuenta LÍNEAS y el HTML de Next es una sola |
-
-**Verificado sobre `next build` + `next start`, y mirado renderizado:**
-
-| Qué | Cómo |
-|---|---|
-| Las rutas | `/oficio` **200**, `/custodia` **404**, `/contacto` **308 → `/oficio#mostrador`**. **Control negativo:** `/ruta-inventada-de-control` da 404 |
-| `/oficio` es estática | `next build` la lista con `○`, y `/custodia` ya no aparece |
-| El gate llega al HTML | `curl … | grep -c data-contacto-provisorio` = **1**. Control negativo: en la home da **0** |
-| Dos columnas en escritorio | A 1440: `column-count` **2** con regla dorada de 1px al 22 %; los tres tramos miden **0,50 · 0,58 · 0,53** de viewport, ninguno se pasa |
-| Una sola columna en angosto | A 390: `column-count` **auto**, `column-rule-style` **none**, y `scrollWidth` = `clientWidth` = **390** |
-| El numeral sin firma | `III` con `color: transparent` + `-webkit-text-stroke` 1,2px, **adentro** del `@supports`: sin soporte queda macizo, nunca invisible |
-| Movimiento reducido | `scrollHeight` **2771 = 2771** con y sin la preferencia, animaciones **16 → 0**, y en la captura los filetes están a **ancho completo** |
-| Cero Firestore | Sin `import` de firebase en la feature. **Control positivo:** el mismo grep sí lo encuentra en `src/server/` |
-| Los hooks y los enlaces | arnés **35/35** · **143** enlaces en 54 archivos, todos resuelven |
-| La voz | 565 palabras: **0** exclamaciones, **0** emoji, **0** `tú`/`usted`, **0** del dialecto de cata — con el control positivo pasando primero |
-
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
 Existen y **compilan**: `apps/tienda` (Next.js), `apps/admin` (Flutter) y
@@ -395,6 +372,7 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 
 | Qué | Por qué | Quién |
 |---|---|---|
+| ⚠️ **Seis preguntas del dueño cambian el backlog del panel** | Quién usa el panel, si entran ventas por fuera de la tienda, cómo se entra, por dónde enterarse de un pedido nuevo, si se despacha un pedido impago y cómo sale el aviso de despacho. Están en [`features/panel/overview.md`](features/panel/overview.md). La 2 decide si una épica entera (EP-10) sube al hito 2. **Disparador:** antes de escribir los requerimientos del hito 1, que dependen de la 1 y la 3. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `curl` en producción. Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
 | ⚠️ **`cajasSugeridas/publicas` de stage quedó VIEJO, y se ve** | El documento sembrado todavía tiene `dos-y-dos` —dos packs de 2 + dos botellas—, que desde [ADR 009 §10](architecture/decisions/009-venta-por-caja.md) no es una caja: el código la descarta y el carril de `/vinos` sirve **3** tarjetas en vez de 4, con el motivo logueado en la build. `dos-de-cada` no existe hasta que corra `node scripts/seed/seed.mjs`. **Disparador:** antes de mirar el carril de stage, y antes del primer deploy. Desde 2026-09-15. | el dueño + `tienda` |

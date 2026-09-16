@@ -9,6 +9,74 @@
 
 ---
 
+## Salió el 2026-09-16, al entrar el plan del panel
+
+Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el mismo
+criterio de la vez anterior: aquélla dice dónde vive Firestore. La decisión de
+ésta vive entera en
+[ADR 007](../architecture/decisions/007-seccion-el-oficio.md), y su gate —el
+contacto provisorio— sigue en la tabla de abiertos de `_index.md`, que es
+donde se lo busca antes de desplegar.
+
+### `El oficio`: la sección que cierra dos placeholders con una sola pieza (2026-09-09)
+
+**Nace `/oficio`** —tres tramos, `I Elegir · II Guardar · III Abrir`, de los que
+la marca **firma dos**— y con ella se van las dos secciones vacías que la barra
+venía nombrando desde `v0.15.0`. `/custodia` **se borró** (nada estaba
+desplegado: no hay enlace entrante que preservar) y `/contacto` **se plegó** como
+cierre de la página, con la URL vieja redirigiendo **308** a `/oficio#mostrador`.
+`Custodia` no desapareció: bajó a nombrar el tramo `II`, que es donde la palabra
+rinde. Todo el porqué en [ADR 007](../architecture/decisions/007-seccion-el-oficio.md).
+
+La forma la eligió el dueño **mirando dos maquetas** con el copy real —la
+etiqueta única y la carta numerada—, no leyendo una propuesta.
+
+⚠️ **NO SE DESPLIEGA, y es el quinto gate.** `EL_CONTACTO_ES_PROVISORIO` está en
+`true`: el WhatsApp publicado es el del desarrollador y el mail todavía no tiene
+dominio. Se suma a la puerta de edad, las seis fichas en 404, las licencias de
+los assets y los 391 KB de fuentes. La constante **también viaja al HTML** como
+`data-contacto-provisorio`, porque `auditor-produccion` audita con `curl` y no
+puede grepear un `.ts`.
+
+⚠️ **Dos defectos que ninguna medición mostró, los dos encontrados abriendo el
+PNG** — quinta vez en este proyecto:
+
+1. **Los párrafos salían pegados en los dos anchos.** El aire vivía en un
+   `p + p` de especificidad (0,1,2) y el `margin: 0` en `.tramo__cuerpo .prosa`,
+   (0,2,0): **el margen no pintaba nunca**. Las columnas, los altos, el
+   `column-rule` y el `scrollWidth` daban todos bien mientras la prosa era un
+   muro.
+2. **`break-inside: avoid-column` desbalanceaba las columnas**: con párrafos
+   atómicos el balanceador no reparte, y el tramo `I` quedaba **3 líneas de un
+   lado y 9 del otro**. Se saca; `orphans`/`widows` en 2 evitan la línea suelta.
+
+⚠️ **Y TRES INSTRUMENTOS DE VERIFICACIÓN MINTIERON EN VERDE.** Es el hallazgo
+más transferible de la tarea:
+
+| Instrumento | Cómo miente |
+|---|---|
+| `grep -i` sobre texto con acentos | Con el locale vacío devuelve **cero en silencio** sobre UTF-8 con tildes; `grep -c` ni imprime número. El control positivo con el dialecto de cata insertado dio **0**. Con `LC_ALL=C.UTF-8` encuentra las tres |
+| `call-site-guard` | Grepea `apps/` entero, `node_modules` y `.next` incluidos. Los **sourcemaps embeben el fuente**, así que un símbolo huérfano aparece "usado" en cuanto corrió un build: dio verde con dos exports que no abría nadie. Misma familia que `generar_verdad.mjs` contando comentarios |
+| `frontera-features.sh` regla 2 | Sólo mira `from '@/features/`. El mismo import escrito **relativo** no bloquea |
+| El propio **gate de deploy**, en su primera versión | `data-x={CONST ? 'true' : undefined}` saca el atributo del DOM pero **no del payload RSC**, que Next serializa en el mismo HTML como `"$undefined"`. Con la constante en `false` el `grep` seguía dando 1: **el gate no distinguía**. Arreglado con un spread condicional y medido en los dos estados — `true` → 2, `false` → 0. Y el comando iba con `grep -c`, que cuenta LÍNEAS y el HTML de Next es una sola |
+
+**Verificado sobre `next build` + `next start`, y mirado renderizado:**
+
+| Qué | Cómo |
+|---|---|
+| Las rutas | `/oficio` **200**, `/custodia` **404**, `/contacto` **308 → `/oficio#mostrador`**. **Control negativo:** `/ruta-inventada-de-control` da 404 |
+| `/oficio` es estática | `next build` la lista con `○`, y `/custodia` ya no aparece |
+| El gate llega al HTML | `curl … | grep -c data-contacto-provisorio` = **1**. Control negativo: en la home da **0** |
+| Dos columnas en escritorio | A 1440: `column-count` **2** con regla dorada de 1px al 22 %; los tres tramos miden **0,50 · 0,58 · 0,53** de viewport, ninguno se pasa |
+| Una sola columna en angosto | A 390: `column-count` **auto**, `column-rule-style` **none**, y `scrollWidth` = `clientWidth` = **390** |
+| El numeral sin firma | `III` con `color: transparent` + `-webkit-text-stroke` 1,2px, **adentro** del `@supports`: sin soporte queda macizo, nunca invisible |
+| Movimiento reducido | `scrollHeight` **2771 = 2771** con y sin la preferencia, animaciones **16 → 0**, y en la captura los filetes están a **ancho completo** |
+| Cero Firestore | Sin `import` de firebase en la feature. **Control positivo:** el mismo grep sí lo encuentra en `src/server/` |
+| Los hooks y los enlaces | arnés **35/35** · **143** enlaces en 54 archivos, todos resuelven |
+| La voz | 565 palabras: **0** exclamaciones, **0** emoji, **0** `tú`/`usted`, **0** del dialecto de cata — con el control positivo pasando primero |
+
+---
+
 ## Salió el 2026-09-15, al entrar el checkout
 
 Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el criterio de
