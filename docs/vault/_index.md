@@ -53,8 +53,51 @@ Lo próximo es `crearOrden` y el cobro, con los nueve hallazgos que dejó
 [ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md). Y antes del
 deploy público con el catálogo real, el tramo 4: Cloudflare con purga por tag.
 
-**El panel tiene plan desde el 2026-09-16**, y su primer hito —cargar el
-catálogo real— no espera a `crearOrden`.
+**El panel tiene plan desde el 2026-09-16, y ese mismo día tuvo puerta**:
+EP-01 entera. Se entra con mail o con Google, quien no tiene permiso lo ve
+dicho, y las cuentas las da un script. Catálogo y Pedidos existen **vacíos**, y
+lo dicen. Lo próximo del hito 1 son las bodegas y los vinos (EP-02, EP-03).
+
+### El panel tiene puerta: entrar, sin acceso y la estructura (2026-09-16)
+
+**Nace el panel de verdad**: EP-01 entera (HU-01.1 a 01.5) y los habilitadores
+H1 a H4, en el change
+[`panel-entrar`](../../openspec/changes/panel-entrar/proposal.md). El porqué
+de cada decisión está en
+[ADR 011](architecture/decisions/011-entrar-al-panel.md).
+
+⚠️ **El proyecto no tenía Auth.** La API devolvía `CONFIGURATION_NOT_FOUND`,
+medido con dos controles: una ruta inventada da un 404 en HTML y un proyecto
+con Auth da su configuración. Tampoco había ninguna app registrada. El usuario
+inicializó Auth con mail y Google, y la protección contra enumeración de mails
+quedó prendida.
+
+**La dirección visual la eligió el dueño mirando tres direcciones**: *"me
+gusta el esquema de colores de la B pero me parece más eficiente la búsqueda
+de A"*. Nace la **mezcla C**, espejada en
+[`tokens.md` §7](design/tokens.md).
+
+⚠️ **La sonda de Auth encontró un agujero que ningún documento tenía: el
+registro anticipado.** Con la API key pública, cualquiera registra el mail de
+un familiar con una contraseña suya. Si el script le diera el permiso a *"la
+cuenta de ese mail"*, el panel quedaría en manos de quien la registró. **El
+script se niega**. Su test falla si se saca la condición, y eso se comprobó
+mutándola.
+
+**Y confirmó la trampa que anotaba HU-01.1**: con el mail sin verificar,
+entrar con Google desvincula la contraseña. El panel no ofrece registrarse, y
+la contraseña nace por un correo que verifica el mail, así que no puede pasar.
+
+| Qué | Cómo |
+|---|---|
+| El script de accesos | Contra el emulador de Auth, cada requisito con un caso aceptado y uno rechazado. **Mutación:** sin la condición del mail verificado, falla exactamente el caso del registro anticipado |
+| Sin huérfanos | Ninguna clase nueva sin quien la abra: el control negativo, un símbolo inventado, da 0. Dos tokens sin uso se sacaron |
+| Las fronteras | 0 colores literales fuera de `lib/theme/`; el SDK de Firebase sólo en `data/` y `core/firebase/`; ningún widget pasa de 200 líneas; arnés 35/35 |
+| Compila | Por el analizador del editor, que ya corría y no marcó nada, y `dart format`. **El build lo contesta CI**: acá no se compila |
+
+⚠️ **`dart test` lo frenó el clasificador del modo auto** en esta máquina, y
+eso que `CLAUDE.md` no lo prohíbe (sí prohíbe `flutter test`). La suite de
+Dart corre en CI.
 
 ### El panel tiene plan: 11 épicas, 48 historias, ninguna construida (2026-09-16)
 
@@ -288,81 +331,6 @@ sí. Arreglado en `shared/ui`, medido antes y después.
 **`voz` curó el copy** y de paso encontró una cadena que nadie abría (`vaDeA`):
 se borró.
 
-### El catálogo, la ficha y el carrito, en stage y sin cobrar (2026-09-11)
-
-**Nacen `/vinos`, `/vinos/[slug]` y `/carrito`** sobre 20 vinos argentinos de
-muestra en `bouquet-vinos` (stage), con las fotos en Storage. El modelo de stock
-quedó hecho para no migrarlo cuando lleguen `crearOrden` y las cajas: `tipo`
-inmutable, `stock` sólo del servidor y en unidades de venta, y la caja de 2 como
-producto propio. El porqué, en
-[ADR 008](architecture/decisions/008-catalogo-stock-y-carrito.md); los tokens del
-papel, en [`tokens.md`](design/tokens.md), que por fin existe.
-
-La forma la eligió el dueño entre **dos maquetas navegables** con los datos de
-stage: ganó **mostrador**, "por mucho". La vidriera se aparta de ella en un solo
-punto, y medido: las cifras.
-
-⚠️ **Cuatro cosas que ningún documento sabía, y aparecieron midiendo:**
-
-1. **La Libre Franklin de Google no tiene cifras tabulares.** "1111" y "8888"
-   dan 74,41 y 106,89 px con `tabular-nums`, igual que sin. Se pasó a Archivo,
-   que da 90,89 y 90,89. El control proporcional al lado es lo que prueba que la
-   medición distingue.
-2. **El lockfile estaba roto.** La `@google-cloud/firestore` de `firebase-admin`
-   pide `@opentelemetry/api` y el lock no la tenía: `npm install` decía "up to
-   date" y el cliente de Firestore no cargaba. Se declaró explícita en la tienda.
-3. **`--window-size=390` en Chrome headless da un viewport de 504.** Las
-   capturas "de teléfono" salían cortadas a la derecha y parecían overflow. Las
-   de verdad van por CDP con emulación de dispositivo.
-4. **La tienda nunca había importado contratos**, y el primer import no
-   compilaba: las extensiones `.ts` que Node exige.
-
-**Verificado sobre `next build` + `next start` contra stage:**
-
-| Qué | Cómo |
-|---|---|
-| Las rutas | `/vinos`, tres fichas y `/carrito` dan **200**; `/vinos/slug-inventado-de-control` da **404** |
-| La caché | `s-maxage=60, stale-while-revalidate=300` y `Cache-Tag: catalogo` (la ficha suma `producto-<slug>`). La home sigue en `s-maxage=31536000` y `/oficio` estática |
-| El HTML sin JavaScript | Los vinos de control aparecen; uno inventado da 0 |
-| El carrito | Portillo en 9 sobre un tope de 5 queda **guardado en 5**, y el total es **$ 183.500,00**, el mismo número calculado a mano |
-| Las reglas | 24 casos contra el emulador, cada requisito con uno aceptado y uno rechazado |
-| Tests, tipos, hooks | 65 de contratos + 11 de la tienda; `tsc` 0 en los dos; arnés 35/35; 159 enlaces |
-| El seed | Dos corridas, verificadas por REST: 20 productos, una foto por carpeta, control positivo y 404 |
-| Mirado | 1440 y 390 px emulados: listado, fichas, caja, agotado, sin foto, el carrito con sus estados feos y vacío. Sin overflow |
-
-⚠️ **Las fotos dan 400: las reglas no están publicadas.** El deploy lo frenó el
-clasificador del modo auto tres veces, y lo tiene que correr el dueño (abajo).
-**La tienda no se despliega**: al tramo 4 se suman los gates que ya existían.
-`revisor-pagos` no encontró nada que bloquee, y dejó ocho puntos para antes de
-`crearOrden`.
-
-**Esa misma tarde, la home dejó de mostrar vinos inventados.** Las seis
-tarjetas de `La selección` salen del catálogo, horneadas en el build: la home
-sigue estática y lee Firestore una vez por deploy, cero por visita
-([ADR 008 §7](architecture/decisions/008-catalogo-stock-y-carrito.md)). Llevan
-la foto en una ventana prendida, y ya no dicen precio ni "guarda".
-
-⚠️ **Dos trampas, las dos encontradas midiendo:**
-
-1. **`unstable_cache` le baja el `revalidate` a la página que lo llama.** Con
-   `obtenerCatalogo`, la home habría pasado sola a ISR de 60 s. Por eso existe
-   `leerCatalogoSinCache`, y un test que falla si la home importa la caché —
-   cuya primera versión dio rojo por el comentario que la nombra.
-2. **La foto agrandaba su ventana.** Con `height: 84%` adentro de la grilla, el
-   alto natural de la foto le ganaba al `aspect-ratio`: en escritorio salían
-   cuellos de botella gigantes. **Lo vio el dueño antes de que yo abriera mi
-   propia captura, que también lo mostraba.** Ahora la foto va
-   `position: absolute`.
-
-| Qué | Cómo |
-|---|---|
-| Sigue estática | `○ /` en el build y `s-maxage=31536000`; `/vinos` da `1m` como control |
-| Lo viejo se fue | 0 "Cuesta del Sauce", 0 `/vinos/muestra-0…`, 0 "Acostada desde marzo" (antes: 2, 6 y 2) |
-| Los seis son reales | Los que predijo la regla antes de mirar; sus seis fichas dan **200** y una ruta inventada **404** |
-| Sin precio | "19.900" da **0** en la home y **4** en `/vinos` |
-| Mirado | 1440 y 390 px emulados, con las fotos reales servidas por intercepción: las seis ventanas miden **0,563** (9:16) en las dos vistas |
-| Tests y docs | 19 de la tienda; `tsc` 0; 168 enlaces; `_verdad.md` regenerado |
-
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
 Existen y **compilan**: `apps/tienda` (Next.js), `apps/admin` (Flutter) y
@@ -391,6 +359,10 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 
 | Qué | Por qué | Quién |
 |---|---|---|
+| ⚠️ **Nadie de la familia tiene acceso al panel todavía** | El panel está listo para recibir cuentas, pero falta **la lista de mails** de quienes lo van a usar. Con cada uno: `node scripts/acceso/acceso.mjs dar <mail>`, y que entre con Google o toque *"¿No tenés contraseña?"*. **Disparador:** cuando el dueño pase los mails. Desde 2026-09-16. | el dueño |
+| **Entrar con Google no está verificado en live por una persona** | La ventana de Google no se puede manejar con el Chrome sin cabeza de esta máquina, y los canales de preview no son dominios autorizados. La verificación automática es con contraseña. **Disparador:** la primera vez que alguien entre con Google a `bouquet-vinos.web.app`. Desde 2026-09-16. | el usuario |
+| **La API key web del panel no está restringida** | Es pública por diseño y está en `firebase_options.dart`, en un repo público. Restringirla por referrer (`bouquet-vinos.web.app`, `firebaseapp.com`, `localhost`) achica lo que se puede hacer con ella, **incluido el registro anticipado** que el script de accesos ya bloquea por su lado (ADR 011). **Disparador:** antes de dar acceso a la familia. Desde 2026-09-16. | el usuario |
+| **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth, igual que los de reglas, que tampoco están en CI (hallazgo de `revisor-pagos`). Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
 | ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). **Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `curl` en producción. Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
@@ -440,6 +412,7 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | 008 | El **stock** lo escribe sólo el servidor, en unidades de venta; la vidriera lee **una proyección** por minuto, y el carrito vive en `localStorage` | [008](architecture/decisions/008-catalogo-stock-y-carrito.md) |
 | 009 | La botella **suelta** se vende sólo de a 6 — lo que viene en su propia caja **viaja solo** y no cuenta (§10); una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
 | 010 | El **código postal** decide cómo viaja el pedido —nadie queda fuera de zona—; se cobra con **Mercado Pago Checkout Pro** y el comprobante **no va por mail** | [010](architecture/decisions/010-el-checkout.md) |
+| 011 | Al panel se entra con mail o Google; **las cuentas las crea un script, sin contraseña**, que se niega a habilitar una cuenta sin el mail verificado; el permiso viaja en el token, y se publica **lo que compiló CI** | [011](architecture/decisions/011-entrar-al-panel.md) |
 
 ---
 

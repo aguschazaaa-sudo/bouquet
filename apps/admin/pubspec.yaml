@@ -24,6 +24,20 @@ dependencies:
   cloud_firestore: ^5.5.0
   firebase_auth: ^5.3.3
 
+  # Rutas que son URLs: en la web se recargan, se comparten y responden al
+  # boton de atras (openspec/changes/panel-entrar, design.md §3).
+  go_router: ^17.5.0
+  flutter_web_plugins:
+    sdk: flutter
+
+  # Archivo para la interfaz y las cifras, Newsreader para los nombres
+  # (docs/vault/design/tokens.md §5). Se bajan en tiempo de ejecucion.
+  google_fonts: ^8.2.1
+
+  # Los textos del sistema (menus, tooltips) en castellano.
+  flutter_localizations:
+    sdk: flutter
+
 dev_dependencies:
   # package:test y no solo flutter_test: el test del espejo del enum es Dart
   # puro y con esto corre con `dart test`, que SI se puede correr en esta

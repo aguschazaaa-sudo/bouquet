@@ -3,7 +3,7 @@
 > Paso 2 de `/disenio`. Los nombres de esta página son **exactamente** los de
 > [`apps/tienda/src/shared/tokens/tokens.css`](../../../apps/tienda/src/shared/tokens/tokens.css):
 > un token que está acá y no allá, o al revés, es un defecto. El panel en
-> Flutter los va a espejar cuando exista; el puente son estos nombres.
+> Flutter los espeja desde el 2026-09-16 (§7); el puente son estos nombres.
 >
 > Escrito el 2026-09-11, cuando el dueño eligió la maqueta **mostrador** para
 > `/vinos` ([ADR 008](../architecture/decisions/008-catalogo-stock-y-carrito.md)).
@@ -104,3 +104,52 @@ adelgaza) está en el comentario de `tokens.css`.
 
 La luz (`--luz-*`), el parallax (`--amp-*`) y el movimiento (`--ease-caida`,
 `--dur-*`) viven en el mismo archivo y tienen su porqué al lado.
+
+## 7. El panel — el espejo en Flutter
+
+Escrito el 2026-09-16, cuando el dueño eligió la **mezcla C**:
+
+- **Los colores de la planilla:** una banda de tinta con el dorado, y
+  superficies blancas sobre papel hondo.
+- **La búsqueda y los renglones de la libreta.**
+
+Lo eligió mirando el
+[lienzo de las tres direcciones](https://claude.ai/artifact/1Eie7nobYEDNqQp4Ck6fv7).
+El porqué está en [ADR 011 §4](../architecture/decisions/011-entrar-al-panel.md).
+
+**El panel hereda la paleta y no la ceremonia** (`direccion.md §12`). Los
+valores viven en
+[`apps/admin/lib/theme/tokens.dart`](../../../apps/admin/lib/theme/tokens.dart),
+que es el **único** lugar de `lib/` con literales de color. Las pantallas se los
+piden a `Theme.of(context).colorScheme`, y el reparto está en
+[`tema.dart`](../../../apps/admin/lib/theme/tema.dart).
+
+Los `color-mix()` están **resueltos** con el mismo cálculo del §1. Los controles
+son los de siempre: negro sobre blanco da 21,00 y dorado sobre tinta, 8,80.
+
+| En Flutter | En la vidriera | Valor | Rol en el esquema | Contraste |
+|---|---|---|---|---:|
+| `Tokens.borgona` | `--borgona` | `#762D2D` | `primary`, `error` | 9,62 sobre blanco |
+| `Tokens.dorado` | `--dorado` | `#D2AE6D` | `secondary` | 8,80 sobre la banda |
+| `Tokens.tinta` | `--tinta` | `#1A1210` | `inverseSurface` (la banda) | — |
+| `Tokens.marfil` | `--marfil` | `#F5EFE4` | `onInverseSurface` | 16,13 sobre la banda |
+| — | `--marfil-2` | marfil al 76 % sobre la banda | pestañas inactivas | 9,59 |
+| `Tokens.blanco` | — | `#FFFFFF` | `surface` | — |
+| `Tokens.papelHondo` | `--papel-hondo` | `#F2EADB` | el fondo de las pantallas | — |
+| `Tokens.papelVentana` | `--papel-ventana` | `#EFE5D1` | `surfaceContainerHighest` (avisos) | — |
+| `Tokens.tinta1` | `--tinta-1` | `#1A1210` | `onSurface` | 18,45 sobre blanco |
+| `Tokens.tinta2` | `--tinta-2` | `#463E3A` | las etiquetas de campo | 10,43 |
+| `Tokens.tinta3` | `--tinta-3` | `#69625C` | `onSurfaceVariant`, `outline` | **6,03** sobre blanco · **5,04** sobre papel hondo |
+| `Tokens.regla` | `--regla` | `#D2CCC2` | `outlineVariant` | 1,60: sin información |
+
+- **Blanco es nuevo en el sistema, no en la marca.** La marca son dos colores
+  más blanco (`direccion.md §1`), y la vidriera no lo usaba porque su papel es
+  marfil.
+- **`--filete-papel` (`#997E51`, 3,86 sobre blanco) no está espejado todavía.**
+  Entra con los renglones del catálogo (EP-03): un token sin uso es código que
+  nadie abre.
+- **Tipografía:** Archivo para toda la interfaz, con `tabularFigures` en las
+  cifras, y Newsreader (`estiloDeNombre`) sólo para la marca y los nombres de
+  los vinos. Las dos llegan por `google_fonts`.
+- **Medidas:** radio 10, superficies 12, táctil 44, botones 52. La navegación
+  pasa de arriba a abajo por debajo de **840 px**.

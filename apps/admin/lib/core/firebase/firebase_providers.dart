@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// Único punto donde el panel pide la instancia de Firestore. Las
@@ -12,3 +13,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final firestoreProvider = Provider<FirebaseFirestore>(
   (ref) => FirebaseFirestore.instance,
 );
+
+/// Lo mismo, para Auth.
+final authProvider = Provider<FirebaseAuth>((ref) => FirebaseAuth.instance);

@@ -25,7 +25,10 @@ on:
       alcance:
         description: Que tan lejos ir
         type: choice
-        options: [rapido, tests, completo]
+        # panel = suite de Dart + analisis + build web del panel, con artifact.
+        # Es el UNICO build que existe, y solo corre a pedido
+        # (openspec/changes/panel-entrar, specs/panel-publicacion).
+        options: [rapido, tests, completo, panel]
         default: rapido
 
 # El event_name va EN EL GRUPO a proposito.
@@ -79,7 +82,7 @@ jobs:
       # paso 9 del Workflow A y se ejecuta DESPUES de un deploy, o sea en el
       # peor momento posible para descubrir un error de sintaxis.
       - name: Sintaxis de los scripts
-        run: for f in scripts/*.sh scripts/hooks/*.sh; do bash -n "$f" || exit 1; done
+        run: for f in scripts/*.sh scripts/*/*.sh; do bash -n "$f" || exit 1; done
       - name: verificar_release se explica solo y no miente al no verificar
         # Sin argumentos TIENE que salir 2. Un script de verificacion que sale 0
         # sin haber verificado nada es peor que no tener script.
@@ -149,7 +152,8 @@ jobs:
 
   suite_ts:
     needs: [contexto, tipos]
-    if: needs.contexto.outputs.hay_ts == 'true' && needs.contexto.outputs.alcance != 'rapido'
+    # `panel` no toca TypeScript: la suite de TS no corre ahi.
+    if: needs.contexto.outputs.hay_ts == 'true' && contains(fromJSON('["tests","completo"]'), needs.contexto.outputs.alcance)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -182,8 +186,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # La version fija es la de la maquina de desarrollo: el analizador del
+      # editor y el de CI tienen que decir lo mismo.
       - uses: subosito/flutter-action@v2
-        with: { channel: stable }
+        with: { channel: stable, flutter-version: '3.41.4' }
       - run: flutter pub get
         working-directory: apps/admin
       # --fatal-infos viene ACTIVADO por defecto: un avoid_print olvidado
@@ -209,6 +215,49 @@ jobs:
         working-directory: apps/admin
 
   # ==========================================================================
+  # BUILD DEL PANEL - el unico build del repo, y solo a pedido.
+  #
+  # El panel no compila en la maquina de desarrollo (CLAUDE.md), asi que este
+  # job es su unico ciclo de feedback. Deja un artifact con el hash de cada
+  # archivo y el commit: scripts/panel/publicar.sh lo baja, verifica los
+  # hashes y publica ESOS bytes. Se promueve, no se republica.
+  # ==========================================================================
+  build_panel:
+    needs: [contexto, suite_dart]
+    if: needs.contexto.outputs.alcance == 'panel' && needs.contexto.outputs.hay_flutter == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable, flutter-version: '3.41.4' }
+      # --enforce-lockfile: lo que se construye es lo que dice el lock
+      # commiteado, no lo ultimo que resuelva pub ese dia.
+      - run: flutter pub get --enforce-lockfile
+        working-directory: apps/admin
+      - name: Analisis estatico
+        run: flutter analyze --no-fatal-infos
+        working-directory: apps/admin
+      - name: Build web
+        run: flutter build web --release
+        working-directory: apps/admin
+      - name: Hashes y commit
+        working-directory: apps/admin/build/web
+        run: |
+          echo "${{ github.sha }}" > COMMIT
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          echo "archivos: $(wc -l < SHA256SUMS)"
+          # Control positivo: un build sin main.dart.js no es un build.
+          grep -q ' \./main\.dart\.js$' SHA256SUMS || { echo "::error::el build no tiene main.dart.js"; exit 1; }
+          grep -q ' \./index\.html$' SHA256SUMS || { echo "::error::el build no tiene index.html"; exit 1; }
+          grep ' \./main\.dart\.js$' SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: panel-web
+          path: apps/admin/build/web
+          if-no-files-found: error
+          retention-days: 14
+
+  # ==========================================================================
   # VEREDICTO - separado de los jobs que corren.
   #
   # Es la mitad menos obvia y mas importante del diseno de PadelPunilla: los
@@ -217,7 +266,7 @@ jobs:
   # suite verde.
   # ==========================================================================
   veredicto:
-    needs: [contexto, guardas, tipos, suite_ts, suite_dart]
+    needs: [contexto, guardas, tipos, suite_ts, suite_dart, build_panel]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -227,12 +276,19 @@ jobs:
             echo "::error::las guardas no pasaron (${{ needs.guardas.result }})"; exit 1; }
       - name: Ningun job puede haber fallado ni quedado cancelado
         run: |
-          for r in "${{ needs.tipos.result }}" "${{ needs.suite_ts.result }}" "${{ needs.suite_dart.result }}"; do
+          for r in "${{ needs.tipos.result }}" "${{ needs.suite_ts.result }}" "${{ needs.suite_dart.result }}" "${{ needs.build_panel.result }}"; do
             case "$r" in
               success|skipped) ;;
               *) echo "::error::un job termino en '$r' (cancelled cuenta como rojo)"; exit 1 ;;
             esac
           done
+      - name: Si se pidio el panel, el build tiene que haber corrido
+        # Un `skipped` pasa el paso de arriba. Con alcance=panel, un build
+        # salteado es exactamente el verde que no dice nada.
+        if: needs.contexto.outputs.alcance == 'panel'
+        run: |
+          [ "${{ needs.build_panel.result }}" = "success" ] || {
+            echo "::error::se pidio alcance=panel y el build termino en '${{ needs.build_panel.result }}'"; exit 1; }
       - name: Decir en el resumen QUE NO se verifico
         # LECCIONES 2.1: un job verde no prueba lo que no corrio. El resumen
         # dice explicitamente que quedo sin mirar, para que "CI verde" no se
@@ -247,6 +303,7 @@ jobs:
             [ "${{ needs.tipos.result }}" = "success" ] && echo "- TypeScript: tipos y frescura del contrato"
             [ "${{ needs.suite_ts.result }}" = "success" ] && echo "- TypeScript: suite"
             [ "${{ needs.suite_dart.result }}" = "success" ] && echo "- Dart: suite"
+            [ "${{ needs.build_panel.result }}" = "success" ] && echo "- Panel: analisis y build web (artifact \`panel-web\`)"
             echo
             echo "### NO verificado en esta corrida"
             [ "${{ needs.contexto.outputs.hay_ts }}" = "false" ] && echo "- TypeScript: todavia no existe \`packages/contratos\`"

@@ -24,7 +24,17 @@
       "target": "admin",
       "public": "apps/admin/build/web",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-      "rewrites": [{ "source": "**", "destination": "/index.html" }]
+      "rewrites": [{ "source": "**", "destination": "/index.html" }],
+      "headers": [
+        {
+          "source": "**",
+          "headers": [{ "key": "X-Robots-Tag", "value": "noindex, nofollow" }]
+        },
+        {
+          "source": "**/*.@(html|js|json|mjs|wasm)",
+          "headers": [{ "key": "Cache-Control", "value": "no-cache" }]
+        }
+      ]
     }
   ],
   "emulators": {

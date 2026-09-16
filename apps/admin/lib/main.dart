@@ -1,55 +1,37 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 
-// TODO(paso siguiente de ARQUITECTURA §12): falta `Firebase.initializeApp()`
-// contra `firebase_options.dart`. Ese archivo lo genera `flutterfire
-// configure` contra un proyecto Firebase real y toca `firebase.json` /
-// `.firebaserc` — los dos están fuera del alcance de esta tarea (que es
-// estructura y capas data/domain, no deploy) y en la lista de "no tocar".
-// Sin esa pieza, `FirebaseFirestore.instance` (usado en
-// core/firebase/firebase_providers.dart) va a fallar en tiempo de
-// ejecución — esperado hasta que exista el proyecto conectado.
-//
-// La dirección visual tampoco corrió todavía: no existen
-// docs/vault/design/direccion.md ni tokens.md tokens (ver /disenio). Por
-// eso este archivo usa los defaults de Material y no declara un solo
-// color — no-hardcoded-colors.sh lo bloquearía igual.
+import 'app/enrutador.dart';
+import 'firebase_options.dart';
+import 'theme/tema.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // URLs como `/pedidos` y no `/#/pedidos`: se recargan, se comparten y el
+  // hosting reescribe todo a index.html (firebase.json).
+  usePathUrlStrategy();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const ProviderScope(child: BouquetAdminApp()));
 }
 
-/// La raíz de la app. Placeholder a propósito: la UI con diseño real es
-/// otra tarea, posterior a `/disenio`.
-class BouquetAdminApp extends StatelessWidget {
+/// La raiz de la app: el tema de la mezcla C y el enrutador que decide que
+/// pantalla ve cada sesion.
+class BouquetAdminApp extends ConsumerWidget {
   const BouquetAdminApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
       title: 'bouquet — panel',
-      home: _PantallaPlaceholder(),
-    );
-  }
-}
-
-class _PantallaPlaceholder extends StatelessWidget {
-  const _PantallaPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('bouquet — panel')),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Estructura y capas data/domain listas.\n'
-            'La dirección visual todavía no corrió (/disenio).',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      ),
+      debugShowCheckedModeBanner: false,
+      theme: temaDelPanel(),
+      routerConfig: ref.watch(enrutadorProvider),
+      locale: const Locale('es', 'AR'),
+      supportedLocales: const [Locale('es', 'AR'), Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
     );
   }
 }

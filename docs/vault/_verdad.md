@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-16 - commit `d7fee18` **+ cambios sin commitear** - huella del cuerpo `dffa6563cc96`
+> **Generado:** 2026-09-16 - commit `3595e3c` **+ cambios sin commitear** - huella del cuerpo `82d6aee90867`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.22.5
+### Scripts de la raiz - `bouquet` 0.23.0
 
 | Script | Comando |
 |---|---|
@@ -91,7 +91,9 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 
 | Archivo | Casos |
 |---|---|
+| `apps/admin/test/app/destino_test.dart` | 18 |
 | `apps/admin/test/core/contratos/estados_orden_test.dart` | 9 |
+| `apps/admin/test/features/acceso/sesion_test.dart` | 11 |
 | `apps/tienda/test/almacen.test.ts` | 1 |
 | `apps/tienda/test/envios.test.ts` | 13 |
 | `apps/tienda/test/filtros.test.ts` | 10 |
@@ -105,8 +107,9 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `packages/contratos/test/orden.test.ts` | 13 |
 | `packages/contratos/test/producto.test.ts` | 21 |
 | `packages/contratos/test/proyeccion.test.ts` | 6 |
+| `scripts/acceso/acceso.test.mjs` | 11 |
 | `scripts/reglas/productos.test.mjs` | 26 |
-| **total** | **227** |
+| **total** | **267** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -251,7 +254,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `Cambio` | tipo | **SIN PUERTA - nadie** | - |
 | `fijarCantidad` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `packages/contratos/test/carrito.test.ts` |
 | `agregar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/reglas/productos.test.mjs` |
-| `quitar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts` |
+| `quitar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/acceso/acceso.mjs`, `scripts/acceso/acceso.test.mjs` |
 | `unidadesEnCarrito` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
 | `ESTADOS_DE_LINEA` | valor | **SIN PUERTA - nadie** | - |
 | `EstadoDeLinea` | tipo | **SIN PUERTA - nadie** | - |
@@ -330,4 +333,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 108. Archivos de test: 15. Casos de test: 227.
+Archivos de codigo recorridos: 111. Archivos de test: 18. Casos de test: 267.

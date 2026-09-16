@@ -498,7 +498,7 @@ verificador que no lee nada informa "todo bien".
 | **Licencia del wordmark** (Sitka / Addington CF) si se quiere componer texto en la fuente del logo | el dueño | Sólo si se quiere ir más allá del logo entregado |
 | **Cuál grotesca para las cifras** | técnica, la elijo yo con `tokens.md` | Antes del primer componente con precio |
 | **`tokens.md` — el paso 2 de `/disenio`** | — | Ahora. Sin él, `tienda` y `admin-presentacion` no deberían escribir componentes |
-| **Cómo se aplica esto al panel** (`apps/admin`) | — | Cuando arranque el paso 6. **El panel lo usa gente no técnica: hereda la paleta y NO la ceremonia** |
+| ~~**Cómo se aplica esto al panel** (`apps/admin`)~~ **Decidido el 2026-09-16:** la mezcla C —los colores de la planilla y la búsqueda de la libreta—, elegida por el dueño mirando tres direcciones. Tokens en [`tokens.md` §7](tokens.md), porqué en [ADR 011](../architecture/decisions/011-entrar-al-panel.md) | el dueño | — |
 | **Hook de colores para la vidriera** | técnica | Junto con `tokens.md`. Hoy `no-hardcoded-colors` sólo mira Dart |
 
 > ⚠️ **El panel no es la vidriera.** Toda la ceremonia de este documento aplica

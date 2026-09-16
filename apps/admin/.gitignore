@@ -1,7 +1,7 @@
-# Miniapp Flutter — apps/admin. Estándar de `flutter create`, ajustado a
-# que acá NO existen (todavía) las carpetas de plataforma (android/, web/):
-# esas las genera `flutter create .`, que está fuera del alcance de esta
-# tarea (ver el reporte de la tarea que creó este proyecto).
+# Miniapp Flutter — apps/admin. Estándar de `flutter create`.
+#
+# Plataformas: `web/` existe desde el change panel-entrar (2026-09-16).
+# `android/` entra en el hito 2, con la APK.
 
 .dart_tool/
 .flutter-plugins
@@ -10,3 +10,7 @@
 .pub-cache/
 .pub/
 build/
+
+# Lo que el IDE genera al lado del proyecto.
+.idea/
+*.iml

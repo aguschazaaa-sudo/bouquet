@@ -9,6 +9,92 @@
 
 ---
 
+## Salió el 2026-09-16, al entrar la puerta del panel
+
+Sexta entrada otra vez, el mismo día. **Salió ésta y no la de los tres
+paquetes**, por el mismo criterio: aquélla dice dónde vive Firestore y que esa
+ubicación no se cambia nunca. Las decisiones de ésta viven enteras en
+[ADR 008](../architecture/decisions/008-catalogo-stock-y-carrito.md), y sus
+pendientes —las fotos, el tramo 4, los hallazgos de `revisor-pagos`— siguen en
+la tabla de abiertos de `_index.md`.
+
+### El catálogo, la ficha y el carrito, en stage y sin cobrar (2026-09-11)
+
+**Nacen `/vinos`, `/vinos/[slug]` y `/carrito`** sobre 20 vinos argentinos de
+muestra en `bouquet-vinos` (stage), con las fotos en Storage. El modelo de stock
+quedó hecho para no migrarlo cuando lleguen `crearOrden` y las cajas: `tipo`
+inmutable, `stock` sólo del servidor y en unidades de venta, y la caja de 2 como
+producto propio. El porqué, en
+[ADR 008](../architecture/decisions/008-catalogo-stock-y-carrito.md); los tokens del
+papel, en [`tokens.md`](../design/tokens.md), que por fin existe.
+
+La forma la eligió el dueño entre **dos maquetas navegables** con los datos de
+stage: ganó **mostrador**, "por mucho". La vidriera se aparta de ella en un solo
+punto, y medido: las cifras.
+
+⚠️ **Cuatro cosas que ningún documento sabía, y aparecieron midiendo:**
+
+1. **La Libre Franklin de Google no tiene cifras tabulares.** "1111" y "8888"
+   dan 74,41 y 106,89 px con `tabular-nums`, igual que sin. Se pasó a Archivo,
+   que da 90,89 y 90,89. El control proporcional al lado es lo que prueba que la
+   medición distingue.
+2. **El lockfile estaba roto.** La `@google-cloud/firestore` de `firebase-admin`
+   pide `@opentelemetry/api` y el lock no la tenía: `npm install` decía "up to
+   date" y el cliente de Firestore no cargaba. Se declaró explícita en la tienda.
+3. **`--window-size=390` en Chrome headless da un viewport de 504.** Las
+   capturas "de teléfono" salían cortadas a la derecha y parecían overflow. Las
+   de verdad van por CDP con emulación de dispositivo.
+4. **La tienda nunca había importado contratos**, y el primer import no
+   compilaba: las extensiones `.ts` que Node exige.
+
+**Verificado sobre `next build` + `next start` contra stage:**
+
+| Qué | Cómo |
+|---|---|
+| Las rutas | `/vinos`, tres fichas y `/carrito` dan **200**; `/vinos/slug-inventado-de-control` da **404** |
+| La caché | `s-maxage=60, stale-while-revalidate=300` y `Cache-Tag: catalogo` (la ficha suma `producto-<slug>`). La home sigue en `s-maxage=31536000` y `/oficio` estática |
+| El HTML sin JavaScript | Los vinos de control aparecen; uno inventado da 0 |
+| El carrito | Portillo en 9 sobre un tope de 5 queda **guardado en 5**, y el total es **$ 183.500,00**, el mismo número calculado a mano |
+| Las reglas | 24 casos contra el emulador, cada requisito con uno aceptado y uno rechazado |
+| Tests, tipos, hooks | 65 de contratos + 11 de la tienda; `tsc` 0 en los dos; arnés 35/35; 159 enlaces |
+| El seed | Dos corridas, verificadas por REST: 20 productos, una foto por carpeta, control positivo y 404 |
+| Mirado | 1440 y 390 px emulados: listado, fichas, caja, agotado, sin foto, el carrito con sus estados feos y vacío. Sin overflow |
+
+⚠️ **Las fotos dan 400: las reglas no están publicadas.** El deploy lo frenó el
+clasificador del modo auto tres veces, y lo tiene que correr el dueño (abajo).
+**La tienda no se despliega**: al tramo 4 se suman los gates que ya existían.
+`revisor-pagos` no encontró nada que bloquee, y dejó ocho puntos para antes de
+`crearOrden`.
+
+**Esa misma tarde, la home dejó de mostrar vinos inventados.** Las seis
+tarjetas de `La selección` salen del catálogo, horneadas en el build: la home
+sigue estática y lee Firestore una vez por deploy, cero por visita
+([ADR 008 §7](../architecture/decisions/008-catalogo-stock-y-carrito.md)). Llevan
+la foto en una ventana prendida, y ya no dicen precio ni "guarda".
+
+⚠️ **Dos trampas, las dos encontradas midiendo:**
+
+1. **`unstable_cache` le baja el `revalidate` a la página que lo llama.** Con
+   `obtenerCatalogo`, la home habría pasado sola a ISR de 60 s. Por eso existe
+   `leerCatalogoSinCache`, y un test que falla si la home importa la caché —
+   cuya primera versión dio rojo por el comentario que la nombra.
+2. **La foto agrandaba su ventana.** Con `height: 84%` adentro de la grilla, el
+   alto natural de la foto le ganaba al `aspect-ratio`: en escritorio salían
+   cuellos de botella gigantes. **Lo vio el dueño antes de que yo abriera mi
+   propia captura, que también lo mostraba.** Ahora la foto va
+   `position: absolute`.
+
+| Qué | Cómo |
+|---|---|
+| Sigue estática | `○ /` en el build y `s-maxage=31536000`; `/vinos` da `1m` como control |
+| Lo viejo se fue | 0 "Cuesta del Sauce", 0 `/vinos/muestra-0…`, 0 "Acostada desde marzo" (antes: 2, 6 y 2) |
+| Los seis son reales | Los que predijo la regla antes de mirar; sus seis fichas dan **200** y una ruta inventada **404** |
+| Sin precio | "19.900" da **0** en la home y **4** en `/vinos` |
+| Mirado | 1440 y 390 px emulados, con las fotos reales servidas por intercepción: las seis ventanas miden **0,563** (9:16) en las dos vistas |
+| Tests y docs | 19 de la tienda; `tsc` 0; 168 enlaces; `_verdad.md` regenerado |
+
+---
+
 ## Salió el 2026-09-16, al entrar el plan del panel
 
 Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el mismo
