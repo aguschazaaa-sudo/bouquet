@@ -45,18 +45,67 @@ post-mortems en [reglas para este repo](LECCIONES.md).
 
 ## Cómo trabajo
 
+Las tareas no recorren todas el mismo camino. Antes de empezar, la IA dice en
+voz alta por qué rama va cada una, para que se la pueda corregir. **La
+ceremonia crece con la tarea; la aprobación es la misma para todas.**
+
 ```mermaid
-flowchart LR
-    A["Pedido del dueño<br/>o idea"] --> B["La IA explora y arma<br/>dos maquetas navegables"]
-    B --> C{"El dueño elige<br/>mirándolas"}
-    C --> D["ADR: decisión,<br/>alternativas descartadas<br/>y costo en lecturas"]
-    D --> E["Agentes que escriben<br/>implementan"]
-    E --> F["Hooks miden fronteras<br/>en cada edición"]
-    F --> G["Agentes que verifican<br/>sin permiso de escritura"]
-    G --> H{"Lo miro<br/>renderizado"}
-    H --> I["Commit leyendo el diff"]
-    I --> J["Deploy y verificación<br/>en producción"]
+flowchart TD
+    T(["Llega una tarea"]) --> V["La IA lee el estado del proyecto<br/>y el ADR de lo que va a tocar"]
+    V --> P{"¿Toca<br/>plata?"}
+    P -->|no| Q{"¿Está claro<br/>qué hacer?"}
+    Q -->|no| C["C · Explorar con<br/>varias miradas"]
+    C -.->|"se vuelve a clasificar"| P
+    C --> CF(["O queda en una<br/>respuesta, sin código"])
+    Q -->|sí| N{"¿Es nuevo para<br/>el usuario?"}
+    N -->|sí| AM["A · La IA arma dos<br/>maquetas navegables"]
+    AM --> AE{"¿El dueño<br/>elige una?"}
+    AE -.->|no| AM
+    AE -->|sí| AS["Especificación + ADR<br/>con costo en lecturas"]
+    P -->|sí| DS["D · Especificación formal<br/>+ contrato del webhook"]
+    N -->|no| G{"¿Cambia algo<br/>que se publica?"}
+    G -->|sí| B["B · Cambio menor"]
+    G -->|no| E["E · Mantenimiento"]
+    AS --> I
+    DS --> I
+    B --> I
+    E --> I
+
+    I["Construir, de la pieza<br/>más chica a la página"] --> K["Controles: hooks, ¿alguien lo abre?,<br/>pruebas y capturas"]
+    K -.->|"algo falla"| I
+
+    K -->|"A · B"| DP["Documentación, commit y deploy:<br/>reglas → functions → front"]
+    DP --> PR{"¿Producción<br/>muestra lo<br/>verificado?"}
+    PR -.->|no| I
+    PR -->|sí| FIN(["Entregado"])
+
+    K -->|D| RP{"¿El revisor<br/>de pagos<br/>aprueba?"}
+    RP -.->|no| I
+    RP -->|sí| DF["Commit y deploy del backend,<br/>con el cobro apagado"]
+    DF --> DC{"¿Una compra<br/>real queda<br/>registrada?"}
+    DC -.->|no| I
+    DC -->|sí| DU["Se prende el<br/>botón que cobra"]
+    DU --> FIN
+
+    K -->|E| EG{"¿Un grep<br/>confirma que no<br/>se publica nada?"}
+    EG -->|"no: era B"| DP
+    EG -->|sí| EC["Documentación y commit"]
+    EC --> EP(["Anotado como polizón<br/>del próximo deploy"])
 ```
+
+Un caso real por rama (el detalle de cada una está en [WORKFLOWS.md](WORKFLOWS.md)):
+
+- **A · feature nueva:** el catálogo y el carrito, la venta por caja y la
+  sección *El oficio* ([especificaciones](openspec/changes/)).
+- **B · cambio menor:** *"el parallax no se veía, y era aritmética de los
+  documentos"* (v0.7.1).
+- **C · exploración:** cinco agentes con miradas distintas sobre la home, antes
+  de elegir su forma.
+- **D · plata:** todavía no se recorrió entera. Es la próxima, para crear la
+  orden y cobrar, y el revisor de pagos ya dejó nueve puntos para resolver
+  antes.
+- **E · mantenimiento:** este README y el arreglo del orden en que se genera
+  `_verdad.md` (v0.20.1).
 
 Tres principios sostienen todo el sistema:
 
