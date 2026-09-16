@@ -60,7 +60,13 @@ export const TEXTOS = {
   // --- lo que falta para poder pagar ---
   faltanDatos: 'Completá los datos de arriba para seguir.',
   faltaElEnvio: 'Elegí cómo viaja para ver el total.',
-  cajaIncompleta: 'El vino viaja de a seis. Volvé al pedido y completá la caja.',
+  /* Dice "sueltas" desde el 2026-09-15: lo que viene en su propia caja no
+   * cuenta para las seis, así que sin esa palabra alguien con seis botellas en
+   * pantalla lee que le faltan seis más (ADR 009 §10). */
+  cajaIncompleta: 'Las botellas sueltas viajan de a seis. Volvé al pedido y completá la caja.',
+  /* Y el pedido vacío es otra cosa, con su propia frase: esta pantalla le
+   * contestaba con la regla de la caja a alguien que no tenía nada adentro. */
+  pedidoVacio: 'Todavía no hay nada en tu pedido.',
 
   // --- el gate ---
   todaviaNoSeCobra: 'Todavía no se puede pagar.',

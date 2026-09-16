@@ -4,18 +4,24 @@
 - **Ampliada:** 2026-09-15 con el **§9**, cómo se DICE la regla. Lo pidió el
   dueño mirando la pantalla: la regla base de la transacción salía al cuerpo de
   una nota al pie
+- **Enmendada:** 2026-09-15 con el **§10**, que le pone un límite a la regla: lo
+  que **viene en su propia caja** viaja solo y no cuenta para las seis. Lo dijo
+  el dueño, y **cambia el §2**: la cuenta sigue siendo en botellas, pero sólo
+  sobre las sueltas
 - **Estado:** aceptada y **aplicada en stage**. Las reglas están **publicadas**;
   la tienda **no se despliega** — y el 2026-09-15 se verificó por CLI que **no
   hay a dónde**: `apphosting:backends:list` de `bouquet-vinos` devuelve la tabla
   vacía y `bouquet-vinos.web.app` da **404 Site Not Found**
-- **Decide:** que el vino se venda sólo de a 6 botellas, dónde vive esa regla,
-  cómo se dice, y qué es una caja que ofrece el vendedor
+- **Decide:** que la botella **suelta** se venda sólo de a 6 —y que lo que viene
+  en su propia caja viaje solo (§10)—, dónde vive esa regla, cómo se dice, y qué
+  es una caja que ofrece el vendedor
 - **Toca:** [ADR 008](008-catalogo-stock-y-carrito.md) — el carrito sube a
   `version: 2` y guarda `botellas` por línea; `tipo: 'compuesto'` queda
   explícitamente sin uso
-- **Hace cumplir:** `packages/contratos` (120 tests), `apps/tienda` (21), los 26
-  casos de `firestore.rules` contra el emulador, y el seed, que se niega a
-  sembrar una caja que no suma una caja
+- **Hace cumplir:** las suites de `packages/contratos` y `apps/tienda` —el
+  conteo vive en [`_verdad.md`](../../_verdad.md), que lo calcula; acá estaba
+  escrito a mano y envejeció en un día—, los casos de `firestore.rules` contra
+  el emulador, y el seed, que se niega a sembrar una caja que no suma una caja
 - **Planificación:** `openspec/changes/cajas-de-seis/`
 
 ## Contexto
@@ -62,6 +68,12 @@ regalo con precio propio el campo está.
 No es teórico: el catálogo de muestra ya tiene **2 productos de 2 botellas sobre
 20**, así que contar unidades daría el número equivocado desde el primer día. Es
 la misma unidad en la que `balde` ya mide el stock.
+
+⚠️ **ENMENDADO POR EL §10 el 2026-09-15.** La unidad es la correcta y el
+conjunto no: la suma va **sólo sobre las botellas sueltas**. Esos mismos 2
+productos de 2 botellas son justamente los que **no** cuentan — vienen
+embalados y viajan solos. Este párrafo se deja escrito, y no corregido, porque
+es el razonamiento que llevó a la regla vieja.
 
 ### 3. La regla NO vive en `parsearCarrito`
 
@@ -212,6 +224,112 @@ no es la voz de trámite que `voz.md §5` prohíbe —ésa oculta quién actúa 
 un pedido del cliente—, y el propio §9.5 ya usa esa construcción en un texto
 aprobado.
 
+### 10. Lo que viene en su propia caja NO cuenta para las seis (2026-09-15)
+
+⚠️ **Este ADR decidió que el vino viaja de a seis y no se preguntó por el vino
+que YA viene embalado.** Lo marcó el dueño: *"los vinos que vienen en cajas
+(caja de 2 por ejemplo) se venden sueltos, tienen su propio packaging así que
+pueden viajar solos, así que no cuentan para la caja de 6."*
+
+El §2 decía lo contrario con todas las letras —*"el catálogo de muestra ya
+tiene 2 productos de 2 botellas sobre 20, así que contar unidades daría el
+número equivocado"*— y tenía razón en la unidad y no en el conjunto: la cuenta
+va en botellas, **pero sólo sobre las sueltas**.
+
+**La decisión: la regla de las seis alcanza sólo a la botella suelta.** Un
+producto de más de una botella trae su embalaje, viaja solo, y frente a la caja
+de seis no suma, no completa y no rompe.
+
+| Antes | Ahora |
+|---|---|
+| 3 packs de 2 = una caja completa, cobrable | 3 packs = **cero** botellas sueltas, cobrable igual (cada uno viaja) |
+| 4 sueltas + 1 pack de 2 = 6 botellas, **cobrable** | 6 botellas y **NO cobrable**: las 4 sueltas siguen sin caja |
+| Un pedido de un solo pack = 2 botellas, **no cobrable** | **Cobrable**: es una caja cerrada que se despacha sola |
+
+**`viajaSolo(p)` se DERIVA de `presentacion.botellas > 1`, no es un campo.** Una
+unidad de venta de más de una botella es, por definición, una caja. Agregar un
+booleano al documento sería tocar `validarProducto`, `firestore.rules`, el seed
+y el panel para representar algo que ya está representado. ⚠️ El día que exista
+un pack **sin** caja propia —dos botellas atadas—, deja de ser derivable y ahí
+sí es un campo.
+
+| Alternativa | Por qué no |
+|---|---|
+| Dejar la regla como estaba | Es lo que hay: cobra un pedido de 4 sueltas + 1 pack como si fuera una caja, y le niega la venta a quien quiere **sólo** una caja de regalo. Las dos son plata |
+| Un campo `viajaSolo` en el documento | Cuatro lugares nuevos para un dato que ya se deduce de uno existente e **inmutable**. Y un campo que se puede contradecir con `presentacion` es un campo que algún día se contradice |
+| Contar el pack como 1 botella para la caja | Inventa una equivalencia falsa y hace que dos packs "completen" un tercio de caja que no existe |
+| Exigir que TODO pedido sume seis, packs incluidos | Es la regla vieja con otro nombre: obliga a comprar cuatro botellas más para poder llevarse un regalo de dos |
+
+**Una caja armada pasa a ser de botellas sueltas, exactamente seis.** Como cada
+entrada es una botella, la cuenta de entradas **es** la cuenta de botellas y se
+puede exigir en la forma, sin catálogo: `validarCajasSugeridas` pide
+`=== BOTELLAS_POR_CAJA` en vez de `<=`. `verificarComposicion` rechaza además al
+vino empacado con su nombre adentro del motivo, y `resolverCajasSugeridas` lo
+descarta **sin esperar a ver los otros cinco**: un vino que viaja solo no arma
+caja con nadie, y eso se juzga con un solo producto a la vista.
+
+⚠️ **Eso mata a la caja `dos-y-dos` del catálogo de muestra** —dos packs de 2 +
+dos botellas—, que existía justamente para probar la regla vieja. La reemplaza
+`dos-de-cada` (dos Alamos, dos Trumpeter Chardonnay, dos Santa Julia Rosé), que
+cubre el único caso de stage que quedaba sin cubrir: una caja armada que deja
+líneas de **cantidad 2** en el carrito.
+
+#### El despacho, que es la mitad del cambio
+
+Si el pack viaja solo, **viaja en su propio bulto**. `bultosDelPedido` pasa a
+recibir la `CargaDelPedido` —`{ sueltas, propias[] }`, una entrada por unidad
+empacada— en vez de un total de botellas, y `cajasADespachar` y
+`pesoDelPedidoKg` salen de contar y sumar esa lista, para que no haya dos
+cuentas de lo mismo.
+
+⚠️ **Aplanar a "botellas" no era un detalle de firma: cotizaba mal.** Seis
+botellas en tres packs daban `ceil(6/6) = 1` bulto — se le pide al correo **un**
+bulto y se le entregan **tres**—. Y 4 sueltas + 1 pack de 2 cotizaba 1 caja de
+8 kg cuando son 2 bultos y 11 kg. Medido en la pantalla: el resumen del checkout
+ahora dice *"Viaja en 2 cajas · 11 kg"*, y con un solo pack *"Viaja en una caja
+· 3 kg"*.
+
+**El peso por bulto pasa a ser una función, anclada al número medido.**
+`pesoDelBultoKg(n) = ⌈n × 1,118 + 0,6⌉`: con seis da **8**, que es lo que ya se
+declaraba, y con dos da **3**. El 1,118 es la botella que pesó el dueño; el 0,6
+del embalaje **no está medido, está calibrado** para reproducir el 8 — y está
+escrito así para que el día que se pese una caja armada se corrija en un solo
+lugar y los dos tamaños se muevan juntos.
+
+⚠️ **Las MEDIDAS de un pack son una proporción, no una medición.** El ancho
+escala con las botellas (24 cm / 6) con un piso de 9 cm, porque las botellas van
+paradas una al lado de la otra; el largo y el alto no escalan. Con seis
+reproduce la caja de catálogo. Una caja de regalo de dos puede ser más ancha y
+más chata que esto.
+
+⚠️ **Y apareció un tercer defecto midiendo esto: el cotizador simulado cobraba
+por CANTIDAD DE BULTOS y no por peso**, con un comentario arriba que decía
+*"un correo cobra por escalón de peso"*. Funcionaba de casualidad mientras todos
+los bultos pesaban 8 kg. Con bultos de 3 kg, un pack salía **igual** que una
+caja de seis llena. Ahora el precio sale del peso declarado, sublineal y anclado
+a `CAJA_KG`.
+
+#### Cómo se DICE, que es donde se veía el problema
+
+| Dónde | Qué pasaba | Qué dice ahora |
+|---|---|---|
+| Ficha de un pack | La placa de §9 —lo más visible del mostrador— decía `SE VENDE POR CAJA · 6 botellas` sobre un vino al que esa regla **no lo alcanza** | `VIAJA SOLA · 2 botellas en su caja · Ya viene embalada: no necesita completar las seis` |
+| Cabecera de `/vinos` | La regla, sin su excepción | La misma, más *"Las que vienen en su caja viajan solas"* |
+| Línea del pedido | Nada: sus botellas no aparecían en el `4 de 6` y no había por qué | `Viaja sola: no cuenta para las seis`, en la línea del vino |
+| Barra | Contaba TODAS las botellas contra 6 | Cuenta las **sueltas** mientras falten; el total cuando no falta ninguna |
+| Checkout | *"El vino viaja de a seis"* | *"Las botellas **sueltas** viajan de a seis"* |
+| `/pedido` vacío | *"El vino viaja de a seis"* sobre un carrito **sin nada adentro** | *"Todavía no hay nada en tu pedido"* |
+
+**La placa es la MISMA pieza con dos mensajes, no una pieza nueva.** Es el mismo
+hueco del mostrador y la misma pregunta —cómo se vende esto—, y medido pesa lo
+mismo: **64,97 px** de alto en los dos casos, a 390 px.
+
+⚠️ **Y una la vi mirando el PNG, no el diff:** con 4 sueltas y un pack, la
+pantalla dice `4 de 6` arriba y `6 botellas` abajo del total. Las dos son
+ciertas y juntas se leen como un error. La frase pasa a decir *"Faltan 2
+botellas **sueltas**"* —y sólo cuando el pedido tiene algo que viaja solo, o la
+palabra sería ruido para los otros veinte vinos—.
+
 ## Presupuesto de lecturas
 
 Campo obligatorio. Lo cuantificó `presupuesto-lecturas` y **corrigió el encuadre
@@ -240,6 +358,14 @@ tramo 4.
 ninguna caja cargada. El manejo tiene precedente: `leerUnidades` tolera un
 `metricas/popularidad` ausente.
 
+**El §10 suma CERO lecturas, y no es una promesa: es una propiedad de dónde vive
+el dato.** `viajaSolo` se deriva de `presentacion.botellas`, que ya viaja en la
+proyección que las tres rutas comparten; el carrito ya guardaba `botellas` por
+línea desde el §4, así que la barra sigue costando **cero**; y la carga del
+pedido se calcula en el navegador sobre esa misma proyección. Ni un `get()`
+nuevo, ni una entrada de caché nueva. Medido en la build: `/` sigue saliendo
+`○` **sin revalidate**, con `/vinos`, `/carrito` y `/pedido` en `1m` de control.
+
 ## Consecuencias
 
 - ⚠️ **Todo carrito guardado con `version: 1` se descarta.** Sin impacto real:
@@ -260,8 +386,18 @@ ninguna caja cargada. El manejo tiene precedente: `leerUnidades` tolera un
   carril **sin precio propio, sin stock y sin foto** eso no cuesta plata — y es
   un argumento a favor de este diseño. ⚠️ Deja de valer el día que una caja
   lleve precio propio.
-- **`crearOrden` hereda un noveno punto**: rechazar todo pedido que no sume un
-  múltiplo de `BOTELLAS_POR_CAJA` botellas, recalculado en el servidor.
+- **`crearOrden` hereda un noveno punto**: rechazar todo pedido cuyas botellas
+  **sueltas** no sumen un múltiplo de `BOTELLAS_POR_CAJA`, recalculado en el
+  servidor — y **aceptar** el pedido de sólo cajas cerradas, que tiene cero
+  sueltas (§10). Un servidor que repita la regla vieja le va a negar la venta a
+  quien quiere un regalo de dos.
+  ⚠️ **Y tiene que armar la CARGA sobre el mismo conjunto también** (§10): la
+  regla mira las sueltas, el cobro mira el total y el despacho mira los bultos —
+  si esos tres salen de conjuntos distintos, se cobra uno y se despacha otro.
+  Hoy `botellasSueltas`, `botellasEnCarrito` y `cargaDelPedido` filtran con el
+  **mismo** predicado (`vigente` y con producto), y eso es lo que `crearOrden`
+  tiene que repetir.
+
   ⚠️ **Y tiene que aplicar la regla sobre el MISMO conjunto que va a cobrar y
   despachar.** Una línea agotada sigue en `carrito.lineas` a propósito —para que
   el parser no descarte el carrito entero—, y `PedidoDeCompra` no lleva marca de
@@ -290,12 +426,17 @@ ninguna caja cargada. El manejo tiene precedente: `leerUnidades` tolera un
 | **El canario apareció 4 veces y la documentación decía 2** | `curl` sobre `/vinos`. No era un bug del conteo: la cadena estaba en un `aria-label` **y** en el `<p>`, por dos (DOM + payload RSC). Destapó que el `aria-label` era redundante —un lector de pantalla oía el rótulo dos veces seguidas—, se borró, y el conteo volvió a **2**. El número que no cerraba era el síntoma, no el problema |
 | ⚠️ **DOS veces escribí un razonamiento con la forma de una medición**, y las dos las agarró medir | (a) *"el mostrador sin la nota mide 169 px"* era una **resta** —altura total menos la placa—; medido da **186**, 17 px más. (b) *"la regla descendiente le gana a `.regla-caja__cifra` y la cifra sale al cuerpo de la bajada"* es **falso**: la cifra es un `<span>` adentro del `<p>`, no un `<p>`, y sale a 57,12 px con la regla vieja puesta o sacada. La víctima real era el **rótulo** (13,60 px dorado → 19,04 px marfil-2: dejaba de ser un rótulo). El arreglo estaba bien por el motivo equivocado, que es la peor forma de tener razón. **Una resta y una medición se escriben igual**, y un razonamiento de cascada también |
 | **Dos clases CSS escritas que no existían** | `cazador-de-puertas`. `.caja-sugerida--incompleta` y `.control-caja` se escribían y no tenían regla: una caja incompleta se veía **idéntica** a una completa, y yo había mirado el PNG sin notarlo porque el aviso en palabras me tapó la ausencia |
+| ⚠️ **El cotizador simulado cobraba por CANTIDAD DE BULTOS, no por peso** (2026-09-15) | Un test nuevo del §10: *"un pack no sale lo mismo que una caja de seis"* falló. El comentario de esa función decía *"un correo cobra por escalón de peso"* y el código contaba bultos — daba igual mientras todos pesaran 8 kg, y con bultos de 3 kg empezó a mentir. **Lo destapó el caso nuevo, no una lectura del código** |
+| ⚠️ **Casi le echo al §10 los 19 px que le debía al balde** (2026-09-15) | El mostrador de la ficha del pack mide **204,53 px** a 390 y el §9 tenía documentados **186**. Parecía que la placa nueva había crecido. El control: `alamos-malbec` —suelto— da **185,53 px (22,0 %)**, y `portillo-malbec` —**suelto, con stock 5**— da **204,53**, idéntico al pack. Los 19 px son el renglón `QUEDAN POCAS`, que el pack tiene porque le quedan 3. La placa pesa **64,97 px** exactos en los dos mensajes |
+| **La caja `dos-y-dos` de stage se cae sola, y lo dice la build** | `[cajas] descartada cajasSugeridas.cajas[3]: 4 entradas para una caja de 6`, tres veces (una por worker). El carril de `/vinos` pasó de **4 a 3** tarjetas contra el documento viejo de stage: la degradación es *"la caja desaparece"*, no *"la caja miente"*, que es lo que el §8 prometía |
 
 ## Lo que hay que medir antes de creerle a este ADR
 
 | Qué | Cómo | Disparador |
 |---|---|---|
 | El carril en un teléfono de verdad | Mirarlo: el Chrome headless de esta máquina no baja de 504 px sin emulación | La próxima revisión del dueño |
+| ⚠️ **Cuánto pesa y cuánto mide una caja de 2 de verdad** | Una balanza y una cinta. Hoy el peso sale de `⌈n × 1,118 + 0,6⌉` —el 0,6 está **calibrado**, no medido— y el ancho es una proporción de la caja de seis | Cuando haya una caja de regalo en la mano, y **antes** de las tarifas reales |
+| ⚠️ **Re-sembrar `cajasSugeridas/publicas` en stage** | `node scripts/seed/seed.mjs`. El documento vivo todavía tiene `dos-y-dos`, que el código nuevo descarta: el carril sirve **3** cajas y `dos-de-cada` no existe hasta que corra el seed | Antes de mirar el carril de stage, y antes del primer deploy |
 | La purga del carril | Con `Cache-Tag: catalogo`, editar un producto tiene que refrescar el carril | El tramo 4 |
 | El gate apagado | Con un catálogo real, `data-catalogo-de-muestra` tiene que dar 0 | El primer catálogo real |
 
@@ -307,3 +448,10 @@ ninguna caja cargada. El manejo tiene precedente: `leerUnidades` tolera un
   validarlo.
 - Una caja pasa a tener precio propio: ahí sí es un `compuesto`, y vuelve todo
   lo que este ADR descartó.
+- **Aparece un pack SIN caja propia** —dos botellas atadas, un combo armado a
+  mano—: ahí `viajaSolo` deja de poder derivarse de `presentacion.botellas` y
+  pasa a ser un campo del documento, de las reglas y del panel (§10).
+- **El correo cobra por bulto y no por peso**: hoy un pack de 2 se cotiza más
+  barato que una caja de seis porque pesa menos. Con tarifa por bulto, mandar
+  tres packs sueltos sale caro y conviene meterlos en una caja grande — y eso
+  cambia el despacho, no sólo el precio.

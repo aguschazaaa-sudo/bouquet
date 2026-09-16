@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   botellasEnCarrito,
   cajasADespachar,
+  cargaDelPedido,
   nombreDeProvincia,
   pesoDelPedidoKg,
   resolverCarrito,
@@ -43,12 +44,16 @@ export function PaginaDelCheckout({ productos, cotizar, whatsapp }: Props) {
   const carrito = useCarrito();
   const resuelto = useMemo(() => resolverCarrito(carrito, productos), [carrito, productos]);
   const botellas = botellasEnCarrito(resuelto);
+  /* Lo que de verdad viaja, separado por cómo viaja: las sueltas se juntan de a
+   * seis y lo que trae su propia caja es un bulto por unidad. Aplanarlo a un
+   * total de botellas cotizaba tres packs como una sola caja (ADR 009 §10). */
+  const carga = cargaDelPedido(resuelto);
 
   const [borrador, setBorrador] = useState<Borrador>(BORRADOR_VACIO);
   const [elegidaId, setElegidaId] = useState<string | null>(null);
   const [cpAplicado, setCpAplicado] = useState<string | null>(null);
 
-  const cotizacion = useCotizacion(cotizar, borrador.codigoPostal, botellas);
+  const cotizacion = useCotizacion(cotizar, borrador.codigoPostal, carga);
   const listo = cotizacion.fase === 'lista' && cotizacion.resultado.ok ? cotizacion.resultado : null;
 
   /* La cotización trae la localidad y la provincia que pudo deducir, y las pone
@@ -112,11 +117,14 @@ export function PaginaDelCheckout({ productos, cotizar, whatsapp }: Props) {
     );
   }
 
+  /* Cero botellas es un pedido VACÍO, no una caja a medio llenar: hasta el
+   * 2026-09-15 esta rama decía "el vino viaja de a seis" sobre un carrito sin
+   * nada adentro, que es contestar una pregunta que nadie hizo. */
   if (botellas === 0) {
     return (
       <main className="pagina-checkout papel">
         <div className="pagina-checkout__contenedor pagina-checkout__vacio">
-          <p className="display">{TEXTOS.cajaIncompleta}</p>
+          <p className="display">{TEXTOS.pedidoVacio}</p>
           <Link className="enlace-blando" href="/carrito">
             {TEXTOS.volver}
           </Link>
@@ -159,8 +167,8 @@ export function PaginaDelCheckout({ productos, cotizar, whatsapp }: Props) {
           <ElResumen
             resuelto={resuelto}
             envio={envio}
-            cajas={cajasADespachar(botellas)}
-            pesoKg={pesoDelPedidoKg(botellas)}
+            cajas={cajasADespachar(carga)}
+            pesoKg={pesoDelPedidoKg(carga)}
             impedimento={impedimento}
             whatsapp={whatsapp}
           />

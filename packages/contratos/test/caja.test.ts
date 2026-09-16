@@ -12,6 +12,9 @@ import {
   BOTELLAS_POR_CAJA,
   botellasEnCarrito,
   botellasGuardadas,
+  botellasSueltas,
+  botellasSueltasGuardadas,
+  cargaDelPedido,
   carritoVacio,
   contarCaja,
   estadoDeLaCaja,
@@ -68,25 +71,33 @@ function estado(lineas: { productoId: string; cantidad: number }[], productos: P
   return estadoDeLaCaja(resolverCarrito(carrito(lineas, productos), productos));
 }
 
-// ------------------------------------------------ la cuenta es en botellas
+// --------------------------- la cuenta es en botellas, y solo de las sueltas
 
-test('un producto de dos botellas cuenta por dos', () => {
+test('un producto que viene en su propia caja NO cuenta para la caja de seis', () => {
+  // ADR 009 §10: trae su embalaje y viaja solo. Tres packs de 2 son seis
+  // botellas y CERO botellas sueltas -- no hay caja que completar.
   const e = estado([{ productoId: 'pack', cantidad: 3 }], [publicado('pack', { botellas: 2 })]);
-  assert.equal(e.botellas, 6);
-  assert.equal(e.cajasCompletas, 1);
+  assert.equal(e.botellas, 0);
+  assert.equal(e.cajasCompletas, 0);
   assert.equal(e.faltan, 0);
 });
 
-test('mezcla de presentaciones', () => {
-  const e = estado(
-    [
-      { productoId: 'pack', cantidad: 2 },
-      { productoId: 'suelta', cantidad: 2 },
-    ],
-    [publicado('pack', { botellas: 2 }), publicado('suelta')],
-  );
-  assert.equal(e.botellas, 6);
-  assert.equal(e.faltan, 0);
+test('mezcla de presentaciones: la caja la miden las sueltas, el total las cuenta a todas', () => {
+  const productos = [publicado('pack', { botellas: 2 }), publicado('suelta')];
+  const lineas = [
+    { productoId: 'pack', cantidad: 2 },
+    { productoId: 'suelta', cantidad: 2 },
+  ];
+  const e = estado(lineas, productos);
+  const r = resolverCarrito(carrito(lineas, productos), productos);
+
+  // SEIS botellas en el pedido y la caja abierta: es el caso que hace falta
+  // decir bien en pantalla, o el comprador ve seis y un boton que no aparece.
+  assert.equal(botellasEnCarrito(r), 6);
+  assert.equal(botellasSueltas(r), 2);
+  assert.equal(e.botellas, 2);
+  assert.equal(e.faltan, 4);
+  assert.equal(sePuedeCobrar(r), false);
 });
 
 test('contar unidades en vez de botellas daria el numero equivocado', () => {
@@ -180,6 +191,63 @@ test('un carrito de solo lineas agotadas no se puede cobrar', () => {
   assert.equal(sePuedeCobrar(r), false);
 });
 
+test('un pedido de un solo pack se puede cobrar: viaja solo', () => {
+  // Cero sueltas es multiplo de seis Y hay algo que despachar. Las dos
+  // condiciones de `sePuedeCobrar`, y esta es la que las separa.
+  const p = publicado('pack', { botellas: 2 });
+  const r = resolverCarrito(carrito([{ productoId: 'pack', cantidad: 1 }], [p]), [p]);
+  assert.equal(botellasSueltas(r), 0);
+  assert.equal(sePuedeCobrar(r), true);
+});
+
+test('un pack NO completa la caja de las sueltas', () => {
+  // Control discriminante: las mismas seis botellas, cobrables si son seis
+  // sueltas y no cobrables si son cuatro sueltas y un pack.
+  const pack = publicado('pack', { botellas: 2 });
+  const suelta = publicado('suelta');
+  const conPack = resolverCarrito(
+    carrito(
+      [
+        { productoId: 'suelta', cantidad: 4 },
+        { productoId: 'pack', cantidad: 1 },
+      ],
+      [suelta, pack],
+    ),
+    [suelta, pack],
+  );
+  assert.equal(botellasEnCarrito(conPack), 6);
+  assert.equal(sePuedeCobrar(conPack), false, 'las cuatro sueltas siguen sin caja');
+
+  const seisSueltas = resolverCarrito(carrito([{ productoId: 'suelta', cantidad: 6 }], [suelta]), [suelta]);
+  assert.equal(botellasEnCarrito(seisSueltas), 6);
+  assert.equal(sePuedeCobrar(seisSueltas), true);
+});
+
+// -------------------------------------------------- lo que de verdad viaja
+
+test('la carga separa lo suelto de lo que trae su caja, una entrada por unidad', () => {
+  const pack = publicado('pack', { botellas: 2 });
+  const suelta = publicado('suelta');
+  const r = resolverCarrito(
+    carrito(
+      [
+        { productoId: 'suelta', cantidad: 6 },
+        { productoId: 'pack', cantidad: 2 },
+      ],
+      [suelta, pack],
+    ),
+    [suelta, pack],
+  );
+  // Dos packs son DOS bultos, no un 4: cada uno pesa y mide por su cuenta.
+  assert.deepEqual(cargaDelPedido(r), { sueltas: 6, propias: [2, 2] });
+});
+
+test('lo que no se puede vender no viaja', () => {
+  const agotado = publicado('pack', { botellas: 2, balde: 'agotado', tope: 0 });
+  const r = resolverCarrito(carrito([{ productoId: 'pack', cantidad: 1 }], [agotado]), [agotado]);
+  assert.deepEqual(cargaDelPedido(r), { sueltas: 0, propias: [] });
+});
+
 // ------------------------------------- un carrito incompleto SIGUE siendo valido
 
 test('parsearCarrito acepta un carrito de 4 botellas', () => {
@@ -237,10 +305,24 @@ test('el tamano vigente es el que usa estadoDeLaCaja', () => {
 
 test('la barra puede contar botellas SIN catalogo', () => {
   // Es lo unico que puede hacer el contador del layout: lee localStorage y no
-  // tiene proyeccion. 3 packs de 2 son 6 botellas y la caja esta completa.
+  // tiene proyeccion. 3 packs de 2 son 6 botellas en el pedido...
   const c = carrito([{ productoId: 'pack', cantidad: 3 }], [publicado('pack', { botellas: 2 })]);
   assert.equal(botellasGuardadas(c), 6);
-  assert.equal(contarCaja(botellasGuardadas(c)).cajasCompletas, 1);
+  // ...y NINGUNA que necesite caja: la barra no puede pedir que se complete
+  // algo que ya viaja. El campo `botellas` de la linea es lo que deja hacer
+  // esta distincion sin leer Firestore.
+  assert.equal(botellasSueltasGuardadas(c), 0);
+  assert.equal(contarCaja(botellasSueltasGuardadas(c)).faltan, 0);
+});
+
+test('la barra distingue dos sueltas de un pack de dos', () => {
+  // Control positivo y negativo del test de arriba: el mismo numero de
+  // botellas guardadas, una cuenta de sueltas distinta.
+  const conPack = carrito([{ productoId: 'pack', cantidad: 1 }], [publicado('pack', { botellas: 2 })]);
+  const sueltas = carrito([{ productoId: 'a', cantidad: 2 }], [publicado('a')]);
+  assert.equal(botellasGuardadas(conPack), botellasGuardadas(sueltas));
+  assert.equal(botellasSueltasGuardadas(conPack), 0);
+  assert.equal(botellasSueltasGuardadas(sueltas), 2);
 });
 
 test('contar UNIDADES en la barra daria 3 donde hay 6 botellas', () => {

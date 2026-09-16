@@ -132,6 +132,45 @@ agregar** —en el listado y en la ficha, sin JavaScript—, y `/vinos` estrena 
 carril de **cajas armadas** que el vendedor ofrece. El porqué, en
 [ADR 009](architecture/decisions/009-venta-por-caja.md).
 
+⚠️ **LA REGLA TIENE UN LÍMITE DESDE EL 2026-09-15, y lo puso el dueño:** *"los
+vinos que vienen en cajas se venden sueltos, tienen su propio packaging así que
+pueden viajar solos: no cuentan para la caja de 6."* La cuenta sigue siendo en
+botellas, pero **sólo sobre las sueltas** ([ADR 009
+§10](architecture/decisions/009-venta-por-caja.md)). Cambia tres cosas que antes
+eran al revés: un pedido de **una sola caja de 2 se puede cobrar**; 4 sueltas +
+un pack son **6 botellas y NO se pueden cobrar**; y una **caja armada** es de
+seis botellas sueltas, así que `dos-y-dos` —dos packs + dos botellas— salió del
+catálogo de muestra y entró `dos-de-cada`.
+
+⚠️ **La mitad del cambio es el DESPACHO, y ahí había plata.** Si el pack viaja
+solo, viaja en **su propio bulto**: seis botellas en tres packs cotizaban
+`ceil(6/6) = 1` bulto —se le pide uno al correo y se le entregan tres— y 4
+sueltas + 1 pack cotizaban una caja de 8 kg cuando son 2 bultos y **11 kg**.
+`bultosDelPedido` recibe ahora la carga separada, y el peso por bulto sale de la
+botella medida: `⌈n × 1,118 + 0,6⌉`, que con seis reproduce los 8 kg que ya se
+declaraban.
+
+**Y el cotizador simulado cobraba por cantidad de bultos**, con un comentario
+arriba que decía *"un correo cobra por escalón de peso"*: funcionaba de
+casualidad mientras todos los bultos pesaban 8 kg, y con bultos de 3 kg un pack
+salía **igual** que una caja llena. Lo destapó un caso nuevo, no una lectura.
+
+**Verificado el 2026-09-15 sobre `next build` + `next start` contra stage, con
+el carrito sembrado en `localStorage` y las dos pantallas MIRADAS:**
+
+| Qué | Cómo |
+|---|---|
+| La ficha de un pack ya no promete las seis | `curl` a las dos fichas: en la del pack, `Se vende por caja` = **0** y `Viaja sola` = **2**; en la de un vino suelto, al revés (**2** y **0**). Positivo y negativo sobre el mismo par de páginas |
+| El listado dice la excepción | `/vinos`: `viajan solas` = **2** (DOM + payload RSC), `Viaja sola` = **0** — el rótulo del pack no se filtró a la cabecera |
+| El pedido de un solo pack **se puede comprar** | Carrito de una caja de 2: la barra dice **2**, no hay bloque de caja, y aparece `TERMINAR LA COMPRA`. Antes esa compra no existía |
+| 4 sueltas + 1 pack **no** se puede cobrar | Mismo carrito: `4 de 6`, sin botón, y el checkout dice *"Las botellas sueltas viajan de a seis"* |
+| El despacho cambió de verdad | El resumen dice **`Viaja en 2 cajas · 11 kg`** (era 1 caja · 8 kg), y con un solo pack **`una caja · 3 kg`** |
+| La placa no engordó la ficha | El mostrador pesa **64,97 px** con placa, idéntico en los dos mensajes. Y el `185,53 px (22,0 %)` de un vino suelto reproduce el 186 del §9 |
+| La home no se volvió ISR | `○ /` **sin** revalidate, con `/vinos`, `/carrito` y `/pedido` en `1m` de control. El §10 suma **cero** lecturas |
+| El carril degrada como se prometió | La build loguea `descartada … 4 entradas para una caja de 6` y el carril sirve **3** cajas contra el documento viejo de stage: la caja desaparece, no miente |
+| Tests y tipos | **156** de contratos (eran 143) + **34** de la tienda (eran 30); `tsc` 0 en los dos |
+| El seed | Las 4 cajas del catálogo pasan forma y composición, con **dos controles negativos**: la caja vieja se rechaza por forma y una con un pack adentro, por composición |
+
 ⚠️ **La regla se dice MUCHO más fuerte desde el 2026-09-15, y lo pidió el
 dueño:** *"está muy tenue para ser la regla base de la transacción."* Salía como
 un párrafo al cuerpo de la bajada en `/vinos` y como la línea más chica del
@@ -358,6 +397,8 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 |---|---|---|
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `curl` en producción. Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
+| ⚠️ **`cajasSugeridas/publicas` de stage quedó VIEJO, y se ve** | El documento sembrado todavía tiene `dos-y-dos` —dos packs de 2 + dos botellas—, que desde [ADR 009 §10](architecture/decisions/009-venta-por-caja.md) no es una caja: el código la descarta y el carril de `/vinos` sirve **3** tarjetas en vez de 4, con el motivo logueado en la build. `dos-de-cada` no existe hasta que corra `node scripts/seed/seed.mjs`. **Disparador:** antes de mirar el carril de stage, y antes del primer deploy. Desde 2026-09-15. | el dueño + `tienda` |
+| ⚠️ **El peso y las medidas de una caja de 2 NO están medidos** | El peso sale de `⌈n × 1,118 + 0,6⌉` —la botella la pesó el dueño; el 0,6 del embalaje está **calibrado** para reproducir los 8 kg de la caja de seis, no medido— y el ancho es una proporción de esa caja. Una caja de regalo puede ser más ancha y más chata. **Disparador:** cuando haya una en la mano, y antes de las tarifas reales. Desde 2026-09-15. | el dueño |
 | ⚠️ **El glosario quedó DESACTUALIZADO en `Zona` y `Envío`** | Dice que una dirección fuera de toda zona *"no puede comprar"* y que se le avisa antes del carrito, y que el MVP es *"sólo envío a domicilio"*. Con envío a todo el país **eso ya no es cierto**: nadie queda afuera, `Zona` pasa a ser *hasta dónde repartimos nosotros*, y el texto de [`voz.md §9.3`](design/voz.md) queda sin pantalla. No se editó en este cambio a propósito: tocar el glosario adentro de una tarea de feature esconde la decisión adentro del diff de otra cosa. **Disparador:** antes de `crearOrden`, que es quien va a guardar el `Envío`. Desde 2026-09-15. | `vault` |
 | **Los precios del cotizador son INVENTADOS** (y los otros dos números ya no) | (a) El **peso** dejó de ser de catálogo: el dueño pesó una botella el 2026-09-15 —**1,118 kg**, o sea 6,666 kg las seis y ~7 kg con caja y relleno—, y se declara **8 del lado seguro**; lo que queda por mirar es **dónde caen los escalones de peso del correo**, porque de eso depende si ese margen cuesta algo. (b) Los **códigos postales de Punilla** dejaron de ser peligrosos al apagarse el reparto propio: hoy sólo prellenan una localidad que el comprador corrige. (c) Los **precios** siguen siendo puro invento y no hay forma de arreglarlos sin tarifas. **Disparador: las tarifas reales del proveedor, antes del primer cobro.** Desde 2026-09-15. | el dueño + `tienda` |
 | **El reparto propio en Punilla está APAGADO, y el camino está escrito entero** | `REPARTIMOS_NOSOTROS = false` en `server/envios.ts`, por decisión del dueño (*"de momento no lo vamos a hacer nosotros"*). Prenderlo es una línea, pero **antes** hay que verificar los códigos postales uno por uno con control negativo: con el reparto prendido, un CP mal puesto no falla ruidosamente. **Disparador:** cuando el dueño decida repartir él. Desde 2026-09-15. | el dueño |
@@ -400,7 +441,7 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | 006 | La vidriera se ordena por **feature**, y `shared/` tiene **cinco reglas** contra el cajón de sastre | [006](architecture/decisions/006-estructura-de-la-tienda.md) |
 | 007 | La sección se llama **El oficio**, cubre tres tramos, y el contacto es su cierre | [007](architecture/decisions/007-seccion-el-oficio.md) |
 | 008 | El **stock** lo escribe sólo el servidor, en unidades de venta; la vidriera lee **una proyección** por minuto, y el carrito vive en `localStorage` | [008](architecture/decisions/008-catalogo-stock-y-carrito.md) |
-| 009 | El vino se vende **sólo de a 6 botellas**; una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
+| 009 | La botella **suelta** se vende sólo de a 6 — lo que viene en su propia caja **viaja solo** y no cuenta (§10); una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
 | 010 | El **código postal** decide cómo viaja el pedido —nadie queda fuera de zona—; se cobra con **Mercado Pago Checkout Pro** y el comprobante **no va por mail** | [010](architecture/decisions/010-el-checkout.md) |
 
 ---

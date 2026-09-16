@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { botellasEnCarrito, estadoDeLaCaja, resolverCarrito } from '../src/carrito.ts';
+import { botellasEnCarrito, botellasSueltas, estadoDeLaCaja, resolverCarrito, sePuedeCobrar } from '../src/carrito.ts';
 import {
   llenarConLaCaja,
   resolverCajasSugeridas,
@@ -78,6 +78,15 @@ test('mas entradas que el tamano de la caja no pasan', () => {
   assert.match(r.descartes[0]!.motivo, /7 entradas/);
 });
 
+test('menos entradas TAMPOCO pasan: la caja es exacta', () => {
+  // Desde ADR 009 §10 una caja armada es de botellas sueltas, y una suelta es
+  // una entrada: la cuenta de entradas ES la de botellas. Antes cinco entradas
+  // pasaban la forma porque una podia aportar dos.
+  const r = validarCajasSugeridas({ cajas: [caja({ productoIds: SEIS.slice(0, 5) })] });
+  assert.equal(r.cajas.length, 0);
+  assert.match(r.descartes[0]!.motivo, /5 entradas/);
+});
+
 test('un slug invalido y un nombre vacio se informan por separado', () => {
   const r = validarCajasSugeridas({
     cajas: [caja({ slug: 'Con Mayusculas' }), caja({ slug: 'otra', nombre: '   ' })],
@@ -107,15 +116,25 @@ test('seis productos de una botella suman una caja', () => {
   assert.equal(v.ok && v.valor, 6);
 });
 
-test('tres productos de dos botellas suman una caja', () => {
+test('un vino que viene en su propia caja NO arma caja, aunque la suma diera seis', () => {
+  // Era el caso que probaba lo contrario hasta el 2026-09-15: tres packs de 2
+  // "sumaban" una caja. Ya no: cada uno trae su embalaje y viaja solo, asi que
+  // la sugerencia dejaria el carrito sin ninguna botella suelta que juntar.
   const botellas = new Map([
     ['p1', 2],
     ['p2', 2],
     ['p3', 2],
   ]);
   const v = verificarComposicion(caja({ productoIds: ['p1', 'p2', 'p3'] }), botellas);
-  assert.equal(v.ok, true);
-  assert.equal(v.ok && v.valor, 6);
+  assert.equal(v.ok, false);
+  assert.match(v.ok === false ? v.motivo : '', /propia caja/);
+});
+
+test('un solo pack entre cinco sueltas tambien tumba la composicion', () => {
+  const botellas = new Map(SEIS.map((id) => [id, id === 'a' ? 2 : 1]));
+  const v = verificarComposicion(caja(), botellas);
+  assert.equal(v.ok, false);
+  assert.match(v.ok === false ? v.motivo : '', /a viene en su propia caja/);
 });
 
 test('una sugerencia corta se rechaza con el numero adentro', () => {
@@ -167,21 +186,33 @@ test('un componente agotado se marca y el resto sigue normal', () => {
 });
 
 test('con todos los vinos a la vista, una suma equivocada SI se descarta', () => {
-  // Los seis existen y uno trae 2 botellas: son 7, no 6.
-  const productos = seisProductos().map((p) => (p.id === 'a' ? publicado('a', { botellas: 2 }) : p));
-  const r = resolverCajasSugeridas([caja()], productos);
+  // La caja de cinco entradas no pasa la FORMA, asi que por el camino real no
+  // llega hasta aca. Se la construye a mano a proposito: esta guarda es la que
+  // cubre a un llamador que no valide -- una callable del panel, manana.
+  const cinco = caja({ productoIds: SEIS.slice(0, 5) });
+  const r = resolverCajasSugeridas([cinco], seisProductos());
   assert.equal(r.cajas.length, 0);
-  assert.match(r.descartes[0]!.motivo, /suma 7 botellas/);
+  assert.match(r.descartes[0]!.motivo, /suma 5 botellas/);
 });
 
 test('con un vino faltante NO se juzga la suma: no hay con que juzgarla', () => {
-  // Control del test de arriba: los mismos datos, pero sin poder ver uno.
+  // Control del test de arriba: la misma caja corta, pero sin poder ver uno.
+  const cinco = caja({ productoIds: SEIS.slice(0, 5) });
+  const r = resolverCajasSugeridas([cinco], seisProductos().filter((p) => p.id !== 'a'));
+  assert.equal(r.cajas.length, 1, 'se muestra, no se descarta');
+  assert.equal(r.descartes.length, 0);
+});
+
+test('un vino con caja propia se descarta SIN esperar a los otros cinco', () => {
+  // No hace falta ver la caja entera para juzgarlo: un vino empacado no arma
+  // caja con nadie. Por eso este descarte no depende de que esten todos, y el
+  // control es el test de arriba -- con un faltante, la suma no se juzga.
   const productos = seisProductos()
     .map((p) => (p.id === 'a' ? publicado('a', { botellas: 2 }) : p))
     .filter((p) => p.id !== 'f');
   const r = resolverCajasSugeridas([caja()], productos);
-  assert.equal(r.cajas.length, 1, 'se muestra, no se descarta');
-  assert.equal(r.descartes.length, 0);
+  assert.equal(r.cajas.length, 0);
+  assert.match(r.descartes[0]!.motivo, /a viene en su propia caja/);
 });
 
 test('el join no pierde el orden que cargo el vendedor', () => {
@@ -275,13 +306,19 @@ test('un id repetido en la caja queda como cantidad 2, no como dos lineas', () =
   assert.equal(c.lineas.find((l) => l.productoId === 'a')?.cantidad, 2);
 });
 
-test('las botellas guardadas salen de la proyeccion', () => {
-  const productos = seisProductos().map((p) => (p.id === 'a' ? publicado('a', { botellas: 2 }) : p));
-  // Esa caja suma 7 y se descarta, asi que se arma una de 5 sueltas + el pack.
-  const conPack = caja({ productoIds: ['a', 'b', 'c', 'd', 'e'] });
-  const c = llenarConLaCaja(carritoCon([]), resolverUna(productos, conPack));
-  assert.equal(c.lineas.find((l) => l.productoId === 'a')?.botellas, 2);
-  assert.equal(c.lineas.find((l) => l.productoId === 'b')?.botellas, 1);
+test('elegir una caja armada deja el carrito COBRABLE', () => {
+  // Es para lo que existe el carril: la sugerencia cierra la caja de una. Si
+  // alguna vez entrara un vino empacado en una caja armada, este test se cae
+  // -- sus botellas no cuentan para las seis y el boton no aparece.
+  const productos = seisProductos();
+  const c = llenarConLaCaja(carritoCon([]), resolverUna(productos));
+  const r = resolverCarrito(c, productos);
+  assert.equal(botellasSueltas(r), 6);
+  assert.equal(sePuedeCobrar(r), true);
+  assert.ok(
+    c.lineas.every((l) => l.botellas === 1),
+    'las botellas de cada linea salen de la proyeccion',
+  );
 });
 
 // ------------------------- el tope manda TAMBIEN sobre lo que dice la tarjeta

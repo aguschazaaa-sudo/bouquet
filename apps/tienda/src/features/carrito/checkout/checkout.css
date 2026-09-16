@@ -433,9 +433,10 @@ select.campo__control {
    de un total de 2,1 rem. La misma inversion que el dueño marcó en el catalogo
    el 2026-09-15: lo que impide la transaccion se susurra (ADR 009 §9).
 
-   Uno de los tres mensajes que pasan por aca ES la regla de la caja ("El vino
-   viaja de a seis"); los otros dos son datos que faltan. Los tres merecen lo
-   mismo: son la razon por la que no se puede pagar.
+   Uno de los tres mensajes que pasan por aca ES la regla de la caja ("Las
+   botellas sueltas viajan de a seis" — dice SUELTAS desde ADR 009 §10); los
+   otros dos son datos que faltan. Los tres merecen lo mismo: son la razon por
+   la que no se puede pagar.
 
    NO lleva filete ni recuadro a proposito. Abajo esta `.resumen__gate`, que ya
    es una caja enmarcada y tambien dice "no se puede pagar": dos marcos

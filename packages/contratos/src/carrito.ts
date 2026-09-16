@@ -14,7 +14,7 @@
  */
 
 import { CERO, porCantidad, sumar, type Centavos } from './dinero.ts';
-import { TOPE_POR_PEDIDO, type ProductoPublicado, type Validacion } from './producto.ts';
+import { TOPE_POR_PEDIDO, viajaSolo, type ProductoPublicado, type Validacion } from './producto.ts';
 
 /**
  * 2 desde las cajas de seis: la linea guarda tambien `botellas`. Un carrito
@@ -282,8 +282,12 @@ export function resolverCarrito(carrito: Carrito, productos: readonly ProductoPu
 // ------------------------------------------------------------------ la caja
 
 /**
- * El vino viaja en cajas FISICAS de esta cantidad de botellas: no se despacha
- * suelto, porque una botella sola no tiene con que viajar.
+ * La botella SUELTA viaja en cajas FISICAS de esta cantidad: sola no tiene con
+ * que viajar, asi que se vende de a seis.
+ *
+ * ⚠️ NO alcanza a lo que viene en su propia caja. Un producto de 2 botellas
+ * trae su embalaje y viaja solo: no cuenta para este numero, no lo completa y
+ * no lo rompe (`viajaSolo`, ADR 009 §10).
  *
  * El numero vive SOLO aca. El dia que se consigan cajas de 3, se cambia esta
  * linea y sus tests, y nada mas: ningun otro archivo escribe el 6 para esta
@@ -292,7 +296,13 @@ export function resolverCarrito(carrito: Carrito, productos: readonly ProductoPu
 export const BOTELLAS_POR_CAJA = 6;
 
 /**
- * Botellas vigentes del carrito: `cantidad x presentacion.botellas`.
+ * TODAS las botellas vigentes del carrito: `cantidad x presentacion.botellas`,
+ * las sueltas y las que vienen en su propia caja.
+ *
+ * Es lo que el comprador se lleva, y por eso lo dice el rotulo del total. NO es
+ * lo que mide la regla de la caja -- para eso esta `botellasSueltas`. Son dos
+ * numeros distintos a proposito, porque contestan dos preguntas distintas:
+ * "cuanto vino me llevo" y "me falta algo para poder despacharlo".
  *
  * Cuenta BOTELLAS, no unidades de venta. Un producto de 2 botellas aporta 2, y
  * el catalogo de muestra ya tiene dos de esos sobre veinte: contar unidades
@@ -312,6 +322,28 @@ export function botellasEnCarrito(resuelto: CarritoResuelto): number {
 }
 
 /**
+ * Las botellas que NECESITAN la caja de seis: las que se venden sueltas.
+ *
+ * Lo que viene en su propia caja queda afuera de esta cuenta -- no suma ni
+ * resta. Es la regla que decidio el dueno el 2026-09-15: *"los vinos que vienen
+ * en cajas se venden sueltos, tienen su propio packaging, asi que pueden viajar
+ * solos: no cuentan para la caja de 6"*.
+ *
+ * ⚠️ Un carrito de 4 sueltas + un pack de 2 tiene SEIS botellas y NO se puede
+ * cobrar: las cuatro sueltas siguen sin caja. La pantalla tiene que decir ese
+ * numero -4- y no el total, o el comprador ve seis y un boton que no aparece.
+ */
+export function botellasSueltas(resuelto: CarritoResuelto): number {
+  let botellas = 0;
+  for (const l of resuelto.lineas) {
+    if (l.estado !== 'vigente' || l.producto === null) continue;
+    if (viajaSolo(l.producto)) continue;
+    botellas += l.cantidad * l.producto.botellas;
+  }
+  return botellas;
+}
+
+/**
  * Las botellas segun lo GUARDADO, sin catalogo. Es lo que puede saber el
  * contador de la barra, que vive en todas las rutas y no lee Firestore.
  *
@@ -321,6 +353,49 @@ export function botellasEnCarrito(resuelto: CarritoResuelto): number {
  */
 export function botellasGuardadas(carrito: Carrito): number {
   return carrito.lineas.reduce((n, l) => n + l.cantidad * l.botellas, 0);
+}
+
+/**
+ * Las sueltas segun lo guardado. Misma cuenta que `botellasSueltas`, con la
+ * unica pista que hay en `localStorage`: `botellas` por linea.
+ *
+ * Por eso ese campo se guarda desde ADR 009 §4 -- sin el, la barra no puede
+ * distinguir un pack de dos botellas de dos botellas sueltas, que es
+ * exactamente la distincion que decide si el pedido se puede cobrar.
+ */
+export function botellasSueltasGuardadas(carrito: Carrito): number {
+  return carrito.lineas.reduce((n, l) => (viajaSolo(l) ? n : n + l.cantidad * l.botellas), 0);
+}
+
+/**
+ * Lo que de verdad va a viajar, separado por como viaja. Lo consume `envio.ts`
+ * para armar los bultos, y no al reves: este archivo sabe del carrito y aquel
+ * sabe de cajas y kilos.
+ *
+ * `propias` lleva UNA ENTRADA POR UNIDAD -dos packs de 2 son `[2, 2]`, no un 4-
+ * porque cada uno es un bulto con su peso y su medida. Aplanarlo a un total de
+ * botellas es justo el error que este cambio corrige: seis botellas en tres
+ * packs no son una caja de seis, son tres bultos.
+ */
+export interface CargaDelPedido {
+  /** Botellas sueltas: viajan juntas, de a `BOTELLAS_POR_CAJA` por caja. */
+  readonly sueltas: number;
+  /** Botellas adentro de cada unidad que trae su propia caja. */
+  readonly propias: readonly number[];
+}
+
+export function cargaDelPedido(resuelto: CarritoResuelto): CargaDelPedido {
+  let sueltas = 0;
+  const propias: number[] = [];
+  for (const l of resuelto.lineas) {
+    if (l.estado !== 'vigente' || l.producto === null) continue;
+    if (viajaSolo(l.producto)) {
+      for (let i = 0; i < l.cantidad; i += 1) propias.push(l.producto.botellas);
+    } else {
+      sueltas += l.cantidad * l.producto.botellas;
+    }
+  }
+  return { sueltas, propias };
 }
 
 export interface EstadoDeLaCaja {
@@ -361,7 +436,7 @@ export function contarCaja(botellas: number, porCaja: number = BOTELLAS_POR_CAJA
  * no de este archivo.
  */
 export function estadoDeLaCaja(resuelto: CarritoResuelto): EstadoDeLaCaja {
-  return contarCaja(botellasEnCarrito(resuelto));
+  return contarCaja(botellasSueltas(resuelto));
 }
 
 /**
@@ -374,11 +449,11 @@ export function estadoDeLaCaja(resuelto: CarritoResuelto): EstadoDeLaCaja {
  * botellas que mande el navegador no se cree.
  *
  * Un carrito vacio no es cobrable. Cero es multiplo de seis, pero no hay nada
- * que despachar.
+ * que despachar. Por eso son DOS condiciones y no una: la segunda mira las
+ * sueltas -- un pedido de un solo pack de 2 tiene CERO sueltas, y se cobra.
  */
 export function sePuedeCobrar(resuelto: CarritoResuelto): boolean {
-  const botellas = botellasEnCarrito(resuelto);
-  return botellas > 0 && botellas % BOTELLAS_POR_CAJA === 0;
+  return botellasEnCarrito(resuelto) > 0 && botellasSueltas(resuelto) % BOTELLAS_POR_CAJA === 0;
 }
 
 // ------------------------------------------------------- pedido de compra

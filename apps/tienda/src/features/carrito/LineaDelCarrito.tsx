@@ -36,6 +36,11 @@ export function LineaDelCarrito({ linea, ajustada, ventana, alQuitar }: Props) {
           </p>
         ) : null}
         {estado ? <p className="linea-carrito__estado versalita">{estado}</p> : null}
+        {/* Sólo en la línea del vino que trae su caja, y sólo acá: es donde el
+            comprador ve que sus botellas no aparecen en el `4 de 6` de arriba.
+            Decirlo una vez por línea es local; decirlo en la cabecera sería
+            repetirlo para vinos a los que no les toca. */}
+        {p && p.botellas > 1 ? <p className="linea-carrito__viaja">{TEXTOS.viajaSola}</p> : null}
         <button type="button" className="linea-carrito__quitar versalita" onClick={alQuitar}>
           {TEXTOS.quitar}
         </button>

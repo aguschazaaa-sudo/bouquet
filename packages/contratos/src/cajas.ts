@@ -25,7 +25,7 @@
  */
 
 import { agregar, BOTELLAS_POR_CAJA, esProductoId, type Carrito } from './carrito.ts';
-import type { Descarte, ProductoPublicado, Validacion } from './producto.ts';
+import { viajaSolo, type Descarte, type ProductoPublicado, type Validacion } from './producto.ts';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -47,8 +47,11 @@ export interface CajaSugerida {
    * vino. Asi la suma es directa y llenar el carrito es un `agregar` por
    * entrada, que ya acumula solo.
    *
-   * Por eso la lista tiene entre 1 y BOTELLAS_POR_CAJA entradas: un pack de 2
-   * botellas ocupa UNA entrada y aporta 2.
+   * Por eso la lista tiene EXACTAMENTE `BOTELLAS_POR_CAJA` entradas, y todas
+   * tienen que ser vinos que se venden SUELTOS. Un pack de 2 trae su propia
+   * caja, no cuenta para las seis (ADR 009 §10) y por lo tanto no puede armar
+   * una: una sugerencia que lo incluya deja el carrito con la caja abierta y un
+   * boton de pagar que no aparece.
    */
   readonly productoIds: readonly string[];
 }
@@ -71,9 +74,11 @@ function validarUna(x: unknown, donde: string): Validacion<CajaSugerida> {
   if (!Array.isArray(ids) || ids.length === 0) {
     return { ok: false, motivo: `${donde}: productoIds tiene que ser una lista no vacia` };
   }
-  // Cada entrada aporta AL MENOS una botella, asi que mas entradas que el
-  // tamano de la caja no puede sumar una caja ni de casualidad.
-  if (ids.length > BOTELLAS_POR_CAJA) {
+  // Desde ADR 009 §10 una caja armada es de botellas SUELTAS, y una botella
+  // suelta es una entrada: la cuenta de entradas ES la cuenta de botellas, y se
+  // puede exigir sin catalogo. Antes esto era un tope y no una igualdad, porque
+  // una entrada podia aportar dos.
+  if (ids.length !== BOTELLAS_POR_CAJA) {
     return { ok: false, motivo: `${donde}: ${ids.length} entradas para una caja de ${BOTELLAS_POR_CAJA}` };
   }
   const fuera = ids.filter((id) => !esProductoId(id));
@@ -128,12 +133,17 @@ export function validarCajasSugeridas(datos: unknown): CajasArmadas {
 // --------------------------------------------------------- 2. la composicion
 
 /**
- * Que la caja SUME una caja. Necesita el catalogo, asi que la corren el seed y
- * CI, no el render.
+ * Que la caja SUME una caja, y que la sume con botellas sueltas. Necesita el
+ * catalogo, asi que la corren el seed y CI, no el render.
  *
  * `botellasPorProducto` mapea id -> `presentacion.botellas`. Un id que no este
  * en el mapa es un error de composicion: el vendedor nombro un vino que no
  * existe.
+ *
+ * ⚠️ Un vino que VIAJA SOLO se rechaza aunque la suma diera seis. Es el caso
+ * que el catalogo de muestra tenia sembrado -"Dos y dos": dos packs de 2 mas
+ * dos botellas- y que desde ADR 009 §10 no es una caja: sus cuatro botellas
+ * empacadas viajan por su cuenta y las otras dos se quedan sin caja.
  *
  * ⚠️ Hoy la corre SOLO `seed.mjs`. No la corre CI: si manana un panel escribe
  * cajas por una callable, esa callable tiene que llamarla a mano -- el
@@ -148,6 +158,9 @@ export function verificarComposicion(
     const b = botellasPorProducto.get(id);
     if (b === undefined) {
       return { ok: false, motivo: `${caja.slug}: el producto ${id} no existe` };
+    }
+    if (viajaSolo({ botellas: b })) {
+      return { ok: false, motivo: `${caja.slug}: ${id} viene en su propia caja (${b} botellas) y no arma caja` };
     }
     botellas += b;
   }
@@ -234,6 +247,18 @@ export function resolverCajasSugeridas(
       comprometidas.set(productoId, yaPedidas + 1);
       return { productoId, producto, estado: 'vigente' };
     });
+
+    // Un vino que viene en su propia caja se juzga SOLO, sin esperar a los
+    // otros cinco: no arma caja con nadie, y que la suma diera seis no lo
+    // salva. Por eso este descarte va antes y no depende de `todosPresentes`.
+    const empacado = lugares.find((l) => l.producto !== null && viajaSolo(l.producto));
+    if (empacado !== undefined) {
+      descartes.push({
+        id: `cajasSugeridas/${caja.slug}`,
+        motivo: `${empacado.productoId} viene en su propia caja y no arma caja`,
+      });
+      continue;
+    }
 
     const todosPresentes = lugares.every((l) => l.producto !== null);
     const botellasDeclaradas = lugares.reduce((n, l) => n + (l.producto?.botellas ?? 0), 0);

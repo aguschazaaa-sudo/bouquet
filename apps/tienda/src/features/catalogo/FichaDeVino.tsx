@@ -61,8 +61,12 @@ export function FichaDeVino({ producto, control }: Props) {
               es la condición bajo la cual ese precio se puede pagar, y el
               lugar donde se lee es el camino del ojo del monto al botón.
               Enterarse de que el vino va de a seis después de agregar es
-              enterarse tarde. */}
-          <ReglaDeLaCaja variante="franja" />
+              enterarse tarde.
+
+              Le pasa las botellas porque la regla NO es la misma para los dos:
+              un vino que trae su caja viaja solo, y la placa lo dice así en vez
+              de pedirle al comprador que complete algo que no le toca. */}
+          <ReglaDeLaCaja variante="franja" botellas={producto.botellas} />
           {agotado ? null : control}
         </div>
       </section>

@@ -15,7 +15,7 @@
  * comprador: la decide el codigo postal.
  */
 
-import { BOTELLAS_POR_CAJA } from './carrito.ts';
+import { BOTELLAS_POR_CAJA, type CargaDelPedido } from './carrito.ts';
 import { CERO, sumar, type Centavos } from './dinero.ts';
 import type { Validacion } from './producto.ts';
 
@@ -37,12 +37,38 @@ import type { Validacion } from './producto.ts';
  * en cada pedido.
  *
  * ⚠️ Las MEDIDAS siguen siendo de catalogo de proveedores, no medidas.
+ *
+ * ⚠️ Desde el 2026-09-15 este 8 NO es el unico peso posible: un producto que
+ * viene en su propia caja viaja en un bulto mas chico (ADR 009 §10). El peso
+ * de cualquier bulto sale de `pesoDelBultoKg`, que con seis reproduce ESTE
+ * numero -- hay un test que lo mide, y es el control de que no queden dos
+ * fuentes para lo mismo.
  */
 export const CAJA_KG = 8;
 /* NO se exporta: `bultosDelPedido` ya devuelve las medidas por bulto, que es
  * como las pide un correo. Un export que nadie abre no esta entregado, esta
  * escrito. */
 const CAJA_CM = { largo: 34, ancho: 24, alto: 18 } as const;
+
+/** Lo que peso el dueno el 2026-09-15, con vino adentro. */
+const BOTELLA_KG = 1.118;
+
+/**
+ * El carton, el relleno y la cinta.
+ *
+ * NO esta medido: esta CALIBRADO para que seis botellas den los 8 kg que ya se
+ * declaraban -- 6 x 1,118 + 0,6 = 7,308, y el techo lo sube a 8. Es el unico
+ * numero de esta cuenta que nadie puso en una balanza, y esta escrito asi para
+ * que el dia que se pese una caja armada se cambie ACA y los dos tamanos se
+ * corrijan juntos.
+ */
+const EMBALAJE_KG = 0.6;
+
+/** 24 cm / 6 botellas, de la unica caja que alguien miro alguna vez. */
+const ANCHO_POR_BOTELLA_CM = CAJA_CM.ancho / BOTELLAS_POR_CAJA;
+
+/** Ninguna caja es mas angosta que la botella que lleva adentro. */
+const ANCHO_MINIMO_CM = 9;
 
 export interface Bulto {
   readonly pesoKg: number;
@@ -52,37 +78,77 @@ export interface Bulto {
 }
 
 /**
- * Cuantas cajas FISICAS viajan.
+ * Lo que se declara por bulto. Redondea para ARRIBA, del lado seguro: un correo
+ * que repesa y encuentra mas de lo declarado cobra la diferencia al vendedor;
+ * declarar de mas, como mucho, cae en el escalon de peso de arriba.
  *
- * El carrito se cobra de a multiplos de seis botellas (ADR 009), asi que 12
- * botellas son dos cajas y dos cajas pesan el doble. Cotizar siempre una sola
- * caja fue el defecto que tenia la maqueta: el precio del envio de un pedido
- * grande salia igual que el de uno chico.
- *
- * Redondea para arriba a proposito: 7 botellas -que no se pueden cobrar, pero
- * se pueden cotizar mientras el comprador completa- viajan en dos cajas.
+ * Con `BOTELLAS_POR_CAJA` tiene que dar `CAJA_KG`, y hay un test que lo mide:
+ * es el control de que la formula no se fue de donde estaba el numero medido.
  */
-export function cajasADespachar(botellas: number, porCaja: number = BOTELLAS_POR_CAJA): number {
+export function pesoDelBultoKg(botellas: number): number {
+  return Math.ceil(botellas * BOTELLA_KG + EMBALAJE_KG);
+}
+
+/**
+ * ⚠️ LAS MEDIDAS DE UN PACK SON ESCALADAS, NO MEDIDAS. Las botellas van paradas
+ * una al lado de la otra, asi que escala el ancho y no el largo ni el alto; con
+ * seis da exactamente los 34 x 24 x 18 del catalogo. Una caja de regalo de dos
+ * puede ser mas ancha y mas chata que esto, y hasta que haya una en la mano el
+ * numero es una proporcion, no una medicion (ADR 009 §10).
+ */
+function bulto(botellas: number): Bulto {
+  return {
+    pesoKg: pesoDelBultoKg(botellas),
+    largoCm: CAJA_CM.largo,
+    anchoCm: Math.max(ANCHO_MINIMO_CM, Math.ceil(botellas * ANCHO_POR_BOTELLA_CM)),
+    altoCm: CAJA_CM.alto,
+  };
+}
+
+/**
+ * LOS BULTOS QUE DE VERDAD VIAJAN, uno por caja fisica.
+ *
+ * Es lo que espera un correo -una lista, no un peso solo- y es la primitiva:
+ * `cajasADespachar` y `pesoDelPedidoKg` salen de contarla y sumarla, para que
+ * no haya dos cuentas de lo mismo (LECCIONES 6.4).
+ *
+ * ⚠️ Son DOS montones y no uno. Las sueltas se juntan de a `porCaja`; lo que
+ * viene en su propia caja viaja SOLO, un bulto por unidad, porque ya trae su
+ * embalaje (ADR 009 §10). Sumarlo todo en un total de botellas -- que es lo que
+ * hacia esta funcion hasta el 2026-09-15 -- declara seis botellas en tres packs
+ * como UNA caja de seis: el correo cotiza un bulto y le entregamos tres.
+ *
+ * La ultima caja de sueltas puede ir a medio llenar mientras el comprador
+ * completa, y se declara ENTERA: un peso que no se puede cobrar todavia no vale
+ * la pena afinarlo, y por abajo es donde el correo cobra la diferencia.
+ */
+export function bultosDelPedido(carga: CargaDelPedido, porCaja: number = BOTELLAS_POR_CAJA): readonly Bulto[] {
   if (!Number.isInteger(porCaja) || porCaja < 1) {
     throw new RangeError(`la caja va entera y >= 1; llego ${porCaja}`);
   }
-  if (!Number.isFinite(botellas) || botellas <= 0) return 0;
-  return Math.ceil(botellas / porCaja);
+  const sueltas = Number.isFinite(carga.sueltas) && carga.sueltas > 0 ? carga.sueltas : 0;
+  const cajas = Math.ceil(sueltas / porCaja);
+  const bultos: Bulto[] = [];
+  for (let i = 0; i < cajas; i += 1) bultos.push(bulto(porCaja));
+  for (const botellas of carga.propias) {
+    if (Number.isInteger(botellas) && botellas >= 1) bultos.push(bulto(botellas));
+  }
+  return bultos;
 }
 
-/** Un bulto por caja. Es lo que espera un correo: una lista, no un peso solo. */
-export function bultosDelPedido(botellas: number, porCaja: number = BOTELLAS_POR_CAJA): readonly Bulto[] {
-  const cajas = cajasADespachar(botellas, porCaja);
-  return Array.from({ length: cajas }, () => ({
-    pesoKg: CAJA_KG,
-    largoCm: CAJA_CM.largo,
-    anchoCm: CAJA_CM.ancho,
-    altoCm: CAJA_CM.alto,
-  }));
+/**
+ * Cuantas cajas FISICAS viajan. Doce botellas sueltas son dos cajas y pesan el
+ * doble; una caja de seis mas dos packs de dos son TRES bultos, no uno.
+ *
+ * Cotizar siempre una sola caja fue el defecto que tenia la maqueta: el precio
+ * del envio de un pedido grande salia igual que el de uno chico.
+ */
+export function cajasADespachar(carga: CargaDelPedido, porCaja: number = BOTELLAS_POR_CAJA): number {
+  return bultosDelPedido(carga, porCaja).length;
 }
 
-export function pesoDelPedidoKg(botellas: number, porCaja: number = BOTELLAS_POR_CAJA): number {
-  return cajasADespachar(botellas, porCaja) * CAJA_KG;
+export function pesoDelPedidoKg(carga: CargaDelPedido, porCaja: number = BOTELLAS_POR_CAJA): number {
+  return bultosDelPedido(carga, porCaja).reduce((kg, b) => kg + b.pesoKg, 0);
 }
 
 // -------------------------------------------------------------- modalidades

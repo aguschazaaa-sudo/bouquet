@@ -17,17 +17,24 @@ el número 6 para esta regla.
 El sistema SHALL contar `cantidad × presentacion.botellas` de cada línea, no la
 cantidad de unidades de venta.
 
-#### Scenario: Un producto de dos botellas cuenta por dos
+⚠️ **Enmendada el 2026-09-15 por [ADR 009 §10](../../../../../docs/vault/architecture/decisions/009-venta-por-caja.md).**
+La regla sólo alcanza a las botellas que se venden **sueltas**: un producto de
+más de una botella trae su propio embalaje, viaja solo y **no cuenta** para la
+caja de seis. Los dos escenarios de abajo decían lo contrario y son los que
+cambiaron.
+
+#### Scenario: Un producto que viene en su propia caja no cuenta
 
 - **WHEN** el carrito tiene 3 unidades de un producto con `presentacion.botellas = 2`
-- **THEN** la cuenta da **6 botellas**
-- **AND** la caja está completa
+- **THEN** la cuenta de la caja da **0 botellas sueltas**
+- **AND** no hay caja que completar: el pedido se puede cobrar
 
 #### Scenario: Mezcla de presentaciones
 
 - **WHEN** el carrito tiene 2 unidades de un producto de 2 botellas y 2 unidades de uno de 1
-- **THEN** la cuenta da **6 botellas**
-- **AND** la caja está completa
+- **THEN** el pedido tiene **6 botellas** y **2 sueltas**
+- **AND** la caja está incompleta: faltan 4
+- **AND** el pedido **no** se puede cobrar
 
 ### Requirement: Sólo las líneas vigentes cuentan
 
@@ -84,9 +91,22 @@ borraría su `localStorage` en la visita siguiente.
 ### Requirement: El cobro exige cajas completas
 
 Cuando exista `crearOrden`, el servidor SHALL rechazar todo pedido cuya cuenta
-de botellas no sea múltiplo de `BOTELLAS_POR_CAJA`, y MUST recalcular esa cuenta
-desde la proyección del servidor. El sistema MUST NOT creerle a un número
-enviado por el navegador.
+de botellas **sueltas** no sea múltiplo de `BOTELLAS_POR_CAJA`, y MUST
+recalcular esa cuenta desde la proyección del servidor. El sistema MUST NOT
+creerle a un número enviado por el navegador.
+
+Un pedido de **sólo** productos que vienen en su propia caja tiene cero
+botellas sueltas y SHALL poder cobrarse: cada uno viaja solo (ADR 009 §10).
+
+#### Scenario: Un pedido de un solo pack se acepta
+
+- **WHEN** llega un pedido con una unidad de un producto de 2 botellas y nada más
+- **THEN** el servidor no lo rechaza por la regla de la caja
+
+#### Scenario: Cuatro sueltas y un pack se rechaza
+
+- **WHEN** llega un pedido de 4 botellas sueltas más una unidad de un producto de 2
+- **THEN** el servidor lo rechaza: las 4 sueltas no llenan una caja, aunque el pedido tenga 6 botellas
 
 #### Scenario: Un pedido incompleto se rechaza
 

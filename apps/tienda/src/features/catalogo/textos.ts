@@ -72,7 +72,16 @@ export const TEXTOS = {
    * para que pueda ser una CIFRA y no una palabra (ver ReglaDeLaCaja). */
   reglaRotulo: 'Se vende por caja',
   reglaUnidad: 'botellas',
-  reglaNota: 'Elegí las que quieras y armá la tuya.',
+  reglaNota: 'Elegí las que quieras y armá la tuya. Las que vienen en su caja viajan solas.',
+  /* La misma placa para un vino que trae su propia caja. NO es la regla dicha
+   * más suave: es otra regla —ésta no pide completar nada— y por eso tiene su
+   * propio rótulo y su propia nota (ADR 009 §10). */
+  reglaPropiaRotulo: 'Viaja sola',
+  reglaPropiaUnidad: 'botellas en su caja',
+  /* Le habla al comprador de lo que PUEDE hacer, no del embalaje: "ya viene
+   * embalada" era la primera versión y describía la caja en vez de contestarle
+   * a la persona que está mirando el precio (voz.md §4.2, registro mostrador). */
+  reglaPropiaNota: 'Podés llevarte una sola: no hace falta completar las seis.',
   cajasTitulo: 'Cajas armadas',
   cuantasBotellas: (n: number) => `${n} botellas`,
   cajasBajada: 'Si no querés elegir de a uno, empezá por una de éstas. Después la cambiás.',

@@ -87,6 +87,12 @@ propio stock, contado en cajas. `presentacion` es inmutable: una botella que
 pasa a caja es otro producto. Si la caja comparte botellas con otro producto,
 no es esto: es un compuesto.
 
+**Trae su propio embalaje, así que VIAJA SOLA** (`viajaSolo`, 2026-09-15): se
+vende suelta, no cuenta para la *venta por caja*, viaja en su propio bulto y no
+puede formar parte de una *caja sugerida*. Es una propiedad **derivada** —más
+de una botella es, por definición, una caja—, no un campo del documento. El día
+que exista un pack sin caja propia, deja de ser derivable.
+
 ### Compuesto
 Una caja armada con otros productos, **con precio propio**. No tiene stock
 propio: lo derivaría de sus componentes simples.
@@ -100,17 +106,26 @@ exista una caja de regalo con su propio precio; sacarlo sería la migración que
 propósito.
 
 ### Venta por caja
-El vino **no se vende suelto**: lo que se cobra tiene que sumar un múltiplo de
-`BOTELLAS_POR_CAJA` botellas, porque ésa es la caja física con la que se
-despacha. Hoy son **6**; si aparecen cajas de 3, es una constante y sus tests.
+La botella suelta **no se vende sola**: las sueltas de un pedido tienen que
+sumar un múltiplo de `BOTELLAS_POR_CAJA`, porque ésa es la caja física con la
+que se despacha. Hoy son **6**; si aparecen cajas de 3, es una constante y sus
+tests.
 
-Se cuenta en **botellas**, no en unidades de venta: tres packs de 2 son una caja
-completa. Y es una precondición de **cobro**, no de validez — un carrito de 4
-botellas es alguien comprando, y `parsearCarrito` lo acepta.
+⚠️ **Alcanza sólo a las botellas sueltas** (2026-09-15, decisión del dueño). Lo
+que viene en su propia caja trae su embalaje y viaja solo: no cuenta, no
+completa y no rompe. Un pedido de 4 sueltas + una caja de 2 tiene **seis
+botellas y no se puede cobrar**; uno de una sola caja de 2, **sí**.
+
+Se cuenta en **botellas**, no en unidades de venta. Y es una precondición de
+**cobro**, no de validez — un carrito de 4 botellas es alguien comprando, y
+`parsearCarrito` lo acepta.
 
 ### Caja sugerida
 Una caja que el vendedor ofrece **ya armada**: un nombre, un slug y una lista de
-`productoId`. Un id repetido son dos botellas de ese vino.
+`productoId`. Un id repetido son dos botellas de ese vino. Son exactamente
+`BOTELLAS_POR_CAJA` entradas, **todas de vinos que se venden sueltos**: un vino
+que trae su propia caja no arma caja con nadie, así que una sugerencia que lo
+incluyera dejaría el carrito sin poder cobrarse.
 
 **No es un producto.** No tiene precio propio, ni stock propio, ni documento en
 `productos`: elegirla **llena el carrito**, y desde ahí el comprador cambia lo

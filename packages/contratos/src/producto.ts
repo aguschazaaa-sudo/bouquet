@@ -110,6 +110,29 @@ export const TOPE_POR_PEDIDO = 12;
 
 type ConStock = { readonly stock: number; readonly presentacion: { readonly botellas: number } };
 
+/**
+ * true si el producto TRAE SU PROPIA CAJA, asi que puede viajar solo.
+ *
+ * Se DERIVA de la presentacion y no es un campo del documento: una unidad de
+ * venta de mas de una botella es, por definicion, una caja -- el dueno lo dijo
+ * asi el 2026-09-15: *"vienen en cajas, tienen su propio packaging, asi que
+ * pueden viajar solos"*. El dia que exista un pack de dos SIN caja propia -dos
+ * botellas atadas con un piolin- esto deja de ser derivable y pasa a ser un
+ * campo del documento, de `firestore.rules` y del panel. Hoy no existe.
+ *
+ * Decide TRES cosas, y las tres estan en ADR 009 §10:
+ *   1. No cuenta para la caja de seis (`botellasSueltas`).
+ *   2. Viaja en su propio bulto (`cargaDelPedido` -> `bultosDelPedido`).
+ *   3. No puede formar parte de una caja armada (`verificarComposicion`).
+ *
+ * Toma `{ botellas }` y no un Producto entero para que sirva igual con la
+ * proyeccion -que aplana `presentacion`- y con el documento, donde se llama
+ * `viajaSolo(p.presentacion)`.
+ */
+export function viajaSolo(p: { readonly botellas: number }): boolean {
+  return p.botellas > 1;
+}
+
 export function balde(p: ConStock): Balde {
   if (p.stock <= 0) return 'agotado';
   if (p.stock * p.presentacion.botellas <= UMBRAL_QUEDAN_POCAS) return 'quedan-pocas';

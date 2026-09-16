@@ -25,21 +25,31 @@ import { TEXTOS } from './textos';
  *   - `placa`  — cava, la cabecera de /vinos. La regla ANTES de elegir nada.
  *   - `franja` — papel, el mostrador de la ficha, que es sticky en el
  *     teléfono: ahí la placa se acuesta para no comerse la pantalla.
+ *
+ * ⚠️ Y DOS MENSAJES, desde el 2026-09-15. Un vino que viene en su propia caja
+ * viaja solo y no cuenta para las seis (ADR 009 §10): en su ficha esta misma
+ * placa decía —en el lugar más visible del mostrador— una regla que a ese vino
+ * no lo alcanza. La cifra pasa a ser la de SU caja y el rótulo deja de pedir
+ * algo. Es la misma pieza porque es el mismo hueco de la pantalla y la misma
+ * pregunta del comprador: cómo se vende esto.
  */
 
 type Props = {
   variante?: 'placa' | 'franja';
+  /** Botellas de la unidad de venta. Más de una trae su caja y viaja sola. */
+  botellas?: number;
 };
 
-export function ReglaDeLaCaja({ variante = 'placa' }: Props) {
+export function ReglaDeLaCaja({ variante = 'placa', botellas = 1 }: Props) {
+  const propia = botellas > 1;
   return (
     <div className={`regla-caja regla-caja--${variante} cartucho-deco`}>
-      <p className="regla-caja__rotulo rotulo">{TEXTOS.reglaRotulo}</p>
+      <p className="regla-caja__rotulo rotulo">{propia ? TEXTOS.reglaPropiaRotulo : TEXTOS.reglaRotulo}</p>
       <p className="regla-caja__cuenta">
-        <span className="regla-caja__cifra cifra">{BOTELLAS_POR_CAJA}</span>
-        <span className="regla-caja__unidad">{TEXTOS.reglaUnidad}</span>
+        <span className="regla-caja__cifra cifra">{propia ? botellas : BOTELLAS_POR_CAJA}</span>
+        <span className="regla-caja__unidad">{propia ? TEXTOS.reglaPropiaUnidad : TEXTOS.reglaUnidad}</span>
       </p>
-      <p className="regla-caja__nota">{TEXTOS.reglaNota}</p>
+      <p className="regla-caja__nota">{propia ? TEXTOS.reglaPropiaNota : TEXTOS.reglaNota}</p>
     </div>
   );
 }

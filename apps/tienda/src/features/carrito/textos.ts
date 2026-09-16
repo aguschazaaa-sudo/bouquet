@@ -15,7 +15,6 @@ export const TEXTOS = {
   alTope: 'Está en tu pedido, y no se puede sumar más.',
   verElCarrito: 'Ver el carrito',
   quedoEnTuPedido: (nombre: string) => `${nombre} quedó en tu pedido.`,
-  enElPedido: 'en tu pedido',
   titulo: 'Tu pedido',
   vacio: 'No hay nada acá todavía.',
   verLosVinos: 'Ver los vinos',
@@ -34,11 +33,28 @@ export const TEXTOS = {
 
   // --- la venta por caja ---
   avance: (hay: number, meta: number) => `${hay} de ${meta}`,
-  avanceLargo: (hay: number, meta: number) => `${botellas(hay)} de ${meta} en tu pedido`,
+  avanceLargo: (hay: number, meta: number) => `${botellas(hay)} sueltas de ${meta} en tu pedido`,
+  botellasEnTuPedido: (n: number) => `${botellas(n)} en tu pedido`,
+  /* Lo que dice la barra cuando no falta nada que completar: incluye el pedido
+   * que es sólo una caja cerrada, donde no hay ninguna caja armándose. */
+  listoParaViajar: 'Listo para viajar.',
+  /* Para un vino que trae su propia caja, en su línea del pedido. Contesta la
+   * pregunta que deja el contador: por qué estas botellas no suman a las seis
+   * (ADR 009 §10). */
+  viajaSola: 'Viaja sola: no cuenta para las seis.',
   cajaCompleta: 'La caja está completa.',
   cajasCompletas: (n: number) => `Tenés ${n} cajas completas.`,
-  faltan: (n: number) =>
-    n === 1 ? 'Falta una botella para cerrar la caja.' : `Faltan ${n} botellas para cerrar la caja.`,
-  sobran: (n: number) =>
-    n === 1 ? 'Sobra una botella. La podés sacar y la caja cierra.' : `Sobran ${n} botellas. Las podés sacar y la caja cierra.`,
+  /* ⚠️ `sueltas` se prende SÓLO si el pedido tiene algo que viaja solo, y se vio
+   * mirando la captura: con 4 sueltas y una caja de 2, la pantalla dice `4 de 6`
+   * arriba y `6 botellas` en el total. Las dos son ciertas y juntas se leen como
+   * un error. La palabra desambigua sin agregar un renglón. Cuando no hay packs
+   * no se dice: ahí "botella" ya significa suelta y "suelta" sería ruido. */
+  faltan: (n: number, sueltas = false) =>
+    n === 1
+      ? `Falta una botella${sueltas ? ' suelta' : ''} para cerrar la caja.`
+      : `Faltan ${n} botellas${sueltas ? ' sueltas' : ''} para cerrar la caja.`,
+  sobran: (n: number, sueltas = false) =>
+    n === 1
+      ? `Sobra una botella${sueltas ? ' suelta' : ''}. La podés sacar y la caja cierra.`
+      : `Sobran ${n} botellas${sueltas ? ' sueltas' : ''}. Las podés sacar y la caja cierra.`,
 } as const;

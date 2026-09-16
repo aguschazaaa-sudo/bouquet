@@ -1,6 +1,6 @@
 {
   "proyecto": "bouquet-vinos",
-  "nota": "Datos de MUESTRA para stage. Precios en centavos, stock en unidades de venta, unidades = ventas simuladas de 90 dias. foto: archivo en scripts/seed/fotos/ (no se commitea) o null a proposito. cajasSugeridas: listas de productoId; un id repetido son dos botellas de ese vino, y cada lista tiene que sumar BOTELLAS_POR_CAJA botellas.",
+  "nota": "Datos de MUESTRA para stage. Precios en centavos, stock en unidades de venta, unidades = ventas simuladas de 90 dias. foto: archivo en scripts/seed/fotos/ (no se commitea) o null a proposito. cajasSugeridas: listas de productoId; un id repetido son dos botellas de ese vino, y cada lista tiene que tener exactamente BOTELLAS_POR_CAJA entradas, todas de vinos que se venden SUELTOS -- un vino que viene en su propia caja viaja solo y no arma caja (ADR 009 §10).",
   "bodegas": [
     {
       "id": "muestra-rutini-wines",
@@ -484,14 +484,16 @@
       ]
     },
     {
-      "slug": "dos-y-dos",
-      "nombre": "Dos y dos",
-      "nota": "Cuatro entradas, SEIS botellas: los dos packs de 2 aportan 2 cada uno. Es el caso que prueba que la cuenta va en botellas y no en unidades.",
+      "slug": "dos-de-cada",
+      "nombre": "Dos de cada color",
+      "nota": "Tres vinos repetidos: es el unico lugar de stage donde una caja armada deja lineas de cantidad 2 en el carrito. Reemplazo de 'Dos y dos' (dos packs de 2 + dos botellas), que desde ADR 009 §10 NO es una caja: lo que viene empacado viaja solo y no cuenta para las seis.",
       "productoIds": [
-        "muestra-rutini-cabernet-malbec-caja-2",
-        "muestra-don-nicanor-blend-caja-2",
+        "muestra-alamos-malbec",
+        "muestra-alamos-malbec",
         "muestra-trumpeter-chardonnay",
-        "muestra-crios-rose-de-malbec"
+        "muestra-trumpeter-chardonnay",
+        "muestra-santa-julia-rose",
+        "muestra-santa-julia-rose"
       ]
     }
   ]

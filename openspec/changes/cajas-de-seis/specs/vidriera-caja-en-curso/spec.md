@@ -2,9 +2,20 @@
 
 ### Requirement: La restricción se dice antes de agregar
 
-La vidriera SHALL decir que el vino se vende de a `BOTELLAS_POR_CAJA` botellas
+La vidriera SHALL decir que la botella suelta se vende de a `BOTELLAS_POR_CAJA`
 en el listado y en la ficha, **junto al control de compra**, no sólo en el
 carrito. El aviso MUST estar en el HTML servido, sin depender de JavaScript.
+
+⚠️ **Enmendado el 2026-09-15 por [ADR 009 §10](../../../../../docs/vault/architecture/decisions/009-venta-por-caja.md):**
+en la ficha de un producto que viene en su propia caja, ese mismo lugar SHALL
+decir que **viaja solo**, y MUST NOT anunciar la regla de las seis, que a ese
+vino no lo alcanza.
+
+#### Scenario: La ficha de un pack no anuncia la regla
+
+- **WHEN** se pide la ficha de un producto con `presentacion.botellas = 2` y se lee el HTML servido
+- **THEN** dice que viaja sola, con sus 2 botellas
+- **AND** no aparece el aviso de venta por caja
 
 #### Scenario: El aviso llega sin JavaScript
 
@@ -19,14 +30,24 @@ carrito. El aviso MUST estar en el HTML servido, sin depender de JavaScript.
 
 ### Requirement: El contador de la barra muestra el avance de la caja
 
-El contador de la barra de navegación SHALL mostrar cuántas botellas hay sobre
-el tamaño de la caja, en lugar de sólo las unidades. MUST salir de
-`localStorage` y costar **cero** lecturas de Firestore.
+El contador de la barra de navegación SHALL mostrar cuántas botellas
+**sueltas** hay sobre el tamaño de la caja, en lugar de sólo las unidades. MUST
+salir de `localStorage` y costar **cero** lecturas de Firestore.
+
+⚠️ **Enmendado el 2026-09-15 por [ADR 009 §10](../../../../../docs/vault/architecture/decisions/009-venta-por-caja.md):**
+lo que viene en su propia caja no se puede completar, así que no entra en el
+avance. Cuando no falta ninguna, el contador muestra el total de botellas del
+pedido, que ahí sí es todo lo que viaja.
 
 #### Scenario: Avance parcial
 
 - **WHEN** el carrito tiene 4 botellas vigentes
 - **THEN** el contador comunica 4 de 6
+
+#### Scenario: Un pedido de sólo packs
+
+- **WHEN** el carrito tiene una unidad de un producto de 2 botellas y nada más
+- **THEN** el contador comunica 2, sin pedir que se complete nada
 
 #### Scenario: Más de una caja
 

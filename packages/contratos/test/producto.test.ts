@@ -8,6 +8,7 @@ import {
   esCorte,
   textoDelBalde,
   tope,
+  viajaSolo,
   type DocumentoCrudo,
 } from '../src/producto.ts';
 
@@ -65,6 +66,25 @@ test('un solo varietal es cepa; dos o mas, corte', () => {
   const porId = new Map(catalogo.productos.map((p) => [p.id, p]));
   assert.equal(porId.get('corte')?.esCorte, true, 'la proyeccion lo marca como corte');
   assert.equal(porId.get('cepa')?.esCorte, false);
+});
+
+// ------------------------------------------------------------- viaja solo
+
+test('mas de una botella es una caja, y una caja viaja sola', () => {
+  // De este predicado cuelgan las tres decisiones de ADR 009 §10: qué cuenta
+  // para la caja de seis, qué viaja en su propio bulto y qué puede armar una
+  // caja sugerida. Se deriva de `presentacion`, que es inmutable por regla.
+  assert.equal(viajaSolo({ botellas: 2 }), true);
+  assert.equal(viajaSolo({ botellas: 6 }), true);
+  assert.equal(viajaSolo({ botellas: 1 }), false, 'la botella suelta necesita la caja de seis');
+});
+
+test('se lee igual de la proyeccion que del documento', () => {
+  // La proyeccion aplana `presentacion.botellas` a `botellas`; el documento no.
+  // Por eso toma `{ botellas }` y no un Producto entero.
+  const documento = { presentacion: { botellas: 2 } };
+  const proyectado = { botellas: 2 };
+  assert.equal(viajaSolo(documento.presentacion), viajaSolo(proyectado));
 });
 
 // ------------------------------------------------------------------ balde

@@ -340,6 +340,16 @@ body:has(.pagina-carrito) {
   color: var(--acento);
 }
 
+/* El vino que trae su propia caja. NO va en `--acento` como el balde: no es
+   una alarma ni una novedad, es una aclaración de por qué estas botellas no
+   aparecen en el avance de la caja. Cuerpo normal en tinta-2, que es el mismo
+   tono de los datos de la línea. */
+.linea-carrito__viaja {
+  margin: var(--e-2) 0 0;
+  font-size: 0.92rem;
+  color: var(--tinta-2);
+}
+
 .linea-carrito__quitar {
   margin-top: var(--e-2);
   padding: 0.55rem 0;

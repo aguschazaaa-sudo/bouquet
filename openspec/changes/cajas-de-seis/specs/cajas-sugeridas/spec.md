@@ -28,11 +28,18 @@ costar **una** lectura, adentro de la misma caché que ya envuelve al catálogo.
 - **WHEN** un visitante abre `/vinos` con la caché vigente
 - **THEN** las cajas sugeridas no disparan ninguna lectura
 
-### Requirement: Una caja sugerida suma exactamente una caja
+### Requirement: Una caja sugerida suma exactamente una caja, con botellas sueltas
 
-El validador SHALL exigir que la suma de `presentacion.botellas` de los
-productos de una caja sugerida sea exactamente `BOTELLAS_POR_CAJA`. Una
-sugerencia que no arma una caja completa MUST quedar afuera.
+El validador SHALL exigir que una caja sugerida tenga exactamente
+`BOTELLAS_POR_CAJA` entradas y que **todas** nombren productos que se venden
+sueltos (`presentacion.botellas = 1`). Una sugerencia que no arma una caja
+completa MUST quedar afuera.
+
+⚠️ **Enmendada el 2026-09-15 por [ADR 009 §10](../../../../../docs/vault/architecture/decisions/009-venta-por-caja.md).**
+Un producto de más de una botella trae su propio embalaje, viaja solo y no
+cuenta para la caja de seis: una sugerencia que lo incluya dejaría el carrito
+con la caja abierta y sin botón de pagar. Por eso el escenario de los tres
+packs, que antes era válido, ahora es el que **no** puede pasar.
 
 #### Scenario: Seis productos de una botella
 
@@ -42,11 +49,16 @@ sugerencia que no arma una caja completa MUST quedar afuera.
 #### Scenario: Tres productos de dos botellas
 
 - **WHEN** una sugerencia nombra 3 productos de 2 botellas cada uno
-- **THEN** la sugerencia es válida
+- **THEN** queda excluida: cada uno viaja solo y ninguno arma caja
+
+#### Scenario: Un solo pack entre cinco sueltas
+
+- **WHEN** una sugerencia nombra 5 productos de 1 botella y 1 de 2 botellas
+- **THEN** queda excluida, y el motivo nombra al producto empacado
 
 #### Scenario: Una sugerencia corta queda afuera
 
-- **WHEN** una sugerencia suma 5 botellas
+- **WHEN** una sugerencia tiene 5 entradas
 - **THEN** queda excluida y se informa el motivo en los descartes
 
 ### Requirement: Un documento roto no tira el render
