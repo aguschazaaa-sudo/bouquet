@@ -42,6 +42,8 @@ hay.
   contó y guardó se vendieron dos, fijar el número las borra. La callable
   recibe **el valor que el operador vio**, igual que `crearOrden` recibe el
   `precioUnitarioVisto`, y rechaza si cambió.
+- **Poca burocracia:** el motivo se elige de una lista corta —conteo, rotura,
+  otro— con un toque. No es un formulario.
 
 ## HU-05.3 — Ver qué se está agotando
 

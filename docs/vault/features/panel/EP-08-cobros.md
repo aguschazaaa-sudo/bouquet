@@ -7,8 +7,10 @@
 **Objetivo:** que el operador sepa si cada pedido está cobrado sin entrar a
 Mercado Pago, y que pueda resolver lo que el webhook no resolvió.
 
-**Depende de:** `crearOrden`, la preferencia de Mercado Pago y su webhook
-([ADR 010 §8](../../architecture/decisions/010-el-checkout.md)).
+**Depende de:** `crearOrden`. HU-08.1, HU-08.3 y HU-08.4 dependen además de
+la preferencia de Mercado Pago y su webhook
+([ADR 010 §8](../../architecture/decisions/010-el-checkout.md)); **HU-08.2 no**,
+y por eso sale antes, con las ventas por WhatsApp.
 
 ⚠️ **El panel no escribe `estadoPago`.** Lo prohíben las reglas: todo cambio de
 pago pasa por el servidor, con la transición validada y su marcador de
@@ -35,11 +37,13 @@ Pago, **para** que el pedido siga su curso.
   primer pedido**: marcar `pagada` a mano dispara el mismo `entroEnPagada` que
   va a usar el webhook, así el cobro online se enchufa en algo que ya corrió
   ([ARQUITECTURA §12](../../../../ARQUITECTURA.md#12-orden-de-construcción)).
-- ⚠️ **Con Checkout Pro desde el día 0, esta historia perdió su caso.** Si la
-  vidriera sólo cobra por Mercado Pago, un pago a mano aparece únicamente con
-  ventas por fuera de la tienda (EP-10). Pregunta 2 del
-  [mapa](overview.md): si la respuesta es no, esta historia pasa a disparador
-  y el camino de `entroEnPagada` lo estrena el webhook.
+- **Su caso son las ventas por WhatsApp** (respuesta del dueño): la vidriera
+  cobra sólo por Mercado Pago, así que un pago a mano llega únicamente de un
+  pedido de EP-10. Por eso esta historia sale **con EP-10, al principio del
+  hito 2**, y es la que estrena `entroEnPagada` en producción.
+- **Abierto:** por qué medio se cobran esos pedidos —transferencia, efectivo al
+  entregar, link de Mercado Pago—. Pregunta 9 del [mapa](overview.md). Un
+  pedido que se despachó sin cobrar (HU-07.2) se cierra acá.
 
 ## HU-08.3 — Revisar un pago que quedó en proceso
 

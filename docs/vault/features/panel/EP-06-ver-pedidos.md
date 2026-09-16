@@ -75,5 +75,15 @@ contestarle a quien me escribe por WhatsApp.
   3).
 - **Ojo:** una orden puede **nacer** pagada. Un trigger sobre
   `onDocumentUpdated` no avisaría justo de ésas.
-- **Abierto:** el canal —aviso en el teléfono, mail, WhatsApp—. Pregunta 4 del
-  [mapa](overview.md). Un aviso en el teléfono necesita la app de Android.
+- **Decidido por el dueño:** **un aviso en el teléfono**, por la APK con
+  notificaciones push. Por eso la APK hace falta desde este hito
+  (habilitador H5 del [mapa](overview.md)).
+- **Lo que eso trae:**
+  - Cada teléfono registra su token de notificaciones en algún lado: es un dato
+    nuevo, con sus reglas. El aviso cuesta **una lectura por teléfono por
+    pedido**; con tres teléfonos y cinco pedidos por día, 15.
+  - Android 13 en adelante pide permiso para notificar. Si se niega, el panel
+    lo dice: un aviso que nunca llega es otro fallo invisible.
+- **Ojo:** el caso fuerte es el pedido de la **vidriera**, que nadie de la
+  familia cargó. Uno de WhatsApp lo cargó alguien que ya lo sabe; avisarle a
+  él es ruido.

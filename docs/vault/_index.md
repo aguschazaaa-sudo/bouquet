@@ -70,8 +70,19 @@ casillas** a propósito: el estado de una historia sale de un `grep` de su ID en
 atender pedidos —que sí, y cuyos requerimientos se escriben con el spec de
 `crearOrden`— y curar la vidriera.
 
-⚠️ **Planificar encontró siete cosas que ningún documento sabía.** Las tres que
-más pesan:
+**El dueño contestó el mismo día, y el hito 2 cambió de orden.** Hay ventas
+por WhatsApp: la épica que las carga sube al hito 2 y va **primero**, porque no
+espera a Mercado Pago. Con eso vuelve el camino de
+[ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción) que el
+checkout había borrado: `entroEnPagada` se estrena con un pedido marcado pagado
+a mano, y el webhook se enchufa en algo que ya corrió. Lo demás: un solo rol
+para toda la familia (*"el panel no debe exceder la burocracia"*), entrar con
+mail o con Google, avisos en el teléfono por una APK y el aviso de despacho
+con un toque.
+
+⚠️ **Planificar encontró siete cosas que ningún documento sabía**, y las
+respuestas trajeron cuatro más —la Orden no sabe de dónde vino, y una APK no se
+actualiza sola, entre ellas—. Las tres que más pesan:
 
 1. **Una foto subida desde el panel llega cruda**, y la vidriera espera WebP
    recortado: hoy ese recorte lo hace sólo el seed, con `sharp`.
@@ -83,7 +94,7 @@ más pesan:
 | Qué | Cómo |
 |---|---|
 | El mapa dice la verdad | **49** encabezados `HU-` en las épicas contra los 49 de la tabla, épica por épica; **0** IDs repetidos (control positivo del `uniq -d` al lado) y **0** referencias a historias que no existen |
-| Los enlaces | **374** resuelven, anclas incluidas. **Control negativo:** un ancla inventada en ARQUITECTURA la rechaza el verificador, y la real con tilde pasa |
+| Los enlaces | **377** resuelven, anclas incluidas. **Control negativo:** un ancla inventada en ARQUITECTURA la rechaza el verificador, y la real con tilde pasa |
 
 Son documentos: no se despliega nada.
 
@@ -372,7 +383,7 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 
 | Qué | Por qué | Quién |
 |---|---|---|
-| ⚠️ **Seis preguntas del dueño cambian el backlog del panel** | Quién usa el panel, si entran ventas por fuera de la tienda, cómo se entra, por dónde enterarse de un pedido nuevo, si se despacha un pedido impago y cómo sale el aviso de despacho. Están en [`features/panel/overview.md`](features/panel/overview.md). La 2 decide si una épica entera (EP-10) sube al hito 2. **Disparador:** antes de escribir los requerimientos del hito 1, que dependen de la 1 y la 3. Desde 2026-09-16. | el dueño |
+| ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16** | Salieron **tres nuevas**: si la regla de las seis botellas vale para una venta por WhatsApp, si la tienda tiene un WhatsApp propio para avisar —con un toque, el aviso sale del teléfono de quien lo toca—, y cómo se cobran hoy los pedidos de WhatsApp. Están en [`features/panel/overview.md`](features/panel/overview.md). **Disparador:** antes de escribir los requerimientos de EP-10, que abre el hito 2. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `curl` en producción. Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
 | ⚠️ **`cajasSugeridas/publicas` de stage quedó VIEJO, y se ve** | El documento sembrado todavía tiene `dos-y-dos` —dos packs de 2 + dos botellas—, que desde [ADR 009 §10](architecture/decisions/009-venta-por-caja.md) no es una caja: el código la descarta y el carril de `/vinos` sirve **3** tarjetas en vez de 4, con el motivo logueado en la build. `dos-de-cada` no existe hasta que corra `node scripts/seed/seed.mjs`. **Disparador:** antes de mirar el carril de stage, y antes del primer deploy. Desde 2026-09-15. | el dueño + `tienda` |

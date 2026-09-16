@@ -20,8 +20,18 @@ quien tiene permiso vea los pedidos y el catálogo.
   `usuarios/{uid}`. Un `get()` en las reglas se factura en cada evaluación
   ([ARQUITECTURA §9.2](../../../../ARQUITECTURA.md#92-el-rol-va-en-un-custom-claim-no-en-un-documento)).
   `firebase_auth` ya está en `pubspec.yaml`.
-- **Abierto:** mail y contraseña, o cuenta de Google. Pregunta 3 del
-  [mapa](overview.md).
+- **Decidido por el dueño:** **las dos formas**, mail y contraseña o cuenta de
+  Google (*"creo que ambos"*: se confirma en los requerimientos).
+- ⚠️ **Dos formas de entrar con el mismo mail tienen una trampa.** Según la
+  documentación de Firebase Auth, Google es proveedor **confiable** de las
+  direcciones `@gmail.com`: si alguien creó su cuenta con contraseña **sin
+  verificar el mail** y después entra con Google, la contraseña se desvincula.
+  Se prueba en el emulador de Auth antes de escribir la pantalla. La parte
+  buena: con *una cuenta por mail*, las dos formas caen en el mismo `uid` y el
+  claim se asigna una sola vez.
+- **Ojo en Android:** entrar con Google exige registrar en Firebase la huella
+  SHA-1 de **la clave con la que se firma la APK**. Con la de depuración anda
+  en la prueba y falla en la APK repartida.
 
 ## HU-01.2 — Saber por qué no puedo entrar
 
@@ -45,10 +55,12 @@ quitárselo, **para** no compartir mi contraseña.
 
 - **Ya decidido:** el claim lo escribe sólo el Admin SDK. Desde el navegador no
   se puede.
+- **Decidido por el dueño:** es un negocio familiar y **todos pueden todo**. Un
+  solo rol, sin permisos por sección.
 - **Propuesta:** la primera versión es un **script** en `scripts/` (habilitador
-  H4). La pantalla tiene disparador: la segunda persona que opere.
-- **Abierto:** cuántas personas, y si todas pueden todo. Pregunta 1 del
-  [mapa](overview.md).
+  H4): en una familia, dar acceso pasa pocas veces. La pantalla tiene
+  disparador: la primera vez que alguien tenga que esperar al desarrollador
+  para entrar.
 
 ## HU-01.4 — Usarlo desde la compu y desde el teléfono
 
@@ -61,8 +73,11 @@ el teléfono, **para** cargar vinos sentado y despachar parado en el depósito.
 - **Ojo:** el panel **no compila en esta máquina** (`CLAUDE.md`). Cada vuelta
   de prueba pasa por CI y tarda minutos, y todavía no hay workflow de deploy
   (habilitador H3).
-- **Abierto:** cómo se instala la app de Android —tienda, APK directo— y si
-  hace falta desde el hito 1 o recién con los avisos de pedido (HU-06.5).
+- **Decidido por el dueño:** Android es **una APK**, y hace falta desde el
+  hito 2, por los avisos de pedido (HU-06.5). En el hito 1 alcanza con la web,
+  que también abre en el navegador del teléfono.
+- **Abierto:** cómo se reparte y cómo se mantiene al día (habilitador H5 del
+  [mapa](overview.md)): una APK no se actualiza sola.
 
 ## HU-01.5 — Moverme entre secciones
 

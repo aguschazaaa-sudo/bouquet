@@ -10,7 +10,7 @@ paso, y que el comprador sepa cuándo salió.
 transiciones de `estadoEntrega`
 ([ADR 002](../../architecture/decisions/002-estados-de-orden.md)).
 
-```
+```text
 sin_preparar ─▶ preparando ─▶ despachada ─▶ entregada
      │              │              │  ▲
      └──────────────┴─▶ cancelada  ▼  │
@@ -35,6 +35,10 @@ que nadie más lo arme dos veces.
 - **Abierto:** si la transición también la validan las reglas. Cuesta cero
   lecturas —`resource.data` ya está—, pero duplica la tabla en un tercer
   lugar, y el JSON generado es lo único que hoy la mantiene sincronizada.
+- **Poca burocracia:** en una familia, *"lo estoy armando"* puede no merecer
+  un botón. La máquina no deja saltar de `sin_preparar` a `despachada`, así que
+  si este paso no se ve, el panel lo tiene que marcar solo al despachar. Se
+  decide en los requerimientos.
 
 ## HU-07.2 — Despachar un pedido y cargar el seguimiento
 
@@ -44,9 +48,13 @@ el número de seguimiento, **para** poder contestar *"¿dónde está mi vino?"*.
 - ⚠️ **Hoy las reglas no lo dejan.** Una orden sólo acepta cambios en
   `estadoEntrega`, `notasOperador` y `actualizadaEn`: el seguimiento necesita
   un campo nuevo en `contratos` y en las reglas.
-- **Abierto:** si se puede despachar un pedido impago. Pregunta 5 del
-  [mapa](overview.md). Con Mercado Pago como único cobro de la vidriera, lo
-  natural es que no, y que la pantalla lo diga.
+- **Decidido por el dueño** (*"no, pero capaz para ventas por WhatsApp"*): un
+  pedido de la **vidriera** impago no se despacha —si Mercado Pago no aprobó,
+  no hay venta—; uno de **WhatsApp**, sí. Queda como `entregada_impaga` al
+  llegar, que ya figura entre los que requieren acción (HU-06.3). El *"capaz"*
+  se confirma en los requerimientos.
+- ⚠️ **Eso pide un dato que la Orden no tiene: de dónde vino.** Un campo de
+  origen en `contratos` y en las reglas, que escribe `crearOrden` y nadie más.
 - **Después:** cuando Envíopack esté contratado, el seguimiento puede llegar
   solo. Hoy se carga a mano.
 
@@ -64,9 +72,12 @@ despacho con el link a su pedido, **para** que no tenga que preguntar.
     ([ADR 010 §6](../../architecture/decisions/010-el-checkout.md)). Esa ruta
     todavía no existe.
   - El texto lo ve un comprador: pasa por `voz`.
-- **Abierto:** un toque del operador (enlace `wa.me`, cero infraestructura) o
-  un envío automático (API de WhatsApp Business). Pregunta 6 del
-  [mapa](overview.md).
+- **Decidido por el dueño:** **con un toque.** El panel arma un enlace `wa.me`
+  con el teléfono y el texto, y abre WhatsApp; la persona aprieta enviar. Cero
+  infraestructura. Se descarta la API de WhatsApp Business.
+- ⚠️ **El aviso sale del WhatsApp del teléfono que toca el botón.** Si cada
+  uno de la familia avisa desde el suyo, el comprador recibe mensajes de
+  números distintos. Pregunta 8 del [mapa](overview.md).
 
 ## HU-07.4 — Marcar un pedido como entregado
 
@@ -86,7 +97,8 @@ volver a despacharla, **para** no perder el pedido ni su número.
 - **Ya decidido:**
   - El motivo es **obligatorio**, y uno de ellos es *"sin mayor de edad
     presente"*: es un caso operativo real
-    ([ARQUITECTURA §9.5](../../../../ARQUITECTURA.md#95-alcohol-y-edad)).
+    ([ARQUITECTURA §9.5](../../../../ARQUITECTURA.md#95-alcohol-y-edad)). Se
+    elige de una lista corta, con un toque.
   - `fallida` vuelve a `despachada`: *no había nadie el martes, se vuelve el
     jueves* ([ADR 002](../../architecture/decisions/002-estados-de-orden.md)).
 - ⚠️ **Las reglas tampoco dejan guardar el motivo hoy.** Mismo cambio que el
