@@ -61,6 +61,8 @@ quitárselo, **para** no compartir mi contraseña.
   H4): en una familia, dar acceso pasa pocas veces. La pantalla tiene
   disparador: la primera vez que alguien tenga que esperar al desarrollador
   para entrar.
+- **Relación:** si la marca de *"puede avisar por WhatsApp"* termina siendo un
+  claim, la pone este mismo script (HU-07.3).
 
 ## HU-01.4 — Usarlo desde la compu y desde el teléfono
 

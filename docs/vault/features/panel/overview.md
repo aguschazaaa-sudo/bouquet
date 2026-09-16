@@ -1,8 +1,9 @@
 # El panel — épicas e historias de usuario
 
 - **Fecha:** 2026-09-16
-- **Estado:** con las **respuestas del dueño** del mismo día, y tres preguntas
-  nuevas que salieron de ellas. **Ninguna historia está construida**:
+- **Estado:** con **dos rondas de respuestas del dueño**, las dos del
+  2026-09-16. Falta un dato suyo: el número de WhatsApp de la tienda.
+  **Ninguna historia está construida**:
   `apps/admin` es andamio (un placeholder, los enums espejados y el provider de
   Firestore)
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
@@ -63,10 +64,10 @@ Entra cuando se prenda el reparto propio.
 | [EP-07](EP-07-preparar-y-entregar.md) | **Preparar y entregar** — el eje `estadoEntrega` | 7 | 2 | 07.6 |
 | [EP-08](EP-08-cobros.md) | **Cobros** — el eje `estadoPago` | 4 | 2 | todas |
 | [EP-09](EP-09-vidriera-curada.md) | **La vidriera curada** — la selección de la home y las cajas sugeridas | 4 | 3 | — |
-| [EP-10](EP-10-ventas-por-fuera.md) | **Ventas por WhatsApp** — cargarlas, cobrarlas, despacharlas | 2 | **2, primero** | todas |
+| [EP-10](EP-10-ventas-por-fuera.md) | **Ventas por WhatsApp** — cargarlas para que descuenten stock y se despachen; el cobro va por fuera | 1 | **2, primero** | todas |
 | [EP-11](EP-11-parametros-y-tablero.md) | **Parámetros y tablero** — envío sin cargo, resumen del día | 3 | disparador | 11.1 |
 
-**49 historias.** Las que tocan plata van por **Workflow D**, con
+**48 historias** (eran 49: HU-10.2 se descartó, y su ID no se reusa). Las que tocan plata van por **Workflow D**, con
 `revisor-pagos` obligatorio y el backend verificado antes que la pantalla
 (`WORKFLOWS.md` §4). El resto, por **Workflow A**.
 
@@ -75,19 +76,24 @@ Entra cuando se prenda el reparto propio.
 | Hito | Épicas | Qué destraba | De qué depende |
 |---|---|---|---|
 | **1 — Cargar el catálogo real** | 01 · 02 · 03 · 04 · 05 | Que el dueño cargue sus vinos sin el seed, y con eso el gate `data-catalogo-de-muestra` y la selección de la home, que esperan *"cuando el dueño cargue su catálogo real"* ([`_index.md`](../../_index.md)) | Los habilitadores, abajo. **No** depende de `crearOrden` |
-| **2 — Atender pedidos, empezando por los de WhatsApp** | 10 · 06 · 07 · 08 | Que las ventas que **ya existen** se carguen, descuenten stock, se despachen y se cobren; después, las de la vidriera | `crearOrden` con una variante para el panel. **Los pedidos de WhatsApp no esperan a Mercado Pago**; los de la vidriera, sí |
+| **2 — Atender pedidos, empezando por los de WhatsApp** | 10 · 06 · 07 · 08 | Que las ventas que **ya existen** se carguen, descuenten stock y se despachen —el cobro va por fuera—; después, las de la vidriera | `crearOrden` con una variante para el panel. **Los pedidos de WhatsApp no esperan a Mercado Pago**; los de la vidriera, sí |
 | **3 — Curar la vidriera** | 09 | Que la home diga la verdad cuando dice *"los elegimos de a uno"* | El hito 1 |
 | **Con disparador** | 11 | — | El dato que falta, escrito en cada historia |
 
-⚠️ **Las ventas por WhatsApp devuelven un camino que el checkout había
-borrado.** [ARQUITECTURA §12](../../../../ARQUITECTURA.md#12-orden-de-construcción)
-quería que `entroEnPagada` corriera en producción **desde el primer pedido**,
-marcado pagado a mano, meses antes del webhook. Con Mercado Pago desde el día 0
-([ADR 010](../../architecture/decisions/010-el-checkout.md)) eso se había
-perdido: el trigger se iba a estrenar con el cobro online. Un pedido de
-WhatsApp cobrado por transferencia lo recupera, y el panel llega a producción
-con **ventas reales** mientras la vidriera sigue sin cobrar (sexto gate). El
-orden de deploy no cambia: reglas → functions → panel, con `revisor-pagos`.
+⚠️ **Las ventas por WhatsApp llevan el panel a producción antes que el cobro
+online.** Cargarlas descuenta stock y las despacha, y nada de eso espera a
+Mercado Pago: el panel atiende **ventas reales** mientras la vidriera sigue sin
+cobrar (sexto gate). El orden de deploy no cambia: reglas → functions → panel,
+con `revisor-pagos`.
+
+~~Y devuelven un camino que el checkout había borrado~~: **no lo devuelven.**
+[ARQUITECTURA §12](../../../../ARQUITECTURA.md#12-orden-de-construcción) quería
+que `entroEnPagada` corriera en producción desde el primer pedido, marcado
+pagado a mano, y la primera ronda de respuestas parecía recuperarlo con un
+pedido de WhatsApp cobrado por transferencia. La segunda lo descartó: **el
+cobro de WhatsApp se gestiona por fuera y no se ve en el panel**. El trigger se
+estrena con el webhook, como quedó con
+[ADR 010](../../architecture/decisions/010-el-checkout.md).
 
 ⚠️ **El hito 1 se aparta de [ARQUITECTURA §12](../../../../ARQUITECTURA.md#12-orden-de-construcción)
 en un punto: no espera a `crearOrden`.** Nada del hito 1 lee órdenes. Pero hay
@@ -109,8 +115,8 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
 | H1 | **Conectar Firebase** (`flutterfire configure`, `Firebase.initializeApp`) | `main.dart` lo tiene como `TODO`: sin eso, `firestoreProvider` falla al ejecutar |
 | H2 | **La dirección visual del panel** (`/disenio`) | No corrió para el panel. La de la vidriera es editorial —papel, cartucho— y un panel de uso diario para gente no técnica pide otra cosa |
 | H3 | **Build y deploy del panel por CI** | El repo tiene **sólo `ci.yml`**: no hay workflow de deploy para ningún objetivo. Y el panel **no compila en esta máquina** (`CLAUDE.md`): su único ciclo de feedback es CI. Web va a Firebase Hosting con canal de preview y `hosting:clone` ([ARQUITECTURA §10](../../../../ARQUITECTURA.md#10-deploy-y-entornos)). Android es **una APK** (respuesta del dueño), y su build se dispara a mano: los builds nunca son automáticos |
-| H5 | **Repartir la APK y mantenerla al día** | Hace falta **desde el hito 2**, por los avisos. ⚠️ **Una APK no se actualiza sola**, y la web sí: un teléfono con una APK vieja tiene un espejo viejo de los estados de Orden, y un estado nuevo le llega sin rótulo. Hace falta una versión mínima que el panel lea al abrir y un *"actualizá la app"*. Cómo se reparte —Firebase App Distribution o el archivo directo— se decide en su ADR |
 | H4 | **Asignar el claim `rol: admin`** | Lo escribe sólo el Admin SDK. La primera versión es un script (HU-01.3) |
+| H5 | **Repartir la APK y mantenerla al día** | Hace falta **desde el hito 2**, por los avisos. ⚠️ **Una APK no se actualiza sola**, y la web sí: un teléfono con una APK vieja tiene un espejo viejo de los estados de Orden, y un estado nuevo le llega sin rótulo. Hace falta una versión mínima que el panel lea al abrir y un *"actualizá la app"*. Cómo se reparte —Firebase App Distribution o el archivo directo— se decide en su ADR |
 
 ---
 
@@ -144,14 +150,21 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
 
 **Y lo que trajeron las respuestas del dueño:**
 
-8. **La Orden no sabe de dónde vino.** Despachar sin cobrar se permite en los
-   pedidos de WhatsApp y no en los de la vidriera, y hoy nada los distingue. →
+8. **La Orden no sabe de dónde vino.** Un pedido de WhatsApp no sigue su pago
+   ni la regla de la caja, uno de la vidriera sí, y hoy nada los distingue. →
    HU-07.2 · HU-10.1
 9. **Una APK no se actualiza sola.** Un teléfono con una versión vieja tiene un
    espejo viejo de los estados de Orden. → H5
 10. **Entrar con contraseña y con Google usando el mismo mail tiene una
     trampa**: la contraseña sin verificar se puede desvincular. → HU-01.1
 11. **Un aviso "con un toque" sale del WhatsApp de quien lo toca.** → HU-07.3
+12. **El origen del pedido pasa a decidir una regla de plata.** La regla de las
+    seis botellas no aplica a WhatsApp: si quien llama a `crearOrden` pudiera
+    declarar el origen, un comprador de la vidriera se la saltearía. Lo fija el
+    servidor según **qué callable** se llamó. → HU-10.1
+13. **Un pedido cuyo pago no se sigue no tiene un `estadoPago` que le calce.**
+    `pendiente` lo deja para siempre como *entregada impaga*, y `pagada` afirma
+    algo que nadie comprobó. → HU-10.1 · HU-06.3
 
 ---
 
@@ -160,23 +173,23 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
 | # | Pregunta | Respuesta | Qué cambió |
 |---|---|---|---|
 | 1 | ¿Quién usa el panel? | *"Es negocio familiar, el panel no debe exceder la burocracia"* | Un solo rol y el criterio de arriba. HU-01.3 sigue siendo un script primero |
-| 2 | ¿Entran ventas por fuera de la tienda? | **Sí, por WhatsApp** | EP-10 sube al hito 2 y va **primero**; HU-08.2 recupera su caso |
+| 2 | ¿Entran ventas por fuera de la tienda? | **Sí, por WhatsApp** | EP-10 sube al hito 2 y va **primero**. HU-08.2 recuperaba su caso, hasta la respuesta 9 |
 | 3 | ¿Mail y contraseña, o Google? | *"Creo que ambos"* | HU-01.1 con los dos, y una trampa de Firebase anotada ahí |
 | 4 | ¿Por dónde enterarse de un pedido nuevo? | **Aviso en el teléfono, por una APK** | HU-06.5 con notificaciones push; la APK hace falta desde el hito 2 (H5) |
-| 5 | ¿Se despacha un pedido impago? | *"No, pero capaz para ventas por WhatsApp"* | HU-07.2: los de la vidriera no, los de WhatsApp sí. La Orden tiene que saber **de dónde vino** |
+| 5 | ¿Se despacha un pedido impago? | *"No, pero capaz para ventas por WhatsApp"* | HU-07.2: los de la vidriera no; en los de WhatsApp el panel no mira el pago (respuesta 9). La Orden tiene que saber **de dónde vino** |
 | 6 | El aviso de despacho, ¿un toque o automático? | **Con un toque** | HU-07.3 es un enlace `wa.me`: cero infraestructura |
 
 Las respuestas 3 y 5 vinieron con un *"creo"* y un *"capaz"*: se confirman
 cuando se escriban los requerimientos de esas historias. **Pasan a ADR en ese
 mismo momento**, con su presupuesto de lecturas, que hoy no se puede calcular.
 
-### Las tres preguntas que salieron de las respuestas
+### La segunda ronda, con las preguntas que salieron de la primera
 
-| # | Pregunta | Qué cambia |
-|---|---|---|
-| 7 | ¿La regla de las seis botellas sueltas vale también para una venta por WhatsApp? | HU-10.1: si el panel la exige o sólo la avisa |
-| 8 | ¿La tienda tiene un WhatsApp propio, o cada uno avisa desde el suyo? | HU-07.3: *con un toque*, el aviso sale **del teléfono que lo toca**. Y es el mismo número que falta en `/oficio` (quinto gate) |
-| 9 | Los pedidos de WhatsApp, ¿se cobran por transferencia, en efectivo al entregar, o con un link de Mercado Pago? | Si HU-10.2 entra al hito 2, o si alcanza con marcar pagado a mano (HU-08.2) |
+| # | Pregunta | Respuesta | Qué cambió |
+|---|---|---|---|
+| 7 | ¿La regla de las seis botellas vale para una venta por WhatsApp? | **No aplica** | HU-10.1 no la exige, y el origen del pedido pasa a ser una regla de plata (hallazgo 12) |
+| 8 | ¿La tienda tiene un WhatsApp propio, o cada uno avisa desde el suyo? | *"Tenés razón"*: el botón de aviso **se activa o desactiva por persona**. **El número todavía no existe**; lo va a pasar el dueño | HU-07.3. Es el mismo número que falta en `/oficio` (quinto gate) |
+| 9 | ¿Cómo se cobran los pedidos de WhatsApp? | **Se gestionan por fuera: el pago no se ve en el panel** | **HU-10.2 se descarta**; HU-08.2 vuelve a esperar un disparador; `entroEnPagada` se estrena con el webhook; y aparece el hallazgo 13 |
 
 ---
 
@@ -204,7 +217,7 @@ que ningún documento vio.
 **El orden, con las respuestas:** los habilitadores H1 y H2, el hito 1 entero,
 y en el hito 2, EP-10 antes que las demás.
 
-**No se abren los 49 changes de una vez.** Un change que se abre y no se toma es
+**No se abren los 48 changes de una vez.** Un change que se abre y no se toma es
 el cementerio de 33 carpetas que describe [WORKFLOWS §2](../../../../WORKFLOWS.md#22-los-24-abiertos-y-la-sorpresa-que-traen).
 
 **Paso 3 — construir**, por Workflow A o D, y cerrar en **producción

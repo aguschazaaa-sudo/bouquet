@@ -50,9 +50,11 @@ el número de seguimiento, **para** poder contestar *"¿dónde está mi vino?"*.
   un campo nuevo en `contratos` y en las reglas.
 - **Decidido por el dueño** (*"no, pero capaz para ventas por WhatsApp"*): un
   pedido de la **vidriera** impago no se despacha —si Mercado Pago no aprobó,
-  no hay venta—; uno de **WhatsApp**, sí. Queda como `entregada_impaga` al
-  llegar, que ya figura entre los que requieren acción (HU-06.3). El *"capaz"*
-  se confirma en los requerimientos.
+  no hay venta—. Uno de **WhatsApp** se despacha **sin mirar el pago**, porque
+  su cobro va por fuera y el panel no lo sigue (segunda ronda).
+- ⚠️ **Por eso un pedido de WhatsApp no puede terminar como
+  `entregada_impaga`**: quedaría para siempre entre los que requieren acción.
+  Es el hallazgo 13 del [mapa](overview.md), y se resuelve en HU-10.1.
 - ⚠️ **Eso pide un dato que la Orden no tiene: de dónde vino.** Un campo de
   origen en `contratos` y en las reglas, que escribe `crearOrden` y nadie más.
 - **Después:** cuando Envíopack esté contratado, el seguimiento puede llegar
@@ -77,7 +79,19 @@ despacho con el link a su pedido, **para** que no tenga que preguntar.
   infraestructura. Se descarta la API de WhatsApp Business.
 - ⚠️ **El aviso sale del WhatsApp del teléfono que toca el botón.** Si cada
   uno de la familia avisa desde el suyo, el comprador recibe mensajes de
-  números distintos. Pregunta 8 del [mapa](overview.md).
+  números distintos.
+- **Decidido por el dueño:** el botón **se activa o desactiva por persona**,
+  para que avise sólo quien tiene el WhatsApp de la tienda. No es un permiso
+  sobre los datos —el rol sigue siendo uno—: dice quién tiene el teléfono.
+- **Falta un dato:** **el número de la tienda todavía no existe**; lo va a
+  pasar el dueño. Es el mismo que falta en `/oficio` (quinto gate, en
+  [`_index.md`](../../_index.md)).
+- **Abierto:** dónde vive la marca. Un claim al lado de `rol`, que pone el
+  mismo script de acceso (HU-01.3) y cuesta **cero lecturas**, o un documento
+  por persona, que cuesta **una por sesión** y se puede cambiar desde el panel.
+  Y un borde: la marca es de la persona, pero el WhatsApp es del teléfono;
+  alguien habilitado que usa el panel en la compu avisa desde el WhatsApp Web
+  que tenga abierto.
 
 ## HU-07.4 — Marcar un pedido como entregado
 

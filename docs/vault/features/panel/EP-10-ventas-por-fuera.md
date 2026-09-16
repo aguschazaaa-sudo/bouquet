@@ -3,17 +3,19 @@
 > Hito 2, **primero** · **Workflow D** · [volver al mapa](overview.md)
 
 **Por qué subió:** el dueño contestó que **sí hay ventas por WhatsApp**
-(2026-09-16). Esta épica pasó de *con disparador* al principio del hito 2, y
-con ella HU-08.2.
+(2026-09-16). Esta épica pasó de *con disparador* al principio del hito 2.
 
 **Objetivo:** que una venta que no pasó por la vidriera descuente stock y siga
 el mismo circuito de despacho que las demás.
 
+**El cobro queda afuera.** Los pedidos de WhatsApp *"se gestionan por fuera, el
+pago no se vería in app"* (el dueño, segunda ronda). El panel sabe qué se
+vendió y a dónde va; no sabe si se cobró.
+
 **Por qué va primero:** estas ventas **ya existen** y no esperan a Mercado
 Pago. Llevan el panel a producción con pedidos reales mientras la vidriera
-sigue sin cobrar, y estrenan `entroEnPagada` antes que el webhook, que es lo
-que [ARQUITECTURA §12](../../../../ARQUITECTURA.md#12-orden-de-construcción)
-pedía.
+sigue sin cobrar. ~~Y estrenan `entroEnPagada` antes que el webhook~~: **no**,
+porque su pago no pasa por el panel.
 
 ---
 
@@ -27,30 +29,35 @@ pedía.
     `crearOrden`, o una variante suya, con la misma transacción de stock y el
     mismo contador de números
     ([ARQUITECTURA §4.4](../../../../ARQUITECTURA.md#44-el-carrito-no-es-un-documento)).
-  - Una orden cargada a mano puede **nacer pagada**: es el caso con el que
-    ADR 002 justifica `onDocumentWritten`
-    ([ADR 002](../../architecture/decisions/002-estados-de-orden.md), regla 1).
-  - La orden guarda que vino de WhatsApp: de eso depende que se pueda
-    despachar sin cobrar (HU-07.2).
+  - La orden guarda que vino de WhatsApp: de eso dependen la regla de la caja,
+    el pago y el despacho (HU-07.2).
+- **Decidido por el dueño:** **la regla de las seis botellas no aplica** a una
+  venta por WhatsApp.
+- ⚠️ **Eso convierte el origen en una regla de plata.** `crearOrden` tiene que
+  rechazar todo pedido cuyas sueltas no sumen una caja (hallazgo 9 de
+  `revisor-pagos`, [ADR 009](../../architecture/decisions/009-venta-por-caja.md)).
+  Si el origen lo pudiera declarar quien llama, un comprador de la vidriera se
+  saltearía la regla diciendo *"whatsapp"*. Lo fija **el servidor**, según qué
+  callable se llamó, y la del panel exige el claim.
+- ⚠️ **Su pago no se sigue, y ningún `estadoPago` le calza.** Los cinco estados
+  describen un cobro que el sistema mira
+  ([ADR 002](../../architecture/decisions/002-estados-de-orden.md)). Con
+  `pendiente`, el pedido queda para siempre como *entregada impaga*, entre los
+  que requieren acción: ruido, y contra el criterio de poca burocracia. Con
+  `pagada`, afirma algo que nadie comprobó y dispara `entroEnPagada`. Las
+  salidas —un estado nuevo, o que la proyección mire el origen— se deciden en
+  los requerimientos, y **las dos cambian el contrato** de `packages/contratos`.
 - **Poca burocracia:** cargar un pedido tiene que tardar menos que anotarlo en
   un papel. Se eligen vinos de la lista que ya está en memoria, y el teléfono
   se pega tal como vino en el chat: el normalizador de `contratos` lo pasa a
   E.164.
-- **Abierto:** si la regla de las seis botellas sueltas vale también para una
-  venta por mensaje. La caja física es la misma; el que decide es el dueño
-  (pregunta 7 del [mapa](overview.md)).
+- **Abierto:** si el pedido guarda precios. El cobro va por fuera y el precio
+  arreglado por WhatsApp puede no ser el de la lista; puede bastar con qué
+  vinos y cuántos. De eso depende si estos pedidos suman a los totales del
+  panel.
 
-## HU-10.2 — Mandarle un link de pago
+---
 
-**Como** operador, **quiero** generar un link de Mercado Pago para un pedido
-que cargué, **para** cobrarlo sin que el comprador pase por la tienda.
-
-- **Ya decidido:** ARQUITECTURA ya nombra el *"link de pago pre-aprobado"* como
-  una de las rutas por las que una orden nace pagada
-  ([ARQUITECTURA §4.3](../../../../ARQUITECTURA.md#43-las-tres-reglas-que-salen-de-la-evidencia)).
-- **Con un toque**, como el aviso de despacho (HU-07.3): el link viaja por el
-  mismo enlace `wa.me`.
-- **Abierto:** si esta historia entra al hito 2 depende de cómo se cobran hoy
-  los pedidos de WhatsApp (pregunta 9 del [mapa](overview.md)); si es por
-  transferencia, alcanza con HU-08.2. Y si es una preferencia de Checkout Pro
-  como la de la vidriera, a qué URL vuelve el comprador.
+**HU-10.2 se descartó el 2026-09-16.** Era *mandarle un link de pago* a un
+pedido cargado a mano, y el cobro de WhatsApp se gestiona por fuera. Su ID no
+se reusa.

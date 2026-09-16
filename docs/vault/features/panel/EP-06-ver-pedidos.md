@@ -50,6 +50,9 @@ mí, **para** no olvidarme ninguno.
   `estadosPublicosQueRequierenAccion`: pagada sin despachar, **entregada
   impaga**, no entregada y cancelada con pago. La trampa es la segunda:
   entregado y visualmente "listo", pero sin cobrar.
+- ⚠️ **Un pedido de WhatsApp no puede caer en *entregada impaga*.** Su cobro va
+  por fuera y el panel no lo sigue: si cae ahí, queda marcado para siempre.
+  Se resuelve en HU-10.1.
 - **Abierto:** ese estado combina los dos ejes, y no hay índice sobre una
   proyección. Se filtra en memoria sobre lo cargado o con una consulta por eje;
   se decide con el presupuesto en la mano.
