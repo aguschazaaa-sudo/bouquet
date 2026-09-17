@@ -6,6 +6,7 @@ import '../features/acceso/acceso_providers.dart';
 import '../features/acceso/domain/sesion.dart';
 import '../features/acceso/presentation/pantalla_de_entrada.dart';
 import '../features/acceso/presentation/pantalla_sin_acceso.dart';
+import '../features/catalogo/presentation/pantalla_de_bodegas.dart';
 import '../features/catalogo/presentation/pantalla_del_catalogo.dart';
 import '../features/estructura/presentation/estructura_del_panel.dart';
 import '../features/estructura/presentation/pagina_no_encontrada.dart';
@@ -52,6 +53,15 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
             path: Rutas.catalogo,
             pageBuilder: (_, _) =>
                 const NoTransitionPage(child: PantallaDelCatalogo()),
+            routes: [
+              // Hija, no seccion: la navegacion sigue marcando Catalogo.
+              // Va con transicion por omision -- entrar a Bodegas ES ir a
+              // otro lado, a diferencia de cambiar de pestaña.
+              GoRoute(
+                path: 'bodegas',
+                builder: (_, _) => const PantallaDeBodegas(),
+              ),
+            ],
           ),
           GoRoute(
             path: Rutas.pedidos,

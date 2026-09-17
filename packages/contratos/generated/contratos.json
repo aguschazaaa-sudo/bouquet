@@ -66,6 +66,126 @@
       "cancelada": []
     }
   },
+  "texto": {
+    "casos": [
+      {
+        "entrada": "Norton",
+        "normalizar": "norton",
+        "clave": "norton",
+        "aSlug": "norton"
+      },
+      {
+        "entrada": "  Bodega   Catena ZAPATA ",
+        "normalizar": "bodega catena zapata",
+        "clave": "bodegacatenazapata",
+        "aSlug": "bodega-catena-zapata"
+      },
+      {
+        "entrada": "Torrontés",
+        "normalizar": "torrontes",
+        "clave": "torrontes",
+        "aSlug": "torrontes"
+      },
+      {
+        "entrada": "Bodega Ñandú",
+        "normalizar": "bodega nandu",
+        "clave": "bodeganandu",
+        "aSlug": "bodega-nandu"
+      },
+      {
+        "entrada": "Ñandú & Cía.",
+        "normalizar": "nandu & cia.",
+        "clave": "nanducia",
+        "aSlug": "nandu-cia"
+      },
+      {
+        "entrada": "Château Vieux",
+        "normalizar": "chateau vieux",
+        "clave": "chateauvieux",
+        "aSlug": "chateau-vieux"
+      },
+      {
+        "entrada": "Pingüino",
+        "normalizar": "pinguino",
+        "clave": "pinguino",
+        "aSlug": "pinguino"
+      },
+      {
+        "entrada": "···",
+        "normalizar": "···",
+        "clave": "",
+        "aSlug": ""
+      },
+      {
+        "entrada": "catena-zapata",
+        "normalizar": "catena-zapata",
+        "clave": "catenazapata",
+        "aSlug": "catena-zapata"
+      },
+      {
+        "entrada": "",
+        "normalizar": "",
+        "clave": "",
+        "aSlug": ""
+      }
+    ],
+    "pares": [
+      {
+        "a": "Catena",
+        "b": "Catena Zapata",
+        "seParecen": true
+      },
+      {
+        "a": "Catena",
+        "b": "Norton",
+        "seParecen": false
+      },
+      {
+        "a": "Catena Zapata",
+        "b": "catena-zapata",
+        "seParecen": true
+      },
+      {
+        "a": "···",
+        "b": "Norton",
+        "seParecen": false
+      },
+      {
+        "a": "···",
+        "b": "",
+        "seParecen": false
+      },
+      {
+        "a": "Bodega Ñandú",
+        "b": "ñandu",
+        "seParecen": true
+      }
+    ]
+  },
+  "plata": {
+    "casos": [
+      {
+        "centavos": 0,
+        "ars": "$ 0,00"
+      },
+      {
+        "centavos": 550,
+        "ars": "$ 5,50"
+      },
+      {
+        "centavos": 1250000,
+        "ars": "$ 12.500,00"
+      },
+      {
+        "centavos": 123456789,
+        "ars": "$ 1.234.567,89"
+      },
+      {
+        "centavos": -550,
+        "ars": "-$ 5,50"
+      }
+    ]
+  },
   "publico": {
     "estados": [
       "recibida",

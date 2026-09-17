@@ -47,8 +47,11 @@ abstract final class Tokens {
   /// nunca el unico borde de un control.
   static const regla = Color(0xFFD2CCC2);
 
-  // `--filete-papel` (#997E51, 3,86 sobre blanco) entra con los renglones
-  // del catalogo (EP-03): hoy ninguna pantalla lo usa.
+  /// `--filete-papel` de la vidriera. 3,86 sobre blanco: alcanza para una
+  /// linea que se VE —el renglon de la libreta, la direccion visual que
+  /// eligio el dueno— y no para texto. Mas fuerte que `regla`, que a 1,60 no
+  /// se distingue del papel a un metro del deposito.
+  static const filetePapel = Color(0xFF997E51);
 }
 
 /// Las medidas que se repiten.

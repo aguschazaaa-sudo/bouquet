@@ -38,6 +38,15 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
+  # Sacar acentos. Dart NO trae normalizacion Unicode en el SDK (no hay
+  # String.normalize), asi que el espejo de `packages/contratos/src/texto.ts`
+  # -que alla es NFD + sacar las marcas- necesita esto o una tabla de
+  # caracteres escrita a mano. La tabla a mano falla en silencio con el
+  # caracter que nadie penso; esto no. Que las dos implementaciones den lo
+  # mismo lo verifica `test/core/contratos/texto_test.dart` contra las
+  # fixtures generadas por el TypeScript.
+  diacritic: ^0.1.6
+
 dev_dependencies:
   # package:test y no solo flutter_test: el test del espejo del enum es Dart
   # puro y con esto corre con `dart test`, que SI se puede correr en esta

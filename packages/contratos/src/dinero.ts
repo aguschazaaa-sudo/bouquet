@@ -70,3 +70,18 @@ const FORMATO = new Intl.NumberFormat('es-AR', {
 export function formatearARS(monto: Centavos): string {
   return FORMATO.format(monto / 100);
 }
+
+/**
+ * Los montos de las fixtures que espeja el panel en Dart.
+ *
+ * El formato de es-AR tiene DOS cosas que una implementacion escrita a ojo se
+ * come: el separador de miles es el punto y el decimal la coma, y entre el
+ * signo y la cifra va un espacio que NO es el de la barra espaciadora. Un
+ * panel que muestre "$12,500.00" al lado de una vidriera que muestra
+ * "$ 12.500,00" no esta mal formateado: esta diciendo otro numero.
+ *
+ * Cada monto esta por un motivo: cero, menos de un peso, con separador de
+ * miles, con dos separadores, y negativo -- que va a existir el dia del
+ * primer reembolso.
+ */
+export const MONTOS_DE_MUESTRA: readonly number[] = [0, 550, 1250000, 123456789, -550];

@@ -9,6 +9,128 @@
 
 ---
 
+## Salió el 2026-09-17, al entrar el catálogo y las bodegas del panel
+
+Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el mismo
+criterio de siempre: aquélla dice dónde vive Firestore y que esa ubicación no
+se cambia nunca. Las decisiones de ésta viven enteras en
+[ADR 009](../architecture/decisions/009-venta-por-caja.md), y la regla de las
+seis botellas sigue citada en el mapa del panel —EP-10 la exceptúa para las
+ventas por WhatsApp—, así que no se pierde el hilo.
+
+### El vino se vende de a 6, y hay cajas armadas (2026-09-14)
+
+**Nace la venta por caja.** El carrito tiene que sumar un múltiplo de
+`BOTELLAS_POR_CAJA` botellas para poder cobrarse, el aviso se dice **antes de
+agregar** —en el listado y en la ficha, sin JavaScript—, y `/vinos` estrena un
+carril de **cajas armadas** que el vendedor ofrece. El porqué, en
+[ADR 009](../architecture/decisions/009-venta-por-caja.md).
+
+⚠️ **LA REGLA TIENE UN LÍMITE DESDE EL 2026-09-15, y lo puso el dueño:** *"los
+vinos que vienen en cajas se venden sueltos, tienen su propio packaging así que
+pueden viajar solos: no cuentan para la caja de 6."* La cuenta sigue siendo en
+botellas, pero **sólo sobre las sueltas** ([ADR 009
+§10](../architecture/decisions/009-venta-por-caja.md)). Cambia tres cosas que antes
+eran al revés: un pedido de **una sola caja de 2 se puede cobrar**; 4 sueltas +
+un pack son **6 botellas y NO se pueden cobrar**; y una **caja armada** es de
+seis botellas sueltas, así que `dos-y-dos` —dos packs + dos botellas— salió del
+catálogo de muestra y entró `dos-de-cada`.
+
+⚠️ **La mitad del cambio es el DESPACHO, y ahí había plata.** Si el pack viaja
+solo, viaja en **su propio bulto**: seis botellas en tres packs cotizaban
+`ceil(6/6) = 1` bulto —se le pide uno al correo y se le entregan tres— y 4
+sueltas + 1 pack cotizaban una caja de 8 kg cuando son 2 bultos y **11 kg**.
+`bultosDelPedido` recibe ahora la carga separada, y el peso por bulto sale de la
+botella medida: `⌈n × 1,118 + 0,6⌉`, que con seis reproduce los 8 kg que ya se
+declaraban.
+
+**Y el cotizador simulado cobraba por cantidad de bultos**, con un comentario
+arriba que decía *"un correo cobra por escalón de peso"*: funcionaba de
+casualidad mientras todos los bultos pesaban 8 kg, y con bultos de 3 kg un pack
+salía **igual** que una caja llena. Lo destapó un caso nuevo, no una lectura.
+
+**Verificado el 2026-09-15 sobre `next build` + `next start` contra stage, con
+el carrito sembrado en `localStorage` y las dos pantallas MIRADAS:**
+
+| Qué | Cómo |
+|---|---|
+| La ficha de un pack ya no promete las seis | `curl` a las dos fichas: en la del pack, `Se vende por caja` = **0** y `Viaja sola` = **2**; en la de un vino suelto, al revés (**2** y **0**). Positivo y negativo sobre el mismo par de páginas |
+| El listado dice la excepción | `/vinos`: `viajan solas` = **2** (DOM + payload RSC), `Viaja sola` = **0** — el rótulo del pack no se filtró a la cabecera |
+| El pedido de un solo pack **se puede comprar** | Carrito de una caja de 2: la barra dice **2**, no hay bloque de caja, y aparece `TERMINAR LA COMPRA`. Antes esa compra no existía |
+| 4 sueltas + 1 pack **no** se puede cobrar | Mismo carrito: `4 de 6`, sin botón, y el checkout dice *"Las botellas sueltas viajan de a seis"* |
+| El despacho cambió de verdad | El resumen dice **`Viaja en 2 cajas · 11 kg`** (era 1 caja · 8 kg), y con un solo pack **`una caja · 3 kg`** |
+| La placa no engordó la ficha | El mostrador pesa **64,97 px** con placa, idéntico en los dos mensajes. Y el `185,53 px (22,0 %)` de un vino suelto reproduce el 186 del §9 |
+| La home no se volvió ISR | `○ /` **sin** revalidate, con `/vinos`, `/carrito` y `/pedido` en `1m` de control. El §10 suma **cero** lecturas |
+| El carril degrada como se prometió | La build loguea `descartada … 4 entradas para una caja de 6` y el carril sirve **3** cajas contra el documento viejo de stage: la caja desaparece, no miente |
+| Tests y tipos | **156** de contratos (eran 143) + **34** de la tienda (eran 30); `tsc` 0 en los dos |
+| El seed | Las 4 cajas del catálogo pasan forma y composición, con **dos controles negativos**: la caja vieja se rechaza por forma y una con un pack adentro, por composición |
+
+⚠️ **La regla se dice MUCHO más fuerte desde el 2026-09-15, y lo pidió el
+dueño:** *"está muy tenue para ser la regla base de la transacción."* Salía como
+un párrafo al cuerpo de la bajada en `/vinos` y como la línea más chica del
+mostrador de la ficha —debajo del precio **y** del botón—, mientras `/carrito`
+gritaba un total de 2,5 rem que no se podía cobrar y susurraba por qué en 1 rem.
+Ahora el número es una **cifra** de 57 px adentro del anillo del cartucho
+(`ReglaDeLaCaja`, dos variantes), y en la ficha vive **entre** el monto y el
+botón. En el teléfono se cae la invitación y no la regla: el mostrador es
+sticky, y con la nota puesta se comía el **26,4 %** de la pantalla contra el
+**22 %** sin ella. Sigue sin costar una lectura: es presentación, no datos.
+
+⚠️ **Y había un cuarto lugar que ningún documento contaba: el checkout.** Lo
+encontró `cazador-de-puertas`. *"El vino viaja de a seis"* salía por
+`.resumen__impedimento` en `tinta-3` —el **piso** de texto legible— en itálica,
+debajo de un `Ir a pagar` muerto: lo único que explica por qué el botón no anda,
+dicho en el tono más bajo de la paleta. También subió de peso. El detalle y las
+alternativas descartadas, en
+[ADR 009 §9](../architecture/decisions/009-venta-por-caja.md).
+
+**Una caja armada NO es un producto.** Es una lista de `productoId` que llena el
+carrito; no tiene precio propio ni stock propio, porque **no hay descuento**. El
+diseño cambió de forma dos veces en el brainstorm y las dos versiones
+descartadas están en el ADR — incluida la del `compuesto` con `componentes[]`,
+que arrastraba media docena de piezas.
+
+⚠️ **El carrito subió a `version: 2` y guarda `botellas` por línea.** Es la única
+excepción a "el carrito no guarda nada del producto", y está razonada:
+`presentacion` es inmutable por regla, así que no es un snapshot que envejece.
+Sin ese campo el contador de la barra mostraría **3 donde hay 6**. Los carritos
+`version: 1` se descartan — se cambió con la tienda sin desplegar, o sea sin un
+solo carrito real.
+
+⚠️ **Siete cosas aparecieron midiendo, y tres son transferibles:**
+
+| Instrumento | Cómo mintió |
+|---|---|
+| Mi script de la API de Rules | Un **403** por falta de quota project se leyó como *"ningún release"*. Una lista vacía por error de lectura confirma cualquier cosa |
+| `next build \| head` | El pipe cerrado le manda **SIGPIPE** a la build y la corta: la página quedó pidiendo un CSS que daba **404** y el arreglo "no aparecía" |
+| Un test de `carrito.test.ts` | Usaba `version: 1` literal para probar cantidades inválidas. Con la versión nueva lo rechazaba la **versión**, no la cantidad: habría pasado por el motivo equivocado |
+
+Y **el defecto más caro apareció abriendo el PNG**, sexta vez en este proyecto:
+**todos los botones de la vidriera tenían cuatro triangulitos grises en las
+esquinas**. `<button>` trae `background-color` de sistema y `appearance: auto`, y
+`.boton` nunca los reseteaba porque sus dos capas son pseudo-elementos. Le
+pasaba al `Agregar` de cada vino **desde que existe**: a 30 px no se nota, a 200
+sí. Arreglado en `shared/ui`, medido antes y después.
+
+**Verificado sobre `next build` + `next start` contra stage:**
+
+| Qué | Cómo |
+|---|---|
+| La home no se volvió ISR | `○ /` **sin revalidate** en la tabla del build, con `/vinos` en `1m` como control. Es la trampa de `unstable_cache` que el ADR 008 documenta |
+| Las lecturas | **33** medidas contra stage (20 + 11 + 1 + 1); control sin carril: **32**. +0,5 puntos de cuota en el peor renglón |
+| El aviso, sin JavaScript | `/vinos` y las dos fichas dan **2** (DOM + payload RSC); `/oficio` y `/` dan **0**; un slug inventado, **404**. El canario se verificó nuevo con `git grep` en `HEAD` **antes** de usarlo |
+| El carril | 4 tarjetas, 1 lugar marcado. Sin el documento sembrado **no se renderiza** |
+| Sin overflow | `scrollWidth = clientWidth` a 1440 y 390; la pista scrollea **dentro** de su contenedor (1131 sobre 358) |
+| Las reglas | **26** casos contra el emulador (eran 24), con control positivo |
+| Tests y tipos | **121** de contratos (eran 65) + **21** de la tienda; `tsc` 0 en los dos; arnés 35/35; 183 enlaces. En CI, sobre el HEAD pusheado: 121 + 21, 0 fallas |
+| El seed | Dos corridas, verificado por REST: 4 cajas, control negativo **404** |
+| Mirado | 1440 y 390 px emulados, con los datos reales de stage |
+
+**`voz` curó el copy** y de paso encontró una cadena que nadie abría (`vaDeA`):
+se borró.
+
+---
+
 ## Salió el 2026-09-16, al entrar la puerta del panel
 
 Sexta entrada otra vez, el mismo día. **Salió ésta y no la de los tres

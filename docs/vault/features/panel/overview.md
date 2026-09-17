@@ -3,9 +3,8 @@
 - **Fecha:** 2026-09-16
 - **Estado:** con **dos rondas de respuestas del dueño**, las dos del
   2026-09-16. Falta un dato suyo: el número de WhatsApp de la tienda.
-  **Ninguna historia está construida**:
-  `apps/admin` es andamio (un placeholder, los enums espejados y el provider de
-  Firestore)
+  **Construidas: EP-01 entera (2026-09-16) y EP-02 + HU-03.1 (2026-09-17)** —
+  el estado no se tilda acá, se calcula con el `grep` de abajo
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)
@@ -139,14 +138,18 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
    `actualizadaEn`. → HU-07.2 · HU-07.5
 5. **Borrar una bodega esconde sus vinos en silencio.** Las reglas permiten el
    `delete`, y `armarCatalogo` deja afuera los productos de una bodega que no
-   existe. → HU-02.4
+   existe. → HU-02.4. **La baranda quedó en el panel, no en las reglas**, con
+   el riesgo que queda escrito en
+   [ADR 012 §5](../../architecture/decisions/012-el-catalogo-del-panel.md)
 6. **Las reglas todavía permiten borrar productos**, y `revisor-pagos` pidió
    que el panel no borre: despublique (hallazgo 1 de ADR 008). → HU-03.6
-7. **El presupuesto del catálogo del panel es optimista.** [ARQUITECTURA §6.3](../../../../ARQUITECTURA.md#63-el-presupuesto-completo)
-   dice **~200** lecturas/día *"con caché de sesión"*, pero una sola carga en
-   frío del MVP ya son **230** (200 productos + 30 bodegas). Diez sesiones en
-   frío son **2.300/día, el 4,6 % de la cuota**. No cambia ninguna decisión; sí
-   cambia el número contra el que se va a medir. → HU-03.1
+7. ~~**El presupuesto del catálogo del panel es optimista.**~~ **Cerrado el
+   2026-09-17** en [ADR 012](../../architecture/decisions/012-el-catalogo-del-panel.md).
+   [ARQUITECTURA §6.3](../../../../ARQUITECTURA.md#63-el-presupuesto-completo)
+   dice **~200** lecturas/día *"con caché de sesión"* suponiendo que sobrevive
+   entre sesiones, y la de Riverpod muere con la pestaña: una carga en frío del
+   MVP son **230** (200 productos + 30 bodegas). Diez sesiones en frío,
+   **2.300/día, el 4,6 % de la cuota**. → HU-03.1
 
 **Y lo que trajeron las respuestas del dueño:**
 

@@ -2,6 +2,11 @@
 // auditar_estados.mjs - que el contrato generado este FRESCO, y que el lado de
 // Dart lo cubra entero.
 //
+// El nombre dice "estados" porque nacio con ellos; hoy el contrato generado
+// lleva ademas las FIXTURES DE TEXTO (ARQUITECTURA §7).  Se audita lo mismo y
+// por el mismo motivo: el espejo en Dart se verifica contra ese JSON, asi que
+// un JSON viejo convierte el test de Dart en teatro.
+//
 // ===========================================================================
 // POR QUE ESTE ARCHIVO ES OBLIGATORIO Y NO UN LUJO
 //
@@ -88,6 +93,68 @@ for (const [par, publico] of Object.entries(contrato.publico.proyeccion)) {
 }
 
 // ---------------------------------------------------------------------------
+// 2 bis. Las fixtures de texto (ARQUITECTURA §7).
+//
+// Un set de fixtures sin control negativo no distingue una implementacion
+// correcta de una que devuelve siempre lo mismo.  Por eso no alcanza con que
+// la seccion exista: tiene que tener los dos lados de cada pregunta.
+// ---------------------------------------------------------------------------
+const texto = contrato.texto;
+const antes = fallos;
+
+if (!texto || !Array.isArray(texto.casos) || !Array.isArray(texto.pares)) {
+  problema('el contrato no trae la seccion `texto` con `casos` y `pares`');
+} else {
+  const slugs = texto.casos.map((c) => c.aSlug);
+  if (!slugs.some((s) => s !== '')) {
+    problema('texto: ninguna fixture produce un slug -- falta el control positivo');
+  }
+  if (!slugs.some((s) => s === '')) {
+    problema('texto: ninguna fixture deja el slug vacio -- falta el control negativo');
+  }
+
+  // El slug generado tiene que ser el que firestore.rules acepta, o el panel
+  // escribe documentos que las reglas rechazan recien en produccion.
+  const ES_SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+  for (const c of texto.casos) {
+    if (c.aSlug !== '' && !ES_SLUG.test(c.aSlug)) {
+      problema(`texto: "${c.entrada}" da el slug "${c.aSlug}", que esSlug rechaza`);
+    }
+  }
+
+  const parecen = texto.pares.map((p) => p.seParecen);
+  if (!parecen.includes(true)) problema('texto: ningun par se parece -- falta el control positivo');
+  if (!parecen.includes(false)) problema('texto: todos los pares se parecen -- falta el control negativo');
+
+  if (fallos === antes) {
+    console.log(
+      `ok  las fixtures de texto tienen sus dos controles ` +
+        `(${texto.casos.length} casos, ${texto.pares.length} pares)`,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 2 ter. Las fixtures de plata.
+//
+// El panel muestra los mismos precios que la vidriera, y "$12,500.00" contra
+// "$ 12.500,00" no es un formato distinto: es otro numero para quien lo lee.
+// ---------------------------------------------------------------------------
+if (!contrato.plata || !Array.isArray(contrato.plata.casos) || !contrato.plata.casos.length) {
+  problema('el contrato no trae la seccion `plata` con sus casos');
+} else {
+  const montos = contrato.plata.casos.map((c) => c.centavos);
+  // Sin un monto de mas de mil, una implementacion sin separador de miles
+  // pasa; sin uno negativo, una que ignora el signo tambien.
+  if (!montos.some((c) => c >= 100000)) problema('plata: ninguna fixture tiene separador de miles');
+  if (!montos.some((c) => c < 0)) problema('plata: ninguna fixture es negativa');
+  if (!contrato.plata.casos.every((c) => typeof c.ars === 'string' && c.ars.includes(' '))) {
+    problema('plata: alguna fixture no lleva el espacio duro U+00A0 entre el signo y la cifra');
+  }
+  console.log(`ok  las fixtures de plata cubren miles, negativo y el espacio duro (${montos.length} casos)`);
+}
+
+// ---------------------------------------------------------------------------
 // 3. El lado de Dart.
 //
 // Si todavia no existe, se DICE que no se verifico. Un verificador que se
@@ -119,6 +186,19 @@ if (!existsSync(DIR_ADMIN)) {
     problema(`el panel en Dart no menciona estos estados: ${faltantes.join(', ')}`);
   } else {
     console.log('ok  el panel en Dart cubre todos los estados del contrato');
+  }
+
+  // El espejo de la normalizacion.  Sin esto, alguien puede agregar una
+  // funcion a texto.ts, regenerar el JSON, y el panel seguir con su propia
+  // implementacion sin que nada lo diga -- que es exactamente la segunda
+  // implementacion que ARQUITECTURA §7 existe para no tener.
+  const sinEspejo = ['normalizar', 'clave', 'aSlug', 'seParecen', 'enPesos'].filter(
+    (f) => !new RegExp(String.raw`\b` + f + String.raw`\(`).test(fuente),
+  );
+  if (sinEspejo.length) {
+    problema(`el panel en Dart no espeja: ${sinEspejo.join(', ')} (ARQUITECTURA §7)`);
+  } else {
+    console.log('ok  el panel en Dart espeja la normalizacion y el formato de plata');
   }
 }
 

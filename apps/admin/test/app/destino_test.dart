@@ -14,6 +14,34 @@ void main() {
   const operador = Operador('familia@gmail.com');
   const sinPermiso = SinPermiso('otro@gmail.com');
 
+  group('la ruta hija de Catalogo (EP-02)', () {
+    test('un operador en /catalogo/bodegas se queda', () {
+      expect(ir(operador, Rutas.bodegas), isNull);
+    });
+
+    test('recargar en Bodegas vuelve a Bodegas, no a Catalogo', () {
+      // Es la misma promesa que HU-01.4 dio para /pedidos, y una ruta hija es
+      // justo donde una implementacion que compara con `==` se rompe.
+      final espera = Uri.parse(ir(const Resolviendo(), Rutas.bodegas)!);
+      expect(espera.path, Rutas.espera);
+      expect(espera.queryParameters['desde'], Rutas.bodegas);
+      expect(
+        ir(operador, '/espera?desde=%2Fcatalogo%2Fbodegas'),
+        Rutas.bodegas,
+      );
+    });
+
+    test('sin sesion, Bodegas manda a entrar y la recuerda', () {
+      final destino = Uri.parse(ir(const SinSesion(), Rutas.bodegas)!);
+      expect(destino.path, Rutas.entrar);
+      expect(destino.queryParameters['desde'], Rutas.bodegas);
+    });
+
+    test('sin permiso, Bodegas manda a sin-acceso', () {
+      expect(ir(sinPermiso, Rutas.bodegas), Rutas.sinAcceso);
+    });
+  });
+
   group('sin sesion', () {
     test('una seccion manda a entrar y recuerda cual era', () {
       final destino = Uri.parse(ir(const SinSesion(), '/pedidos')!);

@@ -55,14 +55,86 @@ deploy público con el catálogo real, el tramo 4: Cloudflare con purga por tag.
 
 **El panel tiene plan desde el 2026-09-16, y ese mismo día tuvo puerta**:
 EP-01 entera. Se entra con mail o con Google, quien no tiene permiso lo ve
-dicho, y las cuentas las da un script. Catálogo y Pedidos existen **vacíos**, y
-lo dicen. Lo próximo del hito 1 son las bodegas y los vinos (EP-02, EP-03).
+dicho, y las cuentas las da un script.
+
+**Catálogo dejó de estar vacío el 2026-09-17**: se ven todos los vinos
+—publicados y no—, se buscan escribiendo, y las bodegas se cargan, se corrigen
+y se borran con una baranda que no deja despublicar sin querer. Son **EP-02
+entera y HU-03.1**. Pedidos sigue vacío y lo dice: es el hito 2. Lo próximo del
+hito 1 es **cargar un vino** (HU-03.2), que arrastra `graduacion` a las reglas
+y la reserva de slugs.
 
 **Y desde el 2026-09-17 está PUBLICADO en
 [`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con `noindex` y con
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### El catálogo se ve y las bodegas se cargan (2026-09-17)
+
+**EP-02 entera (HU-02.1 a 02.4) y HU-03.1**, en el change
+[`panel-catalogo-y-bodegas`](../../openspec/changes/panel-catalogo-y-bodegas/proposal.md).
+El porqué está en [ADR 012](architecture/decisions/012-el-catalogo-del-panel.md).
+**No tocó `firestore.rules`**: `productos` y `bodegas` ya tenían lo que hacía
+falta, así que el deploy fue sólo front.
+
+⚠️ **ARQUITECTURA §7 decía que la normalización vivía en `packages/contratos`
+"con sus fixtures, un solo lugar". No vivía en ninguno.** Lo único parecido era
+un slugify escrito a mano adentro de `PanelDeFiltros.tsx`. Ahora existe
+—`normalizar`, `clave`, `aSlug`, `seParecen`— con su espejo en Dart verificado
+contra fixtures generadas por el TypeScript, igual que el enum de estados.
+
+⚠️ **Dart no trae normalización Unicode en el SDK.** No hay `String.normalize`,
+así que sacar acentos pedía `diacritic` o una tabla de caracteres a mano. Se
+eligió la dependencia: una tabla falla **en silencio** con el carácter que
+nadie pensó, y "Château" habría dado el slug `ch-teau` sin que nada avisara.
+
+**Y las fixtures encontraron dos cosas que nadie iba a ver leyendo:**
+
+| Lo que se suponía | Lo que se midió |
+|---|---|
+| `removeDiacritics` de la eszett da `ss` | da **`s`** — el test falló y se corrigió la expectativa, no el código |
+| El espacio del precio es la barra espaciadora | es **U+00A0**: `24 a0 31 32 2e 35 30 30 2c 30 30` |
+
+El segundo importa: `$12,500.00` y `$ 12.500,00` no son el mismo número mal
+alineado, son dos números. `formatearARS` también se espeja, por fixtures.
+
+**La baranda del borrado tiene dos capas, y ninguna vive en las reglas.**
+Contar los vinos de una bodega adentro de `firestore.rules` serían `get()`
+facturados por evaluación, invisibles en toda auditoría porque no aparecen en
+ninguna query — el costo que ADR 008 evita con el custom claim. Así que: con
+vinos, el botón **no existe** (no está apagado: no está); y al confirmar, una
+query fresca con `Source.server` que cuesta 1 lectura y cierra la ventana entre
+que se abrió la pantalla y se apretó el botón. **Lo que queda abierto está
+escrito**: las reglas todavía permiten el `delete`, y el día que haya más de un
+rol esto se vuelve a decidir.
+
+⚠️ **`dart analyze` SÍ corre en esta máquina.** Terminó y encontró dos infos
+reales (un `<id>` en un doc comment, un parámetro `otro` en vez de `other`).
+`CLAUDE.md` prohíbe `flutter analyze`, que es otra cosa — **el panel dejó de
+depender sólo de CI para saber si compila**, que era su único ciclo de
+feedback.
+
+⚠️ **Y el barrido de hooks mintió una vez, con un verde.** Corrido con rutas
+**relativas**, los cuatro hooks daban 0 en un archivo que tenía
+`Colors.transparent` adentro: sus `case` piden `*/apps/admin/lib/*`, y una ruta
+sin barra inicial no matchea. Con ruta absoluta, `no-hardcoded-colors` bloqueó
+en la primera corrida. **Lo salvó el control positivo** —un archivo canario con
+un color literal—, que es lo único que distingue "no hay hallazgos" de "no se
+midió".
+
+| Qué | Cómo |
+|---|---|
+| Compila | `dart analyze lib test` → **No issues found** |
+| Suites | `dart test` **78/78**; `npm test` verde; `npm run tipos` en 0 |
+| El contrato | `auditar_estados.mjs`, ampliado: fixtures de texto y de plata con sus dos controles cada una, y que el panel las espeje. **Se vio fallar** antes de escribir el espejo |
+| Sin huérfanos | 39 símbolos nuevos, todos con quien los abra. Control negativo: un símbolo inventado da 0 |
+| Las fronteras | `layer-boundary`, `one-widget-per-file`, `widget-size-guard` y `no-hardcoded-colors` sobre los 19 archivos, con ruta absoluta |
+| Presupuesto | **230 lecturas** en frío, 1 por alta y 1 por borrado. 10 sesiones = 4,6 % de la cuota |
+
+**El presupuesto de ARQUITECTURA §6.3 estaba optimista y ahora tiene número.**
+Decía ~200 *"con caché de sesión"*, suponiendo que sobrevive entre sesiones — y
+la de Riverpod muere con la pestaña. **230 es contra lo que hay que medir.**
 
 ### El panel tiene puerta: entrar, sin acceso y la estructura (2026-09-16)
 
@@ -273,117 +345,6 @@ sembrado en `localStorage`:**
 | Teléfono | 390 px **emulados**: `scrollWidth = clientWidth = 390`, sin overflow |
 | Tests y tipos | **143** de contratos (eran 121) + **30** de la tienda (eran 21); `tsc` 0 en los dos; arnés 35/35; 213 enlaces |
 | Mirado | 1440 y 390 px, con los datos reales de stage |
-
-### El vino se vende de a 6, y hay cajas armadas (2026-09-14)
-
-**Nace la venta por caja.** El carrito tiene que sumar un múltiplo de
-`BOTELLAS_POR_CAJA` botellas para poder cobrarse, el aviso se dice **antes de
-agregar** —en el listado y en la ficha, sin JavaScript—, y `/vinos` estrena un
-carril de **cajas armadas** que el vendedor ofrece. El porqué, en
-[ADR 009](architecture/decisions/009-venta-por-caja.md).
-
-⚠️ **LA REGLA TIENE UN LÍMITE DESDE EL 2026-09-15, y lo puso el dueño:** *"los
-vinos que vienen en cajas se venden sueltos, tienen su propio packaging así que
-pueden viajar solos: no cuentan para la caja de 6."* La cuenta sigue siendo en
-botellas, pero **sólo sobre las sueltas** ([ADR 009
-§10](architecture/decisions/009-venta-por-caja.md)). Cambia tres cosas que antes
-eran al revés: un pedido de **una sola caja de 2 se puede cobrar**; 4 sueltas +
-un pack son **6 botellas y NO se pueden cobrar**; y una **caja armada** es de
-seis botellas sueltas, así que `dos-y-dos` —dos packs + dos botellas— salió del
-catálogo de muestra y entró `dos-de-cada`.
-
-⚠️ **La mitad del cambio es el DESPACHO, y ahí había plata.** Si el pack viaja
-solo, viaja en **su propio bulto**: seis botellas en tres packs cotizaban
-`ceil(6/6) = 1` bulto —se le pide uno al correo y se le entregan tres— y 4
-sueltas + 1 pack cotizaban una caja de 8 kg cuando son 2 bultos y **11 kg**.
-`bultosDelPedido` recibe ahora la carga separada, y el peso por bulto sale de la
-botella medida: `⌈n × 1,118 + 0,6⌉`, que con seis reproduce los 8 kg que ya se
-declaraban.
-
-**Y el cotizador simulado cobraba por cantidad de bultos**, con un comentario
-arriba que decía *"un correo cobra por escalón de peso"*: funcionaba de
-casualidad mientras todos los bultos pesaban 8 kg, y con bultos de 3 kg un pack
-salía **igual** que una caja llena. Lo destapó un caso nuevo, no una lectura.
-
-**Verificado el 2026-09-15 sobre `next build` + `next start` contra stage, con
-el carrito sembrado en `localStorage` y las dos pantallas MIRADAS:**
-
-| Qué | Cómo |
-|---|---|
-| La ficha de un pack ya no promete las seis | `curl` a las dos fichas: en la del pack, `Se vende por caja` = **0** y `Viaja sola` = **2**; en la de un vino suelto, al revés (**2** y **0**). Positivo y negativo sobre el mismo par de páginas |
-| El listado dice la excepción | `/vinos`: `viajan solas` = **2** (DOM + payload RSC), `Viaja sola` = **0** — el rótulo del pack no se filtró a la cabecera |
-| El pedido de un solo pack **se puede comprar** | Carrito de una caja de 2: la barra dice **2**, no hay bloque de caja, y aparece `TERMINAR LA COMPRA`. Antes esa compra no existía |
-| 4 sueltas + 1 pack **no** se puede cobrar | Mismo carrito: `4 de 6`, sin botón, y el checkout dice *"Las botellas sueltas viajan de a seis"* |
-| El despacho cambió de verdad | El resumen dice **`Viaja en 2 cajas · 11 kg`** (era 1 caja · 8 kg), y con un solo pack **`una caja · 3 kg`** |
-| La placa no engordó la ficha | El mostrador pesa **64,97 px** con placa, idéntico en los dos mensajes. Y el `185,53 px (22,0 %)` de un vino suelto reproduce el 186 del §9 |
-| La home no se volvió ISR | `○ /` **sin** revalidate, con `/vinos`, `/carrito` y `/pedido` en `1m` de control. El §10 suma **cero** lecturas |
-| El carril degrada como se prometió | La build loguea `descartada … 4 entradas para una caja de 6` y el carril sirve **3** cajas contra el documento viejo de stage: la caja desaparece, no miente |
-| Tests y tipos | **156** de contratos (eran 143) + **34** de la tienda (eran 30); `tsc` 0 en los dos |
-| El seed | Las 4 cajas del catálogo pasan forma y composición, con **dos controles negativos**: la caja vieja se rechaza por forma y una con un pack adentro, por composición |
-
-⚠️ **La regla se dice MUCHO más fuerte desde el 2026-09-15, y lo pidió el
-dueño:** *"está muy tenue para ser la regla base de la transacción."* Salía como
-un párrafo al cuerpo de la bajada en `/vinos` y como la línea más chica del
-mostrador de la ficha —debajo del precio **y** del botón—, mientras `/carrito`
-gritaba un total de 2,5 rem que no se podía cobrar y susurraba por qué en 1 rem.
-Ahora el número es una **cifra** de 57 px adentro del anillo del cartucho
-(`ReglaDeLaCaja`, dos variantes), y en la ficha vive **entre** el monto y el
-botón. En el teléfono se cae la invitación y no la regla: el mostrador es
-sticky, y con la nota puesta se comía el **26,4 %** de la pantalla contra el
-**22 %** sin ella. Sigue sin costar una lectura: es presentación, no datos.
-
-⚠️ **Y había un cuarto lugar que ningún documento contaba: el checkout.** Lo
-encontró `cazador-de-puertas`. *"El vino viaja de a seis"* salía por
-`.resumen__impedimento` en `tinta-3` —el **piso** de texto legible— en itálica,
-debajo de un `Ir a pagar` muerto: lo único que explica por qué el botón no anda,
-dicho en el tono más bajo de la paleta. También subió de peso. El detalle y las
-alternativas descartadas, en
-[ADR 009 §9](architecture/decisions/009-venta-por-caja.md).
-
-**Una caja armada NO es un producto.** Es una lista de `productoId` que llena el
-carrito; no tiene precio propio ni stock propio, porque **no hay descuento**. El
-diseño cambió de forma dos veces en el brainstorm y las dos versiones
-descartadas están en el ADR — incluida la del `compuesto` con `componentes[]`,
-que arrastraba media docena de piezas.
-
-⚠️ **El carrito subió a `version: 2` y guarda `botellas` por línea.** Es la única
-excepción a "el carrito no guarda nada del producto", y está razonada:
-`presentacion` es inmutable por regla, así que no es un snapshot que envejece.
-Sin ese campo el contador de la barra mostraría **3 donde hay 6**. Los carritos
-`version: 1` se descartan — se cambió con la tienda sin desplegar, o sea sin un
-solo carrito real.
-
-⚠️ **Siete cosas aparecieron midiendo, y tres son transferibles:**
-
-| Instrumento | Cómo mintió |
-|---|---|
-| Mi script de la API de Rules | Un **403** por falta de quota project se leyó como *"ningún release"*. Una lista vacía por error de lectura confirma cualquier cosa |
-| `next build \| head` | El pipe cerrado le manda **SIGPIPE** a la build y la corta: la página quedó pidiendo un CSS que daba **404** y el arreglo "no aparecía" |
-| Un test de `carrito.test.ts` | Usaba `version: 1` literal para probar cantidades inválidas. Con la versión nueva lo rechazaba la **versión**, no la cantidad: habría pasado por el motivo equivocado |
-
-Y **el defecto más caro apareció abriendo el PNG**, sexta vez en este proyecto:
-**todos los botones de la vidriera tenían cuatro triangulitos grises en las
-esquinas**. `<button>` trae `background-color` de sistema y `appearance: auto`, y
-`.boton` nunca los reseteaba porque sus dos capas son pseudo-elementos. Le
-pasaba al `Agregar` de cada vino **desde que existe**: a 30 px no se nota, a 200
-sí. Arreglado en `shared/ui`, medido antes y después.
-
-**Verificado sobre `next build` + `next start` contra stage:**
-
-| Qué | Cómo |
-|---|---|
-| La home no se volvió ISR | `○ /` **sin revalidate** en la tabla del build, con `/vinos` en `1m` como control. Es la trampa de `unstable_cache` que el ADR 008 documenta |
-| Las lecturas | **33** medidas contra stage (20 + 11 + 1 + 1); control sin carril: **32**. +0,5 puntos de cuota en el peor renglón |
-| El aviso, sin JavaScript | `/vinos` y las dos fichas dan **2** (DOM + payload RSC); `/oficio` y `/` dan **0**; un slug inventado, **404**. El canario se verificó nuevo con `git grep` en `HEAD` **antes** de usarlo |
-| El carril | 4 tarjetas, 1 lugar marcado. Sin el documento sembrado **no se renderiza** |
-| Sin overflow | `scrollWidth = clientWidth` a 1440 y 390; la pista scrollea **dentro** de su contenedor (1131 sobre 358) |
-| Las reglas | **26** casos contra el emulador (eran 24), con control positivo |
-| Tests y tipos | **121** de contratos (eran 65) + **21** de la tienda; `tsc` 0 en los dos; arnés 35/35; 183 enlaces. En CI, sobre el HEAD pusheado: 121 + 21, 0 fallas |
-| El seed | Dos corridas, verificado por REST: 4 cajas, control negativo **404** |
-| Mirado | 1440 y 390 px emulados, con los datos reales de stage |
-
-**`voz` curó el copy** y de paso encontró una cadena que nadie abría (`vaDeA`):
-se borró.
 
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
