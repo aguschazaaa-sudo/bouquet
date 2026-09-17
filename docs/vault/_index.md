@@ -136,6 +136,43 @@ midió".
 Decía ~200 *"con caché de sesión"*, suponiendo que sobrevive entre sesiones — y
 la de Riverpod muere con la pestaña. **230 es contra lo que hay que medir.**
 
+#### Publicado, y lo que NADIE miró todavía (2026-09-17)
+
+**Live sirve los bytes que compiló CI**: `hosting:clone` del canal a live, sin
+recompilar. Mismo `main.dart.js` (`f2a7d72a22b1c297`) en el canal y en live,
+mismo commit `3b46a39`, `X-Robots-Tag: noindex` puesto.
+
+**El canario discrimina, y se midió el ANTES.** Antes de promover, live tenía
+la cadena vieja y ninguna de las seis nuevas; después, al revés. Los dos
+controles —una cadena de Pedidos que no se tocó y una inventada— dieron lo que
+tenían que dar en las dos corridas.
+
+⚠️ **Y la primera sonda dio TODO "no", incluida una cadena que sí estaba.**
+`dart2js` **escapa los no-ASCII**: "Catálogo" vive en el bundle como
+`Catálogo`. Buscar la cadena cruda da cero para todo y se lee como "el
+deploy no llegó". **Lo destapó el control positivo con una cadena ASCII pura**
+—"Ese mail no parece estar bien escrito"—, que sí apareció.
+
+| Qué se verificó | Cómo |
+|---|---|
+| Los bytes | `publicar.sh verificar`: 4 hashes, control negativo (un archivo inventado no pasa por `main.dart.js`) y el `noindex` |
+| Que la app **arranca** | CDP sobre live: el árbol de semántica lee la pantalla de entrada entera y hay **0 errores de consola**. Una cadena en el bundle no prueba que arranque |
+| El router en producción | `/catalogo/bodegas` redirige a `/entrar?desde=/catalogo/bodegas` |
+| **La query de HU-02.4** | Corrida de verdad contra Firestore por REST: `fichaVino.bodegaId == muestra-catena-zapata` devuelve 1 documento y una bodega inventada devuelve **0**. Sin índice compuesto |
+
+⚠️ **NADIE MIRÓ EL CATÁLOGO RENDERIZADO CON DATOS.** El panel pide sesión y la
+única cuenta con permiso es la del dueño. Lo verificado llega hasta la puerta:
+que los bytes son los que se compilaron, que la app arranca y que la query que
+usa la pantalla anda. **Lo que falta es exactamente lo que `CLAUDE.md` dice que
+hago mal**: desplegarse no es que alguien lo haya mirado. El change
+`panel-catalogo-y-bodegas` **queda abierto** hasta que el dueño entre y mire.
+
+⚠️ **Y un chequeo que NO probó lo que parecía.** Que `/catalogo/bodegas`
+redirija preservando el `desde` no distingue una ruta real de una inventada:
+`/catalogo/ruta-inventada-2026` hace exactamente lo mismo estando deslogueado.
+Se corrió el control negativo y por eso se sabe. Lo que sí prueba que la ruta
+existe son los canarios del bundle y los 4 casos nuevos de `destino_test.dart`.
+
 ### El panel tiene puerta: entrar, sin acceso y la estructura (2026-09-16)
 
 **Nace el panel de verdad**: EP-01 entera (HU-01.1 a 01.5) y los habilitadores

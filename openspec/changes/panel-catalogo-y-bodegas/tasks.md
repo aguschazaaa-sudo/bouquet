@@ -70,11 +70,14 @@ Workflow A. Orden de implementación = orden de deploy. Este cambio **no toca
 
 - [x] 6.1 ADR 012 con el presupuesto de lecturas adentro.
 - [x] 6.2 `_index.md` (tope 5) y el mapa del panel.
-- [ ] 6.3 `/commit` leyendo el diff.
-- [ ] 6.4 CI `alcance=panel`. **Leer la corrida, no el color.**
-- [ ] 6.5 Deploy: bajar el artifact, canal de preview, `hosting:clone` a live.
+- [x] 6.3 `/commit` leyendo el diff.
+- [x] 6.4 CI `alcance=panel`. **Leer la corrida, no el color.**
+- [x] 6.5 Deploy: bajar el artifact, canal de preview, `hosting:clone` a live.
       **Sin recompilar.**
-- [ ] 6.6 Verificar en `bouquet-vinos.web.app` con el árbol de semántica:
-      control positivo = un vino del seed que se sabe que está; control
-      negativo = una búsqueda inventada que tiene que dar vacío.
-- [ ] 6.7 `/opsx:archive` — último, después de verificar.
+- [~] 6.6 **Parcial.** Verificado: los hashes contra el artifact, el canario
+      nuevo/viejo en `main.dart.js`, que la app arranca (CDP, 0 errores de
+      consola) y **la query real de HU-02.4 contra Firestore**, con su control
+      negativo. ⚠️ **Falta lo único que importa de verdad: que alguien mire el
+      catálogo renderizado con datos.** Pide la sesión del dueño.
+- [ ] 6.7 `/opsx:archive` — **bloqueado por 6.6.** Un change archivado es una
+      historia entregada, y ésta todavía no la miró nadie renderizada.
