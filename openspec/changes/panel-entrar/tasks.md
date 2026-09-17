@@ -55,12 +55,16 @@
 - [x] 7.1 Buscar quién abre cada cosa nueva: toda pantalla tiene una ruta, toda
       ruta está en la navegación o en una redirección.
 - [x] 7.2 ADR 011, `design/tokens.md` (el espejo del panel) y `_index.md`.
-- [ ] 7.3 Commit leyendo el diff, y push.
-- [ ] 7.4 CI con `alcance=panel`: leer la lista de jobs, no el color.
-- [ ] 7.5 Cuentas de control en producción: una con permiso y otra sin.
-- [ ] 7.6 Publicar al canal de preview y verificar con contraseña: entrar, sin
+- [x] 7.3 Commit leyendo el diff, y push.
+- [x] 7.4 CI con `alcance=panel`: leer la lista de jobs, no el color.
+- [x] 7.5 Cuentas de control en producción: una con permiso y otra sin.
+- [x] 7.6 Publicar al canal de preview y verificar con contraseña: entrar, sin
       acceso, ruta inventada, recargar en `/pedidos`, 1440 y 390 px.
-- [ ] 7.7 Promover a live y verificar: hash de `main.dart.js` igual al del
+- [x] 7.7 Promover a live y verificar: hash de `main.dart.js` igual al del
       canal, `X-Robots-Tag`, entrar con contraseña; Google lo prueba el usuario.
-- [ ] 7.8 Borrar las cuentas de control y comprobar que no quedan.
-- [ ] 7.9 Archivar el change y cerrar el vault.
+- [x] 7.8 Borrar las cuentas de control y comprobar que no quedan.
+- [x] 7.9 Cerrar el vault. **El archivado quedó pendiente**: `/opsx:archive`
+      no está en esta sesión (las skills de terceros no se commitean) y
+      `openspec/specs/` está VACÍO — ningún change de este repo se archivó
+      nunca, así que archivar sólo éste inventaría una línea base que los otros
+      tres no tienen. Anotado en `_index.md` con disparador.

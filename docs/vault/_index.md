@@ -58,6 +58,11 @@ EP-01 entera. Se entra con mail o con Google, quien no tiene permiso lo ve
 dicho, y las cuentas las da un script. Catálogo y Pedidos existen **vacíos**, y
 lo dicen. Lo próximo del hito 1 son las bodegas y los vinos (EP-02, EP-03).
 
+**Y desde el 2026-09-17 está PUBLICADO en
+[`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con `noindex`.
+⚠️ **Auth tiene CERO cuentas**: nadie puede entrar todavía, ni el dueño. La
+primera que se cree entra sola — el permiso lo da el script, no una pantalla.
+
 ### El panel tiene puerta: entrar, sin acceso y la estructura (2026-09-16)
 
 **Nace el panel de verdad**: EP-01 entera (HU-01.1 a 01.5) y los habilitadores
@@ -97,7 +102,55 @@ la contraseña nace por un correo que verifica el mail, así que no puede pasar.
 
 ⚠️ **`dart test` lo frenó el clasificador del modo auto** en esta máquina, y
 eso que `CLAUDE.md` no lo prohíbe (sí prohíbe `flutter test`). La suite de
-Dart corre en CI.
+Dart corre en CI, y ya corrió: `suite_dart` en `success`, no `skipped`.
+
+#### Publicado, y lo que apareció al mirarlo (2026-09-17)
+
+**Vive en [`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con los
+bytes que compiló CI: `hosting:clone` del canal a live, **sin recompilar**.
+
+⚠️ **LA BANDA DE ARRIBA SE DIBUJABA PERFECTA Y NO EXISTÍA PARA UN LECTOR DE
+PANTALLA.** El `ShellRoute` mete un `Navigator`, y el `BlockSemantics` de su
+barrera modal borra la semántica de todo lo pintado **antes** que ella. La
+banda era el primer hijo de un `Column`:
+
+| Se pinta | Qué tenía el árbol de accesibilidad |
+|---|---|
+| Banda arriba, antes del `Navigator` | Nada: ni `bouquet`, ni las pestañas, ni el mail, ni *Salir* |
+| Barra inferior a 390 px, slot del `Scaffold`, después del body | `button:Catálogo`, `button:Pedidos` |
+
+Las dos en la misma pantalla y la misma sesión, y un resize que fuerza el
+rebuild no cambió nada (no eran nodos rancios). La banda pasó al slot `appBar`,
+que el `Scaffold` pinta después. El arreglo **no movió un píxel**: las capturas
+de antes y después son iguales. [ADR 011
+§6](architecture/decisions/011-entrar-al-panel.md) lo deja con NO REVERTIR.
+
+**Lo destapó que el driver no encontrara la pestaña, no una lectura del
+código** — y el código se lee correcto: la banda tiene sus `Semantics`, las
+pestañas son `button`, y `Marca` hasta aporta su propia etiqueta. Ninguna
+revisión del diff lo iba a agarrar. Octava vez en el proyecto que mirar
+encuentra lo que leer no.
+
+⚠️ **Y el instrumento mintió dos veces, en las dos direcciones.** Primero leía
+sólo los hijos directos de `flt-semantics` y daba **vacío**; después perdía
+**todo título**, porque Flutter emite un encabezado como `<h2>` y no como
+`<flt-semantics>`: dos pantallas correctas —*"Esa página no existe"* y *"Tu
+cuenta todavía no tiene acceso"*— figuraban como fallas. **Lo que salvó la
+medición fue el control negativo**, que siguió dando negativo después de
+ensanchar el extractor: sin él, leer el subárbol entero es un sello de goma.
+
+| Qué | Cómo |
+|---|---|
+| Live sirve lo verificado | Los cuatro hashes de live **iguales** a los del canal, y `main.dart.js` cambió de `62136648…` a `bd1973436526b868` entre los dos builds: el canario discrimina. Antes de promover, `/` y `/COMMIT` daban **404** |
+| No se indexa | `X-Robots-Tag: noindex` en live, y control negativo: una ruta inventada la contesta `index.html` y su hash **no** coincide con `main.dart.js` |
+| El recorrido, renderizado sobre live | **24 aserciones en verde, 0 en rojo**, con Chrome sin cabeza por CDP y cuentas de control: entrar, contraseña equivocada, volver a `/pedidos` con el `?desde`, recargar, la pestaña, ruta inventada, 390 px sin scroll, salir, sin permiso con su mail, el permiso dado **con la pantalla abierta** sin volver a escribir la contraseña, y el correo a un mail sin cuenta |
+| La banda es alcanzable | Las tres interacciones de la banda salieron **por semántica**, sin el clic por píxel que hubo que usar contra el build anterior |
+| Mirado | 1440 y 390 px, las dos pantallas y las dos barras |
+| Sin cuentas de control | Borradas: `listUsers` devuelve **0 usuarios**, no sólo 0 con permiso, y el mismo listador las mostraba minutos antes |
+
+⚠️ **El recorrido no se puede repetir:** vivía en el scratchpad y dependía de
+las cuentas de control, que se borraron. Se reescribe o se promueve a
+`scripts/panel/` el día que haga falta.
 
 ### El panel tiene plan: 11 épicas, 48 historias, ninguna construida (2026-09-16)
 
@@ -360,8 +413,9 @@ exacto con el Node local — leído del `firebase-tools` instalado, no supuesto.
 | Qué | Por qué | Quién |
 |---|---|---|
 | ⚠️ **Nadie de la familia tiene acceso al panel todavía** | El panel está listo para recibir cuentas, pero falta **la lista de mails** de quienes lo van a usar. Con cada uno: `node scripts/acceso/acceso.mjs dar <mail>`, y que entre con Google o toque *"¿No tenés contraseña?"*. **Disparador:** cuando el dueño pase los mails. Desde 2026-09-16. | el dueño |
-| **Entrar con Google no está verificado en live por una persona** | La ventana de Google no se puede manejar con el Chrome sin cabeza de esta máquina, y los canales de preview no son dominios autorizados. La verificación automática es con contraseña. **Disparador:** la primera vez que alguien entre con Google a `bouquet-vinos.web.app`. Desde 2026-09-16. | el usuario |
-| **La API key web del panel no está restringida** | Es pública por diseño y está en `firebase_options.dart`, en un repo público. Restringirla por referrer (`bouquet-vinos.web.app`, `firebaseapp.com`, `localhost`) achica lo que se puede hacer con ella, **incluido el registro anticipado** que el script de accesos ya bloquea por su lado (ADR 011). **Disparador:** antes de dar acceso a la familia. Desde 2026-09-16. | el usuario |
+| **Entrar con Google no está verificado en live por una persona** | La ventana de Google no se puede manejar con el Chrome sin cabeza de esta máquina, y los canales de preview no son dominios autorizados. La verificación automática es con contraseña, y así se verificó live el 2026-09-17. El sitio **ya existe**, así que la prueba es de un minuto: abrir `bouquet-vinos.web.app/entrar` y tocar *Entrar con Google*. Con Auth en cero cuentas, quien entre primero se crea la cuenta y va a caer en `/sin-acceso` hasta que el script le dé el permiso — eso **no** es una falla. **Disparador:** la primera vez que alguien entre con Google. Desde 2026-09-16. | el usuario |
+| ⚠️ **La API key web del panel no está restringida, y está MEDIDO** | Es pública por diseño y está en `firebase_options.dart`, en un repo público: viaja dentro de `main.dart.js`, así que guardarla como secret no cambiaría nada — el navegador la necesita en claro. Lo que sí falta es acotarla. Medido el 2026-09-17: `browserKeyRestrictions` **vacío** y 27 servicios habilitados, `identitytoolkit` entre ellos; un `POST` a `accounts:signInWithPassword` con `Referer` inventado contesta **400 `INVALID_LOGIN_CREDENTIALS`**, o sea que la atiende. Ése es el control de antes: con la restricción puesta tiene que dar **403**. El comando, listo para correr: `gcloud services api-keys update projects/540462799612/locations/global/keys/6b44a3ba-cbd3-4d40-8b2c-36127ac380d0 --allowed-referrers="https://bouquet-vinos.web.app/*,https://bouquet-vinos.firebaseapp.com/*,https://bouquet-vinos--*.web.app/*"` — el tercer patrón es para los canales de preview, donde se verifica antes de promover, y **hay que comprobar que la API lo acepte**. **Ojo con lo que NO es:** el `Referer` lo falsifica cualquiera con `curl -H`, así que esto corta el abuso casual y el robo de cuota, no a alguien decidido; contra el registro anticipado lo que protege de verdad es la negativa del script (ADR 011). Apagar el alta pública **está descartado** en el ADR: sólo existe en Identity Platform. ⚠️ **Lo intenté y lo frenó el clasificador del modo auto** (*"Modify Shared Resources"*): necesita que el usuario lo permita o lo corra él. **Disparador:** antes de dar acceso a la familia. Desde 2026-09-16. | el usuario |
+| **Ningún change de openspec se archivó nunca** | `openspec/specs/` está **vacío** y hay **4** changes en `openspec/changes/` (`panel-entrar`, `cajas-de-seis`, `catalogo-y-carrito`, `seccion-el-oficio`), todos implementados. Sin línea base publicada, un change nuevo no tiene contra qué diferenciarse. `opsx` trae `openspec-bulk-archive-change` justo para esto, pero las skills de terceros no se commitean (`bash scripts/skills_restaurar.sh`). Archivar sólo uno inventaría una línea base que los otros tres no tienen, así que van los cuatro juntos. **Disparador:** la próxima sesión que empiece con las skills restauradas. Desde 2026-09-17. | el usuario |
 | **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth, igual que los de reglas, que tampoco están en CI (hallazgo de `revisor-pagos`). Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
 | ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). **Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
