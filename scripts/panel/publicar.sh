@@ -50,11 +50,18 @@ preview() {
   tmp=$(mktemp -d)
   gh run download "$run" -n panel-web -D "$tmp"
 
-  ( cd "$tmp" && sha256sum --check --quiet SHA256SUMS ) || falla "un archivo no coincide con su hash"
+  # Los archivos ocultos (`.last_build_id`) no viajan en el artifact
+  # —upload-artifact los excluye— ni se publican —firebase.json ignora
+  # `**/.*`—, asi que no se exigen. Medido el 2026-09-16: la primera corrida
+  # los listaba y este paso se nego a publicar, que era lo correcto.
+  local sumas="$tmp/SHA256SUMS.visibles"
+  grep -v ' \./\.' "$tmp/SHA256SUMS" > "$sumas"
+  ( cd "$tmp" && sha256sum --check --quiet "$sumas" ) || falla "un archivo no coincide con su hash"
   # Un archivo de mas, que no esta en la lista, tampoco pasa.
   local listados presentes
-  listados=$(wc -l < "$tmp/SHA256SUMS")
-  presentes=$(cd "$tmp" && find . -type f ! -name SHA256SUMS | wc -l)
+  listados=$(wc -l < "$sumas")
+  presentes=$(cd "$tmp" && find . -type f ! -name 'SHA256SUMS*' ! -name '.*' | wc -l)
+  rm "$sumas"
   [ "$listados" -eq "$presentes" ] || falla "hay $presentes archivos y SHA256SUMS lista $listados"
   [ "$(cat "$tmp/COMMIT")" = "$sha" ] || falla "COMMIT dice $(cat "$tmp/COMMIT") y la corrida es de $sha"
   echo "ok  $listados archivos con su hash, commit coincide"

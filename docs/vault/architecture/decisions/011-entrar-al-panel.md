@@ -113,6 +113,35 @@ El alcance `panel` de `ci.yml` corre `dart test`, `flutter analyze` y
    control negativo.
 3. **`promover`:** hace `hosting:clone` del canal a live.
 
+### 6. La banda del panel va en el slot `appBar` (NO REVERTIR)
+
+`EstructuraDelPanel` es el `builder` de un `ShellRoute`, y un `ShellRoute` mete
+un `Navigator` adentro. La barrera modal de la ruta de ese `Navigator` lleva un
+`BlockSemantics`, que **borra la semántica de todo lo que se pintó antes que
+ella** en el mismo alcance. Con la banda como primer hijo de un `Column`, eso
+la incluía.
+
+**Medido el 2026-09-17 sobre el canal de preview**, con la sesión puesta en
+`/pedidos` y la semántica prendida:
+
+| Se pinta | Qué tenía el árbol de accesibilidad |
+|---|---|
+| Banda arriba, primer hijo del `Column` (**antes** del `Navigator`) | Nada: ni `bouquet`, ni las pestañas, ni el mail, ni *Salir*. Siete nodos, todos de la sección |
+| Barra inferior a 390 px, slot del `Scaffold` (**después** del body) | `button:Catálogo`, `button:Pedidos` |
+
+Las dos en la misma pantalla y la misma sesión: eso es el control positivo y el
+negativo de la explicación, no dos corridas distintas. Un resize que fuerza el
+rebuild no cambió nada, así que no eran nodos rancios.
+
+El `Scaffold` agrega sus slots **después** del body, y por eso los salva. La
+banda pasó a `appBar` con un `PreferredSize`; el `SafeArea` de la banda sigue
+haciéndose cargo de la muesca, así que la altura del slot la suma.
+
+**Lo que se dibuja no prueba que exista para quien no lo ve.** La banda se veía
+perfecta en las capturas de 1440 y 390 px —marca, pestaña subrayada en dorado,
+mail y *Salir*— mientras era inalcanzable para un lector de pantalla. Lo
+destapó que el driver no encontrara la pestaña, no una lectura del código.
+
 ## Por qué NO las alternativas
 
 | Alternativa | Por qué no |

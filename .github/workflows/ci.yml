@@ -244,7 +244,9 @@ jobs:
         working-directory: apps/admin/build/web
         run: |
           echo "${{ github.sha }}" > COMMIT
-          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+          # Sin los ocultos (.last_build_id): upload-artifact no los sube y el
+          # hosting no los publica.
+          find . -type f ! -name SHA256SUMS ! -name '.*' -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
           echo "archivos: $(wc -l < SHA256SUMS)"
           # Control positivo: un build sin main.dart.js no es un build.
           grep -q ' \./main\.dart\.js$' SHA256SUMS || { echo "::error::el build no tiene main.dart.js"; exit 1; }
