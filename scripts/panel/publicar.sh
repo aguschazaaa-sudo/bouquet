@@ -77,6 +77,15 @@ preview() {
   echo "ok  canal $canal: $url"
   echo "    verificalo:   bash scripts/panel/publicar.sh verificar $url"
   echo "    y recien ahi: bash scripts/panel/publicar.sh promover $canal"
+  # La API key web esta restringida por referrer desde el 2026-09-17 (ADR 011).
+  # Si este host no esta en su lista, ENTRAR falla con un 403 de Auth y parece
+  # un defecto del panel. El canal `panel` ya esta; otro nombre hay que
+  # agregarlo. Y ojo: un comodin en medio de una etiqueta
+  # (`bouquet-vinos--*.web.app`) la API lo acepta y NO matchea.
+  if [ "$canal" != "$CANAL_POR_DEFECTO" ]; then
+    echo "    ojo: el canal '$canal' no es el de siempre. Para poder ENTRAR, su"
+    echo "         host tiene que estar en los referrers de la API key web."
+  fi
 }
 
 promover() {

@@ -176,7 +176,17 @@ frío** del catálogo del MVP (hallazgo 7 del
 - **Google no anda en los canales de preview**, porque sus dominios no están
   autorizados. En preview se verifica con contraseña, y Google en live.
 - **`firebase_options.dart` y la API key web están en el repo público.** Son
-  públicas por diseño, y restringir la key por referrer queda pendiente.
+  públicas por diseño: la key viaja adentro de `main.dart.js`, así que
+  guardarla como secret no cambiaría nada —el navegador la necesita en claro—.
+  **Restringida por referrer el 2026-09-17**, y eso agrega una obligación al
+  ritual de publicar: **el host del canal de preview tiene que estar en la
+  lista de la key**, o el recorrido con login falla con un 403 de Auth que
+  parece un defecto del panel y no lo es. Hoy están `bouquet-vinos.web.app`,
+  `bouquet-vinos.firebaseapp.com` —por donde pasa el handler de Google— y el
+  host del canal `panel`. ⚠️ **Un comodín en medio de una etiqueta
+  (`bouquet-vinos--*.web.app`) la API lo ACEPTA y no matchea nada**: se guarda
+  sin protestar y sigue bloqueando. Se pone el host literal, que además es más
+  angosto; la URL de un canal es estable para un mismo sitio y nombre.
 
 ## Cuándo esta decisión deja de servir
 
