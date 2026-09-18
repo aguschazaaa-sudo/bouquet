@@ -52,6 +52,20 @@ export const VARIETALES = [
 ] as const;
 export type Varietal = (typeof VARIETALES)[number];
 
+/**
+ * La graduacion se guarda en DECIMAS de grado y entera, como el precio en
+ * centavos: un `14.0` de Dart y un `14` de JS se guardan distinto en Firestore
+ * (`doubleValue` contra `integerValue`), y `is int` en las reglas rechazaria
+ * uno de los dos segun quien escribio. ADR 013.
+ *
+ * El piso NO describe a los vinos: atrapa la UNIDAD EQUIVOCADA. Un `14`
+ * escrito pensando en 14 % valdria 1,4 %; con el piso en 50 se rechaza, igual
+ * que `13.5` (no es entero) y `1350` (se pasa del techo). Cada confusion de
+ * unidad posible rebota. `firestore.rules` repite los dos numeros.
+ */
+export const GRADUACION_MINIMA = 50;
+export const GRADUACION_MAXIMA = 250;
+
 // ------------------------------------------------------------------- tipos
 
 export interface FichaVino {
@@ -63,6 +77,11 @@ export interface FichaVino {
   readonly anada: number | null;
   readonly region: string;
   readonly volumenMl: number;
+  /**
+   * DECIMAS de grado, entero: 13,5 % es `135`. null si no se cargo. Ver
+   * `GRADUACION_MINIMA` para por que el rango es el que es.
+   */
+  readonly graduacion: number | null;
 }
 
 interface ProductoBase {
@@ -209,6 +228,10 @@ function validarFicha(f: unknown): Validacion<FichaVino> {
   }
   if (!esTextoNoVacio(f.region)) return { ok: false, motivo: 'fichaVino.region falta' };
   if (!(esEntero(f.volumenMl) && f.volumenMl > 0)) return { ok: false, motivo: 'fichaVino.volumenMl invalido' };
+  const graduacion = f.graduacion ?? null;
+  if (graduacion !== null && !esGraduacion(graduacion)) {
+    return { ok: false, motivo: `fichaVino.graduacion invalida (decimas, ${GRADUACION_MINIMA}-${GRADUACION_MAXIMA}): ${String(graduacion)}` };
+  }
   return {
     ok: true,
     valor: {
@@ -219,8 +242,14 @@ function validarFicha(f: unknown): Validacion<FichaVino> {
       anada,
       region: f.region,
       volumenMl: f.volumenMl,
+      graduacion,
     },
   };
+}
+
+/** Entero en decimas, dentro del rango. Ver `GRADUACION_MINIMA`. */
+function esGraduacion(x: unknown): x is number {
+  return esEntero(x) && x >= GRADUACION_MINIMA && x <= GRADUACION_MAXIMA;
 }
 
 /**

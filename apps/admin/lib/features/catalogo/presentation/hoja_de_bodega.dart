@@ -24,8 +24,11 @@ class HojaDeBodega extends ConsumerStatefulWidget {
   /// `null` para cargar una nueva.
   final Bodega? bodega;
 
-  static Future<void> mostrar(BuildContext context, {Bodega? bodega}) {
-    return showModalBottomSheet<void>(
+  /// Devuelve el id de la bodega **creada**, o `null` si se cerro sin
+  /// guardar o era una correccion. El formulario del vino lo usa para dejarla
+  /// elegida (ADR 013 §10).
+  static Future<String?> mostrar(BuildContext context, {Bodega? bodega}) {
+    return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       builder: (_) => HojaDeBodega(bodega: bodega),
@@ -74,7 +77,8 @@ class _HojaDeBodegaState extends ConsumerState<HojaDeBodega> {
           nombre: nombre.trim(),
         );
       }
-      if (mounted) Navigator.of(context).pop();
+      // El id de una bodega es su slug (ADR 012 §6).
+      if (mounted) Navigator.of(context).pop(_esNueva ? slug : null);
     } on FalloDeCatalogo catch (e) {
       if (mounted) {
         setState(() {

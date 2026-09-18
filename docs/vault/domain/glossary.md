@@ -32,7 +32,14 @@ Sub-objeto del Producto: `bodegaId`, `varietales[]`, `color`, `organico`,
 `validarProducto` la exigen desde ADR 008: el catálogo es sólo de vinos, y un
 vino sin color no se puede filtrar. El día que entre lo primero que no es vino
 —una copa, un destilado— se abre con un `tipo` propio, no aflojando la regla de
-los vinos. `graduacion` todavía no está en el modelo: entra con el panel.
+los vinos.
+
+### Graduación
+`fichaVino.graduacion`, desde el 2026-09-18
+([ADR 013 §2](../architecture/decisions/013-cargar-un-vino.md)). Opcional, y
+**en décimas de grado, entera**: 13,5 % se guarda `135`. El rango 50–250 no
+describe a los vinos: atrapa la unidad equivocada —un `14` pensado como 14 %
+rebota—. El panel la pide en grados, como la etiqueta.
 
 ### Bodega
 El productor. Entidad propia porque tiene página indexable (`/bodega/<slug>`) y
@@ -48,7 +55,11 @@ El año de cosecha. Es un entero, no un string, y es **opcional**: un espumante
 sin añada existe.
 
 ### Slug
-El identificador legible en la URL. **Único, inmutable una vez publicado.**
+El identificador legible en la URL. **Único, e inmutable desde el alta** —no
+desde la publicación, como decía este glosario—: desde
+[ADR 013 §1](../architecture/decisions/013-cargar-un-vino.md) el slug de un
+producto nuevo **es el id de su documento**, y las reglas no dejan cambiarlo.
+Por eso el panel muestra la dirección mientras se escribe el nombre.
 Cambiar un slug rompe los enlaces entrantes que se ganaron con el SEO — que es
 justo el activo por el que se eligió Next.js ([ADR 001](../architecture/decisions/001-stack.md)).
 Si hay que cambiarlo, se cambia con redirect 301, nunca a secas.

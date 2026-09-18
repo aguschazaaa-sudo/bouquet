@@ -38,7 +38,9 @@ class Catalogo {
     required this.bodegas,
     required this.renglones,
     required Map<String, int> vinosPorBodega,
-  }) : _vinosPorBodega = vinosPorBodega;
+  }) : _vinosPorBodega = vinosPorBodega,
+       _vinoPorId = {for (final r in renglones) r.producto.id: r.producto},
+       _bodegaPorId = {for (final b in bodegas) b.id: b};
 
   /// Ordenadas por nombre normalizado: sin eso "Ñandú" cae despues de "Zuccardi".
   final List<Bodega> bodegas;
@@ -47,6 +49,8 @@ class Catalogo {
   final List<RenglonDelCatalogo> renglones;
 
   final Map<String, int> _vinosPorBodega;
+  final Map<String, ProductoDelPanel> _vinoPorId;
+  final Map<String, Bodega> _bodegaPorId;
 
   factory Catalogo.armar({
     required List<ProductoDelPanel> productos,
@@ -130,4 +134,66 @@ class Catalogo {
           b,
     ];
   }
+
+  /// El vino a corregir, de lo que ya esta en memoria: abrir el formulario
+  /// cuesta **cero** lecturas (HU-03.4).
+  ProductoDelPanel? vino(String id) => _vinoPorId[id];
+
+  Bodega? bodega(String id) => _bodegaPorId[id];
+
+  /// Quien ya tiene la direccion [slug], o `null` si esta libre. ADR 013 §1.
+  ///
+  /// **Primero el id**: desde ADR 013 el id de un vino nuevo ES su slug, asi
+  /// que un documento con ese id hace rechazar el alta en la base — sea de
+  /// muestra o no. **Despues el slug**: un vino real con esa direccion
+  /// dejaria dos iguales, y `armarCatalogo` descarta los dos. Uno de muestra
+  /// solo choca en la vidriera y solo si los dos se publican: se avisa, no se
+  /// frena.
+  ChoqueDeDireccion? quienTiene(String slug) {
+    if (slug.isEmpty) return null;
+    final mismoId = _vinoPorId[slug];
+    if (mismoId != null) return ChoqueDeDireccion(mismoId, bloquea: true);
+    ChoqueDeDireccion? deMuestra;
+    for (final r in renglones) {
+      final p = r.producto;
+      if (p.slug != slug) continue;
+      if (!p.muestra) return ChoqueDeDireccion(p, bloquea: true);
+      deMuestra ??= ChoqueDeDireccion(p, bloquea: false);
+    }
+    return deMuestra;
+  }
+
+  /// Las regiones que ya usan los vinos, **una por clave**: "Valle de Uco" y
+  /// "valle de uco" son la misma y se ofrece la primera que aparece en orden.
+  /// Sugerirlas es lo que evita la tercera forma de escribir Mendoza.
+  List<String> get _regiones {
+    final porClave = <String, String>{};
+    for (final r in renglones) {
+      final region = r.producto.ficha.region.trim();
+      final k = clave(region);
+      if (k.isNotEmpty) porClave.putIfAbsent(k, () => region);
+    }
+    return porClave.values.toList()..sort(_porNombre);
+  }
+
+  /// Las regiones en uso que contienen [escrito], normalizado. Vacio
+  /// devuelve todas.
+  List<String> regionesCon(String escrito) {
+    final buscada = normalizar(escrito);
+    return [
+      for (final r in _regiones)
+        if (normalizar(r).contains(buscada)) r,
+    ];
+  }
+}
+
+/// Un vino que ya tiene la direccion que se quiere usar.
+class ChoqueDeDireccion {
+  const ChoqueDeDireccion(this.vino, {required this.bloquea});
+
+  final ProductoDelPanel vino;
+
+  /// `true` si guardar no se puede: la base lo rechazaria, o quedarian dos
+  /// vinos reales con la misma direccion. `false` es uno de muestra.
+  final bool bloquea;
 }

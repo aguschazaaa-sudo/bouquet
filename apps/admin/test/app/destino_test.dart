@@ -42,6 +42,31 @@ void main() {
     });
   });
 
+  group('las paginas del vino (HU-03.2 a HU-03.4)', () {
+    test('un operador en el alta o en la correccion se queda', () {
+      expect(ir(operador, Rutas.nuevoVino), isNull);
+      expect(ir(operador, Rutas.vino('norton-malbec')), isNull);
+    });
+
+    test('sin sesion, el alta manda a entrar y la recuerda', () {
+      final destino = Uri.parse(ir(const SinSesion(), Rutas.nuevoVino)!);
+      expect(destino.path, Rutas.entrar);
+      expect(destino.queryParameters['desde'], '/catalogo/nuevo');
+    });
+
+    test('recargar en la correccion de un vino vuelve a ese vino', () {
+      final ruta = Rutas.vino('muestra-trumpeter-malbec');
+      final espera = Uri.parse(ir(const Resolviendo(), ruta)!);
+      expect(espera.queryParameters['desde'], ruta);
+      expect(ir(operador, espera.toString()), ruta);
+    });
+
+    test('el alta no es una correccion: no hay vino que se llame nuevo', () {
+      expect(Rutas.nuevoVino, isNot(startsWith('/catalogo/vinos/')));
+      expect(Rutas.vino('nuevo'), '/catalogo/vinos/nuevo');
+    });
+  });
+
   group('sin sesion', () {
     test('una seccion manda a entrar y recuerda cual era', () {
       final destino = Uri.parse(ir(const SinSesion(), '/pedidos')!);

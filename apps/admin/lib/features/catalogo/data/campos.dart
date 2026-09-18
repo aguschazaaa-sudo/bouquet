@@ -23,3 +23,12 @@ bool boolDe(Object? valor, {bool siFalta = false}) =>
 
 Map<String, Object?> mapaDe(Object? valor) =>
     valor is Map ? valor.cast<String, Object?>() : const {};
+
+/// Los textos de una lista, en su orden. Lo que no es texto se descarta: una
+/// uva guardada como numero no es una uva, y el formulario pide elegirla.
+List<String> textosDe(Object? valor) => valor is List
+    ? [
+        for (final v in valor)
+          if (v is String) v,
+      ]
+    : const [];

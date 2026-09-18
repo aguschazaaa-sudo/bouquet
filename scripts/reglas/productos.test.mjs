@@ -15,12 +15,13 @@
 // que distingue "la regla funciona" de "la regla no deja escribir nada".
 
 import { after, before, beforeEach, describe, test } from 'node:test';
+import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { deleteField, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, deleteField, doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -59,7 +60,19 @@ function sin(obj, campo) {
   return copia;
 }
 
-const producto = (db, id = 'a') => doc(db, 'productos', id);
+// El slug de `vino()`, y por lo tanto el id de su documento: desde ADR 013 las
+// reglas exigen `slug == productoId` al crear.
+const SLUG = 'trumpeter-malbec';
+
+const producto = (db, id = SLUG) => doc(db, 'productos', id);
+
+/**
+ * Un alta en `productos/{slug}`. TODA alta de esta suite pasa por aca: con el
+ * id distinto del slug, un `assertFails` pasaria por el slug y no por lo que
+ * el caso dice probar. Es el control positivo al reves: un rechazo por el
+ * motivo equivocado confirma cualquier cosa.
+ */
+const alta = (db, datos) => setDoc(producto(db, datos.slug), datos);
 
 /** Lo que deja el servidor: el Admin SDK no pasa por las reglas. */
 async function sembrar(ruta, datos) {
@@ -99,18 +112,18 @@ after(async () => {
 // requisito, no la linea.
 describe('el tipo es explicito e inmutable', () => {
   test('alta sin tipo: rechazada; con tipo: aceptada', async () => {
-    await assertFails(setDoc(producto(admin), sin(vino(), 'tipo')));
-    await assertSucceeds(setDoc(producto(admin), vino()));
+    await assertFails(alta(admin, sin(vino(), 'tipo')));
+    await assertSucceeds(alta(admin, vino()));
   });
 
   test('de simple a compuesto: rechazado; editar el nombre: aceptado', async () => {
-    await sembrar('productos/a', vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
     await assertFails(updateDoc(producto(admin), { tipo: 'compuesto', stock: deleteField() }));
     await assertSucceeds(updateDoc(producto(admin), { nombre: 'Trumpeter Malbec 2023' }));
   });
 
   test('de compuesto a simple: rechazado', async () => {
-    await sembrar('productos/a', sin(vino({ tipo: 'compuesto' }), 'stock'));
+    await sembrar(`productos/${SLUG}`, sin(vino({ tipo: 'compuesto' }), 'stock'));
     await assertFails(updateDoc(producto(admin), { tipo: 'simple' }));
   });
 });
@@ -119,32 +132,33 @@ describe('el tipo es explicito e inmutable', () => {
 
 describe('el stock lo escribe solo el servidor', () => {
   test('el panel sobrescribe el stock: rechazado; edita el precio sin tocarlo: aceptado', async () => {
-    await sembrar('productos/a', vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
     await assertFails(updateDoc(producto(admin), { stock: 50 }));
     await assertFails(updateDoc(producto(admin), { stock: deleteField() }));
     await assertSucceeds(updateDoc(producto(admin), { precio: 2100000 }));
   });
 
   test('alta de un simple con stock 5: rechazada; con 0: aceptada', async () => {
-    await assertFails(setDoc(producto(admin), vino({ stock: 5 })));
-    await assertSucceeds(setDoc(producto(admin), vino({ stock: 0 })));
+    await assertFails(alta(admin, vino({ stock: 5 })));
+    await assertSucceeds(alta(admin, vino({ stock: 0 })));
   });
 
   test('un simple sin stock: rechazado', async () => {
-    await assertFails(setDoc(producto(admin), sin(vino(), 'stock')));
+    await assertFails(alta(admin, sin(vino(), 'stock')));
   });
 
   test('un compuesto con stock: rechazado; sin stock: aceptado', async () => {
-    await assertFails(setDoc(producto(admin), vino({ tipo: 'compuesto' })));
-    await assertSucceeds(setDoc(producto(admin), sin(vino({ tipo: 'compuesto' }), 'stock')));
+    await assertFails(alta(admin, vino({ tipo: 'compuesto' })));
+    await assertSucceeds(alta(admin, sin(vino({ tipo: 'compuesto' }), 'stock')));
   });
 
   test('muestra: el panel no la escribe, pero puede editar un vino de muestra', async () => {
-    await assertFails(setDoc(producto(admin), vino({ muestra: true })));
-    await sembrar('productos/b', vino({ stock: 10, muestra: true }));
-    await assertSucceeds(updateDoc(producto(admin, 'b'), { precio: 2100000 }));
-    await assertFails(updateDoc(producto(admin, 'b'), { muestra: false }));
-    await assertFails(updateDoc(producto(admin, 'b'), { muestra: deleteField() }));
+    await assertFails(alta(admin, vino({ muestra: true })));
+    await sembrar('productos/muestra-trumpeter-malbec', vino({ stock: 10, muestra: true }));
+    const deMuestra = producto(admin, 'muestra-trumpeter-malbec');
+    await assertSucceeds(updateDoc(deMuestra, { precio: 2100000 }));
+    await assertFails(updateDoc(deMuestra, { muestra: false }));
+    await assertFails(updateDoc(deMuestra, { muestra: deleteField() }));
   });
 });
 
@@ -152,7 +166,7 @@ describe('el stock lo escribe solo el servidor', () => {
 
 describe('la presentacion es inmutable', () => {
   test('una botella suelta pasa a caja de 2: rechazado', async () => {
-    await sembrar('productos/a', vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
     await assertFails(updateDoc(producto(admin), { 'presentacion.botellas': 2 }));
     await assertFails(updateDoc(producto(admin), { presentacion: { botellas: 1, caja: true } }));
     // Control: reescribir el mismo valor no es cambiarlo.
@@ -160,8 +174,8 @@ describe('la presentacion es inmutable', () => {
   });
 
   test('una caja de 2 nace como tal: aceptada', async () => {
-    await assertSucceeds(setDoc(producto(admin), vino({ presentacion: { botellas: 2 } })));
-    await assertFails(setDoc(producto(admin, 'b'), vino({ presentacion: { botellas: 0 } })));
+    await assertSucceeds(alta(admin, vino({ presentacion: { botellas: 2 } })));
+    await assertFails(alta(admin, vino({ slug: 'otro-vino', presentacion: { botellas: 0 } })));
   });
 });
 
@@ -169,33 +183,33 @@ describe('la presentacion es inmutable', () => {
 
 describe('los campos obligatorios no se pueden borrar', () => {
   test('un update que borra el precio: rechazado; que lo cambia: aceptado', async () => {
-    await sembrar('productos/a', vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
     await assertFails(updateDoc(producto(admin), { precio: deleteField() }));
     await assertSucceeds(updateDoc(producto(admin), { precio: 1800000 }));
   });
 
   test('borrar publicado, imagenes, nombre, color u organico: rechazado', async () => {
-    await sembrar('productos/a', vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
     for (const campo of ['publicado', 'imagenes', 'nombre', 'fichaVino.color', 'fichaVino.organico']) {
       await assertFails(updateDoc(producto(admin), { [campo]: deleteField() }), campo);
     }
   });
 
   test('un campo desconocido: rechazado, tambien adentro de fichaVino', async () => {
-    await assertFails(setDoc(producto(admin), vino({ descuento: 10 })));
-    await assertFails(setDoc(producto(admin), vino({}, { puntaje: 92 })));
-    await assertSucceeds(setDoc(producto(admin), vino()));
+    await assertFails(alta(admin, vino({ descuento: 10 })));
+    await assertFails(alta(admin, vino({}, { puntaje: 92 })));
+    await assertSucceeds(alta(admin, vino()));
   });
 
   test('precio con decimales o como texto: rechazado', async () => {
-    await assertFails(setDoc(producto(admin), vino({ precio: 1990000.5 })));
-    await assertFails(setDoc(producto(admin), vino({ precio: '1990000' })));
-    await assertFails(setDoc(producto(admin), vino({ precio: -1 })));
+    await assertFails(alta(admin, vino({ precio: 1990000.5 })));
+    await assertFails(alta(admin, vino({ precio: '1990000' })));
+    await assertFails(alta(admin, vino({ precio: -1 })));
   });
 
   test('un color fuera de la lista o un slug con mayusculas: rechazado', async () => {
-    await assertFails(setDoc(producto(admin), vino({}, { color: 'naranjo' })));
-    await assertFails(setDoc(producto(admin), vino({ slug: 'Trumpeter Malbec' })));
+    await assertFails(alta(admin, vino({}, { color: 'naranjo' })));
+    await assertFails(alta(admin, vino({ slug: 'Trumpeter Malbec' })));
   });
 });
 
@@ -203,21 +217,143 @@ describe('los campos obligatorios no se pueden borrar', () => {
 
 describe('los varietales salen de una lista cerrada', () => {
   test('"Cab. Sauv.": rechazado; "Cabernet Sauvignon": aceptado', async () => {
-    await assertFails(setDoc(producto(admin), vino({}, { varietales: ['Cab. Sauv.'] })));
-    await assertSucceeds(setDoc(producto(admin), vino({}, { varietales: ['Cabernet Sauvignon'] })));
+    await assertFails(alta(admin, vino({}, { varietales: ['Cab. Sauv.'] })));
+    await assertSucceeds(alta(admin, vino({}, { varietales: ['Cabernet Sauvignon'] })));
   });
 
   test('Torrontés, con tilde: aceptado', async () => {
     // Control de codificacion: si el archivo de reglas perdiera la tilde, este
     // es el caso que lo delata.
-    await assertSucceeds(setDoc(producto(admin), vino({}, { varietales: ['Torrontés'], color: 'blanco' })));
-    await assertFails(setDoc(producto(admin, 'b'), vino({}, { varietales: ['Torrontes'], color: 'blanco' })));
+    await assertSucceeds(alta(admin, vino({}, { varietales: ['Torrontés'], color: 'blanco' })));
+    await assertFails(alta(admin, vino({ slug: 'otro-vino' }, { varietales: ['Torrontes'], color: 'blanco' })));
   });
 
   test('una lista vacia o con una uva repetida: rechazada; un corte: aceptado', async () => {
-    await assertFails(setDoc(producto(admin), vino({}, { varietales: [] })));
-    await assertFails(setDoc(producto(admin), vino({}, { varietales: ['Malbec', 'Malbec'] })));
-    await assertSucceeds(setDoc(producto(admin), vino({}, { varietales: ['Malbec', 'Cabernet Sauvignon'] })));
+    await assertFails(alta(admin, vino({}, { varietales: [] })));
+    await assertFails(alta(admin, vino({}, { varietales: ['Malbec', 'Malbec'] })));
+    await assertSucceeds(alta(admin, vino({}, { varietales: ['Malbec', 'Cabernet Sauvignon'] })));
+  });
+});
+
+// ------------------------------------------------------------ el id es el slug
+
+// ADR 013: la unicidad del slug la da la base, porque el slug ES el id.
+describe('el id de un producto nuevo es su slug', () => {
+  test('alta con otro id: rechazada; con el id igual al slug: aceptada', async () => {
+    await assertFails(setDoc(producto(admin, 'abc123'), vino()));
+    await assertSucceeds(alta(admin, vino()));
+  });
+
+  test('cambiar el slug: rechazado; corregir el nombre sin tocarlo: aceptado', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await assertFails(updateDoc(producto(admin), { slug: 'otro-slug' }));
+    await assertSucceeds(updateDoc(producto(admin), { nombre: 'Trumpeter Malbec Reserva' }));
+  });
+
+  test('uno de muestra, con el id distinto del slug, se sigue corrigiendo; su slug tampoco cambia', async () => {
+    // Los documentos anteriores a la regla: el seed usa `muestra-<slug>`.
+    await sembrar('productos/muestra-trumpeter-malbec', vino({ stock: 10, muestra: true }));
+    const deMuestra = producto(admin, 'muestra-trumpeter-malbec');
+    await assertSucceeds(updateDoc(deMuestra, { nombre: 'Trumpeter Malbec' }));
+    // Ni siquiera para "arreglarlo" igualandolo al id: cambiar es cambiar.
+    await assertFails(updateDoc(deMuestra, { slug: 'muestra-trumpeter-malbec' }));
+  });
+
+  test('un alta encima de un vino con stock: la frena el stock', async () => {
+    // Un `setDoc` sobre un documento que existe es un UPDATE para las reglas.
+    // El documento que arma el alta trae `stock: 0`, asi que pisar un vino
+    // con stock rebota por la regla del stock, no por esta.
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await assertFails(alta(admin, vino({ stock: 0, nombre: 'Otro' })));
+  });
+
+  test('lo que las reglas NO frenan: un alta encima de un vino sin stock', async () => {
+    // Escrito a proposito, como tripwire: sobre un vino con stock 0 y la misma
+    // presentacion, un `setDoc` completo es un update legitimo. Lo que lo
+    // impide es la TRANSACCION del panel, que se niega si el documento
+    // existe (`RepositorioDeProductosFirestore.crear`). Si alguien endurece
+    // las reglas, este caso falla y hay que actualizar ADR 013.
+    await sembrar(`productos/${SLUG}`, vino({ stock: 0 }));
+    await assertSucceeds(alta(admin, vino({ stock: 0, nombre: 'Otro' })));
+  });
+});
+
+// ------------------------------------------------------------- graduacion
+
+describe('la graduacion es opcional y va en decimas', () => {
+  test('con 135, sin el campo, en null, en el piso y en el techo: aceptada', async () => {
+    await assertSucceeds(alta(admin, vino({ slug: 'con' }, { graduacion: 135 })));
+    await assertSucceeds(alta(admin, vino({ slug: 'sin' })));
+    await assertSucceeds(alta(admin, vino({ slug: 'nula' }, { graduacion: null })));
+    await assertSucceeds(alta(admin, vino({ slug: 'piso' }, { graduacion: 50 })));
+    await assertSucceeds(alta(admin, vino({ slug: 'techo' }, { graduacion: 250 })));
+  });
+
+  test('cada confusion de unidad rebota: 13.5, 14, 1350, texto, 49 y 251', async () => {
+    for (const graduacion of [13.5, 14, 1350, '13,5', 49, 251]) {
+      await assertFails(alta(admin, vino({}, { graduacion })), String(graduacion));
+    }
+  });
+
+  test('un vino anterior sin el campo se corrige; ponerle 14 rebota, 140 no', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await assertSucceeds(updateDoc(producto(admin), { 'fichaVino.region': 'Gualtallary, Mendoza' }));
+    await assertFails(updateDoc(producto(admin), { 'fichaVino.graduacion': 14 }));
+    await assertSucceeds(updateDoc(producto(admin), { 'fichaVino.graduacion': 140 }));
+  });
+});
+
+// ------------------------------------------------ corregir varietales, en batch
+
+// ARQUITECTURA §5.3: nunca reescribir la lista. Un mismo `update` no puede
+// llevar arrayUnion y arrayRemove sobre el mismo campo, asi que el panel
+// corrige en un WriteBatch con dos `update` al mismo documento.
+describe('los varietales se corrigen sin reescribir la lista', () => {
+  async function varietales() {
+    let v;
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      v = (await getDoc(doc(ctx.firestore(), 'productos', SLUG))).data().fichaVino.varietales;
+    });
+    return v;
+  }
+
+  test('reemplazar el UNICO varietal, union y despues remove en un batch: aceptado', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    const batch = writeBatch(admin);
+    batch.update(producto(admin), { 'fichaVino.varietales': arrayUnion('Syrah') });
+    batch.update(producto(admin), { 'fichaVino.varietales': arrayRemove('Malbec') });
+    await assertSucceeds(batch.commit());
+    assert.deepEqual(await varietales(), ['Syrah']);
+  });
+
+  test('las reglas ven el estado FINAL del batch: al reves tambien pasa', async () => {
+    // MEDIDO el 2026-09-18, no supuesto: el diseño temia que las reglas
+    // evaluaran el estado intermedio, y que sacar primero dejara la lista
+    // vacia. No lo evaluan. El panel igual une primero, que no cuesta nada.
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    const batch = writeBatch(admin);
+    batch.update(producto(admin), { 'fichaVino.varietales': arrayRemove('Malbec') });
+    batch.update(producto(admin), { 'fichaVino.varietales': arrayUnion('Syrah') });
+    await assertSucceeds(batch.commit());
+    assert.deepEqual(await varietales(), ['Syrah']);
+  });
+
+  test('quitar el ultimo varietal: rechazado, y el documento queda como estaba', async () => {
+    // El control: sin este, los dos de arriba no distinguen "las reglas
+    // miraron la lista" de "las reglas no miran los batches".
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    const batch = writeBatch(admin);
+    batch.update(producto(admin), { 'fichaVino.varietales': arrayRemove('Malbec') });
+    await assertFails(batch.commit());
+    assert.deepEqual(await varietales(), ['Malbec']);
+  });
+
+  test('dos personas: una agrega Merlot y otra quita Syrah, y quedan las dos cosas', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }, { varietales: ['Malbec', 'Syrah'] }));
+    const otra = entorno.authenticatedContext('otra-persona', { rol: 'admin' }).firestore();
+    await assertSucceeds(updateDoc(producto(admin), { 'fichaVino.varietales': arrayUnion('Merlot') }));
+    await assertSucceeds(updateDoc(producto(otra), { 'fichaVino.varietales': arrayRemove('Syrah') }));
+    assert.deepEqual(await varietales(), ['Malbec', 'Merlot']);
   });
 });
 
@@ -225,13 +361,13 @@ describe('los varietales salen de una lista cerrada', () => {
 
 describe('quien lee y quien escribe productos', () => {
   test('un comprador o un anonimo no escriben; el admin si', async () => {
-    await assertFails(setDoc(producto(comprador), vino()));
-    await assertFails(setDoc(producto(anonimo), vino()));
-    await assertSucceeds(setDoc(producto(admin), vino()));
+    await assertFails(alta(comprador, vino()));
+    await assertFails(alta(anonimo, vino()));
+    await assertSucceeds(alta(admin, vino()));
   });
 
   test('desde el navegador solo lee el admin', async () => {
-    await sembrar('productos/a', vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
     await assertFails(getDoc(producto(anonimo)));
     await assertFails(getDoc(producto(comprador)));
     await assertSucceeds(getDoc(producto(admin)));

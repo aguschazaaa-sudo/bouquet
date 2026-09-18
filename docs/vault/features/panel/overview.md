@@ -3,8 +3,9 @@
 - **Fecha:** 2026-09-16
 - **Estado:** con **dos rondas de respuestas del dueño**, las dos del
   2026-09-16. Falta un dato suyo: el número de WhatsApp de la tienda.
-  **Construidas: EP-01 entera (2026-09-16) y EP-02 + HU-03.1 (2026-09-17)** —
-  el estado no se tilda acá, se calcula con el `grep` de abajo
+  **Construidas: EP-01 entera (2026-09-16) y EP-02 + HU-03.1 (2026-09-17)**;
+  **en curso: HU-03.2 a HU-03.4** (2026-09-18) — el estado no se tilda acá, se
+  calcula con el `grep` de abajo
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)
@@ -168,6 +169,15 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
 13. **Un pedido cuyo pago no se sigue no tiene un `estadoPago` que le calce.**
     `pendiente` lo deja para siempre como *entregada impaga*, y `pagada` afirma
     algo que nadie comprobó. → HU-10.1 · HU-06.3
+
+**Y lo que apareció construyendo:**
+
+14. **HU-03.4 nombra "la descripción" de un vino, y el modelo no la tiene**
+    (2026-09-18). Ni `contratos`, ni las reglas —que cierran el documento con
+    `hasOnly`—, ni la ficha de la vidriera. Es un campo nuevo en cuatro
+    lugares, y la historia se escribió suponiendo que existía. **Pregunta para
+    el dueño**: ¿la ficha lleva un texto del vino? → HU-03.4,
+    [ADR 013](../../architecture/decisions/013-cargar-un-vino.md)
 
 ---
 

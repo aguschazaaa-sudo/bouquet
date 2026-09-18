@@ -4,22 +4,25 @@ import '../../../core/contratos/plata.dart';
 import '../../../theme/tema.dart';
 import '../../../theme/tokens.dart';
 import '../domain/catalogo.dart';
+import '../domain/producto_del_panel.dart';
 
 /// Un vino en la lista del catalogo (HU-03.1). El renglon de la libreta: la
 /// linea de abajo es `filetePapel`, no una `Divider` gris.
 ///
-/// **No es tocable, a proposito.** Editar un vino es HU-03.4 y todavia no
-/// existe: un renglon que se hunde al tocarlo y no hace nada es peor que uno
-/// que no reacciona.
+/// **Tocarlo abre su correccion (HU-03.4).** Es la unica puerta a
+/// `/catalogo/vinos/<id>`: sin ella la pagina existe y nadie la abre.
 class RenglonDeProducto extends StatelessWidget {
-  const RenglonDeProducto({super.key, required this.renglon});
+  const RenglonDeProducto({
+    super.key,
+    required this.renglon,
+    required this.alAbrir,
+  });
 
   final RenglonDelCatalogo renglon;
+  final VoidCallback alAbrir;
 
   @override
   Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    final esquema = tema.colorScheme;
     final p = renglon.producto;
     final bodega = renglon.bodega?.nombre ?? '';
     final sinBodega = renglon.bodega == null;
@@ -28,56 +31,73 @@ class RenglonDeProducto extends StatelessWidget {
       // Un solo nodo por renglon: sin esto el lector de pantalla lee cuatro
       // fragmentos sueltos y hay que armar el vino en la cabeza.
       container: true,
+      button: true,
       label: _paraLeer(p.nombre, bodega, sinBodega, p.publicado, p.precio),
+      hint: 'Corregir',
       excludeSemantics: true,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Tokens.filetePapel)),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    p.nombre.isEmpty ? 'Sin nombre' : p.nombre,
-                    style: estiloDeNombre(),
-                  ),
-                  const SizedBox(height: 4),
-                  _Procedencia(bodega: bodega, sinBodega: sinBodega),
-                  if (p.botellas > 1) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      'Viene en caja de ${p.botellas}',
-                      style: tema.textTheme.bodySmall?.copyWith(
-                        color: esquema.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
+      onTap: alAbrir,
+      child: InkWell(
+        onTap: alAbrir,
+        child: _cuerpo(context, p, bodega, sinBodega),
+      ),
+    );
+  }
+
+  Widget _cuerpo(
+    BuildContext context,
+    ProductoDelPanel p,
+    String bodega,
+    bool sinBodega,
+  ) {
+    final tema = Theme.of(context);
+    final esquema = tema.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Tokens.filetePapel)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  enPesos(p.precio),
-                  style: tema.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    // Sin esto la columna de precios baila renglon a renglon.
-                    fontFeatures: const [FontFeature.tabularFigures()],
-                  ),
+                  p.nombre.isEmpty ? 'Sin nombre' : p.nombre,
+                  style: estiloDeNombre(),
                 ),
-                const SizedBox(height: 6),
-                _EnLaTienda(publicado: p.publicado),
+                const SizedBox(height: 4),
+                _Procedencia(bodega: bodega, sinBodega: sinBodega),
+                if (p.botellas > 1) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    'Viene en caja de ${p.botellas}',
+                    style: tema.textTheme.bodySmall?.copyWith(
+                      color: esquema.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ],
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                enPesos(p.precio),
+                style: tema.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  // Sin esto la columna de precios baila renglon a renglon.
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
+              const SizedBox(height: 6),
+              _EnLaTienda(publicado: p.publicado),
+            ],
+          ),
+        ],
       ),
     );
   }

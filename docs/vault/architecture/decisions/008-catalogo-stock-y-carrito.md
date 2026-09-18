@@ -243,8 +243,10 @@ El marcador `compras/{idCompra}` en la misma transacción que el descuento de
 stock; expandir los compuestos y **sumar la demanda por producto** antes de
 validar; rechazar `publicado != true`, `muestra == true` en producción y un
 `precioUnitarioVisto` que no coincida; guardar en cada ítem el snapshot de
-`botellas` y de la composición; y la reserva de slug `slugs/{slug}` cuando exista
-el panel.
+`botellas` y de la composición. ~~Y la reserva de slug `slugs/{slug}` cuando
+exista el panel.~~ **Reemplazada el 2026-09-18 por
+[ADR 013 §1](013-cargar-un-vino.md)**: el id de un producto nuevo es su slug y
+las reglas lo exigen, así que la unicidad la da la base sin `getAfter()`.
 
 ### Lo que encontró `revisor-pagos` sobre este diff (2026-09-11)
 

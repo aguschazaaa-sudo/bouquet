@@ -48,10 +48,13 @@ poder venderlo.
   - `graduacion` no existe en el modelo y *"entra con el panel"*
     ([glosario](../../domain/glossary.md)): es un cambio en `contratos` y en las
     reglas, no sólo en la pantalla.
-- **Ojo:** el slug tiene que ser **único**, y las reglas no lo pueden
-  comprobar sin un `get()`. ADR 008 dejó anotada la reserva `slugs/{slug}` para
-  cuando exista el panel, en *Lo que queda para `crearOrden`*
-  ([ADR 008](../../architecture/decisions/008-catalogo-stock-y-carrito.md)).
+- ~~**Ojo:** el slug tiene que ser **único**, y las reglas no lo pueden
+  comprobar sin un `get()`.~~ **Resuelto el 2026-09-18** en
+  [ADR 013 §1](../../architecture/decisions/013-cargar-un-vino.md): el id del
+  producto **es** su slug y las reglas lo exigen, así que la base no deja
+  repetirlo. Reemplaza la reserva `slugs/{slug}` de ADR 008.
+- **`graduacion` entró** en décimas de grado, entera, entre 50 y 250
+  ([ADR 013 §2](../../architecture/decisions/013-cargar-un-vino.md)).
 
 ## HU-03.3 — Dar de alta un producto que viene en su propia caja
 
@@ -77,7 +80,10 @@ un vino, **para** arreglar un error sin darlo de baja.
   ([ARQUITECTURA §5.3](../../../../ARQUITECTURA.md#53-escrituras-concurrentes-en-arrays)).
 - **Ojo:** el slug de un vino publicado **no cambia**; si hace falta, va con
   redirect 301 ([glosario](../../domain/glossary.md)). El panel no ofrece
-  editarlo después de publicar.
+  editarlo después de publicar. **Desde ADR 013 no cambia nunca**: es el id.
+- ⚠️ **"La descripción" no existe en el modelo** (hallazgo 14 del
+  [mapa](overview.md)). Esta historia se construyó sin ella; es pregunta para
+  el dueño.
 
 ## HU-03.5 — Cambiar el precio · D
 

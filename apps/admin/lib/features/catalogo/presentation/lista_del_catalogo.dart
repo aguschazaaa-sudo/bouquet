@@ -15,7 +15,11 @@ class ListaDelCatalogo extends StatelessWidget {
     required this.renglones,
     required this.hayVinos,
     required this.alLimpiarLaBusqueda,
+    required this.alAbrir,
   });
+
+  /// Abrir la correccion de un vino (HU-03.4), por su id.
+  final ValueChanged<String> alAbrir;
 
   final List<RenglonDelCatalogo> renglones;
 
@@ -51,7 +55,10 @@ class ListaDelCatalogo extends StatelessWidget {
       // de navegacion del telefono.
       padding: const EdgeInsets.only(bottom: 24),
       itemCount: renglones.length,
-      itemBuilder: (_, i) => RenglonDeProducto(renglon: renglones[i]),
+      itemBuilder: (_, i) => RenglonDeProducto(
+        renglon: renglones[i],
+        alAbrir: () => alAbrir(renglones[i].producto.id),
+      ),
     );
   }
 }

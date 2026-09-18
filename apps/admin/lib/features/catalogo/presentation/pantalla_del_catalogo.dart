@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/rutas.dart';
 import '../../../core/presentation/campo_de_busqueda.dart';
 import '../../../core/presentation/cargando.dart';
 import '../../../core/presentation/fallo_con_reintento.dart';
@@ -39,9 +40,22 @@ class PantallaDelCatalogo extends ConsumerWidget {
                     ref.read(busquedaProvider.notifier).state = texto,
               ),
               const SizedBox(height: 12),
-              AccesoABodegas(
-                cuantas: catalogo.valueOrNull?.bodegas.length ?? 0,
-                alIr: context.go,
+              Row(
+                children: [
+                  Expanded(
+                    child: AccesoABodegas(
+                      cuantas: catalogo.valueOrNull?.bodegas.length ?? 0,
+                      alIr: context.go,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // La unica puerta a `/catalogo/nuevo` (HU-03.2).
+                  FilledButton.icon(
+                    onPressed: () => context.go(Rutas.nuevoVino),
+                    icon: const Icon(Icons.add),
+                    label: const Text('Cargar un vino'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -63,6 +77,7 @@ class PantallaDelCatalogo extends ConsumerWidget {
               catalogo: value,
               busqueda: busqueda,
               alLimpiar: () => ref.read(busquedaProvider.notifier).state = '',
+              alAbrir: (id) => context.go(Rutas.vino(id)),
             ),
             _ => const Cargando(que: 'Buscando tus vinos…'),
           },
@@ -78,11 +93,13 @@ class _Encontrados extends StatelessWidget {
     required this.catalogo,
     required this.busqueda,
     required this.alLimpiar,
+    required this.alAbrir,
   });
 
   final Catalogo catalogo;
   final String busqueda;
   final VoidCallback alLimpiar;
+  final ValueChanged<String> alAbrir;
 
   @override
   Widget build(BuildContext context) {
@@ -114,6 +131,7 @@ class _Encontrados extends StatelessWidget {
             renglones: renglones,
             hayVinos: catalogo.renglones.isNotEmpty,
             alLimpiarLaBusqueda: alLimpiar,
+            alAbrir: alAbrir,
           ),
         ),
       ],

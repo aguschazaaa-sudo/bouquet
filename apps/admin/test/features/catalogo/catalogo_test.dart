@@ -1,5 +1,6 @@
 import 'package:admin/features/catalogo/domain/bodega.dart';
 import 'package:admin/features/catalogo/domain/catalogo.dart';
+import 'package:admin/features/catalogo/domain/ficha_del_vino.dart';
 import 'package:admin/features/catalogo/domain/producto_del_panel.dart';
 import 'package:test/test.dart';
 
@@ -27,7 +28,7 @@ ProductoDelPanel vino(
   nombre: nombre,
   precio: precio,
   publicado: publicado,
-  bodegaId: bodegaId,
+  ficha: FichaDelVino(bodegaId: bodegaId),
   botellas: botellas,
   stock: stock,
 );

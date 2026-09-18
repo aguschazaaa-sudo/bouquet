@@ -8,6 +8,7 @@ import {
   esCorte,
   textoDelBalde,
   tope,
+  validarProducto,
   viajaSolo,
   type DocumentoCrudo,
 } from '../src/producto.ts';
@@ -243,4 +244,45 @@ test('unas metricas rotas cuentan como ninguna, y se informan', () => {
 test('deMuestra delata los datos de prueba, y sin ellos no aparece', () => {
   assert.equal(armarCatalogo([vino('a', { muestra: true }), vino('b')], BODEGAS, undefined).catalogo.deMuestra, true);
   assert.equal(armarCatalogo([vino('a'), vino('b')], BODEGAS, undefined).catalogo.deMuestra, false);
+});
+
+// ------------------------------------------------------------- graduacion
+
+test('la graduacion va en decimas enteras, y puede faltar', () => {
+  // Control positivo: el mismo documento, con y sin el campo, valida.
+  const con = validarProducto('con', vino('con', {}, { graduacion: 135 }).datos);
+  assert.ok(con.ok, 'con 135 (13,5 %) valida');
+  assert.equal(con.ok && con.valor.fichaVino.graduacion, 135);
+
+  const sin = validarProducto('sin', vino('sin').datos);
+  assert.ok(sin.ok, 'un vino anterior, sin el campo, sigue validando');
+  assert.equal(sin.ok && sin.valor.fichaVino.graduacion, null);
+
+  assert.ok(validarProducto('nulo', vino('nulo', {}, { graduacion: null }).datos).ok, 'null es "no se cargo"');
+  assert.ok(validarProducto('piso', vino('piso', {}, { graduacion: 50 }).datos).ok, 'el piso entra');
+  assert.ok(validarProducto('techo', vino('techo', {}, { graduacion: 250 }).datos).ok, 'el techo entra');
+});
+
+test('cada confusion de unidad rebota', () => {
+  // El piso en 50 no describe a los vinos: atrapa el `14` escrito pensando en
+  // 14 %, que valdria 1,4 %. ADR 013.
+  const rechazos: [string, unknown][] = [
+    ['14 pensando en 14 %', 14],
+    ['13.5 pensando en 13,5 %', 13.5],
+    ['1350, un cero de mas', 1350],
+    ['un texto', '13,5'],
+    ['justo abajo del piso', 49],
+    ['justo arriba del techo', 251],
+  ];
+  for (const [caso, graduacion] of rechazos) {
+    const v = validarProducto('x', vino('x', {}, { graduacion }).datos);
+    assert.equal(v.ok, false, caso);
+    assert.match(!v.ok ? v.motivo : '', /graduacion/, `${caso}: el motivo nombra el campo`);
+  }
+});
+
+test('un vino con graduacion entra al catalogo, y la proyeccion no la lleva todavia', () => {
+  const { catalogo } = armarCatalogo([vino('grad', {}, { graduacion: 140 })], BODEGAS, undefined);
+  assert.deepEqual(catalogo.productos.map((p) => p.id), ['grad']);
+  assert.equal('graduacion' in catalogo.productos[0]!, false, 'la vidriera no la muestra en este cambio');
 });

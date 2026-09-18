@@ -118,17 +118,29 @@ service cloud.firestore {
         ]);
     }
 
+    // GRADUACION: DECIMAS de grado, entero (13,5 % es 135), opcional como la
+    // anada.  Los mismos dos numeros que GRADUACION_MINIMA y GRADUACION_MAXIMA
+    // de packages/contratos/src/producto.ts.  El piso no describe a los vinos:
+    // atrapa la UNIDAD EQUIVOCADA -un `14` pensado como 14 % valdria 1,4 %-.
+    // `13.5` no es int y `1350` se pasa del techo: cada confusion rebota.
+    // ADR 013.
+    function graduacionValida(f) {
+      return !('graduacion' in f) || f.graduacion == null
+        || (f.graduacion is int && f.graduacion >= 50 && f.graduacion <= 250);
+    }
+
     function fichaValida(f) {
       return f is map
         && f.keys().hasAll(['bodegaId', 'varietales', 'color', 'organico', 'region', 'volumenMl'])
-        && f.keys().hasOnly(['bodegaId', 'varietales', 'color', 'organico', 'anada', 'region', 'volumenMl'])
+        && f.keys().hasOnly(['bodegaId', 'varietales', 'color', 'organico', 'anada', 'region', 'volumenMl', 'graduacion'])
         && f.bodegaId is string && f.bodegaId.size() > 0
         && varietalesValidos(f.varietales)
         && f.color in ['tinto', 'blanco', 'rosado']
         && f.organico is bool
         && (!('anada' in f) || f.anada == null || (f.anada is int && f.anada > 1800))
         && f.region is string && f.region.size() > 0
-        && f.volumenMl is int && f.volumenMl > 0;
+        && f.volumenMl is int && f.volumenMl > 0
+        && graduacionValida(f);
     }
 
     function productoValido(d) {
@@ -150,17 +162,31 @@ service cloud.firestore {
             || (d.tipo == 'compuesto' && !('stock' in d)));
     }
 
+    // EL ID ES EL SLUG (ADR 013).  Firestore no deja que dos documentos
+    // compartan id, asi que la unicidad del slug la da la base POR
+    // CONSTRUCCION: cero get(), cero colecciones de reserva.  La alternativa
+    // que dejo anotada ADR 008 -`slugs/{slug}` con getAfter()- costaba una
+    // lectura FACTURADA POR EVALUACION.  Dos productos publicados con el mismo
+    // slug quedan afuera LOS DOS de la vidriera (armarCatalogo), sin un error:
+    // por eso importa.
+    //
+    // Y el slug NO CAMBIA en un update: si cambiara, el id y el slug dejarian
+    // de coincidir y la garantia se caeria.  Vale tambien para los documentos
+    // anteriores a esta regla, cuyo id no es su slug (los de muestra:
+    // `muestra-<slug>`), que se siguen pudiendo corregir.
     match /productos/{productoId} {
       allow read: if esAdmin();
 
       allow create: if esAdmin()
         && productoValido(request.resource.data)
+        && request.resource.data.slug == productoId
         && !('muestra' in request.resource.data)
         // Nace sin stock: el primero llega por la reposicion, del servidor.
         && request.resource.data.get('stock', 0) == 0;
 
       allow update: if esAdmin()
         && productoValido(request.resource.data)
+        && request.resource.data.slug == resource.data.slug
         && request.resource.data.tipo == resource.data.tipo
         && request.resource.data.presentacion == resource.data.presentacion
         && request.resource.data.get('stock', null) == resource.data.get('stock', null)

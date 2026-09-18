@@ -9,6 +9,88 @@
 
 ---
 
+## Salió el 2026-09-18, al entrar cargar un vino desde el panel
+
+Sexta entrada. Salió ésta y no la de los tres paquetes, por el criterio de
+siempre: aquélla dice dónde vive Firestore y eso no se cambia nunca. Las
+decisiones del checkout viven enteras en
+[ADR 010](../architecture/decisions/010-el-checkout.md), y lo que falta para
+cobrar —`crearOrden`, la preferencia y su webhook— sigue en el párrafo de
+arriba de [`_index.md`](../_index.md).
+
+### El checkout existe, y no cobra (2026-09-15)
+
+**Nace `/pedido` — terminar la compra.** Quién lo recibe, a dónde va, cuánto
+sale el envío y un botón `Ir a pagar` que **está apagado a propósito**:
+`crearOrden` no existe, no hay preferencia de Mercado Pago y no hay webhook. El
+porqué de cada decisión, en [ADR 010](../architecture/decisions/010-el-checkout.md).
+`/carrito` estrena su puerta: el botón sale **sólo con la caja cerrada**.
+
+La forma la eligió el dueño **mirando dos maquetas navegables** con los vinos de
+stage — *el remito* y *el mostrador*. Ganó el remito.
+
+**Cuatro decisiones del dueño, y las cuatro cambian la pantalla:** envío a todo
+el país más reparto propio en Punilla · **no hay retiro** · Mercado Pago desde
+el día 0 · el envío **se suma** al precio.
+
+⚠️ **Una de ellas borró una pantalla entera.** El glosario dice que una
+dirección fuera de toda zona *"no puede comprar"* y `voz.md §9.3` tiene el texto
+escrito. Con envío nacional **nadie queda fuera de zona**: `Zona` pasa a
+significar *hasta dónde repartimos nosotros*. El glosario quedó desactualizado
+(abajo, con disparador).
+
+⚠️ **Y Mercado Pago borró otra: la de elegir cómo pagar.** Con Checkout Pro eso
+pasa en la pantalla de ellos. Lo que sí aparecen son **tres finales y no dos**,
+porque un pago puede volver `approved`, `rejected` **o** `in_process` — y ése ya
+tenía su estado en la máquina (`en_proceso`, ADR 002).
+
+⚠️ **El reparto propio nació apagado.** `REPARTIMOS_NOSOTROS = false`: hoy
+**todo sale por correo**, Punilla incluida, porque el dueño decidió que *"de
+momento no lo vamos a hacer nosotros"*. La modalidad `propio` queda escrita sin
+uso y se prende con una línea. De paso **desactiva el peor de los números
+inventados**: con el reparto prendido, un código postal mal puesto en la tabla
+mandaba al reparto propio un pedido que había que despachar —no falla, sale más
+barato y no llega—; apagado, lo peor que hace es prellenar mal una localidad.
+
+**El puerto `ProveedorDeEnvio` nace en contratos con una sola implementación:
+`CotizadorSimulado`, en `server/`, con números inventados y la forma real.** El
+día del proveedor se reemplaza el cuerpo y la pantalla no se entera. La
+investigación de los dos proveedores quedó escrita: **no es "Envíos Pack", es
+[Envíopack](../architecture/proveedores/enviopack.md)** (hay otra empresa con
+nombre casi igual que hace paquetería a Cuba), y
+[Mercado Pago](../architecture/proveedores/mercado-pago.md) **ya no tiene
+sandbox**: nunca usar `sandbox_init_point`.
+
+⚠️ **SEIS defectos aparecieron mirando el PNG, y ninguno lo agarraba el diff**
+—séptima vez en este proyecto—:
+
+| Qué se vio | Por qué pasaba |
+|---|---|
+| **El botón salía sin texto**: un bloque borgoña vacío | `.boton` necesita su label en un `<span>` con z-index propio, o el relleno `::after` lo pinta encima. **Está escrito con una advertencia adentro de `boton.css`** y aun así lo repetí |
+| **El botón apagado se veía encendido** | `.papel .boton::after` y `.boton[disabled]::after` empatan en especificidad y `papel.css` se importa después: ganaba el acento. La regla del apagado tuvo que mudarse a `papel.css` |
+| **El precio salía ANTES del nombre** en cada opción de envío | `grid-row: 1` deja la columna al auto-placement. Las cuatro posiciones ahora son explícitas |
+| **La localidad de un código postal anterior quedaba pegada** | Un pedido a 1425 seguía diciendo "Villa Giardino": la dirección mezclaba dos lugares |
+| **"Cordoba", sin tilde**, en el selector de provincia | El paquete escribe sus comentarios sin acentos y se me contagió a una cadena **que lee un comprador** |
+| **`9999` cotizaba como si existiera** | Con el cotizador simulado, cualquier número de 4 cifras era válido: el estado *"ese código postal no nos suena"* era **UI que nadie podía abrir**. Se le puso el rango argentino (1000–9431) para que se pueda disparar y probar |
+
+**Verificado sobre `next build` + `next start` contra stage, con el carrito
+sembrado en `localStorage`:**
+
+| Qué | Cómo |
+|---|---|
+| Las rutas | `/pedido` da **200**; una ruta inventada, **404** |
+| La home no se volvió ISR | `○ /` sin revalidate en la tabla del build, con `/vinos` y `/pedido` en `1m` como control |
+| Punilla | `5176` → **una** opción (reparto propio), provincia `X` y localidad puestas solas |
+| El resto del país | `1425` → **dos** opciones; a sucursal siempre más barata |
+| Las cajas | 12 botellas cuestan **más** que 6 y **menos** que el doble, con test |
+| El estado feo | `9999` → el aviso, **0** opciones, y el total vuelve a *falta la dirección* |
+| El gate | `data-checkout-simulado` aparece **1** vez y el botón sale `disabled` |
+| Teléfono | 390 px **emulados**: `scrollWidth = clientWidth = 390`, sin overflow |
+| Tests y tipos | **143** de contratos (eran 121) + **30** de la tienda (eran 21); `tsc` 0 en los dos; arnés 35/35; 213 enlaces |
+| Mirado | 1440 y 390 px, con los datos reales de stage |
+
+---
+
 ## Salió el 2026-09-17, al entrar el catálogo y las bodegas del panel
 
 Sexta entrada. **Salió ésta y no la de los tres paquetes**, por el mismo

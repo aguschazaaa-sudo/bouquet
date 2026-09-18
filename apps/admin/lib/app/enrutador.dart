@@ -8,6 +8,7 @@ import '../features/acceso/presentation/pantalla_de_entrada.dart';
 import '../features/acceso/presentation/pantalla_sin_acceso.dart';
 import '../features/catalogo/presentation/pantalla_de_bodegas.dart';
 import '../features/catalogo/presentation/pantalla_del_catalogo.dart';
+import '../features/catalogo/presentation/vino/pagina_del_vino.dart';
 import '../features/estructura/presentation/estructura_del_panel.dart';
 import '../features/estructura/presentation/pagina_no_encontrada.dart';
 import '../features/estructura/presentation/pantalla_de_espera.dart';
@@ -60,6 +61,12 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'bodegas',
                 builder: (_, _) => const PantallaDeBodegas(),
+              ),
+              GoRoute(path: 'nuevo', builder: (_, _) => const PaginaDelVino()),
+              GoRoute(
+                path: 'vinos/:id',
+                builder: (_, estado) =>
+                    PaginaDelVino(id: estado.pathParameters['id']),
               ),
             ],
           ),

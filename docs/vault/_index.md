@@ -60,15 +60,57 @@ dicho, y las cuentas las da un script.
 **Catálogo dejó de estar vacío el 2026-09-17**: se ven todos los vinos
 —publicados y no—, se buscan escribiendo, y las bodegas se cargan, se corrigen
 y se borran con una baranda que no deja despublicar sin querer. Son **EP-02
-entera y HU-03.1**. Pedidos sigue vacío y lo dice: es el hito 2. Lo próximo del
-hito 1 es **cargar un vino** (HU-03.2), que arrastra `graduacion` a las reglas
-y la reserva de slugs.
+entera y HU-03.1**. Pedidos sigue vacío y lo dice: es el hito 2.
+
+**Cargar un vino está escrito desde el 2026-09-18 y todavía NO desplegado**:
+HU-03.2 a HU-03.4, con reglas nuevas que van primero. Lo próximo del hito 1,
+después de verificarlo, es **publicar** (HU-03.5 a 03.7, dos de ellas por
+Workflow D).
 
 **Y desde el 2026-09-17 está PUBLICADO en
 [`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con `noindex` y con
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### Cargar un vino: escrito, probado contra el emulador, sin desplegar (2026-09-18)
+
+**HU-03.2 · HU-03.3 · HU-03.4**, en el change
+[`panel-cargar-un-vino`](../../openspec/changes/panel-cargar-un-vino/proposal.md).
+El porqué está en [ADR 013](architecture/decisions/013-cargar-un-vino.md).
+**Toca `firestore.rules`**: el deploy es reglas → panel.
+
+**El id de un producto nuevo es su slug, y las reglas lo exigen.** La unicidad
+la da la base, sin `get()`: reemplaza la reserva `slugs/{slug}` que ADR 008
+había anotado. **`graduacion` entró** en décimas enteras, entre 50 y 250 — el
+piso atrapa un `14` pensado como 14 %.
+
+⚠️ **Se temía que las reglas evaluaran el estado intermedio de un batch, y se
+midió que no.** Corregir varietales va con `arrayUnion` y `arrayRemove` en dos
+`update` al mismo documento; reemplazar el único varietal pasa por una lista
+vacía si las reglas miraran el medio. **Ven el estado final**, en los dos
+órdenes. El control —quitar el último solo— se rechaza.
+
+⚠️ **La suite de reglas tenía una trampa que la regla nueva destapó.** Todas
+las altas creaban `productos/a` con slug `trumpeter-malbec`: con la regla, los
+`assertFails` habrían pasado **por el slug** y no por lo que cada caso dice
+probar. Ahora toda alta pasa por `alta()`, con el slug como id.
+
+⚠️ **HU-03.4 nombra "la descripción" y el modelo no la tiene** (hallazgo 14
+del [mapa del panel](features/panel/overview.md)). Pregunta para el dueño.
+
+| Qué | Cómo |
+|---|---|
+| Reglas | 38/38 en el emulador (eran 26). **Mutadas**: sin las tres condiciones nuevas fallan exactamente los 5 casos que las prueban |
+| El panel | `dart analyze` sin issues; `dart test` **146/146** (eran 78) |
+| La factory | Test contra los `hasAll`/`hasOnly` **leídos de `firestore.rules`**, no contra una lista copiada |
+| Tres copias | `auditar_varietales.mjs` compara lista, orden y rango en `contratos`, reglas y panel. Cuatro controles negativos, cada uno sale con 1 |
+| Hooks | Los 4 del panel sobre 33 archivos con ruta absoluta: 0 bloqueos. El canario —color literal, dos widgets, import de `data/`— lo bloquean los tres que tienen que bloquearlo |
+| Presupuesto | Abrir el formulario, **0**; alta, **2**; corrección, **1**. 200 altas: 0,8 % de un día |
+
+⚠️ **NADIE VIO EL FORMULARIO RENDERIZADO.** El panel no compila en esta
+máquina: lo compila CI. Y aun publicado, la única cuenta con permiso es la del
+dueño.
 
 ### El catálogo se ve y las bodegas se cargan (2026-09-17)
 
@@ -311,77 +353,6 @@ más pesan:
 | Los enlaces | **375** resuelven, anclas incluidas. **Control negativo:** un ancla inventada en ARQUITECTURA la rechaza el verificador, y la real con tilde pasa |
 
 Son documentos: no se despliega nada.
-
-### El checkout existe, y no cobra (2026-09-15)
-
-**Nace `/pedido` — terminar la compra.** Quién lo recibe, a dónde va, cuánto
-sale el envío y un botón `Ir a pagar` que **está apagado a propósito**:
-`crearOrden` no existe, no hay preferencia de Mercado Pago y no hay webhook. El
-porqué de cada decisión, en [ADR 010](architecture/decisions/010-el-checkout.md).
-`/carrito` estrena su puerta: el botón sale **sólo con la caja cerrada**.
-
-La forma la eligió el dueño **mirando dos maquetas navegables** con los vinos de
-stage — *el remito* y *el mostrador*. Ganó el remito.
-
-**Cuatro decisiones del dueño, y las cuatro cambian la pantalla:** envío a todo
-el país más reparto propio en Punilla · **no hay retiro** · Mercado Pago desde
-el día 0 · el envío **se suma** al precio.
-
-⚠️ **Una de ellas borró una pantalla entera.** El glosario dice que una
-dirección fuera de toda zona *"no puede comprar"* y `voz.md §9.3` tiene el texto
-escrito. Con envío nacional **nadie queda fuera de zona**: `Zona` pasa a
-significar *hasta dónde repartimos nosotros*. El glosario quedó desactualizado
-(abajo, con disparador).
-
-⚠️ **Y Mercado Pago borró otra: la de elegir cómo pagar.** Con Checkout Pro eso
-pasa en la pantalla de ellos. Lo que sí aparecen son **tres finales y no dos**,
-porque un pago puede volver `approved`, `rejected` **o** `in_process` — y ése ya
-tenía su estado en la máquina (`en_proceso`, ADR 002).
-
-⚠️ **El reparto propio nació apagado.** `REPARTIMOS_NOSOTROS = false`: hoy
-**todo sale por correo**, Punilla incluida, porque el dueño decidió que *"de
-momento no lo vamos a hacer nosotros"*. La modalidad `propio` queda escrita sin
-uso y se prende con una línea. De paso **desactiva el peor de los números
-inventados**: con el reparto prendido, un código postal mal puesto en la tabla
-mandaba al reparto propio un pedido que había que despachar —no falla, sale más
-barato y no llega—; apagado, lo peor que hace es prellenar mal una localidad.
-
-**El puerto `ProveedorDeEnvio` nace en contratos con una sola implementación:
-`CotizadorSimulado`, en `server/`, con números inventados y la forma real.** El
-día del proveedor se reemplaza el cuerpo y la pantalla no se entera. La
-investigación de los dos proveedores quedó escrita: **no es "Envíos Pack", es
-[Envíopack](architecture/proveedores/enviopack.md)** (hay otra empresa con
-nombre casi igual que hace paquetería a Cuba), y
-[Mercado Pago](architecture/proveedores/mercado-pago.md) **ya no tiene
-sandbox**: nunca usar `sandbox_init_point`.
-
-⚠️ **SEIS defectos aparecieron mirando el PNG, y ninguno lo agarraba el diff**
-—séptima vez en este proyecto—:
-
-| Qué se vio | Por qué pasaba |
-|---|---|
-| **El botón salía sin texto**: un bloque borgoña vacío | `.boton` necesita su label en un `<span>` con z-index propio, o el relleno `::after` lo pinta encima. **Está escrito con una advertencia adentro de `boton.css`** y aun así lo repetí |
-| **El botón apagado se veía encendido** | `.papel .boton::after` y `.boton[disabled]::after` empatan en especificidad y `papel.css` se importa después: ganaba el acento. La regla del apagado tuvo que mudarse a `papel.css` |
-| **El precio salía ANTES del nombre** en cada opción de envío | `grid-row: 1` deja la columna al auto-placement. Las cuatro posiciones ahora son explícitas |
-| **La localidad de un código postal anterior quedaba pegada** | Un pedido a 1425 seguía diciendo "Villa Giardino": la dirección mezclaba dos lugares |
-| **"Cordoba", sin tilde**, en el selector de provincia | El paquete escribe sus comentarios sin acentos y se me contagió a una cadena **que lee un comprador** |
-| **`9999` cotizaba como si existiera** | Con el cotizador simulado, cualquier número de 4 cifras era válido: el estado *"ese código postal no nos suena"* era **UI que nadie podía abrir**. Se le puso el rango argentino (1000–9431) para que se pueda disparar y probar |
-
-**Verificado sobre `next build` + `next start` contra stage, con el carrito
-sembrado en `localStorage`:**
-
-| Qué | Cómo |
-|---|---|
-| Las rutas | `/pedido` da **200**; una ruta inventada, **404** |
-| La home no se volvió ISR | `○ /` sin revalidate en la tabla del build, con `/vinos` y `/pedido` en `1m` como control |
-| Punilla | `5176` → **una** opción (reparto propio), provincia `X` y localidad puestas solas |
-| El resto del país | `1425` → **dos** opciones; a sucursal siempre más barata |
-| Las cajas | 12 botellas cuestan **más** que 6 y **menos** que el doble, con test |
-| El estado feo | `9999` → el aviso, **0** opciones, y el total vuelve a *falta la dirección* |
-| El gate | `data-checkout-simulado` aparece **1** vez y el botón sale `disabled` |
-| Teléfono | 390 px **emulados**: `scrollWidth = clientWidth = 390`, sin overflow |
-| Tests y tipos | **143** de contratos (eran 121) + **30** de la tienda (eran 21); `tsc` 0 en los dos; arnés 35/35; 213 enlaces |
-| Mirado | 1440 y 390 px, con los datos reales de stage |
 
 ### Los tres paquetes del monorepo — CONFIGURACIÓN, no features (2026-09-03)
 
