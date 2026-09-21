@@ -254,17 +254,28 @@ no monta, y parece un defecto del componente.
 
 ## 10. Desplegar y verificar — reglas → panel
 
-- [ ] 10.1 **`git status --short` vacío antes de desplegar.**
+- [x] 10.1 **`git status --short` vacío antes de desplegar.**
       `firebase deploy --only firestore:rules` sube el **árbol de trabajo, no
       HEAD**: el ruleset `0310466f` salió con una línea sin commitear adentro.
       Comparar el ruleset publicado con **HEAD y con el archivo del árbol**: la
       diferencia es sólo la de este change.
-- [ ] 10.2 **Reglas** — `firebase deploy --only firestore:rules`, lo corre el
-      usuario o lo autoriza. Verificar con la API de Rules: el ruleset nuevo
-      contiene las tres condiciones. Control negativo: un texto inventado da 0.
-- [ ] 10.3 **Correr una escritura real contra las reglas publicadas**, no sólo
-      grepear el ruleset: un `delete` que rebota y un `update` a
-      `publicado: false` que pasa.
+      Hecho: árbol en 0 sucios, `firestore.rules` idéntico a
+      `HEAD:firestore.rules` (`63ab77d`), y contra lo publicado 58 líneas
+      agregadas y 4 quitadas, todas de este change.
+- [x] 10.2 **Reglas** desplegadas el 2026-09-21: `0310466f` → `04b8a471`.
+      Cuatro canarios que **aparecen** (`precioCoherente`, `imagenesValidas`,
+      `descripcionValida`, `'descripcion'`, todos 0→2) y uno que
+      **desaparece**: `allow delete: if esAdmin()` 2→1 — bodegas lo conserva,
+      productos no. Control positivo `fichaValida` 2→2, negativo
+      `inventadoQueNoExiste` 0→0. La fuente publicada es byte a byte el
+      archivo del árbol **y de HEAD**.
+- [x] 10.3 **Escrituras reales contra el ruleset publicado**, bajado de la API
+      y corrido en el emulador — los bytes que sirven, no el archivo del repo.
+      El documento que congelé (`descripcion` con el `hasOnly` viejo) **vuelve
+      a editarse**: nombre, precio y `publicado`. Control positivo: uno sin
+      descripción sigue editándose. Y las tres condiciones, cada una con su
+      lado que pasa: borrar rebota / despublicar pasa; `precio: 0` rebota;
+      `http://` rebota / `https://` pasa; `'   '` rebota / un texto pasa.
 - [ ] 10.4 CI `alcance=panel`. **Leer la corrida, no el color** — `build_panel`
       en `success`, que `skipped` no cuenta.
 - [ ] 10.5 `publicar.sh preview` → hashes, canarios (uno nuevo y uno que
