@@ -39,6 +39,7 @@ export const VARIETALES = [
   'Syrah',
   'Merlot',
   'Pinot Noir',
+  'Pinot Grigio',
   'Tannat',
   'Petit Verdot',
   'Tempranillo',
@@ -66,6 +67,17 @@ export type Varietal = (typeof VARIETALES)[number];
 export const GRADUACION_MINIMA = 50;
 export const GRADUACION_MAXIMA = 250;
 
+/**
+ * Tope de la descripcion, en caracteres. El numero no es estetico: el catalogo
+ * ENTERO viaja al navegador para filtrarse en memoria (ADR 006), asi que cada
+ * caracter lo paga cada visitante, no solo quien abre esa ficha. Con 600 y 200
+ * vinos el peor caso son 120 kB crudos, ~35 kB comprimidos.
+ *
+ * Por eso el tope vive tambien en `firestore.rules` y no solo en el
+ * formulario: un formulario se saltea, una regla no.
+ */
+export const DESCRIPCION_MAXIMA = 600;
+
 // ------------------------------------------------------------------- tipos
 
 export interface FichaVino {
@@ -82,6 +94,11 @@ export interface FichaVino {
    * `GRADUACION_MINIMA` para por que el rango es el que es.
    */
   readonly graduacion: number | null;
+  /**
+   * Prosa del duenio sobre el vino. null si no se cargo. Llega al comprador:
+   * ver `ProductoPublicado.descripcion`. Tope en `DESCRIPCION_MAXIMA`.
+   */
+  readonly descripcion: string | null;
 }
 
 interface ProductoBase {
@@ -232,6 +249,22 @@ function validarFicha(f: unknown): Validacion<FichaVino> {
   if (graduacion !== null && !esGraduacion(graduacion)) {
     return { ok: false, motivo: `fichaVino.graduacion invalida (decimas, ${GRADUACION_MINIMA}-${GRADUACION_MAXIMA}): ${String(graduacion)}` };
   }
+  // Ausente y null son lo mismo: "no se cargo". Una cadena en blanco NO: para
+  // eso esta null, y admitir las dos formas dejaria dos maneras de decir nada.
+  // El largo se mide sobre el texto CRUDO, que es lo que miran las reglas.
+  const cruda = f.descripcion ?? null;
+  if (cruda !== null) {
+    if (typeof cruda !== 'string') {
+      return { ok: false, motivo: `fichaVino.descripcion no es un texto: ${String(cruda)}` };
+    }
+    if (cruda.trim().length === 0) {
+      return { ok: false, motivo: 'fichaVino.descripcion en blanco: para "sin descripcion" va null' };
+    }
+    if (cruda.length > DESCRIPCION_MAXIMA) {
+      return { ok: false, motivo: `fichaVino.descripcion se pasa de ${DESCRIPCION_MAXIMA}: ${cruda.length}` };
+    }
+  }
+  const descripcion = cruda === null ? null : (cruda as string).trim();
   return {
     ok: true,
     valor: {
@@ -243,6 +276,7 @@ function validarFicha(f: unknown): Validacion<FichaVino> {
       region: f.region,
       volumenMl: f.volumenMl,
       graduacion,
+      descripcion,
     },
   };
 }
@@ -318,6 +352,14 @@ export interface ProductoPublicado {
   readonly esCorte: boolean;
   readonly anada: number | null;
   readonly region: string;
+  /**
+   * La prosa del duenio, ya recortada. null si no cargo ninguna, y entonces la
+   * ficha NO dibuja la seccion: ni titulo solo ni relleno.
+   *
+   * Se renderiza como TEXTO PLANO. La escribe una persona en un formulario,
+   * no un editor de confianza: nunca `dangerouslySetInnerHTML`.
+   */
+  readonly descripcion: string | null;
   readonly balde: Balde;
   readonly tope: number;
   /** 1 es el mas vendido; null si no hay metricas. Nunca las unidades. */
@@ -341,6 +383,7 @@ export function proyectarProducto(p: ProductoSimple, bodega: string, puesto: num
     esCorte: esCorte(f.varietales),
     anada: f.anada,
     region: f.region,
+    descripcion: f.descripcion,
     balde: balde(p),
     tope: tope(p),
     puesto,

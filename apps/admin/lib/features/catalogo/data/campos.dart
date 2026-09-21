@@ -14,6 +14,13 @@ library;
 String textoDe(Object? valor, {String siFalta = ''}) =>
     valor is String ? valor : siFalta;
 
+/// Un texto que puede no estar. **`null` y una cadena en blanco son lo
+/// mismo** —"no se cargo"—: las reglas rechazan el blanco, pero el Admin SDK
+/// no pasa por las reglas y un documento viejo puede traerlo. Leerlo como
+/// `null` evita que la pantalla dibuje una seccion vacia por un espacio.
+String? textoOpcionalDe(Object? valor) =>
+    valor is String && valor.trim().isNotEmpty ? valor : null;
+
 /// Devuelve `null` si no es un entero. Un `double` NO se convierte: el precio
 /// es entero en centavos (ADR 008) y aceptar 1250.5 seria esconder el error.
 int? enteroDe(Object? valor) => valor is int ? valor : null;

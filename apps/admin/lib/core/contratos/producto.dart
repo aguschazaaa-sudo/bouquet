@@ -23,6 +23,7 @@ const varietales = <String>[
   'Syrah',
   'Merlot',
   'Pinot Noir',
+  'Pinot Grigio',
   'Tannat',
   'Petit Verdot',
   'Tempranillo',
@@ -66,3 +67,14 @@ enum ColorDelVino {
 /// que `graduacionValida` de las reglas; el auditor compara los tres.
 const graduacionMinima = 50;
 const graduacionMaxima = 250;
+
+/// Tope de la descripcion, en **caracteres** —no bytes—. Medido contra el
+/// emulador: `size()` de las reglas cuenta caracteres, asi que 600 enies
+/// entran igual que 600 letras; si contara bytes, el tope real en castellano
+/// seria la mitad del que dice el formulario.
+///
+/// El numero no es estetico: el catalogo **entero** viaja al navegador de cada
+/// visitante para filtrarse en memoria (ADR 006). El mismo valor que
+/// `DESCRIPCION_MAXIMA` de contratos y que `descripcionValida` de las reglas;
+/// el auditor compara los tres.
+const descripcionMaxima = 600;

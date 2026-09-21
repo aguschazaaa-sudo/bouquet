@@ -22,7 +22,12 @@ Set<String> listaDeLasReglas(String reglas, String que, String metodo) {
   return {for (final c in RegExp("'([^']+)'").allMatches(m[1]!)) c[1]!};
 }
 
-AltaDeVino alta({int? anada, int? graduacion, int botellas = 1}) => AltaDeVino(
+AltaDeVino alta({
+  int? anada,
+  int? graduacion,
+  String? descripcion,
+  int botellas = 1,
+}) => AltaDeVino(
   slug: 'norton-malbec',
   nombre: 'Norton Malbec',
   ficha: FichaDelVino(
@@ -33,6 +38,7 @@ AltaDeVino alta({int? anada, int? graduacion, int botellas = 1}) => AltaDeVino(
     volumenMl: 750,
     anada: anada,
     graduacion: graduacion,
+    descripcion: descripcion,
   ),
   precio: 1250000,
   botellas: botellas,
@@ -71,6 +77,7 @@ void main() {
       final obligatorias = listaDeLasReglas(reglas, 'f', 'hasAll');
       final permitidas = listaDeLasReglas(reglas, 'f', 'hasOnly');
       expect(permitidas, contains('graduacion'), reason: 'ADR 013');
+      expect(permitidas, contains('descripcion'), reason: 'ADR 014');
       expect(ficha.keys.toSet().containsAll(obligatorias), isTrue);
       expect(
         permitidas.containsAll(ficha.keys),
@@ -79,6 +86,19 @@ void main() {
       );
       expect(ficha['color'], 'tinto', reason: 'el name del enum');
       expect(ficha['graduacion'], 135);
+    });
+
+    test('la descripcion viaja, y vacia no se escribe', () {
+      final con =
+          documentoNuevo(
+                alta(descripcion: 'Un Malbec de altura.'),
+              )['fichaVino']!
+              as Map<String, Object?>;
+      expect(con['descripcion'], 'Un Malbec de altura.');
+
+      // Ausente, no `''`: las reglas rechazan la cadena en blanco.
+      final sin = documentoNuevo(alta())['fichaVino']! as Map<String, Object?>;
+      expect(sin.containsKey('descripcion'), isFalse);
     });
 
     test('la añada y la graduacion vacias no se escriben', () {
@@ -141,6 +161,7 @@ void main() {
           volumenMl: 750,
           anada: Cambio(2020),
           graduacion: Cambio(130),
+          descripcion: Cambio('Nueva.'),
         ),
       );
       for (final ruta in [...todo.keys, campoDeLosVarietales]) {

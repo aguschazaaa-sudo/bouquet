@@ -27,6 +27,7 @@ ProductoDelPanel vino(
   String region = 'Luján de Cuyo, Mendoza',
   int? anada = 2022,
   int? graduacion,
+  String? descripcion,
   int precio = 1250000,
   int botellas = 1,
 }) => ProductoDelPanel(
@@ -43,6 +44,7 @@ ProductoDelPanel vino(
     anada: anada,
     volumenMl: 750,
     graduacion: graduacion,
+    descripcion: descripcion,
   ),
   botellas: botellas,
   stock: 0,
@@ -341,6 +343,94 @@ void main() {
       ]);
       expect(c.regionesCon(''), ['Cafayate, Salta', 'Valle de Uco, Mendoza']);
       expect(c.regionesCon('mendo'), ['Valle de Uco, Mendoza']);
+    });
+  });
+
+  group('la descripcion', () {
+    test('vacia se guarda como null, no como cadena en blanco', () {
+      // Control positivo: el mismo borrador CON texto si la lleva, asi que el
+      // null de abajo es por estar vacia y no porque el campo no viaje.
+      final con = completo()
+          .conDescripcion('Un Malbec de altura.')
+          .revisar(catalogo(), anioActual: anio);
+      expect(con.alta!.ficha.descripcion, 'Un Malbec de altura.');
+
+      final saltos = String.fromCharCodes([10, 10]);
+      for (final vacia in ['', '   ', saltos]) {
+        final r = completo()
+            .conDescripcion(vacia)
+            .revisar(catalogo(), anioActual: anio);
+        expect(r.sePuedeGuardar, isTrue, reason: 'sin descripcion se guarda');
+        expect(r.alta!.ficha.descripcion, isNull, reason: vacia);
+      }
+    });
+
+    test('se guarda recortada', () {
+      final r = completo()
+          .conDescripcion('  con espacios al borde  ')
+          .revisar(catalogo(), anioActual: anio);
+      expect(r.alta!.ficha.descripcion, 'con espacios al borde');
+    });
+
+    test('el tope: 600 entra, 601 dice cuantos sobran', () {
+      // El numero va escrito y no leido de la constante: un test que arma el
+      // caso con `descripcionMaxima` se mide contra si mismo.
+      expect(descripcionMaxima, 600);
+
+      final justo = completo()
+          .conDescripcion('a' * 600)
+          .revisar(catalogo(), anioActual: anio);
+      expect(justo.sePuedeGuardar, isTrue);
+      expect(justo.alta!.ficha.descripcion!.length, 600);
+
+      final pasado = completo()
+          .conDescripcion('a' * 603)
+          .revisar(catalogo(), anioActual: anio);
+      expect(pasado.sePuedeGuardar, isFalse);
+      expect(pasado.problemas[CampoDelVino.descripcion], contains('3'));
+      expect(pasado.problemas[CampoDelVino.descripcion], contains('600'));
+    });
+
+    test('el tope se mide sobre lo recortado, no sobre lo tecleado', () {
+      // 600 letras entre espacios: lo que se ESCRIBE son 600, asi que entra.
+      // Medirlo sobre lo tecleado rebotaria un texto que cabe.
+      final r = completo()
+          .conDescripcion('   ${'a' * 600}   ')
+          .revisar(catalogo(), anioActual: anio);
+      expect(r.sePuedeGuardar, isTrue);
+      expect(r.alta!.ficha.descripcion!.length, 600);
+    });
+
+    test('se corrige en un vino PUBLICADO, a diferencia del precio', () {
+      final publicado = vino('v', publicado: true, descripcion: 'Vieja.');
+      final b = BorradorDeVino.desde(publicado);
+      expect(b.descripcion, 'Vieja.');
+      expect(b.precioFijo, isTrue, reason: 'el precio si esta fijo');
+
+      // El precio no se mueve...
+      expect(b.conPrecio('999').precio, b.precio);
+      // ...y la descripcion si.
+      final r = b
+          .conDescripcion('Nueva.')
+          .revisar(catalogo([publicado]), anioActual: anio);
+      expect(r.sePuedeGuardar, isTrue);
+      expect(r.cambios!.descripcion!.valor, 'Nueva.');
+      expect(r.cambios!.precio, isNull, reason: 'el precio no viaja');
+    });
+
+    test('borrarla es un cambio, y no tocarla no lo es', () {
+      final publicado = vino('v', descripcion: 'Habia una.');
+      final borrada = BorradorDeVino.desde(
+        publicado,
+      ).conDescripcion('').revisar(catalogo([publicado]), anioActual: anio);
+      expect(borrada.cambios!.descripcion, isNotNull);
+      expect(borrada.cambios!.descripcion!.valor, isNull);
+
+      final igual = BorradorDeVino.desde(
+        publicado,
+      ).revisar(catalogo([publicado]), anioActual: anio);
+      expect(igual.cambios!.descripcion, isNull, reason: 'no cambio');
+      expect(igual.cambios!.hayAlgo, isFalse);
     });
   });
 

@@ -104,6 +104,7 @@ service cloud.firestore {
           'Syrah',
           'Merlot',
           'Pinot Noir',
+          'Pinot Grigio',
           'Tannat',
           'Petit Verdot',
           'Tempranillo',
@@ -129,10 +130,25 @@ service cloud.firestore {
         || (f.graduacion is int && f.graduacion >= 50 && f.graduacion <= 250);
     }
 
+    // DESCRIPCION: prosa del duenio, opcional.  El 600 es el mismo numero que
+    // DESCRIPCION_MAXIMA de packages/contratos/src/producto.ts, y vive aca
+    // porque el catalogo ENTERO viaja al navegador para filtrarse en memoria
+    // (ADR 006): un texto sin tope lo paga cada visitante, no solo quien abre
+    // esa ficha.  Un formulario se saltea; una regla no.
+    //
+    // Ausente y null son lo mismo -"no se cargo"-.  Una cadena en blanco NO,
+    // porque serian dos maneras de decir nada y dos de leerla.
+    function descripcionValida(f) {
+      return !('descripcion' in f) || f.descripcion == null
+        || (f.descripcion is string
+            && f.descripcion.trim().size() > 0
+            && f.descripcion.size() <= 600);
+    }
+
     function fichaValida(f) {
       return f is map
         && f.keys().hasAll(['bodegaId', 'varietales', 'color', 'organico', 'region', 'volumenMl'])
-        && f.keys().hasOnly(['bodegaId', 'varietales', 'color', 'organico', 'anada', 'region', 'volumenMl', 'graduacion'])
+        && f.keys().hasOnly(['bodegaId', 'varietales', 'color', 'organico', 'anada', 'region', 'volumenMl', 'graduacion', 'descripcion'])
         && f.bodegaId is string && f.bodegaId.size() > 0
         && varietalesValidos(f.varietales)
         && f.color in ['tinto', 'blanco', 'rosado']
@@ -140,7 +156,39 @@ service cloud.firestore {
         && (!('anada' in f) || f.anada == null || (f.anada is int && f.anada > 1800))
         && f.region is string && f.region.size() > 0
         && f.volumenMl is int && f.volumenMl > 0
-        && graduacionValida(f);
+        && graduacionValida(f)
+        && descripcionValida(f);
+    }
+
+    // CADA IMAGEN ES UNA URL https.  Las reglas NO iteran: no hay map, filter
+    // ni for.  Como el tope son 10, se escribe una condicion por indice, y
+    // cada una se cumple sola cuando la lista es mas corta.  Es largo y es
+    // demostrable; una lista sin tope no se podria escribir asi, y por eso el
+    // tope va primero.
+    //
+    // Importa porque armarCatalogo exige el https:// y DESCARTA el producto
+    // entero de la vidriera sin un error visible: la regla y la proyeccion
+    // tienen que pedir lo mismo.  La lista vacia sigue siendo valida: un vino
+    // sin foto se publica y la vidriera dibuja la silueta.
+    function imagenValida(l, i) {
+      return l.size() <= i || (l[i] is string && l[i].matches('https://.+'));
+    }
+
+    function imagenesValidas(l) {
+      return l is list && l.size() <= 10
+        && imagenValida(l, 0) && imagenValida(l, 1) && imagenValida(l, 2)
+        && imagenValida(l, 3) && imagenValida(l, 4) && imagenValida(l, 5)
+        && imagenValida(l, 6) && imagenValida(l, 7) && imagenValida(l, 8)
+        && imagenValida(l, 9);
+    }
+
+    // UN PUBLICADO TIENE PRECIO.  Un borrador nace en 0 y se completa despues,
+    // asi que el 0 solo se prohibe cuando el vino esta en la tienda.  Sin
+    // esto se puede publicar con `precio: 0`, pasa el validador, y un
+    // `precioUnitarioVisto: 0` coincidiria cuando exista crearOrden
+    // (hallazgo 2 de revisor-pagos, ADR 008).
+    function precioCoherente(d) {
+      return d.publicado == false || d.precio > 0;
     }
 
     function productoValido(d) {
@@ -153,8 +201,9 @@ service cloud.firestore {
         && d.presentacion is map
         && d.presentacion.keys().hasOnly(['botellas'])
         && d.presentacion.botellas is int && d.presentacion.botellas >= 1
-        && d.imagenes is list && d.imagenes.size() <= 10
+        && imagenesValidas(d.imagenes)
         && d.publicado is bool
+        && precioCoherente(d)
         && fichaValida(d.fichaVino)
         // El simple lleva stock entero; el compuesto no tiene stock propio:
         // lo deriva de sus componentes.
@@ -192,7 +241,17 @@ service cloud.firestore {
         && request.resource.data.get('stock', null) == resource.data.get('stock', null)
         && request.resource.data.get('muestra', null) == resource.data.get('muestra', null);
 
-      allow delete: if esAdmin();
+      // UN PRODUCTO NO SE BORRA, NI SIENDO ADMIN.  El motivo es de plata, no
+      // de higiene: borrar y recrear con el mismo id SE SALTEA la
+      // inmutabilidad de `tipo` y de `presentacion.botellas` que el update de
+      // arriba garantiza.  Una botella suelta con stock 10 recreada como caja
+      // de 2 deja 12 botellas a la venta sobre 10 fisicas despues de una
+      // cancelacion (hallazgo 1 de revisor-pagos, ADR 008).
+      //
+      // Sacar un vino de la venta es `publicado: false`, que el update de
+      // arriba permite y tiene vuelta atras.  El seed sigue borrando porque
+      // usa el Admin SDK (scripts/seed/proyecto.mjs), que no pasa por aca.
+      allow delete: if false;
     }
 
     // -------------------------------------------------------------- bodegas

@@ -107,15 +107,25 @@ primero, el panel después. **Sin `functions/` y sin tienda.**
 
 - [x] 9.1 Comparar el ruleset publicado con `HEAD`: la diferencia es sólo la de
       este change.
-- [ ] 9.2 **Reglas** — `firebase deploy --only firestore:rules`, lo corre el
+- [x] 9.2 **Reglas** — `firebase deploy --only firestore:rules`, lo corre el
       usuario o lo autoriza. Verificar con la API de Rules: el ruleset nuevo
       contiene `slug == productoId` y `graduacion` (control negativo: un texto
       inventado da 0).
-- [ ] 9.3 CI `alcance=panel`. **Leer la corrida, no el color.**
-- [ ] 9.4 `publicar.sh preview` → hashes, canarios (uno nuevo y uno que
+      Desplegado el 2026-09-21. Ruleset `a4520800` → `0310466f`. Canarios que
+      aparecen: `slug == productoId` 0→1, `graduacion` 0→5, `graduacionValida`
+      0→2. Control positivo `fichaValida` 2→2 (el instrumento lee los dos
+      archivos). Control negativo `inventadoQueNoExiste` 0→0. La fuente
+      publicada es byte a byte `firestore.rules`.
+- [x] 9.3 CI `alcance=panel`. **Leer la corrida, no el color.**
+- [x] 9.4 `publicar.sh preview` → hashes, canarios (uno nuevo y uno que
       desaparece, sin tildes: `dart2js` los escapa) y que la app arranca sin
       errores de consola.
-- [ ] 9.5 `publicar.sh promover` y `publicar.sh verificar` sobre live.
+- [x] 9.5 `publicar.sh promover` y `publicar.sh verificar` sobre live.
+      Promovido con `hosting:clone` el 2026-09-21: los bytes del canal `panel`,
+      no una recompilación. Canario `COMMIT`: live pasó de `3b46a39` a
+      `d871218`. Los cuatro hashes coinciden con el build de CI, el control
+      negativo (archivo inventado) no pasa por `main.dart.js`, y el
+      `X-Robots-Tag: noindex` sigue.
 - [ ] 9.6 **Que alguien cargue un vino de verdad y lo mire renderizado.** Sin
       esto el change no se archiva.
 - [ ] 9.7 `/opsx:archive`, recién después de 9.6.

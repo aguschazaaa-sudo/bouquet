@@ -21,7 +21,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { arrayRemove, arrayUnion, deleteField, doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, deleteDoc, deleteField, doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -431,5 +431,134 @@ describe('las cajas sugeridas son un documento del servidor', () => {
     await assertSucceeds(getDoc(doc(admin, 'cajasSugeridas', 'publicas')));
     await assertFails(getDoc(doc(anonimo, 'cajasSugeridas', 'publicas')));
     await assertFails(getDoc(doc(comprador, 'cajasSugeridas', 'publicas')));
+  });
+});
+
+// ------------------------------------------------- no se borra, se despublica
+
+describe('un producto no se borra, se saca de la tienda', () => {
+  test('el admin no puede borrar, y SI puede despublicar', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    // Control positivo primero: si despublicar tambien fallara, el rechazo de
+    // abajo no probaria nada sobre `delete` -probaria que no se escribe-.
+    await assertSucceeds(updateDoc(producto(admin), { publicado: false }));
+    await assertFails(deleteDoc(producto(admin)));
+  });
+
+  test('borrar y recrear con otra presentacion: la puerta que esto cierra', async () => {
+    // Sin `allow delete: if false` esta era la vuelta para saltearse la
+    // inmutabilidad de `presentacion`: borrar la botella suelta y recrear el
+    // mismo id como caja de 2 (hallazgo 1 de revisor-pagos).
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await assertFails(deleteDoc(producto(admin)));
+    await assertFails(updateDoc(producto(admin), { 'presentacion.botellas': 2 }));
+  });
+
+  test('el seed sigue borrando: el Admin SDK no pasa por las reglas', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      await deleteDoc(doc(ctx.firestore(), 'productos', SLUG));
+    });
+    // `withSecurityRulesDisabled` no devuelve lo que retorna el callback:
+    // leerlo de su valor da `undefined` y el assert pasaria con cualquier cosa.
+    let quedo = null;
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      quedo = (await getDoc(doc(ctx.firestore(), 'productos', SLUG))).exists();
+    });
+    assert.equal(quedo, false, 'scripts/seed/borrar.mjs tiene que seguir funcionando');
+  });
+});
+
+// ------------------------------------------------ un publicado tiene precio
+
+describe('un producto publicado tiene precio mayor que cero', () => {
+  test('publicado con 0 rebota; con 1 pasa; el borrador en 0 pasa', async () => {
+    await assertFails(alta(admin, vino({ slug: 'cero', precio: 0 })), 'publicado con precio 0');
+    await assertSucceeds(alta(admin, vino({ slug: 'uno', precio: 1 })), 'publicado con precio 1');
+    await assertSucceeds(alta(admin, vino({ slug: 'borrador', precio: 0, publicado: false })), 'sin publicar, el 0 vale');
+  });
+
+  test('publicar uno guardado en 0, sin tocar el precio, rebota', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ precio: 0, publicado: false, stock: 10 }));
+    // Control positivo: el mismo update con un precio arriba de 0 pasa, asi
+    // que el rechazo es por el precio y no porque el update no funcione.
+    await assertFails(updateDoc(producto(admin), { publicado: true }));
+    await assertSucceeds(updateDoc(producto(admin), { publicado: true, precio: 1990000 }));
+  });
+
+  test('bajar a 0 el precio de uno publicado rebota; despublicando, no', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await assertFails(updateDoc(producto(admin), { precio: 0 }));
+    await assertSucceeds(updateDoc(producto(admin), { precio: 0, publicado: false }));
+  });
+});
+
+// ---------------------------------------------------- cada imagen es https
+
+describe('cada entrada de imagenes es una URL https', () => {
+  const FOTO = 'https://firebasestorage.googleapis.com/v0/b/x/o/y.webp?alt=media';
+
+  test('sin fotos, una foto y diez fotos: aceptadas', async () => {
+    await assertSucceeds(alta(admin, vino({ slug: 'sin-fotos', imagenes: [] })));
+    await assertSucceeds(alta(admin, vino({ slug: 'una-foto', imagenes: [FOTO] })));
+    await assertSucceeds(alta(admin, vino({ slug: 'diez-fotos', imagenes: Array(10).fill(FOTO) })));
+  });
+
+  test('once fotos siguen rebotando', async () => {
+    await assertFails(alta(admin, vino({ imagenes: Array(11).fill(FOTO) })));
+  });
+
+  test('http, un numero, null y un mapa rebotan en CUALQUIER posicion', async () => {
+    for (const mala of ['http', 'http://ejemplo/foto.webp', 123, null, { url: FOTO }]) {
+      await assertFails(alta(admin, vino({ imagenes: [mala] })), `primera: ${JSON.stringify(mala)}`);
+      // La ultima posicion importa tanto como la primera: una condicion escrita
+      // solo para el indice 0 pasaria este caso.
+      await assertFails(alta(admin, vino({ imagenes: [...Array(9).fill(FOTO), mala] })), `decima: ${JSON.stringify(mala)}`);
+    }
+  });
+
+  test('matches() no deja colar un https:// en el medio', async () => {
+    // Si `matches` midiera una coincidencia PARCIAL y no la cadena entera,
+    // estos tres pasarian. Es la pregunta que el emulador contesta.
+    await assertFails(alta(admin, vino({ imagenes: ['xhttps://ejemplo/foto.webp'] })), 'prefijo delante');
+    await assertFails(alta(admin, vino({ imagenes: ['javascript:alert(1)#https://x'] })), 'https en el medio');
+    await assertFails(alta(admin, vino({ imagenes: ['https://'] })), 'el esquema solo, sin host');
+  });
+});
+
+// ------------------------------------------------------------ descripcion
+
+describe('la descripcion es opcional y tiene tope', () => {
+  test('sin el campo, en null y con texto: aceptadas', async () => {
+    await assertSucceeds(alta(admin, vino({ slug: 'sin' })));
+    await assertSucceeds(alta(admin, vino({ slug: 'nula' }, { descripcion: null })));
+    await assertSucceeds(alta(admin, vino({ slug: 'con' }, { descripcion: 'Un Malbec de altura.' })));
+  });
+
+  test('en blanco rebota: para "sin descripcion" esta null', async () => {
+    const enBlanco = ['', '   ', String.fromCharCode(10, 10), String.fromCharCode(9, 32)];
+    for (const descripcion of enBlanco) {
+      await assertFails(alta(admin, vino({}, { descripcion })), JSON.stringify(descripcion));
+    }
+  });
+
+  test('600 entra, 601 no, y lo que no es texto rebota', async () => {
+    await assertSucceeds(alta(admin, vino({ slug: 'justo' }, { descripcion: 'a'.repeat(600) })));
+    await assertFails(alta(admin, vino({ slug: 'mas' }, { descripcion: 'a'.repeat(601) })));
+    await assertFails(alta(admin, vino({ slug: 'num' }, { descripcion: 123 })));
+  });
+
+  test('size() cuenta CARACTERES y no bytes: 600 enies entran', async () => {
+    // Si contara bytes UTF-8, 600 enies serian 1200 y el tope real en
+    // castellano seria la mitad del que dice el formulario. El contrato y el
+    // panel cuentan caracteres; esto verifica que las reglas tambien.
+    const enie = String.fromCharCode(241);
+    await assertSucceeds(alta(admin, vino({ slug: 'acentos' }, { descripcion: enie.repeat(600) })));
+  });
+
+  test('a un vino anterior se le agrega la descripcion despues', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await assertSucceeds(updateDoc(producto(admin), { 'fichaVino.descripcion': 'Agregada despues.' }));
+    await assertFails(updateDoc(producto(admin), { 'fichaVino.descripcion': '   ' }));
   });
 });

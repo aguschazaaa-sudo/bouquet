@@ -32,6 +32,7 @@ function vino(id: string, cambios: Partial<ProductoPublicado> = {}): ProductoPub
     esCorte: false,
     anada: 2023,
     region: 'Mendoza',
+    descripcion: null,
     balde: 'disponible',
     tope: 12,
     puesto: null,

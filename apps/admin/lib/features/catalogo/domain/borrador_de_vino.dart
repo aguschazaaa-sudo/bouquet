@@ -24,6 +24,7 @@ enum CampoDelVino {
   volumen,
   anada,
   graduacion,
+  descripcion,
   precio,
   botellas,
 }
@@ -46,6 +47,7 @@ class BorradorDeVino {
     this.volumen = '750',
     this.anada = '',
     this.graduacion = '',
+    this.descripcion = '',
     this.precio = '',
     this.botellas = 1,
   });
@@ -67,6 +69,7 @@ class BorradorDeVino {
       graduacion: f.graduacion == null
           ? ''
           : graduacionParaEscribir(f.graduacion!),
+      descripcion: f.descripcion ?? '',
       precio: pesosParaEscribir(p.precio),
       botellas: p.botellas,
     );
@@ -86,6 +89,11 @@ class BorradorDeVino {
   final String volumen;
   final String anada;
   final String graduacion;
+
+  /// La prosa del dueño, tal cual se escribe. Vacia es "no hay", y se guarda
+  /// como `null`: una cadena en blanco la rechazan las reglas.
+  final String descripcion;
+
   final String precio;
   final int botellas;
 
@@ -103,6 +111,12 @@ class BorradorDeVino {
   BorradorDeVino conVolumen(String v) => _con(volumen: v);
   BorradorDeVino conAnada(String v) => _con(anada: v);
   BorradorDeVino conGraduacion(String v) => _con(graduacion: v);
+
+  /// **Sin la puerta de [precioFijo], a proposito.** La descripcion no es
+  /// plata: corregirle una falta de ortografia a un vino que esta en la
+  /// tienda no puede obligar a sacarlo primero.
+  BorradorDeVino conDescripcion(String v) => _con(descripcion: v);
+
   BorradorDeVino conPrecio(String v) => precioFijo ? this : _con(precio: v);
 
   /// Las botellas solo se eligen en el alta: despues son inmutables.
@@ -126,6 +140,7 @@ class BorradorDeVino {
     String? volumen,
     String? anada,
     String? graduacion,
+    String? descripcion,
     String? precio,
     int? botellas,
   }) => BorradorDeVino(
@@ -139,6 +154,7 @@ class BorradorDeVino {
     volumen: volumen ?? this.volumen,
     anada: anada ?? this.anada,
     graduacion: graduacion ?? this.graduacion,
+    descripcion: descripcion ?? this.descripcion,
     precio: precio ?? this.precio,
     botellas: botellas ?? this.botellas,
   );
@@ -217,6 +233,7 @@ class _Revisor {
       CampoDelVino.graduacion,
       leerGraduacion(b.graduacion),
     );
+    final descripcion = _descripcion();
     final precio = b.precioFijo ? b.original!.precio : _precio();
     if (b.botellas < 1 || b.botellas > botellasMaximas) {
       problemas[CampoDelVino.botellas] = 'Entre 1 y $botellasMaximas botellas.';
@@ -240,6 +257,7 @@ class _Revisor {
       region: region,
       volumenMl: volumen,
       graduacion: graduacion,
+      descripcion: descripcion,
     );
     final original = b.original;
     return Revision(
@@ -274,6 +292,24 @@ class _Revisor {
           'Ya hay un vino con esta dirección: «${choque.vino.nombre}». '
           'Cambiale el nombre, por ejemplo sumándole la bodega.';
     }
+  }
+
+  /// Vacia es `null`, no `''`: las reglas rechazan el blanco, y dos maneras
+  /// de decir nada serian dos de leerla.
+  ///
+  /// El tope se mide sobre el texto YA RECORTADO, que es lo que se escribe.
+  /// Medirlo sobre lo tecleado rebotaria un texto que cabe.
+  String? _descripcion() {
+    final texto = b.descripcion.trim();
+    if (texto.isEmpty) return null;
+    if (texto.length > descripcionMaxima) {
+      final sobran = texto.length - descripcionMaxima;
+      problemas[CampoDelVino.descripcion] =
+          'Sobran $sobran ${sobran == 1 ? 'caracter' : 'caracteres'}: '
+          'el máximo es $descripcionMaxima.';
+      return null;
+    }
+    return texto;
   }
 
   void _bodega() {
@@ -366,6 +402,9 @@ class _Revisor {
       graduacion: f.graduacion == antes.graduacion
           ? null
           : Cambio(f.graduacion),
+      descripcion: f.descripcion == antes.descripcion
+          ? null
+          : Cambio(f.descripcion),
       precio: b.precioFijo ? null : si(precio, o.precio),
       varietalesAgregados: [
         for (final v in f.varietales)

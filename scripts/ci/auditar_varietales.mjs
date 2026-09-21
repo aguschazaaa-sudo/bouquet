@@ -30,7 +30,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { GRADUACION_MAXIMA, GRADUACION_MINIMA, VARIETALES } from '../../packages/contratos/src/producto.ts';
+import { DESCRIPCION_MAXIMA, GRADUACION_MAXIMA, GRADUACION_MINIMA, VARIETALES } from '../../packages/contratos/src/producto.ts';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const rutaReglas = process.argv[2] ?? join(RAIZ, 'firestore.rules');
@@ -100,11 +100,33 @@ if (enReglas && minDart && maxDart) {
   }
 }
 
+// ------------------------------------------------------------ descripcion
+//
+// El tope tambien vive tres veces. Si el formulario deja escribir mas de lo
+// que aceptan las reglas, el operador pierde lo que escribio en un
+// permission-denied; si las reglas aceptan mas que contratos, el vino se cae
+// de la vidriera sin un error visible. Y sin esta comparacion los tests de
+// cada lado se miden contra si mismos: pasarian los tres con el tope en 5.
+const topeReglas = /f\.descripcion\.size\(\) <= (\d+)/.exec(reglas.texto);
+const topeDart = /const descripcionMaxima = (\d+);/.exec(dart.texto);
+if (!topeReglas) problema(`${rutaReglas} no tiene el tope de la descripcion`);
+if (!topeDart) problema(`${rutaDart} no tiene descripcionMaxima`);
+if (topeReglas && topeDart) {
+  const topes = {
+    contratos: String(DESCRIPCION_MAXIMA),
+    reglas: topeReglas[1],
+    panel: topeDart[1],
+  };
+  if (new Set(Object.values(topes)).size !== 1) {
+    problema(`el tope de la descripcion no coincide: ${JSON.stringify(topes)}`);
+  }
+}
+
 if (fallos) {
   console.error(`\n${fallos} problema(s) con las listas cerradas del producto`);
   process.exit(1);
 }
 console.log(
   `ok  ${enContratos.length} varietales, los mismos y en el mismo orden en contratos, firestore.rules y el panel;` +
-    ` graduacion ${GRADUACION_MINIMA}-${GRADUACION_MAXIMA} en los tres`,
+    ` graduacion ${GRADUACION_MINIMA}-${GRADUACION_MAXIMA} y descripcion <= ${DESCRIPCION_MAXIMA} en los tres`,
 );

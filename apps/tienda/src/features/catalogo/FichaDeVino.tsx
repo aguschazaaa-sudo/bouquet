@@ -7,6 +7,7 @@ import { Precio } from '@/shared/ui/Precio';
 import { DatosDelVino } from './DatosDelVino';
 import { EstadoDelVino } from './EstadoDelVino';
 import { HojaDelVino } from './HojaDelVino';
+import { NotaDelVino } from './NotaDelVino';
 import { ReglaDeLaCaja } from './ReglaDeLaCaja';
 import { COLOR_SINGULAR, TEXTOS, unidadDeVenta } from './textos';
 import { VentanaDeBotella } from './VentanaDeBotella';
@@ -70,6 +71,8 @@ export function FichaDeVino({ producto, control }: Props) {
           {agotado ? null : control}
         </div>
       </section>
+
+      <NotaDelVino producto={producto} />
 
       <section className="ficha__papel papel">
         <div className="contenedor-vinos ficha__grilla">

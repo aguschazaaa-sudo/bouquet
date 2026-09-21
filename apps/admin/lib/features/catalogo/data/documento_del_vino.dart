@@ -20,8 +20,10 @@ import '../domain/escrituras_del_vino.dart';
 /// tocado. `publicado` se escribe siempre: un `where('publicado','==',true)`
 /// no devuelve los documentos sin el campo.
 ///
-/// La añada y la graduacion vacias **no se escriben**: las reglas aceptan el
-/// campo ausente, y un `null` guardado no le dice nada a nadie.
+/// La añada, la graduacion y la descripcion vacias **no se escriben**: las
+/// reglas aceptan el campo ausente, y un `null` guardado no le dice nada a
+/// nadie. En la descripcion ademas una cadena en blanco la RECHAZAN: para
+/// "sin descripcion" esta el campo ausente o `null`, no `''`.
 Map<String, Object?> documentoNuevo(AltaDeVino alta) {
   final f = alta.ficha;
   return {
@@ -42,6 +44,7 @@ Map<String, Object?> documentoNuevo(AltaDeVino alta) {
       'volumenMl': f.volumenMl,
       if (f.anada != null) 'anada': f.anada,
       if (f.graduacion != null) 'graduacion': f.graduacion,
+      if (f.descripcion != null) 'descripcion': f.descripcion,
     },
   };
 }
@@ -63,6 +66,7 @@ Map<String, Object?> camposQueCambiaron(CambiosDeVino c) => {
   if (c.volumenMl != null) 'fichaVino.volumenMl': c.volumenMl,
   if (c.anada != null) 'fichaVino.anada': c.anada!.valor,
   if (c.graduacion != null) 'fichaVino.graduacion': c.graduacion!.valor,
+  if (c.descripcion != null) 'fichaVino.descripcion': c.descripcion!.valor,
 };
 
 /// El campo de los varietales, escrito una sola vez para que el `arrayUnion`

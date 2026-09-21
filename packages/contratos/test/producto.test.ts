@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  DESCRIPCION_MAXIMA,
   VARIETALES,
   armarCatalogo,
   balde,
@@ -285,4 +286,63 @@ test('un vino con graduacion entra al catalogo, y la proyeccion no la lleva toda
   const { catalogo } = armarCatalogo([vino('grad', {}, { graduacion: 140 })], BODEGAS, undefined);
   assert.deepEqual(catalogo.productos.map((p) => p.id), ['grad']);
   assert.equal('graduacion' in catalogo.productos[0]!, false, 'la vidriera no la muestra en este cambio');
+});
+
+// ------------------------------------------------------------ descripcion
+
+test('la descripcion es opcional, y ausente es lo mismo que null', () => {
+  // Control positivo: el MISMO documento con el campo valida, asi que un
+  // rechazo de abajo es del contenido y no de que el campo exista.
+  const con = validarProducto('con', vino('con', {}, { descripcion: 'Un Malbec de altura.' }).datos);
+  assert.ok(con.ok, 'con texto valida');
+  assert.equal(con.ok && con.valor.fichaVino.descripcion, 'Un Malbec de altura.');
+
+  const sin = validarProducto('sin', vino('sin').datos);
+  assert.ok(sin.ok, 'un vino anterior, sin el campo, sigue validando');
+  assert.equal(sin.ok && sin.valor.fichaVino.descripcion, null);
+
+  const nulo = validarProducto('nulo', vino('nulo', {}, { descripcion: null }).datos);
+  assert.ok(nulo.ok, 'null es "no se cargo"');
+  assert.equal(nulo.ok && nulo.valor.fichaVino.descripcion, null);
+});
+
+test('la descripcion se guarda recortada, y en blanco NO es "sin descripcion"', () => {
+  const v = validarProducto('x', vino('x', {}, { descripcion: '  con espacios al borde  ' }).datos);
+  assert.ok(v.ok);
+  assert.equal(v.ok && v.valor.fichaVino.descripcion, 'con espacios al borde');
+
+  // Dos maneras de decir nada serian dos maneras de leer nada: para eso esta
+  // null. Y un vino descartado por esto NO aparece en la vidriera.
+  for (const [caso, descripcion] of [
+    ['cadena vacia', ''],
+    ['solo espacios', '   '],
+    ['solo saltos de linea', String.fromCharCode(10, 10)],
+  ] as [string, unknown][]) {
+    const r = validarProducto('x', vino('x', {}, { descripcion }).datos);
+    assert.equal(r.ok, false, caso);
+    assert.match(!r.ok ? r.motivo : '', /descripcion/, `${caso}: el motivo nombra el campo`);
+  }
+});
+
+test('el tope de la descripcion es exacto: el ultimo caracter entra y el siguiente no', () => {
+  // El numero va ESCRITO, no leido de la constante: un test que arma el caso
+  // con `DESCRIPCION_MAXIMA` se mide contra si mismo y pasaria con el tope en
+  // 5. Y 600 vive tres veces -aca, en firestore.rules y en el panel-, asi que
+  // `auditar_varietales.mjs` compara las tres.
+  assert.equal(DESCRIPCION_MAXIMA, 600, 'si esto cambia, cambialo tambien en firestore.rules y en el panel');
+
+  const justo = 'a'.repeat(DESCRIPCION_MAXIMA);
+  assert.ok(validarProducto('justo', vino('justo', {}, { descripcion: justo }).datos).ok,
+    `${DESCRIPCION_MAXIMA} caracteres entran`);
+
+  const unoMas = validarProducto('mas', vino('mas', {}, { descripcion: 'a'.repeat(DESCRIPCION_MAXIMA + 1) }).datos);
+  assert.equal(unoMas.ok, false, `${DESCRIPCION_MAXIMA + 1} no entran`);
+  assert.match(!unoMas.ok ? unoMas.motivo : '', /descripcion/);
+});
+
+test('la descripcion tiene que ser texto', () => {
+  for (const descripcion of [123, true, ['un', 'array'], { un: 'mapa' }]) {
+    const r = validarProducto('x', vino('x', {}, { descripcion }).datos);
+    assert.equal(r.ok, false, `${JSON.stringify(descripcion)} no es un texto`);
+  }
 });

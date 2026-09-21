@@ -51,6 +51,7 @@ export const TEXTOS = {
   cajaDe: (n: number) => `Caja de ${n}`,
   precioYCompra: 'Precio y compra',
   hoja: 'Los datos',
+  notaTitulo: 'De esta botella',
   custodiaTitulo: 'Hasta que sale',
   custodia: 'La botella espera acostada, a temperatura pareja y sin luz.',
   filas: {

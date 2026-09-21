@@ -128,5 +128,6 @@ class RepositorioDeProductosFirestore implements RepositorioDeProductos {
     region: textoDe(f['region']),
     volumenMl: enteroDe(f['volumenMl']),
     graduacion: enteroDe(f['graduacion']),
+    descripcion: textoOpcionalDe(f['descripcion']),
   );
 }

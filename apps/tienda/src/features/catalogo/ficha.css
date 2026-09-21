@@ -97,6 +97,26 @@
   color: var(--acento) !important;
 }
 
+.ficha__nota {
+  padding-block: var(--e-6);
+  border-bottom: var(--filete) solid var(--regla);
+}
+
+.ficha__nota .rotulo {
+  margin-bottom: var(--e-3);
+}
+
+/* `pre-line` respeta los saltos que escribio el duenio y colapsa el resto de
+   los espacios: la nota se pega desde donde sea sin traer su formato. La
+   medida corta no es adorno -- una linea larga de prosa se relee sola. */
+.ficha__nota-texto {
+  margin: 0;
+  max-width: 62ch;
+  white-space: pre-line;
+  line-height: var(--interlinea-prosa);
+  color: var(--tinta-1);
+}
+
 .ficha__papel {
   padding-block: var(--e-6) var(--e-8);
 }

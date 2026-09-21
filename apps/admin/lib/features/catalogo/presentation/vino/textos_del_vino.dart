@@ -21,6 +21,7 @@ String nombreDelCampo(CampoDelVino campo) => switch (campo) {
   CampoDelVino.volumen => 'el volumen',
   CampoDelVino.anada => 'la añada',
   CampoDelVino.graduacion => 'la graduación',
+  CampoDelVino.descripcion => 'la descripción',
   CampoDelVino.precio => 'el precio',
   CampoDelVino.botellas => 'las botellas',
 };

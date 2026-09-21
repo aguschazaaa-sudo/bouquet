@@ -43,6 +43,7 @@ function publicado(id: string, cambios: Partial<ProductoPublicado> = {}): Produc
     esCorte: false,
     anada: 2023,
     region: 'Mendoza',
+    descripcion: null,
     balde: 'disponible',
     tope: 12,
     puesto: null,

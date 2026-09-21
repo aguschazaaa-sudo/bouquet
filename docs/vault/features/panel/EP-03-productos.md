@@ -81,9 +81,13 @@ un vino, **para** arreglar un error sin darlo de baja.
 - **Ojo:** el slug de un vino publicado **no cambia**; si hace falta, va con
   redirect 301 ([glosario](../../domain/glossary.md)). El panel no ofrece
   editarlo después de publicar. **Desde ADR 013 no cambia nunca**: es el id.
-- ⚠️ **"La descripción" no existe en el modelo** (hallazgo 14 del
-  [mapa](overview.md)). Esta historia se construyó sin ella; es pregunta para
-  el dueño.
+- ~~⚠️ **"La descripción" no existe en el modelo**~~ (hallazgo 14 del
+  [mapa](overview.md)). **Contestado el 2026-09-21: la ficha la lleva.**
+  `FichaVino.descripcion`, opcional, hasta 600 caracteres, y **llega al
+  comprador** en la ficha de la vidriera — si no llegara sería un campo de
+  escritura, como le pasa hoy a `graduacion`. Se corrige **también en un vino
+  publicado**, a diferencia del precio: no es plata.
+  [ADR 014](../../architecture/decisions/014-publicar-un-vino.md) §4 a §7.
 
 ## HU-03.5 — Cambiar el precio · D
 
@@ -113,7 +117,13 @@ la tienda sin borrarlo, **para** no perder su historia.
 - **Para publicar**, el panel valida lo mismo que la vidriera, o la vidriera lo
   descarta **sin avisar** (hallazgo 8): precio mayor que cero (hallazgo 2),
   nombre que no sea sólo espacios, imágenes con URL pública.
-- **Abierto:** si hace falta al menos una foto para publicar.
+- ~~**Abierto:** si hace falta al menos una foto para publicar.~~
+  **Decidido el 2026-09-21: la foto NO bloquea publicar.** Fundado en el
+  código, no en el gusto: `VentanaDeBotella.tsx:45` ya dibuja la silueta con
+  «sin foto», y con EP-04 sin construir bloquear dejaría **el hito 1 trabado
+  sin poder publicar nada**. Lo que sí hace falta es que el panel lo avise
+  antes, y eso es HU-03.7.
+  [ADR 014](../../architecture/decisions/014-publicar-un-vino.md) §3.
 
 ## HU-03.7 — Ver lo que ve el comprador
 

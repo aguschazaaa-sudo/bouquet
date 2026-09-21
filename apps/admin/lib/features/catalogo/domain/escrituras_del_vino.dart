@@ -60,6 +60,7 @@ class CambiosDeVino {
     this.volumenMl,
     this.anada,
     this.graduacion,
+    this.descripcion,
     this.precio,
     this.varietalesAgregados = const [],
     this.varietalesQuitados = const [],
@@ -73,6 +74,11 @@ class CambiosDeVino {
   final int? volumenMl;
   final Cambio<int?>? anada;
   final Cambio<int?>? graduacion;
+
+  /// La prosa del dueño. Se corrige **tambien en un vino publicado**: no es
+  /// plata, no dispara ninguna baranda, y arreglar una falta de ortografia no
+  /// puede exigir sacar el vino de la tienda.
+  final Cambio<String?>? descripcion;
 
   /// Solo si el vino no esta en la tienda (ADR 013 §9).
   final int? precio;
@@ -91,6 +97,7 @@ class CambiosDeVino {
       volumenMl != null ||
       anada != null ||
       graduacion != null ||
+      descripcion != null ||
       precio != null ||
       varietalesAgregados.isNotEmpty ||
       varietalesQuitados.isNotEmpty;

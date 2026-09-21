@@ -17,6 +17,7 @@ class FichaDelVino {
     this.region = '',
     this.volumenMl,
     this.graduacion,
+    this.descripcion,
   });
 
   final String bodegaId;
@@ -38,4 +39,12 @@ class FichaDelVino {
 
   /// Decimas de grado: 13,5 % es `135`. `null` si no se cargo.
   final int? graduacion;
+
+  /// La prosa del dueño sobre el vino. `null` si no se cargo — y `null` es la
+  /// UNICA forma de decir eso: una cadena en blanco la rechazan las reglas,
+  /// porque dos maneras de decir nada son dos maneras de leerla.
+  ///
+  /// La lee el comprador en la ficha de la vidriera, no solo el panel. Tope
+  /// en `descripcionMaxima`.
+  final String? descripcion;
 }
