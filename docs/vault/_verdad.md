@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-21 - commit `d871218` **+ cambios sin commitear** - huella del cuerpo `5e1ed1581d92`
+> **Generado:** 2026-09-21 - commit `633f7bf` **+ cambios sin commitear** - huella del cuerpo `22203f90537b`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.26.0
+### Scripts de la raiz - `bouquet` 0.26.1
 
 | Script | Comando |
 |---|---|
@@ -111,12 +111,12 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `packages/contratos/test/dinero.test.ts` | 7 |
 | `packages/contratos/test/envio.test.ts` | 27 |
 | `packages/contratos/test/orden.test.ts` | 13 |
-| `packages/contratos/test/producto.test.ts` | 28 |
+| `packages/contratos/test/producto.test.ts` | 30 |
 | `packages/contratos/test/proyeccion.test.ts` | 6 |
 | `packages/contratos/test/texto.test.ts` | 15 |
 | `scripts/acceso/acceso.test.mjs` | 11 |
-| `scripts/reglas/productos.test.mjs` | 53 |
-| **total** | **409** |
+| `scripts/reglas/productos.test.mjs` | 54 |
+| **total** | **412** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -350,4 +350,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 114. Archivos de test: 25. Casos de test: 409.
+Archivos de codigo recorridos: 114. Archivos de test: 25. Casos de test: 412.

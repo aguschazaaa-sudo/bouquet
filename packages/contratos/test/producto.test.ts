@@ -346,3 +346,34 @@ test('la descripcion tiene que ser texto', () => {
     assert.equal(r.ok, false, `${JSON.stringify(descripcion)} no es un texto`);
   }
 });
+
+// --------------------------------------- publicado con precio 0 (hallazgo 2)
+
+test('un publicado con precio 0 NO valida, y sin publicar si', () => {
+  // La vidriera lee con el Admin SDK, que no pasa por firestore.rules: esta
+  // funcion es la ULTIMA puerta antes del comprador, no la regla. Sin esto,
+  // un seed o una reposicion escriben un vino en $ 0,00 y se publica.
+  const publicado = validarProducto('x', vino('x', { publicado: true, precio: 0 }).datos);
+  assert.equal(publicado.ok, false, 'publicado en 0 rebota');
+  assert.match(!publicado.ok ? publicado.motivo : '', /precio/);
+
+  // Control positivo: el MISMO documento con precio valida, asi que el
+  // rechazo es por el precio y no por otra cosa del documento.
+  assert.ok(validarProducto('x', vino('x', { publicado: true, precio: 1 }).datos).ok, 'publicado en 1 valida');
+  assert.ok(validarProducto('x', vino('x', { publicado: false, precio: 0 }).datos).ok, 'un borrador en 0 valida');
+});
+
+test('un publicado con precio 0 se cae del catalogo, con su motivo', () => {
+  const { catalogo, descartes } = armarCatalogo(
+    [vino('bueno'), vino('roto', { publicado: true, precio: 0 })],
+    BODEGAS,
+    undefined,
+  );
+  // Control positivo: el otro vino SI entra. Sin este caso, un armarCatalogo
+  // que descarta todo pasaria el assert de abajo.
+  assert.deepEqual(catalogo.productos.map((p) => p.id), ['bueno']);
+  assert.equal(descartes.length, 1);
+  const descarte = descartes[0]!;
+  assert.equal(descarte.id, 'roto');
+  assert.match(descarte.motivo, /precio/);
+});

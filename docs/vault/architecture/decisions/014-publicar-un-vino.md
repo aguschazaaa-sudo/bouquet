@@ -65,6 +65,19 @@ puede dejar atascado un documento que ya existe —sin poder corregirlo sin
 despublicarlo—: **0** productos publicados con `precio <= 0`, con control
 positivo (el mismo filtro con `precio <= 99999999` devuelve los 20).
 
+⚠️ **La regla sola NO cierra el hallazgo 2, y `revisor-pagos` lo midió.** La
+vidriera lee con el Admin SDK (`applicationDefault()` en
+`apps/tienda/src/server/firebase-admin.ts`), que **no pasa por las reglas**:
+`firestore.rules` no está en el camino que llega al comprador. La última puerta
+es `validarProducto`, y aceptaba `precio >= 0`. Un vino escrito por el seed, por
+una reposición o por un script con `publicado: true` y `precio: 0` se
+proyectaba, se mostraba en $ 0,00, y el día que exista `crearOrden` un
+`precioUnitarioVisto: 0` **coincidiría**.
+
+Por eso `validarProducto` **espeja `precioCoherente`**: un publicado con precio
+0 no valida, y `armarCatalogo` lo descarta con su motivo. Las dos mitades, o el
+hallazgo no está cerrado.
+
 ### 3. Cada imagen es una URL `https://`, escrita diez veces
 
 `imagenesValidas(l)`: el tope de 10 **y una condición por índice**.
@@ -179,6 +192,63 @@ la unicidad la da el id, como decidió ADR 013.
   guardar**. No hay ninguno hoy; si apareciera, hay que arreglar el dato antes
   de que la regla se despliegue.
 
+## Lo que encontró `revisor-pagos` (Workflow D, obligatorio)
+
+Corrió sobre esta rebanada —reglas, contrato y descripción—. **No cubre
+HU-03.5 ni HU-03.6**, que son las que de verdad tocan plata y todavía no
+existen: cuando entren el interruptor y el cambio de precio hace falta otra
+pasada.
+
+| # | Hallazgo | Estado |
+|---|---|---|
+| **1** | `precioCoherente` cerraba sólo el camino del panel; la proyección seguía publicando un `precio: 0` | **Resuelto.** `validarProducto` lo espeja, con dos tests: el del validador y el del descarte, cada uno con su control positivo |
+| **2** | La descripción de prueba se escribió en producción **antes** de desplegar la regla que la permite, y dejó el documento **congelado**: con `descripcion` en `fichaVino` y un `hasOnly` que no la lista, `update` rebota con `permission-denied` | **Resuelto** desplegando las reglas. Ver abajo |
+| **3** | El ruleset publicado no correspondía a ningún commit | **Anotado y corregido en el procedimiento.** Ver abajo |
+| **4** | El hallazgo 1 de ADR 008 queda cerrado **para el camino del cliente**; del lado del Admin SDK lo sostienen dos guardas de `muestra: true` en los scripts del seed, no una regla | **Aceptado**, escrito acá para que no se lea como cerrado del todo |
+| **5** | Un documento con el slug mal tecleado **ya no se puede borrar**: sólo despublicar. No cuesta nada en la vidriera —`armarCatalogo` lee sólo los publicados— pero el catálogo del panel lee la colección entera, así que cada documento basura es una lectura en cada sesión fría, para siempre | **Aceptado con su salida:** si aparece, se borra con un script de Admin SDK en `scripts/`. Es el precio de cerrar la puerta del `delete`, y es más barato que el modo de falla que cierra |
+| **6** | El tope de 600 se midió contra `ñ`, que discrimina bytes de caracteres pero **no** caracteres de unidades UTF-16 | **Medido, y no era un problema:** con 350 caracteres fuera del BMP —350 puntos de código, 700 unidades UTF-16— las reglas **rechazan**, así que `size()` cuenta **unidades UTF-16**, igual que `.length` de JS y de Dart. Los tres lados cuentan lo mismo. Hay un test que lo afirma: si algún día pasa a verde, las reglas se volvieron más permisivas que el panel |
+| **7** | La baranda del precio vive sólo en `presentation`. Nada en reglas ni en contrato acota el precio **por arriba**: un cero de más convierte $ 16.500 en $ 165.000 y no rebota nada | **Aceptado, y dicho.** Las reglas de `config` argumentan lo contrario en §9.4 —*"la baranda vive en el trigger y las reglas garantizan que no exista otro camino"*—, pero una mediana vive en una consulta que las reglas **no pueden hacer sin `get()` facturados por evaluación**. Hoy el panel es el único escritor de `precio`, así que el widget **es** la única puerta. Si algún día otro camino escribe precios, esto deja de alcanzar |
+
+### El orden se invirtió para un campo, y se midió cuánto cuesta
+
+Lo que se ejecutó fue: **panel desplegado → escritura de prueba a producción con
+un campo que las reglas vivas prohíben → reglas pendientes.** Eso es
+`front → reglas` para `descripcion`, al revés de lo no negociable.
+
+**Qué pasó de verdad, medido contra el emulador con el ruleset publicado
+bajado de la API:** el documento con `descripcion` rebota en `update` de
+`nombre`, de `precio` **y de `publicado`**. Control positivo: el mismo
+documento sin ese campo acepta las tres.
+
+Hoy fue barato —un vino `muestra: true`, y la vidriera no está desplegada—.
+La misma secuencia sobre un vino real: **el dueño no le puede corregir el
+precio ni despublicarlo**, y con `allow delete: if false` no le queda ninguna
+salida desde el cliente. El vino se queda en la tienda con el precio
+equivocado hasta que alguien despliegue reglas.
+
+⚠️ **Y poner el campo en `null` NO lo descongela**: un campo en `null` sigue
+teniendo su clave presente, y `hasOnly` mira claves. Las salidas son desplegar
+la regla o **borrar el campo**.
+
+### `firebase deploy --only firestore:rules` sube el ÁRBOL, no HEAD
+
+El ruleset `0310466f` es `d871218:firestore.rules` **más una línea que en ese
+momento no estaba commiteada**. Es la versión "reglas" de *el deploy de front
+reconstruye desde el HEAD pusheado*, y es peor: arrastra hasta lo que no está
+en git.
+
+Fue benigno —sumar un varietal sólo ensancha el conjunto aceptado— pero **la
+dirección es la peligrosa: reglas más anchas que el contrato.** Un documento
+con ese varietal se podía escribir, y el `validarProducto` desplegado lo
+habría descartado de la vidriera **sin error visible**.
+
+`auditar_varietales.mjs` no puede ver esta deriva: compara tres archivos **del
+repo**, no lo desplegado.
+
+**Procedimiento, desde acá:** `firebase deploy --only firestore:rules` **sólo
+con `git status --short` vacío**, y la verificación compara el ruleset contra
+**HEAD** y contra el archivo del árbol.
+
 ## Lo que falta
 
 - **Las reglas de este ADR no están desplegadas.** Lo publicado es el ruleset
@@ -190,6 +260,7 @@ la unicidad la da el id, como decidió ADR 013.
   están construidos.** Las reglas que los habilitan sí.
 - **El título «De esta botella» no pasó por el agente `voz`.** La vidriera no
   se despliega en este change, así que no llega a ningún comprador todavía.
-- **Hay una descripción de prueba escrita en `muestra-alamos-malbec`**, para
-  poder mirar la ficha renderizada. Se borra con un `PATCH` de
-  `fichaVino.descripcion` en `null`.
+- **Hay una descripción de prueba escrita en `muestra-alamos-malbec`.** Con
+  las reglas de este ADR desplegadas es un documento válido; **hasta que se
+  desplieguen está congelado**. Para sacarla hay que **borrar el campo**, no
+  ponerlo en `null`.

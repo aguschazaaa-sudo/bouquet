@@ -234,8 +234,14 @@ no monta, y parece un defecto del componente.
       archivos nuevos **con ruta absoluta** y un canario positivo.
 - [ ] 8.6 `node scripts/ci/verificar_enlaces.mjs .`
 - [ ] 8.7 **`cazador-de-puertas`**: nadie huérfano, con control negativo.
-- [ ] 8.8 **`revisor-pagos` sobre el diff entero** (Workflow D, obligatorio).
-      Sus hallazgos se resuelven o se anotan en el ADR **antes** de desplegar.
+- [~] 8.8 **`revisor-pagos`**: corrido sobre la rebanada de reglas + contrato +
+      descripción. 2 ALTO, 3 MEDIO, 2 BAJO. Los dos ALTO **resueltos** (la
+      proyección espeja `precioCoherente`; el documento congelado lo destraba
+      el deploy de reglas), los otros cinco anotados en ADR 014 con su
+      disparador. **No cierra la tarea**: HU-03.5 y HU-03.6 —el interruptor y
+      el cambio de precio, que son lo que de verdad toca plata— todavía no
+      existen y necesitan otra pasada.
+      ⚠️ Lo corrí **después** de commitear, y esta tarea dice antes.
 
 ## 9. Documentar y commitear
 
@@ -248,8 +254,11 @@ no monta, y parece un defecto del componente.
 
 ## 10. Desplegar y verificar — reglas → panel
 
-- [ ] 10.1 Comparar el ruleset publicado con `HEAD`: la diferencia es **sólo**
-      la de este change (el del paso 0 ya está adentro).
+- [ ] 10.1 **`git status --short` vacío antes de desplegar.**
+      `firebase deploy --only firestore:rules` sube el **árbol de trabajo, no
+      HEAD**: el ruleset `0310466f` salió con una línea sin commitear adentro.
+      Comparar el ruleset publicado con **HEAD y con el archivo del árbol**: la
+      diferencia es sólo la de este change.
 - [ ] 10.2 **Reglas** — `firebase deploy --only firestore:rules`, lo corre el
       usuario o lo autoriza. Verificar con la API de Rules: el ruleset nuevo
       contiene las tres condiciones. Control negativo: un texto inventado da 0.

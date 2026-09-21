@@ -309,6 +309,19 @@ export function validarProducto(id: string, datos: unknown): Validacion<Producto
     return { ok: false, motivo: 'imagenes no es una lista de URLs https' };
   }
   if (typeof d.publicado !== 'boolean') return { ok: false, motivo: 'publicado no es bool' };
+  // ESPEJA `precioCoherente` DE firestore.rules, y no es redundante con el:
+  // la vidriera lee con el Admin SDK (`applicationDefault()` en
+  // apps/tienda/src/server/firebase-admin.ts), que NO PASA POR LAS REGLAS.
+  // La ultima puerta antes del comprador es esta funcion, no la regla.
+  //
+  // Sin esto, un documento escrito por el seed, por una reposicion o por un
+  // script con `publicado: true` y `precio: 0` se proyecta, se muestra en
+  // $ 0,00, y el dia que exista crearOrden un `precioUnitarioVisto: 0`
+  // COINCIDE. Es el hallazgo 2 de revisor-pagos (ADR 008), cuya otra mitad
+  // cierra la regla.
+  if (d.publicado && d.precio <= 0) {
+    return { ok: false, motivo: 'publicado con precio 0: un vino en la tienda necesita precio' };
+  }
   const muestra = d.muestra ?? false;
   if (typeof muestra !== 'boolean') return { ok: false, motivo: 'muestra no es bool' };
   const ficha = validarFicha(d.fichaVino);

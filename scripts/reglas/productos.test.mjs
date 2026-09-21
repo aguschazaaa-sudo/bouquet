@@ -562,3 +562,32 @@ describe('la descripcion es opcional y tiene tope', () => {
     await assertFails(updateDoc(producto(admin), { 'fichaVino.descripcion': '   ' }));
   });
 });
+
+describe('que cuenta size(): la pregunta que el numero 600 no contesta', () => {
+  // Las tres copias dicen 600. auditar_varietales compara EL NUMERO, no QUE se
+  // cuenta: si las reglas contaran puntos de codigo y JS/Dart unidades UTF-16,
+  // los tres archivos coincidirian y el contador del formulario mentiria.
+  //
+  // Un caracter fuera del BMP vale 1 punto de codigo y 2 unidades UTF-16.
+  const FUERA_DEL_BMP = String.fromCodePoint(0x1f347); // uva
+  const PUNTOS = 350; // 350 puntos de codigo = 700 unidades UTF-16
+
+  test('350 caracteres fuera del BMP: 350 puntos, 700 unidades UTF-16', async () => {
+    const texto = FUERA_DEL_BMP.repeat(PUNTOS);
+    // Control del propio caso: si esto no fuera 700, el caso no discrimina.
+    assert.equal(texto.length, 700, 'en JS son 700 unidades UTF-16');
+    assert.equal([...texto].length, 350, 'y 350 puntos de codigo');
+
+    // Control positivo: el mismo documento con un texto corto pasa.
+    await assertSucceeds(alta(admin, vino({ slug: 'corto' }, { descripcion: 'ab' })));
+
+    // MEDIDO el 2026-09-21: rebota. O sea que size() cuenta UNIDADES UTF-16,
+    // igual que `.length` de JS y de Dart: los tres lados cuentan lo mismo y
+    // el contador del formulario no miente. Si algun dia esto pasa a verde,
+    // las reglas se volvieron mas permisivas que el panel.
+    await assertFails(alta(admin, vino({ slug: 'bmp' }, { descripcion: texto })));
+
+    // Y el limite por el otro lado: 300 puntos son 600 unidades y entran.
+    await assertSucceeds(alta(admin, vino({ slug: 'justo' }, { descripcion: FUERA_DEL_BMP.repeat(300) })));
+  });
+});
