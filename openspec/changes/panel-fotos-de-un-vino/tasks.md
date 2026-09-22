@@ -296,13 +296,28 @@ bloquea más de un widget público por archivo. Los dos empujan a esta división
       producción), consistente con lo que ya decían esas dos tareas. De paso
       confirmó el hallazgo de 8.2: `_index.md:99` sigue diciendo "falta el
       deploy del panel" cuando ya se desplegó.
-- [~] 7.2 `gh workflow run ci.yml -f alcance=tests`. **Reordenado a propósito**:
-      CI corre contra lo que está *pusheado*, y nada de este change se pusheó
-      todavía — dispararlo ahora habría probado el `main` de antes, un verde
-      que no mide nada. Local, en su lugar, sirvió lo mismo que `alcance=tests`
-      hoy corre en CI: `npm run tipos` (los tres proyectos TS, limpio) y
-      `npm test` (contratos 34/34 + functions 17/17, **51/51**). El disparo
-      real de CI queda para después de pushear, junto con 9.1.
+- [x] 7.2 `gh workflow run ci.yml -f alcance=tests`. **Reordenado a
+      propósito**: CI corre contra lo que está *pusheado*, así que se
+      disparó recién después de pushear, no antes. **Y encontró dos cosas
+      reales que lo local no vio:**
+      1. `_verdad.md` divergía en CI (8 líneas, línea 240): se había
+         generado con `functions/lib/` presente en esta máquina —el
+         bundle de `esbuild`, gitignoreado, que CI nunca tiene—. Arreglado
+         en `scripts/ci/generar_verdad.mjs` (`IGNORAR_RUTA` ganó
+         `'functions/lib'`; no alcanza excluir por nombre porque
+         `apps/admin/lib` es código Dart real). Verificado borrando
+         `functions/lib/` local y regenerando: salida byte a byte idéntica.
+      2. `suite_ts` fallaba con `ENOENT` sobre `alamos-malbec.jpg`:
+         `scripts/seed/fotos/` está en `.gitignore` y nunca existió en un
+         checkout de CI. Las dos pruebas del requisito (mismo SHA-256,
+         control negativo) pasaron a una fixture sintética generada en el
+         momento; las que dependen de números medidos sobre fotos reales
+         pasaron a `skip` con razón visible. Verificado simulando el
+         checkout: carpeta movida afuera, 8 pasan + 3 `skip`, 0 fallan.
+      **Corrida final, verde de verdad**: `suite_ts` 185+34+17(14 pass, 3
+      skip, 0 fail) = corrida 35779674776. Los dos hallazgos fueron commits
+      aparte (v0.28.1, v0.28.2) — ninguno se amontonó en el commit de la
+      feature.
 - [x] 7.3 `bash scripts/hooks/probar_hooks.sh` — **35/35**, todos midiendo de
       verdad (control positivo y negativo cada uno). Y
       `node scripts/ci/verificar_enlaces.mjs .` — **465 enlaces, todos
@@ -346,16 +361,26 @@ bloquea más de un widget público por archivo. Los dos empujan a esta división
 
 ## 9. Desplegar el panel y verificar
 
-- [ ] 9.1 `gh workflow run ci.yml -f alcance=panel` y leer la corrida.
-- [ ] 9.2 `bash scripts/panel/publicar.sh preview <corrida>`; verificar el
-      canal contra el artifact, con control negativo.
-- [ ] 9.3 **Canario propio, sin tildes** — `dart2js` las escapa y un string con
-      tilde da CERO en `main.dart.js` aunque el deploy haya llegado. Chequear
-      que el string sea nuevo **antes** de usarlo.
-- [ ] 9.4 `publicar.sh promover panel` (`hosting:clone`, sin recompilar).
-      **No pushear entre verificar y promover.**
-- [ ] 9.5 `publicar.sh verificar https://bouquet-vinos.web.app` — hashes byte a
-      byte iguales a los del canal ya verificado.
+- [x] 9.1 `gh workflow run ci.yml -f alcance=panel` — corrida **35780172218**,
+      `build_panel` y `veredicto` verdes.
+- [x] 9.2 `bash scripts/panel/publicar.sh preview 35780172218` → canal
+      `https://bouquet-vinos--panel-3917xi28.web.app`. **35 archivos con hash
+      verificado, commit coincide** (`79a7534`).
+- [x] 9.3 **Canario propio, sin tildes**: `"Sacar esta foto"`, `"Ir a cargar
+      una foto"`, `"Eso no es una foto (jpg, png o webp): no la subimos."` —
+      las tres de `textos_de_fotos.dart`. **Control negativo primero**: 0
+      apariciones en el `main.dart.js` **vivo, antes** de promover (la
+      feature todavía no estaba ahí). Control positivo: **3** en el canal de
+      preview.
+- [x] 9.4 `publicar.sh promover panel` (`hosting:clone`, sin recompilar). No
+      se pusheó nada entre verificar el canal y promover.
+- [x] 9.5 `publicar.sh verificar https://bouquet-vinos.web.app` — **los 4
+      hashes byte a byte iguales** a los del canal ya verificado
+      (`main.dart.js` `410680e54e067339`, `flutter_bootstrap.js`
+      `2f3febadc03adda6`, `index.html` `4f260f0d13ff4de6`, `COMMIT`
+      `f062b701c2ce7570`), control negativo, `X-Robots-Tag: noindex`. Y el
+      canario de 9.3, ahora en vivo: **3** apariciones (0 antes, 3 después —
+      el string es nuevo y discriminante, no una coincidencia).
 
 ## 10. Lo que sólo puede hacer el dueño
 

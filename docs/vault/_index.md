@@ -74,7 +74,7 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
-### EP-04: las fotos del panel, functions desplegada — el panel sigue sin desplegar (2026-09-22)
+### EP-04: las fotos del panel, functions y panel desplegados y verificados (2026-09-22)
 
 **HU-04.1, HU-04.3 y HU-04.4 construidas** (grupos 1-8 del change
 [`panel-fotos-de-un-vino`](../../openspec/changes/panel-fotos-de-un-vino/proposal.md)),
@@ -107,12 +107,15 @@ confirmados** —control positivo y negativo cada uno—: `procesarFoto` la llam
 `enrutador.dart` → `PaginaDelVino` → `formulario_del_vino.dart:155`, y los dos
 providers nuevos tienen call site real.
 
-⚠️ **El panel todavía NO se desplegó** — Grupo 9 de `tasks.md`: CI
-`alcance=panel` → `publicar.sh preview` → `promover` → `verificar`. Y quedan
-dos verificaciones que sólo puede hacer el dueño: **subir una foto real a un
-vino real y mirarla en la tienda** (10.1) y **decir si la previsualización le
-sirve** (10.2) — es la única pregunta que decide si alguna vez hace falta el
-recorte de fondo.
+**Y el panel se desplegó y se verificó en vivo el mismo día.** CI
+`alcance=panel` (corrida `35780172218`) → `publicar.sh preview` → `promover`
+→ `verificar`: los 4 hashes byte a byte iguales entre el canal y
+`bouquet-vinos.web.app`, y un canario propio —tres strings nuevas de
+`textos_de_fotos.dart`, sin tildes— en **0** apariciones en el `main.dart.js`
+vivo antes de promover y **3** después. Quedan dos verificaciones que sólo
+puede hacer el dueño: **subir una foto real a un vino real y mirarla en la
+tienda** (10.1) y **decir si la previsualización le sirve** (10.2) — es la
+única pregunta que decide si alguna vez hace falta el recorte de fondo.
 
 | Qué | Cómo |
 |---|---|
