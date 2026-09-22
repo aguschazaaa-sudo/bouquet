@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { test } from 'node:test';
@@ -9,15 +9,23 @@ import { contentTypeDe, detectarFormato } from '../../src/foto/validar.ts';
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const FOTOS = join(AQUI, '..', '..', '..', 'scripts', 'seed', 'fotos');
 
-test('control positivo: las 19 fotos reales del seed se detectan', () => {
-  const archivos = readdirSync(FOTOS).filter((f) => f.endsWith('.jpg') || f.endsWith('.png'));
-  assert.equal(archivos.length, 19);
-  for (const archivo of archivos) {
-    const formato = detectarFormato(readFileSync(join(FOTOS, archivo)));
-    const esperado = archivo.endsWith('.png') ? 'png' : 'jpeg';
-    assert.equal(formato, esperado, `${archivo} deberia detectarse como ${esperado}`);
-  }
-});
+// `scripts/seed/fotos/` esta en `.gitignore` (packshots de bodega, no
+// assets del repo): no existe en un checkout de CI. Medido el 2026-09-22,
+// corrida 35778011940. El resto de los tests de este archivo son
+// sinteticos y no dependen de esta carpeta.
+test(
+  'control positivo: las 19 fotos reales del seed se detectan',
+  { skip: !existsSync(FOTOS) && 'scripts/seed/fotos/ esta en .gitignore: no existe en este checkout' },
+  () => {
+    const archivos = readdirSync(FOTOS).filter((f) => f.endsWith('.jpg') || f.endsWith('.png'));
+    assert.equal(archivos.length, 19);
+    for (const archivo of archivos) {
+      const formato = detectarFormato(readFileSync(join(FOTOS, archivo)));
+      const esperado = archivo.endsWith('.png') ? 'png' : 'jpeg';
+      assert.equal(formato, esperado, `${archivo} deberia detectarse como ${esperado}`);
+    }
+  },
+);
 
 test('un PDF renombrado foto.jpg NO se detecta como imagen', () => {
   // Cabecera real de PDF, sin ninguna relacion con los bytes magicos de
