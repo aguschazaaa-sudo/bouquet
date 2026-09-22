@@ -1,8 +1,9 @@
 # ADR 014 — Endurecer el producto, y la descripción punta a punta
 
 - **Fecha:** 2026-09-21
-- **Estado:** aceptada y **aplicada en el código**. Reglas y panel **sin
-  desplegar** todavía: ver *Lo que falta*
+- **Estado:** aceptada y **aplicada en el código**. **Reglas desplegadas**
+  (`04b8a471`, 2026-09-21); **panel sin desplegar** todavía: ver *Lo que
+  falta*
 - **Decide:** que un producto no se borre nunca, que un vino publicado tenga
   precio, que cada imagen sea una URL `https://`, y que la ficha de un vino
   lleve una **descripción** que el comprador lee
@@ -192,6 +193,130 @@ la unicidad la da el id, como decidió ADR 013.
   guardar**. No hay ninguno hoy; si apareciera, hay que arreglar el dato antes
   de que la regla se despliegue.
 
+## HU-03.5, HU-03.6 y HU-03.7: publicar, cambiar el precio, y ver cómo se ve
+
+Lo que `design.md` de este change dejaba decidido (Decisions 1 a 8) **ya no es
+plan: es código**, verificado contra el emulador de reglas y contra
+`dart test` archivo por archivo — la suite completa la corre CI, que sigue
+siendo lo único que compila el panel entero en esta máquina.
+
+- **`apps/admin/lib/core/contratos/catalogo_publico.dart`**: el espejo de
+  `balde`, `tope` y `MotivoDeDescarte` (5 categorías), verificado contra
+  `packages/contratos/generated/contratos.json` — la unidad externa, no el
+  panel comparado consigo mismo (Decision 2 de `design.md`).
+- **`apps/admin/lib/features/catalogo/domain/en_la_tienda.dart`**:
+  `revisarParaLaTienda` da el estado real que ve la vidriera; `revisarParaPublicar`
+  simula `publicado: true` para que un borrador no muestre siempre "no
+  publicado" y tape el motivo de fondo —precio en 0, bodega inexistente— que
+  HU-03.6 necesita mostrar **antes** de publicar.
+- **`apps/admin/lib/features/catalogo/domain/cambio_de_precio.dart`**:
+  `pideConfirmarElCambio` — el precio nuevo se aparta 10× o más de la mediana
+  de los publicados (sólo con 5 o más) **o** es menos de la mitad o más del
+  doble del anterior (Decision 5 de `design.md`).
+- **`RepositorioDeProductos`** ganó `publicar`, `despublicar` y
+  `cambiarPrecio`, cada uno un `update` de un solo campo — nunca tocan
+  `stock`, `tipo`, `presentacion`, `muestra` ni `slug`
+  (`_actualizarUnCampo` privado, compartido por los tres).
+- **Presentación, bottom-up**: `interruptor_de_tienda.dart` (129 líneas),
+  `revision_para_publicar.dart` (43), `como_se_ve_en_la_tienda.dart` (76) y
+  `hoja_de_precio.dart` (175), agrupados en `seccion_de_la_tienda.dart` (76) e
+  insertados en `pagina_del_vino.dart` **arriba** del formulario, y **sólo**
+  al corregir un vino existente — nunca en un alta (Decision 3). El renglón
+  del catálogo (`renglon_de_producto.dart`, 198 líneas, al límite del hook)
+  gana el motivo corto vía `motivo_corto_de_tienda.dart` cuando un publicado
+  igual no aparece.
+- **La descripción entró al formulario**, en `seccion_del_vino.dart` (142
+  líneas), **sin** el gate de `precioFijo`: no es plata, y una falta de
+  ortografía no puede obligar a despublicar primero (§6 de este mismo ADR).
+- **`packages/contratos`**: `CASOS_DE_BALDE` (10) y `CASOS_DE_DESCARTE` (19,
+  empezó en 11) exportados como fixtures, calculadas llamando a `balde`,
+  `tope` y `armarCatalogo` **reales** — mismo patrón que `ENTRADAS_DE_TEXTO`.
+  `scripts/ci/auditar_estados.mjs` audita el bloque con sus dos controles: al
+  menos un caso que entra al catálogo, al menos uno que no.
+
+### La segunda pasada de `revisor-pagos` (2026-09-22, obligatoria por Workflow D)
+
+Corrió `armarCatalogo` de verdad contra 12 documentos de contraste, no lo leyó
+a ojo. **2 ALTO, 3 MEDIO, 4 BAJO — los 9 corregidos antes de commitear**, al
+revés de la primera pasada de este mismo ADR (tabla de abajo, hallazgo 2: esa
+corrió **después**).
+
+1. **ALTO — el precio publicado podía salir sin la baranda de HU-03.5.** El
+   interruptor de publicar vive en la misma página que el formulario de
+   edición, arriba. `BorradorDeVino._borrador` se construye una sola vez
+   (campo `late`) y `key: ValueKey(vino.id)` evita que se recree cuando el
+   catálogo trae el vino actualizado: `precioFijo` — que lee
+   `original?.publicado` — quedaba congelado en el momento en que se abrió la
+   página. Publicar el vino **con el formulario abierto** y guardar después un
+   precio nuevo mandaba ese precio sin confirmación y sin el aviso de los ~13
+   minutos. Arreglado con `BorradorDeVino.conOriginalActualizado(nuevo)` —
+   refresca sólo el `original`, preserva todo lo tecleado —, llamado desde
+   `didUpdateWidget` de `_FormularioDelVinoState`. Cierra el caso de un solo
+   operador con dos paneles abiertos y el de dos operadores en dos
+   dispositivos, porque lo dispara el mismo stream de Firestore que ya se
+   estaba escuchando.
+2. **ALTO — "está en la tienda" podía ser falso contra un vino de muestra.**
+   `revisarParaLaTienda` usaba `ChoqueDeDireccion.bloquea` de
+   `Catalogo.quienTiene` para decidir el slug duplicado, pero esa bandera
+   contesta otra pregunta — "¿se puede guardar el ALTA?", donde
+   [ADR 013 §1](013-cargar-un-vino.md) decidió que un choque contra un vino de
+   **muestra** se avisa y no frena —. `armarCatalogo` cuenta TODOS los
+   documentos crudos que comparten un slug, de muestra o no, y descarta a los
+   dos **antes** de mirar `publicado`. El primer vino real que compartiera
+   nombre con uno de los 20 de muestra — que viven en la misma base:
+   `.firebaserc` tiene un solo proyecto — quedaba **afuera de la vidriera** y
+   el panel decía que estaba **adentro**: el modo de falla exacto que HU-03.7
+   existe para cerrar. Arreglado sacando el `.bloquea`: cualquier choque de
+   slug, de muestra o no, es `slugDuplicado`. Un par de fixtures nuevo en
+   `CASOS_DE_DESCARTE` (un vino real + uno de muestra compartiendo slug) hacía
+   fallar la versión vieja.
+3. **MEDIO — el espejo de validación cubría 4 de ~12 familias.** Ampliado a
+   10: slug con formato inválido, `volumenMl` ausente o ≤0,
+   `anada`/`graduacion` presentes pero fuera de rango, varietales repetidos,
+   descripción sobre el tope — todas verificables porque `ProductoDelPanel`
+   conserva el dato sin normalizarlo. Las 4 que quedan afuera (`botellas < 1`,
+   `organico` mal tipado, `imagenes` ausente vs. lista vacía, un compuesto con
+   `stock`) **no son elegibles**: `data/campos.dart` (`enteroDe`, `boolDe`,
+   `textosDe`) ya les pone un valor por omisión **al leer** el documento,
+   antes de que el dominio los vea — cerrarlas pide cambiar cómo el panel
+   entero lee Firestore, no esta revisión. Documentado como límite real en el
+   comentario de `en_la_tienda.dart`, no escondido.
+4. **MEDIO — "Deshacer" podía reventar o publicar sin revisión.** El
+   `SnackBar` de despublicar sobrevive a navegar a otra pantalla
+   (`ScaffoldMessenger` vive arriba del `Navigator` en `MaterialApp.router`);
+   tocar "Deshacer" después de volver al catálogo llamaba `setState` sobre un
+   `State` ya dispuesto. Y el "Deshacer" tampoco pasaba por
+   `revisarParaPublicar` antes de republicar. Las dos corregidas: guardia de
+   `mounted` primero, y la revisión antes de reintentar publicar.
+5. **MEDIO — la hoja de precio decidía con datos viejos.** `HojaDePrecio`
+   evaluaba `pideConfirmarElCambio` contra el precio y la mediana del momento
+   en que se abrió la hoja modal, no contra la base: un cambio de otra
+   persona mientras estaba abierta se pisaba sin que la baranda lo viera, y
+   encima con la comparación equivocada. Corregido releyendo el catálogo vivo
+   (0 lecturas extra, ya está en memoria) justo antes de decidir.
+6. **BAJO — el texto de "compuesto" afirmaba algo indistinguible.** El panel
+   no puede distinguir "compuesto" de "simple sin stock cargado" desde
+   `ProductoDelPanel`. Corregido en los dos textos que lo usan.
+7. **BAJO — el auditor no comparaba el motivo real contra la clase
+   declarada.** `scripts/ci/auditar_estados.mjs` ahora lo hace, con control
+   negativo: una clase mal puesta en `producto.ts` sale con el id y la clase
+   real nombrados.
+8. **BAJO — la spec pedía publicar también desde el renglón del catálogo, y
+   eso no se construyó.** Se corrigió la **spec**
+   (`specs/panel-publicar-vino/spec.md`), no el código: un interruptor inline
+   en una fila de lista arriesga despublicar sin la revisión previa al lado.
+   La acción queda sólo en la página; el renglón informa.
+9. **BAJO — nada que corregir**, quedó anotado que se revisó.
+
+**Trece caminos verificados y sin hallazgo**, entre ellos: los tres métodos de
+escritura tocan un solo campo cada uno — grepeado: una sola línea nueva de
+`.update(` en todo el diff —; el panel no ofrece borrar en ningún lado;
+`imagenes` no se escribe por ningún camino nuevo — sigue siendo sólo de
+lectura, EP-04 sigue sin construir —; `revisarParaLaTienda` replica el
+**orden** exacto de `armarCatalogo` paso a paso; y las reglas ya desplegadas
+(`04b8a471`) cierran el hallazgo 2 de ADR 008 **en la base**, no en la
+pantalla.
+
 ## Lo que encontró `revisor-pagos` (Workflow D, obligatorio)
 
 Corrió sobre esta rebanada —reglas, contrato y descripción—. **No cubre
@@ -251,16 +376,34 @@ con `git status --short` vacío**, y la verificación compara el ruleset contra
 
 ## Lo que falta
 
-- **Las reglas de este ADR no están desplegadas.** Lo publicado es el ruleset
-  `0310466f`, que es el de ADR 013. El deploy es **reglas → panel**, sin
-  functions y sin tienda.
-- **El panel todavía no tiene el campo de la descripción en la pantalla.** El
-  dominio, el mapeo y los tests están; falta el widget del formulario.
-- **Publicar y despublicar (HU-03.6) y el espejo de la vidriera (HU-03.7) no
-  están construidos.** Las reglas que los habilitan sí.
-- **El título «De esta botella» no pasó por el agente `voz`.** La vidriera no
-  se despliega en este change, así que no llega a ningún comprador todavía.
+- ~~**Las reglas de este ADR no están desplegadas.**~~ **Desplegadas el
+  2026-09-21**: `0310466f` → `04b8a471`, verificado con la API de Rules —
+  cuatro canarios que aparecen (`precioCoherente`, `imagenesValidas`,
+  `descripcionValida`, `'descripcion'`) y uno que desaparece (`allow delete:
+  if esAdmin()` en `productos`) —, y con escrituras reales contra el ruleset
+  **publicado**, no contra el archivo del repo.
+- **HU-03.5, HU-03.6 y HU-03.7 no necesitaron una sola regla nueva.** Las tres
+  condiciones que las protegen —el `delete` cerrado, `precioCoherente`, las
+  imágenes— ya las cerraba `04b8a471`, desplegado para HU-03.2 a HU-03.4. Si
+  el día de mañana otro escritor de `productos` cambia esto, se dice acá; no
+  se da por sentado.
+- **Falta el deploy del panel.** El de reglas ya salió; el panel con
+  HU-03.5 a HU-03.7 sigue sólo en el árbol de trabajo. Es el Grupo 10 de
+  `tasks.md`: CI `alcance=panel` → `publicar.sh preview` → `promover` →
+  `verificar` sobre live.
+- **Falta que alguien publique un vino real y lo mire en la tienda** (10.7 de
+  `tasks.md`). Sigue igual desde el change anterior, y **bloquea que este
+  change se archive**: los 20 productos de producción son `muestra: true`, así
+  que publicar y despublicar todavía no se probaron contra un vino de verdad.
+- **El título «De esta botella» SÍ pasó por el agente `voz`, confirmado sin
+  cambios.** Pero `voz` dejó una nota propia, sin resolver: el disparador de
+  [`voz.md` §12](../../design/voz.md) —"antes del primer vino con descripción
+  sensorial"— ya se cumplió, con `FichaVino.descripcion` en producción desde
+  el commit `633f7bf`, **sin ningún campo de autoría**, y `voz.md` §3.2 dice
+  *"sin autor, no existe"*. No es un defecto de este título: es una decisión
+  del dueño sobre el dato que todavía nadie tomó, y no la toma este change.
 - **Hay una descripción de prueba escrita en `muestra-alamos-malbec`.** Con
-  las reglas de este ADR desplegadas es un documento válido; **hasta que se
-  desplieguen está congelado**. Para sacarla hay que **borrar el campo**, no
+  `04b8a471` desplegado el documento **se descongeló y se verificó**: vuelve a
+  aceptar `update` de nombre, precio y `publicado`. Sigue sin confirmarse si
+  el campo de prueba se borró. Para sacarla hay que **borrar el campo**, no
   ponerlo en `null`.

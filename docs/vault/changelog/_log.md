@@ -9,6 +9,71 @@
 
 ---
 
+## Salió el 2026-09-22, al cerrarse EP-03
+
+Sexta entrada. Salió ésta y no la del catálogo y las bodegas (2026-09-17):
+aquélla es el primer catálogo que un operador vio andar, y ésta es sólo el
+mapa que las historias construidas fueron tachando. El mapa en sí —
+[`features/panel/overview.md`](../features/panel/overview.md)— sigue vivo, y
+se sigue leyendo por `grep` de `HU-` en `openspec/changes/`, no por esta
+entrada. Lo que quedó vigente de ella —los tres hitos, la decisión de subir
+WhatsApp al hito 2, los siete hallazgos de planificación— está citado desde
+cada épica y desde [ADR 009](../architecture/decisions/009-venta-por-caja.md)
+y [ADR 010](../architecture/decisions/010-el-checkout.md), donde se usa de
+verdad.
+
+### El panel tiene plan: 11 épicas, 48 historias, ninguna construida (2026-09-16)
+
+**Nace el backlog de la app de gestión** en
+[`features/panel/`](../features/panel/overview.md): épicas que agrupan
+historias de usuario, cada una con lo que **ya está decidido** y la
+restringe, enlazado a su ADR. Son dos capas de tres: los **requerimientos**
+se escriben historia por historia, en el change de `/opsx:propose` que la
+tome. El documento **no tiene casillas** a propósito: el estado de una
+historia sale de un `grep` de su ID en `openspec/changes/`.
+
+**Tres hitos:** cargar el catálogo real —que **no** espera a `crearOrden`—,
+atender pedidos —que sí, y cuyos requerimientos se escriben con el spec de
+`crearOrden`— y curar la vidriera.
+
+**El dueño contestó en dos rondas el mismo día, y el hito 2 cambió de
+orden.** Hay ventas por WhatsApp: la épica que las carga sube al hito 2 y va
+**primero**, porque no espera a Mercado Pago, y el panel atiende ventas reales
+mientras la vidriera sigue sin cobrar. Lo demás: un solo rol para toda la
+familia (*"el panel no debe exceder la burocracia"*), entrar con mail o con
+Google, avisos en el teléfono por una APK, y el aviso de despacho con un toque,
+activable por persona.
+
+~~Con eso volvía el camino de
+[ARQUITECTURA §12](../../../ARQUITECTURA.md#12-orden-de-construcción)~~
+—`entroEnPagada` estrenado con un pedido marcado pagado a mano—: **no vuelve**.
+La segunda ronda lo descartó: el cobro de WhatsApp *"se gestiona por fuera"* y
+no se ve en el panel, así que el trigger se estrena con el webhook. Y la regla
+de las seis botellas **no aplica** a WhatsApp, lo que convierte el origen del
+pedido en una regla de plata: lo fija el servidor, nunca quien llama.
+
+⚠️ **Planificar encontró siete cosas que ningún documento sabía**, y las
+respuestas trajeron seis más —la Orden no sabe de dónde vino, y un pedido cuyo
+pago no se sigue no tiene `estadoPago` que le calce, entre ellas—. Las tres que
+más pesan:
+
+1. **Una foto subida desde el panel llega cruda**, y la vidriera espera WebP
+   recortado: hoy ese recorte lo hace sólo el seed, con `sharp`.
+2. **Las reglas de `ordenes` no validan la transición de `estadoEntrega`**, y
+   no dejan guardar ni el seguimiento ni el motivo de una entrega fallida.
+3. **La reposición de stock y `crearOrden` escriben el mismo campo**: se
+   diseñan juntas.
+
+| Qué | Cómo |
+|---|---|
+| El mapa dice la verdad | **48** encabezados `HU-` en las épicas contra los **48** de la tabla, épica por épica y sumados por script sobre la tabla; **0** IDs repetidos (control positivo del `uniq -d` al lado); la única referencia sin encabezado es **HU-10.2**, descartada a propósito |
+| Lo que se retractó no quedó suelto | El grep de las frases retiradas da **0**; el mismo patrón sobre el commit anterior da **1** |
+| Los enlaces | **375** resuelven, anclas incluidas. **Control negativo:** un ancla inventada en ARQUITECTURA la rechaza el verificador, y la real con tilde pasa |
+
+Son documentos: no se despliega nada.
+
+---
+
 ## Salió el 2026-09-18, al entrar cargar un vino desde el panel
 
 Sexta entrada. Salió ésta y no la de los tres paquetes, por el criterio de

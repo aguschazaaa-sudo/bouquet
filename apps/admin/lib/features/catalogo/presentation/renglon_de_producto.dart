@@ -5,6 +5,7 @@ import '../../../theme/tema.dart';
 import '../../../theme/tokens.dart';
 import '../domain/catalogo.dart';
 import '../domain/producto_del_panel.dart';
+import 'motivo_corto_de_tienda.dart';
 
 /// Un vino en la lista del catalogo (HU-03.1). El renglon de la libreta: la
 /// linea de abajo es `filetePapel`, no una `Divider` gris.
@@ -16,10 +17,14 @@ class RenglonDeProducto extends StatelessWidget {
     super.key,
     required this.renglon,
     required this.alAbrir,
+    this.motivoCorto,
   });
 
   final RenglonDelCatalogo renglon;
   final VoidCallback alAbrir;
+
+  /// Corto: publicado, pero la tienda igual lo descarta (HU-03.7).
+  final String? motivoCorto;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +37,7 @@ class RenglonDeProducto extends StatelessWidget {
       // fragmentos sueltos y hay que armar el vino en la cabeza.
       container: true,
       button: true,
-      label: _paraLeer(p.nombre, bodega, sinBodega, p.publicado, p.precio),
+      label: _paraLeer(p, bodega, sinBodega, motivoCorto),
       hint: 'Corregir',
       excludeSemantics: true,
       onTap: alAbrir,
@@ -95,6 +100,8 @@ class RenglonDeProducto extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               _EnLaTienda(publicado: p.publicado),
+              if (motivoCorto case final motivo?)
+                MotivoCortoDeTienda(texto: motivo),
             ],
           ),
         ],
@@ -104,17 +111,17 @@ class RenglonDeProducto extends StatelessWidget {
 
   /// Lo que oye quien no ve la pantalla, en el orden en que importa.
   static String _paraLeer(
-    String nombre,
+    ProductoDelPanel p,
     String bodega,
     bool sinBodega,
-    bool publicado,
-    int precio,
+    String? motivoCorto,
   ) {
     final partes = [
-      nombre.isEmpty ? 'Sin nombre' : nombre,
+      p.nombre.isEmpty ? 'Sin nombre' : p.nombre,
       if (sinBodega) 'sin bodega, no aparece en la tienda' else bodega,
-      enPesos(precio),
-      if (publicado) 'en la tienda' else 'no está en la tienda',
+      enPesos(p.precio),
+      if (p.publicado) 'en la tienda' else 'no está en la tienda',
+      if (motivoCorto != null) 'pero la tienda no lo muestra: $motivoCorto',
     ];
     return partes.join('. ');
   }

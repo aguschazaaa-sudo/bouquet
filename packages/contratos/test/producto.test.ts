@@ -2,7 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  BALDES,
+  BODEGAS_DE_MUESTRA,
+  CASOS_DE_BALDE,
+  CASOS_DE_DESCARTE,
+  CLASES_DE_DESCARTE,
   DESCRIPCION_MAXIMA,
+  TOPE_POR_PEDIDO,
   VARIETALES,
   armarCatalogo,
   balde,
@@ -376,4 +382,59 @@ test('un publicado con precio 0 se cae del catalogo, con su motivo', () => {
   const descarte = descartes[0]!;
   assert.equal(descarte.id, 'roto');
   assert.match(descarte.motivo, /precio/);
+});
+
+// --------------------------------------------------------------- fixtures
+//
+// Estos tests NO miden el balde ni el descarte -- eso lo hacen los de arriba.
+// Miden que las FIXTURES sirvan de control: el espejo en Dart se compara
+// contra ellas, y un set sin los dos lados deja pasar un espejo roto.
+// `scripts/ci/auditar_estados.mjs` verifica lo mismo sobre el JSON generado.
+
+test('las fixtures del balde cubren los tres baldes y las dos formas de unidad', () => {
+  const dan = new Set(
+    CASOS_DE_BALDE.map((c) => balde({ stock: c.stock, presentacion: { botellas: c.botellas } })),
+  );
+  // Sin los tres, un espejo que devuelve siempre `disponible` pasaria.
+  for (const b of BALDES) assert.ok(dan.has(b), `ninguna fixture da el balde ${b}`);
+  // El balde se mide en BOTELLAS: sin una caja, un espejo que compara el
+  // stock contra el umbral sin multiplicar acierta en todos los casos.
+  assert.ok(CASOS_DE_BALDE.some((c) => c.botellas === 1), 'ninguna fixture es una botella suelta');
+  assert.ok(CASOS_DE_BALDE.some((c) => c.botellas > 1), 'ninguna fixture es una caja');
+  // Los dos cortes del tope: `min(stock, 12)` y `max(0, ...)`.
+  assert.ok(CASOS_DE_BALDE.some((c) => tope({ stock: c.stock }) === TOPE_POR_PEDIDO && c.stock > TOPE_POR_PEDIDO));
+  assert.ok(CASOS_DE_BALDE.some((c) => c.stock < 0 && tope({ stock: c.stock }) === 0));
+});
+
+test('las fixtures de descarte tienen los dos lados: uno que entra y uno por motivo', () => {
+  const armado = armarCatalogo(
+    CASOS_DE_DESCARTE.map((c) => c.documento),
+    BODEGAS_DE_MUESTRA,
+    undefined,
+  );
+  const entran = new Set(armado.catalogo.productos.map((p) => p.id));
+
+  // Control positivo: sin un documento que entra, un espejo que descarta todo
+  // pasaria todas las comparaciones.
+  assert.ok(entran.size > 0, 'ninguna fixture entra al catalogo');
+
+  // La etiqueta de la fixture contra lo que `armarCatalogo` hizo de verdad.
+  for (const c of CASOS_DE_DESCARTE) {
+    assert.equal(entran.has(c.documento.id), c.clase === 'entra', `${c.documento.id}: ${c.porque}`);
+  }
+
+  // Y uno por cada motivo que deja un producto afuera.
+  const clases = new Set(CASOS_DE_DESCARTE.filter((c) => !entran.has(c.documento.id)).map((c) => c.clase));
+  for (const clase of CLASES_DE_DESCARTE) {
+    if (clase === 'entra') continue;
+    assert.ok(clases.has(clase), `ningun documento se descarta por ${clase}`);
+  }
+});
+
+test('las fixtures de descarte no repiten ids', () => {
+  // `scripts/generar.mjs` busca el motivo de cada caso POR ID sobre un unico
+  // `armarCatalogo`. Con un id repetido, dos casos leerian el mismo motivo y
+  // uno de los dos seria teatro.
+  const ids = CASOS_DE_DESCARTE.map((c) => c.documento.id);
+  assert.equal(new Set(ids).size, ids.length);
 });

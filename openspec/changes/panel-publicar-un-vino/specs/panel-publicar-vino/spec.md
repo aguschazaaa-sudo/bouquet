@@ -1,13 +1,21 @@
 ## ADDED Requirements
 
 ### Requirement: Poner un vino en la tienda y sacarlo (HU-03.6)
-El panel MUST poder publicar un vino y despublicarlo, desde la página del vino
-y desde el renglón del catálogo. El panel MUST NOT ofrecer borrar un producto
-en ningún lado: un vino que no se vende más se despublica y conserva su id, su
-slug y su historia.
+El panel MUST poder publicar un vino y despublicarlo desde la página del vino.
+El renglón del catálogo MUST mostrar si está publicado y, cuando un publicado
+igual no aparece en la tienda, por qué —con un toque hasta la página, que es
+donde vive la acción—. El panel MUST NOT ofrecer borrar un producto en ningún
+lado: un vino que no se vende más se despublica y conserva su id, su slug y su
+historia.
 
 Despublicar MUST ser inmediato y sin confirmación —tiene vuelta atrás con un
 toque—. Publicar MUST pasar antes por la revisión previa.
+
+⚠️ **Corregido el 2026-09-22** (ADR 014, hallazgo BAJO 3 de `revisor-pagos`):
+la redacción original decía "desde la página del vino y desde el renglón del
+catálogo", pero un interruptor inline en cada renglón de una lista arriesga
+despublicar por un toque de más sobre una fila que no tiene la revisión
+previa al lado. La acción queda sólo en la página; el renglón informa.
 
 #### Scenario: Publicar desde la página del vino
 - **WHEN** el operador toca "Poner en la tienda" en un vino que pasa la revisión

@@ -62,16 +62,45 @@ dicho, y las cuentas las da un script.
 y se borran con una baranda que no deja despublicar sin querer. Son **EP-02
 entera y HU-03.1**. Pedidos sigue vacío y lo dice: es el hito 2.
 
-**Cargar un vino está escrito desde el 2026-09-18 y todavía NO desplegado**:
-HU-03.2 a HU-03.4, con reglas nuevas que van primero. Lo próximo del hito 1,
-después de verificarlo, es **publicar** (HU-03.5 a 03.7, dos de ellas por
-Workflow D).
+~~**Cargar un vino está escrito desde el 2026-09-18 y todavía NO desplegado**~~
+**Desplegado el 2026-09-21**: HU-03.2 a HU-03.4, reglas (`0310466f`) y panel
+(commit `d871218`). Lo próximo del hito 1 era **publicar** —HU-03.5 a 03.7,
+**construidas el 2026-09-22** (entrada de arriba)—; lo que sigue pendiente es
+el deploy del panel y que alguien cargue y publique un vino real.
 
 **Y desde el 2026-09-17 está PUBLICADO en
 [`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con `noindex` y con
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda (2026-09-22)
+
+**HU-03.5, HU-03.6 y HU-03.7 construidas**, en el change
+[`panel-publicar-un-vino`](../../openspec/changes/panel-publicar-un-vino/proposal.md)
+([ADR 014](architecture/decisions/014-publicar-un-vino.md)). Con esto **EP-03
+queda cerrada**: cambiar el precio con una baranda que mide contra la mediana
+del catálogo, publicar y despublicar sin poder borrar nunca, y ver en el panel
+lo mismo que decide `armarCatalogo` —con el motivo, cuando un publicado no
+aparece.
+
+**La segunda pasada de `revisor-pagos` (Workflow D, obligatoria) corrió
+`armarCatalogo` de verdad contra 12 documentos de contraste**, no a ojo: **2
+ALTO, 3 MEDIO, 4 BAJO — los 9 corregidos antes de commitear**, al revés de la
+primera pasada de este mismo ADR, que había corrido después. Los dos ALTO: un
+vino publicado con el formulario de edición abierto podía mandar un precio
+nuevo **sin** la baranda de HU-03.5 —`precioFijo` quedaba congelado en el
+momento en que se abrió la página—; y `revisarParaLaTienda` podía decir
+"publicado" de un vino que la vidriera en realidad descartaba por compartir
+slug con uno de muestra — el modo de falla exacto que HU-03.7 existe para
+cerrar. Detalle de los nueve, en
+[ADR 014](architecture/decisions/014-publicar-un-vino.md).
+
+⚠️ **Falta el deploy del panel** —Grupo 10 de `tasks.md`, CI `alcance=panel` →
+`publicar.sh preview` → `promover` → `verificar`— y **falta que alguien
+publique un vino real y lo mire**: los 20 productos de producción siguen
+siendo `muestra: true`, así que publicar y despublicar todavía no se probaron
+contra uno de verdad. Lo segundo bloquea que el change se archive.
 
 ### El producto se endureció, y la ficha lleva descripción (2026-09-21)
 
@@ -349,56 +378,6 @@ ensanchar el extractor: sin él, leer el subárbol entero es un sello de goma.
 ⚠️ **El recorrido no se puede repetir:** vivía en el scratchpad y dependía de
 las cuentas de control, que se borraron. Se reescribe o se promueve a
 `scripts/panel/` el día que haga falta.
-
-### El panel tiene plan: 11 épicas, 48 historias, ninguna construida (2026-09-16)
-
-**Nace el backlog de la app de gestión** en
-[`features/panel/`](features/panel/overview.md): épicas que agrupan historias
-de usuario, cada una con lo que **ya está decidido** y la restringe, enlazado a
-su ADR. Son dos capas de tres: los **requerimientos** se escriben historia por
-historia, en el change de `/opsx:propose` que la tome. El documento **no tiene
-casillas** a propósito: el estado de una historia sale de un `grep` de su ID en
-`openspec/changes/`.
-
-**Tres hitos:** cargar el catálogo real —que **no** espera a `crearOrden`—,
-atender pedidos —que sí, y cuyos requerimientos se escriben con el spec de
-`crearOrden`— y curar la vidriera.
-
-**El dueño contestó en dos rondas el mismo día, y el hito 2 cambió de
-orden.** Hay ventas por WhatsApp: la épica que las carga sube al hito 2 y va
-**primero**, porque no espera a Mercado Pago, y el panel atiende ventas reales
-mientras la vidriera sigue sin cobrar. Lo demás: un solo rol para toda la
-familia (*"el panel no debe exceder la burocracia"*), entrar con mail o con
-Google, avisos en el teléfono por una APK, y el aviso de despacho con un toque,
-activable por persona.
-
-~~Con eso volvía el camino de
-[ARQUITECTURA §12](../../ARQUITECTURA.md#12-orden-de-construcción)~~
-—`entroEnPagada` estrenado con un pedido marcado pagado a mano—: **no vuelve**.
-La segunda ronda lo descartó: el cobro de WhatsApp *"se gestiona por fuera"* y
-no se ve en el panel, así que el trigger se estrena con el webhook. Y la regla
-de las seis botellas **no aplica** a WhatsApp, lo que convierte el origen del
-pedido en una regla de plata: lo fija el servidor, nunca quien llama.
-
-⚠️ **Planificar encontró siete cosas que ningún documento sabía**, y las
-respuestas trajeron seis más —la Orden no sabe de dónde vino, y un pedido cuyo
-pago no se sigue no tiene `estadoPago` que le calce, entre ellas—. Las tres que
-más pesan:
-
-1. **Una foto subida desde el panel llega cruda**, y la vidriera espera WebP
-   recortado: hoy ese recorte lo hace sólo el seed, con `sharp`.
-2. **Las reglas de `ordenes` no validan la transición de `estadoEntrega`**, y
-   no dejan guardar ni el seguimiento ni el motivo de una entrega fallida.
-3. **La reposición de stock y `crearOrden` escriben el mismo campo**: se
-   diseñan juntas.
-
-| Qué | Cómo |
-|---|---|
-| El mapa dice la verdad | **48** encabezados `HU-` en las épicas contra los **48** de la tabla, épica por épica y sumados por script sobre la tabla; **0** IDs repetidos (control positivo del `uniq -d` al lado); la única referencia sin encabezado es **HU-10.2**, descartada a propósito |
-| Lo que se retractó no quedó suelto | El grep de las frases retiradas da **0**; el mismo patrón sobre el commit anterior da **1** |
-| Los enlaces | **375** resuelven, anclas incluidas. **Control negativo:** un ancla inventada en ARQUITECTURA la rechaza el verificador, y la real con tilde pasa |
-
-Son documentos: no se despliega nada.
 
 ### Lo que quedó abierto
 

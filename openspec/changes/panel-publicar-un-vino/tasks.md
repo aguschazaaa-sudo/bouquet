@@ -52,23 +52,32 @@ se supone.
 
 ## 2. `contratos` — las fixtures del balde, el tope y los descartes
 
-- [ ] 2.1 `packages/contratos/src/producto.ts`: exportar las entradas de
-      muestra (`CASOS_DE_BALDE`, `CASOS_DE_DESCARTE`) al lado de `balde` y
-      `tope`, como ya hace `texto.ts` con `ENTRADAS_DE_TEXTO`. **No se toca ni
-      `balde`, ni `tope`, ni `armarCatalogo`.**
-- [ ] 2.2 Los casos del balde cubren los **tres** baldes y las dos formas de
-      unidad —suelta y caja—: el control positivo y el negativo del espejo.
-- [ ] 2.3 Los casos de descarte cubren **uno que entra** al catálogo y uno por
-      cada motivo: no valida, slug duplicado, no publicado, compuesto, bodega
-      inexistente.
-- [ ] 2.4 `packages/contratos/scripts/generar.mjs`: el bloque `catalogo` con
-      esas fixtures, calculadas llamando a `balde`, `tope` y `armarCatalogo`.
-- [ ] 2.5 Regenerar (`npm run -w @bouquet/contratos generar`) y commitear el
-      JSON. Correr dos veces: los bytes tienen que ser idénticos.
-- [ ] 2.6 `scripts/ci/auditar_estados.mjs`: auditar el bloque nuevo con sus dos
-      controles —los tres baldes, y al menos un documento que entra—.
-      **Control negativo del auditor:** una copia del contrato con un solo
-      balde sale con 1.
+- [x] 2.1 `packages/contratos/src/producto.ts`: `CASOS_DE_BALDE` (10) y
+      `CASOS_DE_DESCARTE` (11), al lado de `balde` y `tope`, patrón
+      `ENTRADAS_DE_TEXTO`. **`balde`, `tope` y `armarCatalogo` intactos**
+      (diff 100 % aditivo, `git diff --numstat` da `218 0`).
+- [x] 2.2 Los 10 casos del balde cubren los **tres** baldes y las dos formas
+      de unidad —suelta y caja—, más los cuatro bordes: el umbral (6/7), el
+      tope (12/13) y el stock negativo.
+- [x] 2.3 Los 11 casos de descarte cubren **dos que entran** (suelta y caja) y
+      las **cinco** clases: `no-valida`, `slug-duplicado`, `no-publicado`,
+      `compuesto`, `bodega-inexistente` — la lista exacta y exhaustiva de
+      `armarCatalogo`.
+- [x] 2.4 `packages/contratos/scripts/generar.mjs`: `fixturesDelCatalogo()` y
+      el bloque `catalogo`, calculados llamando a `balde`, `tope` y
+      `armarCatalogo` reales — ninguna salida escrita a mano.
+- [x] 2.5 Regenerado. **Determinismo verificado:** dos corridas seguidas,
+      mismo sha256. Control negativo del propio chequeo: un byte de más en la
+      copia y `cmp` sale 1.
+- [x] 2.6 `scripts/ci/auditar_estados.mjs`, sección "2 quater": los tres
+      baldes, las dos unidades, los dos cortes del tope, y de los descartes
+      un control positivo (al menos uno que entra) **y** uno negativo (al
+      menos uno que no). Compara además la etiqueta declarada (`clase`)
+      contra lo que `armarCatalogo` hizo de verdad.
+      **Dos controles negativos del auditor, corridos y revertidos:** un solo
+      balde → `1` ("ningún espejo que devuelve siempre el mismo balde
+      pasaría"); los dos que entran puestos en `publicado: false` → `1`,
+      nombrando el id que se declaraba "entra" y `armarCatalogo` descartó.
 - [x] 2.7 `FichaVino.descripcion: string | null` y su validación en
       `validarFicha`: opcional como `anada`; si viene, no vacía al recortar y
       de hasta `DESCRIPCION_MAXIMA` (600) caracteres.
@@ -121,25 +130,46 @@ se supone.
 
 ## 4. `apps/admin` — el espejo (Dart puro, con tests)
 
-- [ ] 4.1 `core/contratos/catalogo_publico.dart`: `Balde`, `balde(...)`,
-      `tope(...)` y `MotivoDeDescarte`, espejo del contrato. Con las marcas y
-      el comentario que explica por qué vive tres veces.
-- [ ] 4.2 `test/core/contratos/catalogo_publico_test.dart`: compara **contra
-      `generated/contratos.json`**, iterando las fixtures. No una lista
-      copiada.
-- [ ] 4.3 `domain/producto_del_panel.dart`: `imagenes`, con el mapeo seguro
-      (lista vacía si falta o si el documento trae otra cosa).
-- [ ] 4.4 `data/repositorio_de_productos_firestore.dart`: leer `imagenes`.
-- [ ] 4.5 `domain/en_la_tienda.dart`: `revisarParaLaTienda(producto, catalogo)`
-      → si aparece, y si no, los motivos. Incluye el aviso de "sin foto", que
-      **no** frena. Cero lecturas.
-- [ ] 4.6 `test/features/catalogo/en_la_tienda_test.dart`: los escenarios del
-      spec `panel-espejo-vidriera` y los de la revisión previa de
-      `panel-publicar-vino`, con el caso que pasa al lado de cada uno que falla.
-- [ ] 4.7 `domain/cambio_de_precio.dart`: la baranda —10× la mediana de los
-      publicados, o mitad/doble del anterior—, con el caso de catálogo chico.
-- [ ] 4.8 `test/features/catalogo/cambio_de_precio_test.dart`: pide y no pide
-      confirmación, con menos de 5 publicados y con muchos.
+- [x] 4.1 `core/contratos/catalogo_publico.dart`: `Balde` (con `.clave`
+      string↔JSON, guion no camelCase), `balde(...)`, `tope(...)` y
+      `MotivoDeDescarte` (5 valores), espejo del contrato.
+- [x] 4.2 `test/core/contratos/catalogo_publico_test.dart`: compara **contra
+      `generated/contratos.json`**, control positivo (3 baldes) y negativo (5
+      clases).
+- [x] 4.3 `domain/producto_del_panel.dart`: `imagenes` (`List<String>`,
+      default `const []`).
+- [x] 4.4 `data/repositorio_de_productos_firestore.dart`: lee `imagenes` con
+      `textosDe`.
+- [x] 4.5 `domain/en_la_tienda.dart`: `revisarParaLaTienda(producto, catalogo)`
+      espeja el ORDEN exacto de `armarCatalogo` (válida → slug duplicado → no
+      publicado → compuesto → bodega inexistente), sobre lo que ya está en
+      memoria. Incluye `sinFoto`, que no frena. Cero lecturas.
+      **Agregado por mí, después del primer paso:** `revisarParaPublicar`, la
+      misma revisión pero simulando `publicado: true` — sin ella, un borrador
+      siempre daba `noPublicado` y tapaba el motivo real (precio en 0, bodega
+      inexistente) que HU-03.6 necesita mostrar **antes** de publicar. 6 tests
+      propios, con control: un publicado con precio 0 (imposible en
+      producción, pero si un documento roto lo tuviera) no esconde el motivo.
+- [x] 4.6 `test/features/catalogo/en_la_tienda_test.dart`: los 5 escenarios del
+      spec `panel-espejo-vidriera`, cada uno con el caso que pasa al lado, MÁS
+      los 11 `casosDeDescarte` del contrato generado comparados uno a uno
+      (documento crudo → `ProductoDelPanel` → misma `clase`).
+      **Ambigüedad resuelta:** `Catalogo.quienTiene` ganó `exceptoId`
+      (default `null`, sin cambiar el comportamiento de HU-03.2) — sin
+      excluirse a sí mismo, un vino real siempre se encontraba primero y el
+      escenario "slug duplicado, en los dos" nunca llegaba al choque real.
+      **Ambigüedad resuelta:** "compuesto" no es distinguible de "simple sin
+      el campo stock" desde `ProductoDelPanel` (no lleva `tipo`); se usa
+      `stock == null` como proxy, ya documentado así en el propio campo, y
+      hoy el panel no da de alta compuestos (Non-goal, EP-05) así que no
+      colisiona con ningún caso real.
+- [x] 4.7 `domain/cambio_de_precio.dart`: `pideConfirmarElCambio(...)` — 10×
+      la mediana (ambas direcciones, sólo con 5+ publicados) O mitad/doble del
+      anterior (cualquiera de las dos dispara). Con menos de 5 publicados sólo
+      aplica la condición relativa.
+- [x] 4.8 `test/features/catalogo/cambio_de_precio_test.dart`: pide y no pide
+      confirmación, con menos de 5 publicados y con muchos, bordes exactos
+      incluidos (justo el doble no pide; un poco más sí).
 - [x] 4.9 `domain/ficha_del_vino.dart` y `domain/borrador_de_vino.dart`:
       `descripcion` (`String?`), `CampoDelVino.descripcion`,
       `conDescripcion(...)` **sin la puerta de `precioFijo`** y el tope medido
@@ -151,44 +181,63 @@ se supone.
       Tests del panel: 146 → **153**, `dart analyze` limpio (atrapó el
       `switch` no exhaustivo de los rótulos). Dos mutaciones, un test roto
       cada una.
-- [ ] 4.10 `domain/repositorio_de_productos.dart`: `publicar(id)`,
+- [x] 4.10 `domain/repositorio_de_productos.dart`: `publicar(id)`,
       `despublicar(id)` y `cambiarPrecio(id, centavos)`.
 
 ## 5. `apps/admin` — data
 
-- [ ] 5.1 `publicar`/`despublicar`: `update` de `publicado` y nada más.
-- [ ] 5.2 `cambiarPrecio`: `update` de `precio` y nada más. **Ninguno de los
-      tres toca `stock`, `tipo`, `presentacion`, `muestra` ni `slug`.**
+- [x] 5.1 `publicar`/`despublicar`: `update` de `publicado` y nada más.
+- [x] 5.2 `cambiarPrecio`: `update` de `precio` y nada más. **Ninguno de los
+      tres toca `stock`, `tipo`, `presentacion`, `muestra` ni `slug`** —
+      `_actualizarUnCampo` privado, compartido por los tres.
 - [x] 5.3 `data/documento_del_vino.dart` escribe `fichaVino.descripcion` y
       **omite la clave** cuando es `null`; `campos.dart` gana
       `textoOpcionalDe`, que lee el blanco como `null` —el Admin SDK no pasa
       por las reglas y un documento viejo puede traerlo—. El test del mapeo
       compara las claves contra `firestore.rules` **leyendo el archivo**, que
       es la unidad externa que le faltaba.
-- [ ] 5.4 Los tres traducen el fallo de Firestore con `fallos_de_firestore.dart`,
+- [x] 5.4 Los tres traducen el fallo de Firestore con `fallos_de_firestore.dart`,
       para que un rechazo de reglas no se lea como un problema de permisos.
 
 ## 6. `apps/admin` — presentation, de la hoja a la página
 
-- [ ] 6.1 `vino/revision_para_publicar.dart` — los motivos, campo por campo, y
-      el aviso de "se va a ver sin foto".
-- [ ] 6.2 `vino/interruptor_de_tienda.dart` — poner y sacar de la tienda, con
-      el estado de escritura y la vuelta atrás si rebota. No disponible en un
-      vino de muestra, diciendo por qué.
-- [ ] 6.3 `vino/como_se_ve_en_la_tienda.dart` — balde, número de stock, tope y
-      el enlace a la ficha.
-- [ ] 6.4 `vino/hoja_de_precio.dart` — el precio nuevo con su vista previa en
-      pesos, la confirmación con los dos precios, y el aviso de los ~13
-      minutos.
-- [ ] 6.5 `vino/pagina_del_vino.dart` — ordena las secciones nuevas sin pasar
-      de 200 líneas (`widget-size-guard`).
-- [ ] 6.6 `renglon_de_producto.dart` — el motivo corto cuando un vino publicado
-      no aparece. **Es el renglón que ya existe**: no se duplica.
-- [ ] 6.7 El campo de la descripción en el formulario del vino: texto largo,
-      contador de lo que queda sobre 600, y **editable aunque el vino esté
-      publicado** —no es plata, no dispara la baranda—.
-- [ ] 6.8 Textos en `textos_del_vino.dart` / `textos_del_catalogo.dart`. **No
-      pasa por `voz`**: es el panel, no una pantalla que ve un comprador.
+- [x] 6.1 `vino/revision_para_publicar.dart` (43 líneas) — llama SIEMPRE a
+      `revisarParaPublicar` (nunca `revisarParaLaTienda`), motivo por motivo
+      vía `textoDelMotivoParaPublicar`, y el aviso de "se va a ver sin foto"
+      que no frena.
+- [x] 6.2 `vino/interruptor_de_tienda.dart` (129 líneas) — publicar sólo
+      habilitado si `revisarParaPublicar(...).aparece`; despublicar
+      inmediato, sin diálogo, con `SnackBar` + "Deshacer" (vuelta atrás con un
+      toque); sin estado optimista propio — el stream de Firestore ya revierte
+      solo si las reglas rebotan. No disponible en `muestra`, con el texto de
+      por qué.
+- [x] 6.3 `vino/como_se_ve_en_la_tienda.dart` (76 líneas) — balde en palabras
+      + número exacto de stock + tope, motivo real con `revisarParaLaTienda`
+      cuando no aparece. **El enlace a la ficha, resuelto sin inventar una
+      URL**: la vidriera nunca se desplegó, así que muestra el path relativo
+      `/vinos/<slug>` como texto informativo, no un link tocable, con nota de
+      que todavía no hay tienda publicada — cita el Open Question de
+      design.md para cuando exista el dominio.
+- [x] 6.4 `vino/hoja_de_precio.dart` (175 líneas) — hoja modal con el precio
+      nuevo, diálogo de confirmación con los DOS precios en pesos cuando
+      `pideConfirmarElCambio` da `true`, y el aviso de ~13 minutos a cargo del
+      llamador (`SeccionDeLaTienda`) después de guardar, siempre.
+- [x] 6.5 `vino/pagina_del_vino.dart` (132 líneas) — `SeccionDeLaTienda` (76
+      líneas, archivo propio) agrupa 6.1–6.4 y se inserta ARRIBA del
+      formulario, sólo al corregir un vino existente, nunca en un alta.
+- [x] 6.6 `renglon_de_producto.dart` (198 líneas, al límite) + nuevo
+      `motivo_corto_de_tienda.dart` — el motivo corto vía `Catalogo` pasado
+      desde `lista_del_catalogo.dart`/`pantalla_del_catalogo.dart`. **Es el
+      renglón que ya existe**, ampliado con un parámetro opcional.
+- [x] 6.7 El campo de descripción en `seccion_del_vino.dart` (142 líneas) —
+      multilínea, contador de lo que queda sobre `descripcionMaxima`, y
+      `b.conDescripcion(v)` directo, **sin** el gate de `precioFijo`.
+- [x] 6.8 Textos nuevos en `textos_del_vino.dart` (107 líneas) y
+      `textos_del_catalogo.dart` (39 líneas), uno por escenario del spec. No
+      pasó por `voz`: es el panel, no una pantalla que ve un comprador.
+      ⚠️ Verificado por lectura de código (agente de UI cortado por rate
+      limit antes de correr `dart analyze` — retomado y revisado a mano);
+      falta correr `dart analyze`/`dart test` **por CI**, no localmente.
 
 ## 7. `apps/tienda` — la ficha muestra la descripción
 
@@ -202,11 +251,18 @@ no monta, y parece un defecto del componente.
       `FichaDeVino.tsx`. La sección con la descripción,
       que **desaparece entera** cuando no hay. Texto plano y `white-space:
       pre-line` para los saltos de línea: nunca `dangerouslySetInnerHTML`.
-- [~] 7.2 Título: **«De esta botella»**, en el patrón de los que ya están
-      («Los datos», «Hasta que sale») y sin reclamar autoridad enológica, que
-      es lo que `voz.md` §0 prohíbe: bouquet no hace el vino, lo guarda.
-      **Falta pasarlo por el agente `voz`** antes de que la vidriera se
-      despliegue; hoy no se despliega, así que no llega a ningún comprador.
+- [x] 7.2 Título: **«De esta botella»**, confirmado por el agente `voz` sin
+      cambios — mismo patrón de largo y forma que «Los datos» y «Hasta que
+      sale», cero vocabulario de autoridad enológica (grepeado contra §7.1,
+      control negativo, con «Elegí»/«Llevate» como control positivo de que el
+      grep lee), y distingue prosa libre de dato estructurado por contraste
+      (no dice «datos» ni «ficha»).
+      ⚠️ **Hallazgo del propio `voz`, para anotar en ADR 014 o `_index.md`:**
+      el disparador de voz.md §12 —"antes del primer vino con descripción
+      sensorial"— ya se cumplió: `FichaVino.descripcion` es un campo real en
+      producción (commit `633f7bf`) sin ningún campo de autoría, y voz.md §3.2
+      dice "sin autor, no existe". No es un problema de este título; es una
+      decisión del dueño sobre el dato que todavía nadie tomó.
 - [x] 7.3 El listado **no la dibuja** —cero títulos, ningún `<p>` con el
       texto— pero **sí viaja en el payload serializado**, porque el catálogo
       entero va al navegador para filtrarse en memoria. Medido, no supuesto, y
@@ -225,32 +281,117 @@ no monta, y parece un defecto del componente.
 
 ## 8. Verificar lo escrito, antes de commitear
 
-- [ ] 8.1 `dart format` sobre todo lo tocado.
-- [ ] 8.2 `dart analyze lib test` en el panel.
-- [ ] 8.3 `dart test` del panel; `npm test` y `npx tsc --noEmit`.
-- [ ] 8.4 `node scripts/ci/auditar_estados.mjs` y
-      `node scripts/ci/auditar_varietales.mjs`.
-- [ ] 8.5 `bash scripts/hooks/probar_hooks.sh`, y los hooks del panel sobre los
-      archivos nuevos **con ruta absoluta** y un canario positivo.
-- [ ] 8.6 `node scripts/ci/verificar_enlaces.mjs .`
-- [ ] 8.7 **`cazador-de-puertas`**: nadie huérfano, con control negativo.
-- [~] 8.8 **`revisor-pagos`**: corrido sobre la rebanada de reglas + contrato +
-      descripción. 2 ALTO, 3 MEDIO, 2 BAJO. Los dos ALTO **resueltos** (la
-      proyección espeja `precioCoherente`; el documento congelado lo destraba
-      el deploy de reglas), los otros cinco anotados en ADR 014 con su
-      disparador. **No cierra la tarea**: HU-03.5 y HU-03.6 —el interruptor y
-      el cambio de precio, que son lo que de verdad toca plata— todavía no
-      existen y necesitan otra pasada.
-      ⚠️ Lo corrí **después** de commitear, y esta tarea dice antes.
+- [x] 8.1 `dart format` corrido **por archivo, al tocar cada uno** (el
+      usuario cortó dos corridas de `dart analyze lib test` completas,
+      colgadas a 120s+: *"para que mierda tenemos CI"*). Sin cambios
+      pendientes en lo tocado de este change.
+- [~] 8.2 `dart analyze lib test` — **delegado a CI** (`alcance=panel`, que
+      además compila el panel para 10.4). No se corre la suite completa en
+      esta máquina. La IDE sí mostró diagnósticos en vivo mientras se
+      editaba, y quedaron todos en cero antes de seguir.
+- [~] 8.3 `dart test` del panel — corrido **archivo por archivo** contra lo
+      tocado (`borrador_de_vino_test.dart` 35/35,
+      `en_la_tienda_test.dart` 53/53, más los de `admin-datos` y
+      `admin-presentacion`), nunca la suite completa. El conteo total va por
+      CI. `npm test` de contratos: **185/185**. `npx tsc --noEmit` en
+      `contratos` y `apps/tienda`: **0 errores**.
+- [x] 8.4 `node scripts/ci/auditar_estados.mjs`: verde, con su control
+      negativo corrido y revertido (BAJO 2 de `revisor-pagos`).
+      `node scripts/ci/auditar_varietales.mjs`: verde (y atrapó una mutación
+      de prueba sin revertir que no era mía, restaurada).
+- [x] 8.5 `bash scripts/hooks/probar_hooks.sh`: **35/35**. Los 12 archivos
+      nuevos/tocados de `presentation/` y `domain/` corridos a mano contra
+      `widget-size-guard`, `one-widget-per-file`, `no-hardcoded-colors` y
+      `layer-boundary` con ruta absoluta: limpios. Canario negativo de
+      `widget-size-guard` con un archivo de 251 líneas: bloquea.
+- [x] 8.6 `node scripts/ci/verificar_enlaces.mjs .`: **443/443**.
+- [x] 8.7 **`cazador-de-puertas`**: sin hallazgos. Cadena completa verificada de
+      dominio → widget → `SeccionDeLaTienda` → `PaginaDelVino` → ruta
+      `/catalogo/vinos/<id>` en `enrutador.dart` → click real desde
+      `RenglonDeProducto`. Los 9 textos nuevos con call site. Control
+      negativo: un símbolo inventado da grep vacío.
+- [~] 8.8 **`revisor-pagos`, primera pasada** (2026-09-18, reglas + contrato +
+      descripción): 2 ALTO, 3 MEDIO, 2 BAJO. Los dos ALTO resueltos entonces.
+      ⚠️ Corrida **después** de commitear.
 
-## 9. Documentar y commitear
+      **Segunda pasada (2026-09-22, HU-03.5/03.6/03.7, obligatoria por
+      Workflow D y corrida ANTES de commitear esta vez):** corrió
+      `armarCatalogo` de verdad contra 12 documentos de contraste, no leyó el
+      código a ojo. **2 ALTO, 3 MEDIO, 4 BAJO — los 9 corregidos:**
+      - **ALTO 1** — el interruptor de la tienda (arriba, en la misma página
+        que `formulario_del_vino.dart`) podía publicar un vino mientras el
+        formulario seguía abierto con `precioFijo` congelado en el snapshot
+        de cuando se abrió la página: el precio nuevo viajaba **sin** la
+        baranda de HU-03.5. Corregido con
+        `BorradorDeVino.conOriginalActualizado` + `didUpdateWidget` en
+        `_FormularioDelVinoState`, que refresca el `original` sin tocar una
+        letra de lo tecleado. 2 tests nuevos.
+      - **ALTO 2** — `revisarParaLaTienda` usaba `ChoqueDeDireccion.bloquea`
+        para "¿hay slug duplicado?", pero esa bandera contesta "¿se puede
+        guardar el ALTA?" (ADR 013 §1: un choque contra un vino de muestra
+        se avisa y no frena). El primer vino real que compartiera nombre con
+        uno de muestra quedaba afuera de la vidriera **y el panel decía que
+        estaba adentro**. Corregido sacando el `.bloquea`: cualquier otro
+        documento con el mismo slug, de muestra o no, es `slugDuplicado`. Par
+        de fixtures nuevo en `CASOS_DE_DESCARTE` (real + muestra compartiendo
+        slug) que hacía fallar la fixture vieja. 2 tests nuevos en Dart.
+      - **MEDIO 1** — el espejo de `_valida()` sólo cubría 4 de ~12 familias
+        de "no válida". Se sumaron las 6 que el mapeo del panel NO pisa con
+        un default antes de que el dominio las vea: slug con el formato de
+        `SLUG`, `volumenMl` ausente o ≤0, `anada`/`graduacion` presentes pero
+        fuera de rango, varietales repetidos, descripción sobre el tope. Las
+        otras 4 (`botellas < 1`, `organico` mal tipado, `imagenes` ausente
+        vs. vacía, compuesto con stock) quedan **documentadas como límite
+        real**: `campos.dart` ya las normaliza con un default al leer el
+        documento, antes de que `en_la_tienda.dart` las vea — cerrarlas pide
+        cambiar cómo el panel entero lee Firestore, no esta revisión. 6
+        fixtures nuevas, todas con su motivo verificado contra el JSON.
+      - **MEDIO 2** — el "Deshacer" del `SnackBar` de despublicar llamaba a
+        `_cambiar(true)` sin `mounted` (revienta si ya se volvió al
+        catálogo: el `ScaffoldMessenger` vive arriba del `Navigator`) y sin
+        `revisarParaPublicar` (publica a ciegas si algo cambió en el rato
+        que el aviso estuvo abierto). Las dos corregidas.
+      - **MEDIO 3** — `HojaDePrecio` evaluaba la baranda contra el precio y
+        la mediana del momento en que se abrió, no contra la base: un cambio
+        de otra persona mientras la hoja estaba abierta se pisaba sin que la
+        baranda lo viera. Corregido releyendo el catálogo vivo (0 lecturas,
+        ya está en memoria) justo antes de decidir.
+      - **BAJO 1** — el texto de "compuesto" afirmaba algo que el panel no
+        puede distinguir de "simple sin stock cargado". Texto corregido en
+        los dos lados (`textoDelMotivoEnLaTienda`/`textoDelMotivoParaPublicar`).
+      - **BAJO 2** — el auditor tenía el `motivo` real en la mano y nunca lo
+        comparaba contra la `clase` declarada. Agregado en
+        `auditar_estados.mjs`, con control negativo corrido y revertido: una
+        `clase` mal puesta en `producto.ts` (`no-publicado` escrito como
+        `no-valida`) nombra el id y la clase real.
+      - **BAJO 3** — la spec pedía publicar/despublicar también desde el
+        renglón del catálogo, y el código sólo agregó el motivo corto. Se
+        corrigió la spec en vez del código: un interruptor inline en una
+        lista arriesga despublicar por un toque de más sin la revisión
+        previa al lado. La acción queda sólo en la página.
+      - **BAJO 4** — nada que hacer, quedó anotado que se revisó.
+      13 caminos verificados sin hallazgos (los tres métodos de escritura
+      tocan un solo campo cada uno, el panel no ofrece borrar en ningún
+      lado, `imagenes` no se escribe por ningún camino nuevo, cero lecturas
+      de más, el orden de `revisarParaLaTienda` replica a `armarCatalogo`
+      paso por paso, entre otros). Detalle completo en el hand-back del
+      agente, resumido acá y en ADR 014.
 
-- [ ] 9.1 ADR 014 con el presupuesto de lecturas adentro, la decisión de la
-      foto, la baranda de la mediana y el aviso de los ~13 minutos.
-- [ ] 9.2 ADR 008: tildar los hallazgos 1 y 2 de `revisor-pagos`, apuntando al
-      014. EP-03: cerrar el "Abierto" de la foto y el de la baranda.
-- [ ] 9.3 Mapa del panel y `_index.md` (tope 5). Glosario si cambia algo.
-- [ ] 9.4 `/commit` leyendo el diff.
+- [x] 9.1 ADR 014: sección nueva "HU-03.5, HU-03.6 y HU-03.7" con la
+      arquitectura construida, los 9 hallazgos de la segunda pasada de
+      `revisor-pagos` con su arreglo, y "Lo que falta" reescrita (reglas
+      desplegadas, sólo falta el deploy del panel y publicar un vino real).
+- [x] 9.2 ADR 008: hallazgos 1 y 2 de `revisor-pagos` marcados RESUELTO,
+      apuntando a ADR 014. EP-03: HU-03.5 (baranda) y HU-03.6 (interruptor,
+      `delete` cerrado) y HU-03.7 (espejo) marcadas CONSTRUIDO. **EP-03 queda
+      CERRADA.**
+- [x] 9.3 `_index.md` (tope 5, entrada de 2026-09-16 movida a `_log.md` con
+      sus links reajustados). El propio agente de vault encontró y corrigió
+      una contradicción preexistente: ADR 014 decía "reglas sin desplegar" en
+      dos lugares cuando ya estaban en producción desde el 2026-09-21.
+- [ ] 9.4 `/commit` leyendo el diff. Los 9 hallazgos de la segunda pasada de
+      `revisor-pagos` (sección nueva de ADR 014) ya están corregidos, cada
+      uno con test — esta vez la revisión corrió **antes** de commitear.
 
 ## 10. Desplegar y verificar — reglas → panel
 

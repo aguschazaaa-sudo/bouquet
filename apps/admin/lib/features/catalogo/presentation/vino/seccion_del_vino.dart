@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/contratos/producto.dart' show descripcionMaxima;
 import '../../domain/borrador_de_vino.dart';
 import '../../domain/catalogo.dart';
 import 'campo_de_bodega.dart';
@@ -112,6 +113,28 @@ class SeccionDelVino extends StatelessWidget {
           problema: problemaDe(CampoDelVino.graduacion),
           alCambiar: (v) =>
               alCambiar(CampoDelVino.graduacion, b.conGraduacion(v)),
+        ),
+        aire,
+        // Sin la puerta de `precioFijo`, a proposito: no es plata, se edita
+        // igual en un vino publicado (`BorradorDeVino.conDescripcion`).
+        TextFormField(
+          initialValue: b.descripcion,
+          minLines: 3,
+          maxLines: 6,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            labelText: 'Descripción (opcional)',
+            helperText:
+                'Lo que un comprador lee en la ficha del vino, en la tienda.',
+            helperMaxLines: 2,
+            errorText: problemaDe(CampoDelVino.descripcion),
+            errorMaxLines: 3,
+            counterText:
+                '${descripcionMaxima - b.descripcion.trim().length} '
+                'caracteres disponibles',
+          ),
+          onChanged: (v) =>
+              alCambiar(CampoDelVino.descripcion, b.conDescripcion(v)),
         ),
       ],
     );

@@ -31,10 +31,68 @@ import {
   normalizar,
   seParecen,
 } from '../src/texto.ts';
+import {
+  BALDES,
+  BODEGAS_DE_MUESTRA,
+  CASOS_DE_BALDE,
+  CASOS_DE_DESCARTE,
+  CLASES_DE_DESCARTE,
+  TOPE_POR_PEDIDO,
+  UMBRAL_QUEDAN_POCAS,
+  armarCatalogo,
+  balde,
+  tope,
+} from '../src/producto.ts';
 import { proyectarEstadoPublico } from '../src/proyeccion.ts';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 export const DESTINO = join(AQUI, '..', 'generated', 'contratos.json');
+
+/**
+ * Las fixtures del catalogo, CALCULADAS con el `balde`, el `tope` y el
+ * `armarCatalogo` de hoy -- ninguna salida esta escrita a mano.
+ *
+ * `armarCatalogo` se llama UNA sola vez sobre todos los documentos porque el
+ * slug duplicado solo existe de a dos, y cada caso se busca despues POR ID.
+ * Que los ids no se repitan lo afirma un test de `producto.test.ts`: con un id
+ * repetido, dos casos leerian el mismo motivo y uno de los dos seria teatro.
+ */
+function fixturesDelCatalogo() {
+  const armado = armarCatalogo(
+    CASOS_DE_DESCARTE.map((c) => c.documento),
+    BODEGAS_DE_MUESTRA,
+    undefined,
+  );
+  const motivoPorId = new Map(armado.descartes.map((d) => [d.id, d.motivo]));
+  const enCatalogo = new Set(armado.catalogo.productos.map((p) => p.id));
+
+  return {
+    baldes: [...BALDES],
+    umbralQuedanPocas: UMBRAL_QUEDAN_POCAS,
+    topePorPedido: TOPE_POR_PEDIDO,
+    clasesDeDescarte: [...CLASES_DE_DESCARTE],
+    // Las bodegas que existen para estas fixtures: sin ellas, "bodega
+    // inexistente" no se puede reproducir del otro lado.
+    bodegas: BODEGAS_DE_MUESTRA.map((b) => ({ id: b.id, datos: b.datos })),
+    casosDeBalde: CASOS_DE_BALDE.map((c) => ({
+      porque: c.porque,
+      stock: c.stock,
+      botellas: c.botellas,
+      balde: balde({ stock: c.stock, presentacion: { botellas: c.botellas } }),
+      tope: tope({ stock: c.stock }),
+    })),
+    casosDeDescarte: CASOS_DE_DESCARTE.map((c) => ({
+      porque: c.porque,
+      clase: c.clase,
+      id: c.documento.id,
+      documento: c.documento.datos,
+      // Las dos salidas: si aparece en la vidriera, y con que palabras quedo
+      // afuera. `motivo` es null cuando entra.
+      entra: enCatalogo.has(c.documento.id),
+      motivo: motivoPorId.get(c.documento.id) ?? null,
+    })),
+  };
+}
 
 export function construirContrato() {
   // La tabla de proyeccion completa va en el JSON a proposito: asi el lado de
@@ -86,6 +144,14 @@ export function construirContrato() {
     plata: {
       casos: MONTOS_DE_MUESTRA.map((c) => ({ centavos: c, ars: formatearARS(centavos(c)) })),
     },
+    // El panel tiene que decir lo mismo que la vidriera sobre si un vino se
+    // ve y, cuando no se ve, por que. La regla vive en `balde`, `tope` y
+    // `armarCatalogo`, y NO se puede transportar en JSON: viajan documentos
+    // de ejemplo con el motivo que `armarCatalogo` les puso HOY.
+    //
+    // Sin esto el panel reimplementa el descarte, las dos se desincronizan y
+    // el modo de falla es silencioso: un vino publicado que no aparece nunca.
+    catalogo: fixturesDelCatalogo(),
     publico: {
       estados: [...ESTADOS_PUBLICOS],
       requierenAccion: [...REQUIEREN_ACCION],

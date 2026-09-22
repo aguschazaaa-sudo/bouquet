@@ -1,6 +1,13 @@
 # EP-03 — Productos
 
-> Hito 1 · Workflow A, salvo **HU-03.5** y **HU-03.6**, que van por **D** ·
+> **CERRADA el 2026-09-22.** Las tres historias que faltaban —HU-03.5, HU-03.6
+> y HU-03.7— están construidas, en el change
+> [`panel-publicar-un-vino`](../../../../openspec/changes/panel-publicar-un-vino/proposal.md)
+> ([ADR 014](../../architecture/decisions/014-publicar-un-vino.md)). Falta el
+> deploy del panel y que alguien publique un vino real y lo mire — eso no
+> reabre la épica, es lo que falta para que el change se archive.
+>
+> Hito 1 · Workflow A, salvo **HU-03.5** y **HU-03.6**, que fueron por **D** ·
 > [volver al mapa](overview.md)
 
 **Objetivo:** que el dueño cargue y mantenga su catálogo sin pedirle nada al
@@ -101,19 +108,32 @@ costos sin tocar código.
     en verse
     ([ADR 008, Consecuencias](../../architecture/decisions/008-catalogo-stock-y-carrito.md)).
     La pantalla lo dice (HU-09.4).
-- **Abierto:** una baranda contra el dedo gordo —un precio que baja 90 % pide
+- ~~**Abierto:** una baranda contra el dedo gordo —un precio que baja 90 % pide
   confirmación— escrita sobre el **valor nuevo**, no sólo sobre el anterior
-  ([ARQUITECTURA §9.4](../../../../ARQUITECTURA.md#94-la-baranda-de-config-tiene-que-proteger-la-primera-escritura)).
+  ([ARQUITECTURA §9.4](../../../../ARQUITECTURA.md#94-la-baranda-de-config-tiene-que-proteger-la-primera-escritura)).~~
+  **CONSTRUIDO el 2026-09-22:** `cambio_de_precio.dart` —10× la mediana de los
+  publicados (con 5 o más) **o** mitad/doble del anterior, sobre el valor
+  **nuevo**—, con su propia hoja de confirmación
+  (`hoja_de_precio.dart`) y el aviso de los ~13 minutos.
+  [ADR 014](../../architecture/decisions/014-publicar-un-vino.md), sección
+  «HU-03.5, HU-03.6 y HU-03.7».
 
 ## HU-03.6 — Publicar y despublicar · D
 
 **Como** operador, **quiero** publicar un vino cuando está listo y sacarlo de
 la tienda sin borrarlo, **para** no perder su historia.
 
+- **CONSTRUIDO el 2026-09-22:** el interruptor de publicar/despublicar
+  (`interruptor_de_tienda.dart`), con la revisión previa
+  (`revision_para_publicar.dart`) y `RepositorioDeProductos.publicar`/
+  `despublicar`. [ADR 014](../../architecture/decisions/014-publicar-un-vino.md),
+  sección «HU-03.5, HU-03.6 y HU-03.7».
 - **Ya decidido:** **el panel no borra productos: despublica.** Borrar y
   recrear con el mismo id se saltea la inmutabilidad de `tipo` y
-  `presentacion` (hallazgo 1 de `revisor-pagos`, ADR 008). ⚠️ Las reglas
-  todavía permiten el `delete`.
+  `presentacion` (hallazgo 1 de `revisor-pagos`, ADR 008). ~~⚠️ Las reglas
+  todavía permiten el `delete`.~~ **Cerrado el 2026-09-21:** `allow delete: if
+  false` está desplegado (`04b8a471`, ADR 014), y el panel tampoco lo ofrece
+  desde ningún lado.
 - **Para publicar**, el panel valida lo mismo que la vidriera, o la vidriera lo
   descarta **sin avisar** (hallazgo 8): precio mayor que cero (hallazgo 2),
   nombre que no sea sólo espacios, imágenes con URL pública.
@@ -131,6 +151,11 @@ la tienda sin borrarlo, **para** no perder su historia.
 no, su balde de stock, el enlace a su ficha—, **para** confirmar que lo que
 cargué salió.
 
+- **CONSTRUIDO el 2026-09-22:** `en_la_tienda.dart` (`revisarParaLaTienda`,
+  `revisarParaPublicar`) y `como_se_ve_en_la_tienda.dart`. Con esto, **EP-03
+  queda cerrada**: las tres historias que faltaban están construidas.
+  [ADR 014](../../architecture/decisions/014-publicar-un-vino.md), sección
+  «HU-03.5, HU-03.6 y HU-03.7».
 - **Ya decidido:** el balde (`disponible` · `quedan-pocas` · `agotado`) sale de
   `contratos`, nunca de una cuenta propia del panel. Mismo principio que la
   proyección de estados ([ADR 002](../../architecture/decisions/002-estados-de-orden.md)).

@@ -8,6 +8,7 @@ import '../../../../core/presentation/fallo_con_reintento.dart';
 import '../../../../core/presentation/lista_vacia.dart';
 import '../../catalogo_providers.dart';
 import 'formulario_del_vino.dart';
+import 'seccion_de_la_tienda.dart';
 
 /// `/catalogo/nuevo` y `/catalogo/vinos/<id>` — cargar un vino o corregirlo.
 ///
@@ -59,11 +60,23 @@ class PaginaDelVino extends ConsumerWidget {
               alTerminar: volver,
             ),
             AsyncData(:final value) => switch (value.vino(id!)) {
-              final vino? => FormularioDelVino(
-                // Otro vino es otro formulario: el estado no se arrastra.
-                key: ValueKey(vino.id),
-                original: vino,
-                alTerminar: volver,
+              final vino? => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    child: SeccionDeLaTienda(producto: vino, catalogo: value),
+                  ),
+                  const Divider(height: 1),
+                  Expanded(
+                    child: FormularioDelVino(
+                      // Otro vino es otro formulario: el estado no se arrastra.
+                      key: ValueKey(vino.id),
+                      original: vino,
+                      alTerminar: volver,
+                    ),
+                  ),
+                ],
               ),
               null => ListaVacia(
                 icono: Icons.search_off,

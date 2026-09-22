@@ -155,6 +155,132 @@ if (!contrato.plata || !Array.isArray(contrato.plata.casos) || !contrato.plata.c
 }
 
 // ---------------------------------------------------------------------------
+// 2 quater. Las fixtures del catalogo: el balde, el tope y los descartes.
+//
+// El panel dice si un vino se ve en la tienda, y cuando no se ve dice por que.
+// Esa regla vive en `armarCatalogo` y el panel la ESPEJA en Dart, asi que vale
+// lo mismo que para el texto: sin los dos controles, el espejo puede estar
+// roto y pasar igual.
+//
+//   · Sin los TRES baldes, un espejo que devuelve siempre `disponible` pasa.
+//   · Sin un documento que ENTRA al catalogo, uno que descarta todo pasa.
+//
+// Y ademas se compara la etiqueta declarada en la fixture (`clase`) contra lo
+// que `armarCatalogo` hizo de verdad: si manana deja de descartar por uno de
+// esos motivos, la fixture lo dice en vez de envejecer en silencio.
+// ---------------------------------------------------------------------------
+const catalogo = contrato.catalogo;
+const antesDelCatalogo = fallos;
+
+if (!catalogo || !Array.isArray(catalogo.casosDeBalde) || !Array.isArray(catalogo.casosDeDescarte)) {
+  problema('el contrato no trae la seccion `catalogo` con `casosDeBalde` y `casosDeDescarte`');
+} else {
+  // --- el balde: los tres, y las dos formas de unidad -----------------------
+  const baldes = new Set(catalogo.casosDeBalde.map((c) => c.balde));
+  const sinCaso = (catalogo.baldes ?? []).filter((b) => !baldes.has(b));
+  if (sinCaso.length) {
+    problema(
+      `catalogo: ninguna fixture da el balde ${sinCaso.join(', ')} -- ` +
+        'un espejo que devuelve siempre el mismo balde pasaria',
+    );
+  }
+  for (const b of baldes) {
+    if (!(catalogo.baldes ?? []).includes(b)) problema(`catalogo: la fixture da el balde "${b}", que no existe`);
+  }
+  // El balde se mide en BOTELLAS: un espejo que compara el stock contra el
+  // umbral sin multiplicar por la presentacion acierta en toda botella suelta.
+  if (!catalogo.casosDeBalde.some((c) => c.botellas === 1)) {
+    problema('catalogo: ninguna fixture del balde es una botella suelta');
+  }
+  if (!catalogo.casosDeBalde.some((c) => c.botellas > 1)) {
+    problema('catalogo: ninguna fixture del balde es una caja -- el balde se mide en botellas');
+  }
+  // El tope se corta de los dos lados. Sin un stock arriba de 12 no se
+  // distingue `min(stock, 12)` de `stock`; sin uno negativo, `max(0, ...)`.
+  if (!catalogo.casosDeBalde.some((c) => c.stock > catalogo.topePorPedido)) {
+    problema('catalogo: ninguna fixture pasa el tope por pedido -- el corte de arriba no se mide');
+  }
+  if (!catalogo.casosDeBalde.some((c) => c.stock < 0)) {
+    problema('catalogo: ninguna fixture tiene stock negativo -- el corte en 0 no se mide');
+  }
+
+  // --- los descartes: el que entra y uno por motivo -------------------------
+  const entran = catalogo.casosDeDescarte.filter((c) => c.entra);
+  if (!entran.length) {
+    problema(
+      'catalogo: ninguna fixture entra al catalogo -- falta el control positivo, ' +
+        'y un espejo que descarta todo pasaria',
+    );
+  }
+  const descartados = catalogo.casosDeDescarte.filter((c) => !c.entra);
+  if (!descartados.length) {
+    problema('catalogo: ninguna fixture queda afuera -- falta el control negativo');
+  }
+  const clases = new Set(descartados.map((c) => c.clase));
+  const sinFixture = (catalogo.clasesDeDescarte ?? []).filter((c) => c !== 'entra' && !clases.has(c));
+  if (sinFixture.length) {
+    problema(`catalogo: ningun documento se descarta por: ${sinFixture.join(', ')}`);
+  }
+
+  // --- la etiqueta contra lo que paso de verdad -----------------------------
+  for (const c of catalogo.casosDeDescarte) {
+    if (c.entra !== (c.motivo === null)) {
+      problema(`catalogo: "${c.id}" dice entra=${c.entra} y motivo=${JSON.stringify(c.motivo)}`);
+    }
+    if ((c.clase === 'entra') !== c.entra) {
+      problema(
+        `catalogo: "${c.id}" esta declarado como "${c.clase}" y armarCatalogo ` +
+          (c.entra ? 'lo deja entrar' : `lo descarta: ${c.motivo}`),
+      );
+    }
+  }
+
+  // --- la clase contra el MOTIVO real, no solo contra entra/no-entra --------
+  // BAJO 2 de revisor-pagos (ADR 014): tener el motivo en la mano y sólo
+  // comparar entra/no-entra deja pasar una etiqueta mal puesta -- una
+  // fixture declarada "no-valida" cuyo motivo real es "no publicado" pasaba
+  // igual. `no-valida` es la excepcion: agrupa motivos muy distintos
+  // (precio 0, un varietal fuera de la lista, el slug, el volumen...) y no
+  // tiene un patron unico, asi que se confirma por EXCLUSION de los otros
+  // cuatro.
+  const PATRON_POR_CLASE = {
+    'slug-duplicado': /^slug duplicado/,
+    'no-publicado': /^no publicado$/,
+    compuesto: /^compuesto:/,
+    'bodega-inexistente': /^bodega inexistente:/,
+  };
+  for (const c of descartados) {
+    if (c.clase === 'no-valida') {
+      const otraClase = Object.entries(PATRON_POR_CLASE).find(([, p]) => p.test(c.motivo ?? ''));
+      if (otraClase) {
+        problema(
+          `catalogo: "${c.id}" declarado "no-valida" pero el motivo real es ` +
+            `de la clase "${otraClase[0]}": ${c.motivo}`,
+        );
+      }
+    } else {
+      const patron = PATRON_POR_CLASE[c.clase];
+      if (patron && !patron.test(c.motivo ?? '')) {
+        problema(`catalogo: "${c.id}" declarado "${c.clase}" pero el motivo no calza: ${c.motivo}`);
+      }
+    }
+  }
+
+  const ids = catalogo.casosDeDescarte.map((c) => c.id);
+  if (new Set(ids).size !== ids.length) {
+    problema('catalogo: hay ids repetidos en las fixtures -- el motivo se mapea por id');
+  }
+
+  if (fallos === antesDelCatalogo) {
+    console.log(
+      `ok  las fixtures del catalogo cubren los ${baldes.size} baldes y ` +
+        `${clases.size} motivos, con ${entran.length} que entra(n) ` +
+        `(${catalogo.casosDeBalde.length} casos de balde, ${catalogo.casosDeDescarte.length} documentos)`,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 3. El lado de Dart.
 //
 // Si todavia no existe, se DICE que no se verifico. Un verificador que se

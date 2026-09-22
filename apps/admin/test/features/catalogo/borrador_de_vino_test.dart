@@ -309,6 +309,43 @@ void main() {
       expect(r.cambios!.precio, isNull);
     });
 
+    test('conOriginalActualizado: publicar CON el formulario abierto '
+        'congela el precio (ALTO 1 de revisor-pagos, ADR 014)', () {
+      final antesDePublicar = vino('trumpeter', publicado: false);
+      var b = BorradorDeVino.desde(antesDePublicar).conPrecio('1.990');
+      expect(b.precioFijo, isFalse, reason: 'todavia no esta publicado');
+
+      // Sin conOriginalActualizado esto NO pasaba: el interruptor de la
+      // tienda (arriba, en la misma pagina) publica el vino mientras el
+      // formulario sigue abierto con el precio a medio escribir.
+      final yaPublicado = vino(
+        'trumpeter',
+        publicado: true,
+        precio: antesDePublicar.precio,
+      );
+      b = b.conOriginalActualizado(yaPublicado);
+
+      expect(b.precioFijo, isTrue, reason: 'el original ya esta publicado');
+      expect(b.precio, '1.990', reason: 'lo tecleado no se pierde');
+      final r = b.revisar(catalogo([yaPublicado]), anioActual: anio);
+      expect(
+        r.cambios!.precio,
+        isNull,
+        reason: 'el precio NO puede viajar sin la baranda de HU-03.5',
+      );
+    });
+
+    test('conOriginalActualizado no pisa nada de lo tecleado', () {
+      final b = BorradorDeVino.desde(original)
+          .conNombre('Nombre a medio escribir')
+          .conRegion('Otra region')
+          .conOriginalActualizado(
+            vino('norton-malbec', nombre: original.nombre),
+          );
+      expect(b.nombre, 'Nombre a medio escribir');
+      expect(b.region, 'Otra region');
+    });
+
     test('las botellas no se cambian despues del alta', () {
       final b = BorradorDeVino.desde(original).conBotellas(6);
       expect(b.botellas, 1);

@@ -8,8 +8,7 @@ import 'ficha_del_vino.dart';
 /// necesita ver. Ver ADR 008 §2.
 ///
 /// Tampoco es el documento crudo: el panel no pinta un mapa de Firestore.
-/// La ficha entera entro con HU-03.4, que la corrige. `imagenes` todavia no:
-/// entra con EP-04, que es quien la usa.
+/// La ficha entera entro con HU-03.4, que la corrige.
 class ProductoDelPanel {
   const ProductoDelPanel({
     required this.id,
@@ -21,6 +20,7 @@ class ProductoDelPanel {
     required this.botellas,
     required this.stock,
     this.muestra = false,
+    this.imagenes = const [],
   });
 
   final String id;
@@ -52,4 +52,11 @@ class ProductoDelPanel {
   /// Unidades de venta, no botellas. `null` en un compuesto, que no tiene
   /// stock propio: lo deriva de sus componentes.
   final int? stock;
+
+  /// Las fotos, en el orden guardado. Vacia si no se cargo ninguna todavia
+  /// -- la vidriera muestra una silueta y el texto "sin foto" en ese caso
+  /// (`panel-publicar-un-vino`, design.md Decision #1): no bloquea publicar.
+  /// Mapeo seguro: lista vacia si el documento no trae el campo o trae otra
+  /// cosa (`textosDe` en `data/campos.dart`).
+  final List<String> imagenes;
 }

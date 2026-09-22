@@ -1,3 +1,4 @@
+import '../../../core/contratos/catalogo_publico.dart';
 import '../domain/fallo_de_catalogo.dart';
 
 /// Lo que dice la pantalla cuando algo del catalogo falla. Para gente no
@@ -24,3 +25,15 @@ const textoSeLeCargaronVinos =
 
 const textoNombreSinSlug =
     'Ese nombre no sirve: tiene que tener al menos una letra o un número.';
+
+/// El motivo corto para el renglon del catalogo (HU-03.7): un vino
+/// PUBLICADO que la tienda igual descarta. Mas breve que
+/// `textoDelMotivoEnLaTienda` de la pagina del vino -- ahi hay espacio para
+/// una oracion, en el renglon no.
+String textoCortoDelMotivo(MotivoDeDescarte motivo) => switch (motivo) {
+  MotivoDeDescarte.noValida => 'la ficha tiene un problema',
+  MotivoDeDescarte.slugDuplicado => 'dirección repetida',
+  MotivoDeDescarte.noPublicado => 'no publicado',
+  MotivoDeDescarte.compuesto => 'compuesto, sin stock propio',
+  MotivoDeDescarte.bodegaInexistente => 'bodega inexistente',
+};

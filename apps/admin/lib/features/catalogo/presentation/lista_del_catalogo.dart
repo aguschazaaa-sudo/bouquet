@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../../core/presentation/lista_vacia.dart';
 import '../domain/catalogo.dart';
+import '../domain/en_la_tienda.dart';
 import 'renglon_de_producto.dart';
+import 'textos_del_catalogo.dart';
 
 /// Los vinos que quedaron despues del filtro (HU-03.1).
 ///
@@ -13,6 +15,7 @@ class ListaDelCatalogo extends StatelessWidget {
   const ListaDelCatalogo({
     super.key,
     required this.renglones,
+    required this.catalogo,
     required this.hayVinos,
     required this.alLimpiarLaBusqueda,
     required this.alAbrir,
@@ -22,6 +25,10 @@ class ListaDelCatalogo extends StatelessWidget {
   final ValueChanged<String> alAbrir;
 
   final List<RenglonDelCatalogo> renglones;
+
+  /// Para el motivo corto de HU-03.7: un vino publicado que la tienda igual
+  /// descarta (`revisarParaLaTienda`).
+  final Catalogo catalogo;
 
   /// Si el catalogo tiene vinos, aunque el filtro no deje ninguno.
   final bool hayVinos;
@@ -55,10 +62,17 @@ class ListaDelCatalogo extends StatelessWidget {
       // de navegacion del telefono.
       padding: const EdgeInsets.only(bottom: 24),
       itemCount: renglones.length,
-      itemBuilder: (_, i) => RenglonDeProducto(
-        renglon: renglones[i],
-        alAbrir: () => alAbrir(renglones[i].producto.id),
-      ),
+      itemBuilder: (_, i) {
+        final p = renglones[i].producto;
+        final revision = p.publicado ? revisarParaLaTienda(p, catalogo) : null;
+        return RenglonDeProducto(
+          renglon: renglones[i],
+          alAbrir: () => alAbrir(p.id),
+          motivoCorto: revision != null && !revision.aparece
+              ? textoCortoDelMotivo(revision.motivo!)
+              : null,
+        );
+      },
     );
   }
 }

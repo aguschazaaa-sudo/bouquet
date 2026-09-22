@@ -186,6 +186,770 @@
       }
     ]
   },
+  "catalogo": {
+    "baldes": [
+      "disponible",
+      "quedan-pocas",
+      "agotado"
+    ],
+    "umbralQuedanPocas": 6,
+    "topePorPedido": 12,
+    "clasesDeDescarte": [
+      "entra",
+      "no-valida",
+      "slug-duplicado",
+      "no-publicado",
+      "compuesto",
+      "bodega-inexistente"
+    ],
+    "bodegas": [
+      {
+        "id": "rutini",
+        "datos": {
+          "nombre": "Rutini Wines",
+          "slug": "rutini"
+        }
+      }
+    ],
+    "casosDeBalde": [
+      {
+        "porque": "botella suelta con stock de sobra",
+        "stock": 20,
+        "botellas": 1,
+        "balde": "disponible",
+        "tope": 12
+      },
+      {
+        "porque": "caja de 6: pocas unidades, muchas botellas",
+        "stock": 4,
+        "botellas": 6,
+        "balde": "disponible",
+        "tope": 4
+      },
+      {
+        "porque": "una botella arriba del umbral",
+        "stock": 7,
+        "botellas": 1,
+        "balde": "disponible",
+        "tope": 7
+      },
+      {
+        "porque": "justo en el umbral, suelta",
+        "stock": 6,
+        "botellas": 1,
+        "balde": "quedan-pocas",
+        "tope": 6
+      },
+      {
+        "porque": "tres cajas de 2 son seis botellas",
+        "stock": 3,
+        "botellas": 2,
+        "balde": "quedan-pocas",
+        "tope": 3
+      },
+      {
+        "porque": "sin stock, suelta",
+        "stock": 0,
+        "botellas": 1,
+        "balde": "agotado",
+        "tope": 0
+      },
+      {
+        "porque": "sin stock, caja de 2",
+        "stock": 0,
+        "botellas": 2,
+        "balde": "agotado",
+        "tope": 0
+      },
+      {
+        "porque": "stock negativo: el tope se corta en 0",
+        "stock": -3,
+        "botellas": 1,
+        "balde": "agotado",
+        "tope": 0
+      },
+      {
+        "porque": "justo en el tope por pedido",
+        "stock": 12,
+        "botellas": 1,
+        "balde": "disponible",
+        "tope": 12
+      },
+      {
+        "porque": "arriba del tope por pedido",
+        "stock": 13,
+        "botellas": 1,
+        "balde": "disponible",
+        "tope": 12
+      }
+    ],
+    "casosDeDescarte": [
+      {
+        "porque": "el caso normal: publicado, valido y con su bodega",
+        "clase": "entra",
+        "id": "rutini-malbec",
+        "documento": {
+          "tipo": "simple",
+          "slug": "rutini-malbec",
+          "nombre": "Vino rutini-malbec",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": true,
+        "motivo": null
+      },
+      {
+        "porque": "una caja de 2 entra igual: caja NO es compuesto",
+        "clase": "entra",
+        "id": "rutini-malbec-caja-2",
+        "documento": {
+          "tipo": "simple",
+          "slug": "rutini-malbec-caja-2",
+          "nombre": "Vino rutini-malbec-caja-2",
+          "precio": 3800000,
+          "stock": 3,
+          "presentacion": {
+            "botellas": 2
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": true,
+        "motivo": null
+      },
+      {
+        "porque": "publicado con precio 0: espeja `precioCoherente` de firestore.rules (ADR 014)",
+        "clase": "no-valida",
+        "id": "publicado-sin-precio",
+        "documento": {
+          "tipo": "simple",
+          "slug": "publicado-sin-precio",
+          "nombre": "Vino publicado-sin-precio",
+          "precio": 0,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "publicado con precio 0: un vino en la tienda necesita precio"
+      },
+      {
+        "porque": "un varietal fuera de la lista cerrada -- \"Cab. Sauv.\" no es una uva nueva",
+        "clase": "no-valida",
+        "id": "varietal-inventado",
+        "documento": {
+          "tipo": "simple",
+          "slug": "varietal-inventado",
+          "nombre": "Vino varietal-inventado",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Cab. Sauv."
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "varietales fuera de la lista cerrada: [\"Cab. Sauv.\"]"
+      },
+      {
+        "porque": "una imagen que no es https: la regla y la proyeccion piden lo mismo (ADR 014)",
+        "clase": "no-valida",
+        "id": "foto-insegura",
+        "documento": {
+          "tipo": "simple",
+          "slug": "foto-insegura",
+          "nombre": "Vino foto-insegura",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "http://ejemplo.test/foto.webp"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "imagenes no es una lista de URLs https"
+      },
+      {
+        "porque": "un campo de la ficha en blanco -- el panel lo tiene que decir campo por campo",
+        "clase": "no-valida",
+        "id": "sin-region",
+        "documento": {
+          "tipo": "simple",
+          "slug": "sin-region",
+          "nombre": "Vino sin-region",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "fichaVino.region falta"
+      },
+      {
+        "porque": "dos documentos con el mismo slug: el primero",
+        "clase": "slug-duplicado",
+        "id": "clon-a",
+        "documento": {
+          "tipo": "simple",
+          "slug": "malbec-de-la-casa",
+          "nombre": "Vino clon-a",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "slug duplicado: malbec-de-la-casa"
+      },
+      {
+        "porque": "dos documentos con el mismo slug: el segundo",
+        "clase": "slug-duplicado",
+        "id": "clon-b",
+        "documento": {
+          "tipo": "simple",
+          "slug": "malbec-de-la-casa",
+          "nombre": "Vino clon-b",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "slug duplicado: malbec-de-la-casa"
+      },
+      {
+        "porque": "un vino real choca con uno de muestra: el real",
+        "clase": "slug-duplicado",
+        "id": "real-contra-muestra",
+        "documento": {
+          "tipo": "simple",
+          "slug": "compartido-con-uno-de-muestra",
+          "nombre": "Vino real-contra-muestra",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "slug duplicado: compartido-con-uno-de-muestra"
+      },
+      {
+        "porque": "un vino real choca con uno de muestra: el de muestra",
+        "clase": "slug-duplicado",
+        "id": "muestra-contra-real",
+        "documento": {
+          "tipo": "simple",
+          "slug": "compartido-con-uno-de-muestra",
+          "nombre": "Vino muestra-contra-real",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": true,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "slug duplicado: compartido-con-uno-de-muestra"
+      },
+      {
+        "porque": "un slug con mayusculas: el regex de SLUG lo rechaza",
+        "clase": "no-valida",
+        "id": "slug-invalido",
+        "documento": {
+          "tipo": "simple",
+          "slug": "Slug-Invalido",
+          "nombre": "Vino slug-invalido",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "slug invalido: Slug-Invalido"
+      },
+      {
+        "porque": "volumenMl ausente -- NO es opcional como anada o graduacion",
+        "clase": "no-valida",
+        "id": "sin-volumen",
+        "documento": {
+          "tipo": "simple",
+          "slug": "sin-volumen",
+          "nombre": "Vino sin-volumen",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "fichaVino.volumenMl invalido"
+      },
+      {
+        "porque": "anada PRESENTE pero invalida -- ausente si es valida (NV)",
+        "clase": "no-valida",
+        "id": "anada-invalida",
+        "documento": {
+          "tipo": "simple",
+          "slug": "anada-invalida",
+          "nombre": "Vino anada-invalida",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 1500,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "fichaVino.anada invalida: 1500"
+      },
+      {
+        "porque": "graduacion PRESENTE pero fuera de 50-250 decimas",
+        "clase": "no-valida",
+        "id": "graduacion-invalida",
+        "documento": {
+          "tipo": "simple",
+          "slug": "graduacion-invalida",
+          "nombre": "Vino graduacion-invalida",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 14,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "fichaVino.graduacion invalida (decimas, 50-250): 14"
+      },
+      {
+        "porque": "un varietal repetido: la lista cerrada no admite duplicados",
+        "clase": "no-valida",
+        "id": "varietal-repetido",
+        "documento": {
+          "tipo": "simple",
+          "slug": "varietal-repetido",
+          "nombre": "Vino varietal-repetido",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec",
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "fichaVino.varietales repite una uva"
+      },
+      {
+        "porque": "una descripcion que se pasa del tope",
+        "clase": "no-valida",
+        "id": "descripcion-larga",
+        "documento": {
+          "tipo": "simple",
+          "slug": "descripcion-larga",
+          "nombre": "Vino descripcion-larga",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+          }
+        },
+        "entra": false,
+        "motivo": "fichaVino.descripcion se pasa de 600: 601"
+      },
+      {
+        "porque": "un borrador: nace sin precio y sin publicar, y eso es valido",
+        "clase": "no-publicado",
+        "id": "borrador-sin-publicar",
+        "documento": {
+          "tipo": "simple",
+          "slug": "borrador-sin-publicar",
+          "nombre": "Vino borrador-sin-publicar",
+          "precio": 0,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": false,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "no publicado"
+      },
+      {
+        "porque": "una caja armada: la vidriera todavia no deriva su stock",
+        "clase": "compuesto",
+        "id": "caja-mixta",
+        "documento": {
+          "tipo": "compuesto",
+          "slug": "caja-mixta",
+          "nombre": "Vino caja-mixta",
+          "precio": 1990000,
+          "presentacion": {
+            "botellas": 3
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "rutini",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "compuesto: la vidriera todavia no deriva su stock"
+      },
+      {
+        "porque": "la bodega del vino no esta en la coleccion",
+        "clase": "bodega-inexistente",
+        "id": "sin-bodega",
+        "documento": {
+          "tipo": "simple",
+          "slug": "sin-bodega",
+          "nombre": "Vino sin-bodega",
+          "precio": 1990000,
+          "stock": 20,
+          "presentacion": {
+            "botellas": 1
+          },
+          "imagenes": [
+            "https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media"
+          ],
+          "publicado": true,
+          "muestra": false,
+          "fichaVino": {
+            "bodegaId": "bodega-que-no-existe",
+            "varietales": [
+              "Malbec"
+            ],
+            "color": "tinto",
+            "organico": false,
+            "anada": 2023,
+            "region": "Mendoza",
+            "volumenMl": 750,
+            "graduacion": 140,
+            "descripcion": null
+          }
+        },
+        "entra": false,
+        "motivo": "bodega inexistente: bodega-que-no-existe"
+      }
+    ]
+  },
   "publico": {
     "estados": [
       "recibida",

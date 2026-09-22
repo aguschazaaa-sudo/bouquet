@@ -519,3 +519,283 @@ export function armarCatalogo(
     descartes,
   };
 }
+
+// --------------------------------------------------------------- fixtures
+
+/**
+ * Las ENTRADAS de las fixtures del catalogo. Las salidas -el balde, el tope y
+ * el motivo del descarte- las calcula `scripts/generar.mjs` llamando a
+ * `balde`, `tope` y `armarCatalogo`, asi que el JSON dice lo que el TypeScript
+ * hace HOY y no lo que alguien escribio que hacia. Es el mismo patron que
+ * `ENTRADAS_DE_TEXTO` en `texto.ts`.
+ *
+ * Por que existen: el panel en Flutter tiene que decir lo mismo que la
+ * vidriera sobre si un vino se ve, y por que no. Si reimplementa la regla sin
+ * nada que lo compare, el modo de falla es SILENCIOSO -- un vino publicado que
+ * no aparece nunca. Lo que viaja no es la implementacion -no se puede
+ * transportar en JSON-: viajan pares entrada->salida.
+ *
+ * NADA de aca cambia el comportamiento de `balde`, `tope` ni `armarCatalogo`:
+ * son datos de prueba, no una segunda implementacion.
+ */
+export interface CasoDeBalde {
+  /** Por que esta este caso. Viaja al JSON: el test de Dart lo usa de `reason`. */
+  readonly porque: string;
+  /** Unidades de venta. */
+  readonly stock: number;
+  /** Botellas por unidad de venta: 1 es suelta, mas es caja. */
+  readonly botellas: number;
+}
+
+/**
+ * Los tres baldes por las dos formas de unidad, mas los bordes.
+ *
+ * Los tres baldes son el control positivo y el negativo a la vez: con solo
+ * `disponible`, un espejo que devuelve siempre `disponible` pasaria. Y las dos
+ * formas de unidad importan porque EL BALDE SE MIDE EN BOTELLAS: un espejo que
+ * compara `stock` contra 6 sin multiplicar por la presentacion acierta en toda
+ * botella suelta y se equivoca en cada caja.
+ */
+export const CASOS_DE_BALDE: readonly CasoDeBalde[] = [
+  // Suelta con stock de sobra: el caso normal.
+  { porque: 'botella suelta con stock de sobra', stock: 20, botellas: 1 },
+  // Caja con pocas unidades pero muchas botellas: el espejo que no multiplica
+  // por la presentacion dice "quedan pocas" y se equivoca.
+  { porque: 'caja de 6: pocas unidades, muchas botellas', stock: 4, botellas: 6 },
+  // El borde de arriba del umbral: 7 botellas ya NO son pocas.
+  { porque: 'una botella arriba del umbral', stock: 7, botellas: 1 },
+  // El umbral exacto: 6 botellas SI son pocas. Es `<=`, no `<`.
+  { porque: 'justo en el umbral, suelta', stock: 6, botellas: 1 },
+  // Tres cajas de 2 son seis botellas, y eso ya es poco (ADR 009 §10).
+  { porque: 'tres cajas de 2 son seis botellas', stock: 3, botellas: 2 },
+  // Sin stock, suelta.
+  { porque: 'sin stock, suelta', stock: 0, botellas: 1 },
+  // Sin stock, caja: agotado no depende de la presentacion.
+  { porque: 'sin stock, caja de 2', stock: 0, botellas: 2 },
+  // Stock NEGATIVO: existe en Firestore si una reposicion se equivoca. El
+  // tope tiene que dar 0, no un numero negativo que la pantalla sumaria.
+  { porque: 'stock negativo: el tope se corta en 0', stock: -3, botellas: 1 },
+  // El tope exacto: 12 unidades dan 12.
+  { porque: 'justo en el tope por pedido', stock: 12, botellas: 1 },
+  // Arriba del tope: 13 unidades siguen dando 12.
+  { porque: 'arriba del tope por pedido', stock: 13, botellas: 1 },
+];
+
+/**
+ * Las familias de descarte de `armarCatalogo`, mas `entra` para el que SI
+ * aparece en la vidriera.
+ *
+ * `entra` esta en la lista a proposito: sin un caso que entra, un espejo que
+ * descarta todo pasaria todas las comparaciones.
+ */
+export const CLASES_DE_DESCARTE = [
+  'entra',
+  'no-valida',
+  'slug-duplicado',
+  'no-publicado',
+  'compuesto',
+  'bodega-inexistente',
+] as const;
+export type ClaseDeDescarte = (typeof CLASES_DE_DESCARTE)[number];
+
+export interface CasoDeDescarte {
+  /** Por que esta este caso. */
+  readonly porque: string;
+  /**
+   * Que se espera que pase. Es una ETIQUETA de la entrada, no una segunda
+   * implementacion: `scripts/ci/auditar_estados.mjs` la compara contra lo que
+   * `armarCatalogo` hizo de verdad y sale con 1 si no coinciden.
+   */
+  readonly clase: ClaseDeDescarte;
+  readonly documento: DocumentoCrudo;
+}
+
+/** Las bodegas contra las que se arma el catalogo de las fixtures. */
+export const BODEGAS_DE_MUESTRA: readonly DocumentoCrudo[] = [
+  { id: 'rutini', datos: { nombre: 'Rutini Wines', slug: 'rutini' } },
+];
+
+/** Un documento de `productos` con la forma que deja el seed. */
+function documentoDeMuestra(
+  id: string,
+  cambios: Record<string, unknown> = {},
+  ficha: Record<string, unknown> = {},
+): DocumentoCrudo {
+  return {
+    id,
+    datos: {
+      tipo: 'simple',
+      slug: id,
+      nombre: `Vino ${id}`,
+      precio: 1990000,
+      stock: 20,
+      presentacion: { botellas: 1 },
+      imagenes: ['https://firebasestorage.googleapis.com/v0/b/bouquet-vinos/o/x.webp?alt=media'],
+      publicado: true,
+      muestra: false,
+      fichaVino: {
+        bodegaId: 'rutini',
+        varietales: ['Malbec'],
+        color: 'tinto',
+        organico: false,
+        anada: 2023,
+        region: 'Mendoza',
+        volumenMl: 750,
+        graduacion: 140,
+        descripcion: null,
+        ...ficha,
+      },
+      ...cambios,
+    },
+  };
+}
+
+/** El mismo documento sin una clave: `cambios` no puede borrar. */
+function sinClave(doc: DocumentoCrudo, campo: string): DocumentoCrudo {
+  const datos = { ...(doc.datos as Record<string, unknown>) };
+  delete datos[campo];
+  return { id: doc.id, datos };
+}
+
+/**
+ * Los documentos de ejemplo, TODOS juntos: `armarCatalogo` se llama UNA vez
+ * sobre la lista entera porque el slug duplicado solo existe de a dos.
+ *
+ * Los ids son unicos a proposito: `scripts/generar.mjs` mapea cada caso a su
+ * descarte POR ID, y un id repetido haria que dos casos leyeran el mismo
+ * motivo. Hay un test que lo afirma.
+ */
+export const CASOS_DE_DESCARTE: readonly CasoDeDescarte[] = [
+  // --------------------------------------------------------------- entran
+  {
+    porque: 'el caso normal: publicado, valido y con su bodega',
+    clase: 'entra',
+    documento: documentoDeMuestra('rutini-malbec'),
+  },
+  {
+    porque: 'una caja de 2 entra igual: caja NO es compuesto',
+    clase: 'entra',
+    documento: documentoDeMuestra('rutini-malbec-caja-2', {
+      presentacion: { botellas: 2 },
+      precio: 3800000,
+      stock: 3,
+    }),
+  },
+  // ------------------------------------------------------------ no valida
+  {
+    porque: 'publicado con precio 0: espeja `precioCoherente` de firestore.rules (ADR 014)',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('publicado-sin-precio', { precio: 0 }),
+  },
+  {
+    porque: 'un varietal fuera de la lista cerrada -- "Cab. Sauv." no es una uva nueva',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('varietal-inventado', {}, { varietales: ['Cab. Sauv.'] }),
+  },
+  {
+    porque: 'una imagen que no es https: la regla y la proyeccion piden lo mismo (ADR 014)',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('foto-insegura', { imagenes: ['http://ejemplo.test/foto.webp'] }),
+  },
+  {
+    porque: 'un campo de la ficha en blanco -- el panel lo tiene que decir campo por campo',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('sin-region', {}, { region: '' }),
+  },
+  // ------------------------------------------------------- slug duplicado
+  // Quedan afuera LOS DOS: elegir uno seria elegir al azar cual de los dos
+  // precios se cobra.
+  {
+    porque: 'dos documentos con el mismo slug: el primero',
+    clase: 'slug-duplicado',
+    documento: documentoDeMuestra('clon-a', { slug: 'malbec-de-la-casa' }),
+  },
+  {
+    porque: 'dos documentos con el mismo slug: el segundo',
+    clase: 'slug-duplicado',
+    documento: documentoDeMuestra('clon-b', { slug: 'malbec-de-la-casa' }),
+  },
+  // Un vino REAL que choca con uno de MUESTRA. `armarCatalogo` los descarta
+  // a los DOS igual -- `vecesPorSlug` cuenta todos los documentos crudos,
+  // de muestra o no, antes de mirar `publicado` o `muestra` -- pero el panel
+  // en Dart usaba `ChoqueDeDireccion.bloquea` para esta pregunta, que
+  // contesta otra cosa ("¿se puede guardar el ALTA?", donde un choque contra
+  // uno de muestra SI se permite). Sin este par, esa fixture pasaba con el
+  // agujero abierto (hallazgo ALTO 2 de `revisor-pagos`, ADR 014).
+  {
+    porque: 'un vino real choca con uno de muestra: el real',
+    clase: 'slug-duplicado',
+    documento: documentoDeMuestra('real-contra-muestra', {
+      slug: 'compartido-con-uno-de-muestra',
+    }),
+  },
+  {
+    porque: 'un vino real choca con uno de muestra: el de muestra',
+    clase: 'slug-duplicado',
+    documento: documentoDeMuestra('muestra-contra-real', {
+      slug: 'compartido-con-uno-de-muestra',
+      muestra: true,
+    }),
+  },
+  // --------------------------------------------- no-valida, mas familias
+  // (hallazgo MEDIO 1 de `revisor-pagos`, ADR 014): el espejo en Dart sólo
+  // cubria 4 de las ~12 formas de "no valida" que rechaza `validarProducto`.
+  // Estas seis son las que SI se pueden replicar sin leer el documento
+  // crudo -el dato sobrevive el mapeo a `ProductoDelPanel` sin que
+  // `campos.dart` lo pise con un default-. Las que faltan (botellas < 1,
+  // organico mal tipado, imagenes ausente vs. lista vacia, un compuesto CON
+  // stock) quedan documentadas como limite real en `en_la_tienda.dart`: el
+  // propio mapeo del panel ya normaliza esos casos antes de que el dominio
+  // los vea.
+  {
+    porque: 'un slug con mayusculas: el regex de SLUG lo rechaza',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('slug-invalido', { slug: 'Slug-Invalido' }),
+  },
+  {
+    porque: 'volumenMl ausente -- NO es opcional como anada o graduacion',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('sin-volumen', {}, { volumenMl: undefined }),
+  },
+  {
+    porque: 'anada PRESENTE pero invalida -- ausente si es valida (NV)',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('anada-invalida', {}, { anada: 1500 }),
+  },
+  {
+    porque: 'graduacion PRESENTE pero fuera de 50-250 decimas',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('graduacion-invalida', {}, { graduacion: 14 }),
+  },
+  {
+    porque: 'un varietal repetido: la lista cerrada no admite duplicados',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('varietal-repetido', {}, { varietales: ['Malbec', 'Malbec'] }),
+  },
+  {
+    porque: 'una descripcion que se pasa del tope',
+    clase: 'no-valida',
+    documento: documentoDeMuestra('descripcion-larga', {}, { descripcion: 'x'.repeat(DESCRIPCION_MAXIMA + 1) }),
+  },
+  // --------------------------------------------------------- no publicado
+  {
+    porque: 'un borrador: nace sin precio y sin publicar, y eso es valido',
+    clase: 'no-publicado',
+    documento: documentoDeMuestra('borrador-sin-publicar', { publicado: false, precio: 0 }),
+  },
+  // ------------------------------------------------------------ compuesto
+  {
+    porque: 'una caja armada: la vidriera todavia no deriva su stock',
+    clase: 'compuesto',
+    documento: sinClave(
+      documentoDeMuestra('caja-mixta', { tipo: 'compuesto', presentacion: { botellas: 3 } }),
+      'stock',
+    ),
+  },
+  // --------------------------------------------------- bodega inexistente
+  {
+    porque: 'la bodega del vino no esta en la coleccion',
+    clase: 'bodega-inexistente',
+    documento: documentoDeMuestra('sin-bodega', {}, { bodegaId: 'bodega-que-no-existe' }),
+  },
+];

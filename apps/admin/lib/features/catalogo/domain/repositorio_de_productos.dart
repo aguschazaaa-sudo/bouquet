@@ -21,4 +21,21 @@ abstract interface class RepositorioDeProductos {
   /// Escribe solo lo que cambio. Los varietales, con `arrayUnion` y
   /// `arrayRemove` (ARQUITECTURA §5.3).
   Future<void> corregir(String id, CambiosDeVino cambios);
+
+  /// Publica el vino (HU-03.6): lo pone a la venta. Toca **solo**
+  /// `publicado`.
+  Future<void> publicar(String id);
+
+  /// Despublica el vino (HU-03.6): lo saca de la tienda **sin borrarlo**
+  /// (hallazgo 1 de `revisor-pagos`, ADR 008 y ADR 014 §1). Toca **solo**
+  /// `publicado`.
+  Future<void> despublicar(String id);
+
+  /// Cambia el precio de un vino publicado (HU-03.5). Toca **solo**
+  /// `precio`. La baranda de confirmacion vive en
+  /// `domain/cambio_de_precio.dart` y corre ANTES de llamar a esto.
+  ///
+  /// Ninguno de los tres toca `stock`, `tipo`, `presentacion`, `muestra` ni
+  /// `slug`: son los campos inmutables del hallazgo 1 de `revisor-pagos`.
+  Future<void> cambiarPrecio(String id, int centavos);
 }

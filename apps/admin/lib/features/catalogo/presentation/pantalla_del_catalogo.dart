@@ -129,6 +129,7 @@ class _Encontrados extends StatelessWidget {
         Expanded(
           child: ListaDelCatalogo(
             renglones: renglones,
+            catalogo: catalogo,
             hayVinos: catalogo.renglones.isNotEmpty,
             alLimpiarLaBusqueda: alLimpiar,
             alAbrir: alAbrir,

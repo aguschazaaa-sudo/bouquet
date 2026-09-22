@@ -47,6 +47,21 @@ class _FormularioDelVinoState extends ConsumerState<FormularioDelVino> {
   bool _guardando = false;
   String? _fallo;
 
+  /// Refresca `_borrador.original` cuando el catalogo trae un vino
+  /// cambiado por AFUERA de este formulario -tipicamente, `SeccionDeLaTienda`
+  /// arriba, publicando o cambiando el precio-. Sin esto, `precioFijo`
+  /// queda leyendo un `original` congelado del momento en que se abrio la
+  /// pagina (hallazgo ALTO 1 de `revisor-pagos`, ADR 014). Nunca toca lo
+  /// tecleado: `conOriginalActualizado` preserva cada campo del borrador.
+  @override
+  void didUpdateWidget(covariant FormularioDelVino oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nuevo = widget.original;
+    if (nuevo != null) {
+      setState(() => _borrador = _borrador.conOriginalActualizado(nuevo));
+    }
+  }
+
   void _cambiar(CampoDelVino? campo, BorradorDeVino nuevo) => setState(() {
     _borrador = nuevo;
     if (campo != null) _tocados.add(campo);

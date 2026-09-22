@@ -165,6 +165,32 @@ class BorradorDeVino {
   /// [anioActual] entra de afuera para que el test no dependa del reloj.
   Revision revisar(Catalogo catalogo, {required int anioActual}) =>
       _Revisor(this, catalogo, anioActual).revisar();
+
+  /// Refresca el vino ORIGINAL sin tocar una sola letra de lo tecleado.
+  ///
+  /// Hace falta porque `panel-publicar-un-vino` puso el interruptor de la
+  /// tienda EN LA MISMA PAGINA que este formulario, arriba: si el operador
+  /// publica el vino mientras el formulario sigue abierto -o si otra
+  /// persona de la familia lo hace desde otro dispositivo-, sin esto
+  /// [precioFijo] quedaria congelado en el valor que el vino tenia cuando se
+  /// abrio la pagina, y el precio viajaria en `corregir()` SIN la baranda de
+  /// HU-03.5 (hallazgo ALTO 1 de `revisor-pagos`, ADR 014).
+  BorradorDeVino conOriginalActualizado(ProductoDelPanel nuevo) =>
+      BorradorDeVino(
+        original: nuevo,
+        nombre: nombre,
+        bodegaId: bodegaId,
+        varietales: varietales,
+        color: color,
+        organico: organico,
+        region: region,
+        volumen: volumen,
+        anada: anada,
+        graduacion: graduacion,
+        descripcion: descripcion,
+        precio: precio,
+        botellas: botellas,
+      );
 }
 
 /// Lo que el formulario sabe de un borrador.

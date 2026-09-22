@@ -85,6 +85,36 @@ class RepositorioDeProductosFirestore implements RepositorioDeProductos {
     }
   }
 
+  /// HU-03.6: pone el vino a la venta. `update` de **solo** `publicado`.
+  @override
+  Future<void> publicar(String id) =>
+      _actualizarUnCampo(id, {'publicado': true});
+
+  /// HU-03.6: lo saca de la tienda. **Nunca** un `delete` -- hallazgo 1 de
+  /// `revisor-pagos`, ADR 008 y ADR 014 §1: `allow delete: if false` en las
+  /// reglas hace que borrar ni siquiera se pueda intentar.
+  @override
+  Future<void> despublicar(String id) =>
+      _actualizarUnCampo(id, {'publicado': false});
+
+  /// HU-03.5: cambia el precio de un vino publicado. `update` de **solo**
+  /// `precio`; la baranda de confirmacion (`domain/cambio_de_precio.dart`)
+  /// ya corrio antes de llegar aca.
+  @override
+  Future<void> cambiarPrecio(String id, int centavos) =>
+      _actualizarUnCampo(id, {'precio': centavos});
+
+  /// `update` de un unico campo, traduciendo el fallo con
+  /// `comoFalloDeCatalogo` (ADR 012 §7): un rebote de las reglas no se lee
+  /// como un problema de permisos.
+  Future<void> _actualizarUnCampo(String id, Map<String, Object?> campo) async {
+    try {
+      await _db.collection(_coleccion).doc(id).update(campo);
+    } catch (e) {
+      throw comoFalloDeCatalogo(e);
+    }
+  }
+
   /// ⚠️ **Ningun documento se descarta, ni el roto.** La vidriera si los
   /// descarta y los reporta en `descartes` (ADR 008 §2), y eso hoy **solo se
   /// lee en el log del build**: un vino publicado que no aparece en la tienda
@@ -113,6 +143,7 @@ class RepositorioDeProductosFirestore implements RepositorioDeProductos {
       // panel dice "sin dato", no "cero", que significaria agotado.
       stock: enteroDe(datos['stock']),
       muestra: boolDe(datos['muestra']),
+      imagenes: textosDe(datos['imagenes']),
     );
   }
 

@@ -149,14 +149,23 @@ class Catalogo {
   /// dejaria dos iguales, y `armarCatalogo` descarta los dos. Uno de muestra
   /// solo choca en la vidriera y solo si los dos se publican: se avisa, no se
   /// frena.
-  ChoqueDeDireccion? quienTiene(String slug) {
+  ///
+  /// [exceptoId] es para preguntar "¿ALGUN OTRO vino tiene esta direccion?"
+  /// sobre un vino que YA esta en el catalogo (HU-03.7,
+  /// `domain/en_la_tienda.dart`): sin excluirlo, un vino real siempre se
+  /// encuentra a si mismo primero y la pregunta nunca llega al que de verdad
+  /// choca. En el alta (HU-03.2) el vino todavia no esta en el catalogo y
+  /// `exceptoId` queda en `null`, mismo comportamiento de siempre.
+  ChoqueDeDireccion? quienTiene(String slug, {String? exceptoId}) {
     if (slug.isEmpty) return null;
     final mismoId = _vinoPorId[slug];
-    if (mismoId != null) return ChoqueDeDireccion(mismoId, bloquea: true);
+    if (mismoId != null && mismoId.id != exceptoId) {
+      return ChoqueDeDireccion(mismoId, bloquea: true);
+    }
     ChoqueDeDireccion? deMuestra;
     for (final r in renglones) {
       final p = r.producto;
-      if (p.slug != slug) continue;
+      if (p.slug != slug || p.id == exceptoId) continue;
       if (!p.muestra) return ChoqueDeDireccion(p, bloquea: true);
       deMuestra ??= ChoqueDeDireccion(p, bloquea: false);
     }
