@@ -71,7 +71,16 @@ const IGNORAR_NOMBRE = new Set([
 // Por RUTA, no por nombre: bajo .claude/skills/ viven 27 skills de terceros
 // que el CLI a veces symlinkea y a veces COPIA. Sus archivos de ejemplo
 // inventarian consumidores que no son de este repo.
-const IGNORAR_RUTA = ['.claude/skills', '.agents'];
+//
+// `functions/lib` es el OTRO motivo de esta lista, medido el 2026-09-22
+// (corrida 35777820358): es la salida de `npm run construir` -esbuild
+// compilando `functions/src` a JS-, la excluye `.gitignore`, y CI nunca la
+// tiene. Generar `_verdad.md` en una maquina que tiene un build local al
+// lado deja consumidores (`functions/lib/index.js`) que CI jamas ve: mismo
+// sintoma que la corrida 34877352392 de mas abajo -8 lineas faltan, 8
+// sobran-, causa distinta. No alcanza con `IGNORAR_NOMBRE.add('lib')`:
+// `apps/admin/lib` es codigo Dart real, no un artefacto de build.
+const IGNORAR_RUTA = ['.claude/skills', '.agents', 'functions/lib'];
 
 const EXT_CODIGO = new Set(['.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs']);
 

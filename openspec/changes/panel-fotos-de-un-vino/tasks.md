@@ -313,21 +313,36 @@ bloquea más de un widget público por archivo. Los dos empujan a esta división
 
 ## 8. Documentación y commit
 
-- [ ] 8.1 **ADR 015 — las fotos del panel.** Con la medición del clasificador
+- [x] 8.1 **ADR 015 — las fotos del panel.** Con la medición del clasificador
       refutado adentro, sus números y los dos controles. Un resultado negativo
-      sin el "por qué no" escrito se vuelve a proponer.
-- [ ] 8.2 `post-task-doc`: entrada en `_index.md` (tope 5). ⚠️ **Corregir de
-      paso que `_index.md` sigue diciendo "Falta el deploy del panel"**, y el
-      commit `0125347` lo desplegó y verificó el 2026-09-22.
-- [ ] 8.3 Anotar los pendientes con fecha y disparador: HU-04.2 (el primer
-      vino con dos fotos), el recorte de fondo (que la previsualización no
-      alcance, mirándola), los crudos huérfanos, y el color del papel copiado
-      entre las dos apps.
-- [ ] 8.4 Actualizar `docs/vault/features/panel/overview.md`: EP-04 pasa a
-      construida salvo HU-04.2, y el hallazgo 1 —*"una foto subida desde el
-      panel no llega como la espera la vidriera"*— queda cerrado.
-- [ ] 8.5 `/commit`, leyendo el diff en conversación. **`_verdad.md` se genera
-      DESPUÉS del bump de versión**, o CI da rojo un push después.
+      sin el "por qué no" escrito se vuelve a proponer. Hecho por el agente
+      `vault`; suma las tres capas encontradas en el deploy (tsconfig,
+      emulador, `@bouquet/contratos`) con la advertencia de que la tercera
+      va a repetirse con `crearOrden`.
+- [x] 8.2 `post-task-doc`: entrada en `_index.md` (tope 5 — la más vieja,
+      "El panel tiene puerta", se movió a `changelog/_log.md` con sus enlaces
+      reajustados). **Corregido de paso**: `_index.md` decía "Falta el deploy
+      del panel" en la entrada de EP-03, y el commit `0125347` ya lo había
+      desplegado y verificado el 2026-09-22 — quedó tachado con la fecha real.
+- [x] 8.3 Pendientes con fecha y disparador, los 5, en la tabla `## Lo que
+      está pendiente y por qué`: HU-04.2, el recorte de fondo, los crudos
+      huérfanos, el color del papel copiado entre las dos apps, y 4.3
+      bloqueado por el clasificador.
+- [x] 8.4 `docs/vault/features/panel/overview.md`: EP-04 pasa a construida
+      salvo HU-04.2 (con su disparador), y el hallazgo 1 —*"una foto subida
+      desde el panel no llega como la espera la vidriera"*— tachado y cerrado
+      con el enlace a ADR 015. Verificado con
+      `node scripts/ci/verificar_enlaces.mjs .`: **477 enlaces, todos
+      resuelven** (el agente `vault` no tiene Bash; lo corrí yo).
+- [x] 8.5 `/commit`, leyendo el diff en conversación completo antes de
+      stagear (incluidos los 4 archivos existentes que tocó el grupo 6:
+      `pagina_del_vino.dart`, `formulario_del_vino.dart`,
+      `seccion_de_la_tienda.dart`, `revision_para_publicar.dart`). Versión
+      **minor** (`0.27.1` → `0.28.0`, capacidad nueva). `_verdad.md`
+      regenerado DESPUÉS del bump. `npm run verificar` completo antes de
+      commitear: tipos, tests (51/51), `auditar_estados`, `verificar_enlaces`,
+      `_verdad.md` fresco, los 35 hooks — todo verde. Commit `9100d76`, sin
+      `--no-verify`, 51 archivos.
 
 ## 9. Desplegar el panel y verificar
 
