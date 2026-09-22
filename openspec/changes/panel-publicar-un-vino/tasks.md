@@ -389,9 +389,10 @@ no monta, y parece un defecto del componente.
       sus links reajustados). El propio agente de vault encontró y corrigió
       una contradicción preexistente: ADR 014 decía "reglas sin desplegar" en
       dos lugares cuando ya estaban en producción desde el 2026-09-21.
-- [ ] 9.4 `/commit` leyendo el diff. Los 9 hallazgos de la segunda pasada de
-      `revisor-pagos` (sección nueva de ADR 014) ya están corregidos, cada
-      uno con test — esta vez la revisión corrió **antes** de commitear.
+- [x] 9.4 `/commit` leyendo el diff. Los 9 hallazgos de la segunda pasada de
+      `revisor-pagos` (sección nueva de ADR 014) corregidos, cada uno con
+      test — esta vez la revisión corrió **antes** de commitear. Commit
+      `7c93581` v0.27.0, pusheado a `main`.
 
 ## 10. Desplegar y verificar — reglas → panel
 
@@ -417,12 +418,28 @@ no monta, y parece un defecto del componente.
       descripción sigue editándose. Y las tres condiciones, cada una con su
       lado que pasa: borrar rebota / despublicar pasa; `precio: 0` rebota;
       `http://` rebota / `https://` pasa; `'   '` rebota / un texto pasa.
-- [ ] 10.4 CI `alcance=panel`. **Leer la corrida, no el color** — `build_panel`
-      en `success`, que `skipped` no cuenta.
-- [ ] 10.5 `publicar.sh preview` → hashes, canarios (uno nuevo y uno que
-      desaparece, **sin tildes**: `dart2js` los escapa) y que la app arranca
-      sin errores de consola.
-- [ ] 10.6 `publicar.sh promover` y `publicar.sh verificar` sobre live.
+- [x] 10.4 CI `alcance=panel`, corrida `35759817085`, commit `7c93581`.
+      **Leído el JSON de la corrida, no el color**: `veredicto` confirma
+      explícitamente que ningún job falló ni quedó cancelado y que
+      `build_panel` corrió en `success` (no `skipped`). `suite_dart`
+      (`dart test`) success; `suite_ts` **skipped a propósito** —el alcance
+      `panel` no la corre—, cubierto en cambio corriendo `npm run -w
+      @bouquet/contratos test` local (185/185, permitido: Node, no Dart).
+- [x] 10.5 `publicar.sh preview 35759817085` → canal
+      `https://bouquet-vinos--panel-3917xi28.web.app`. 35 archivos con hash
+      verificado contra el artifact y el commit coincide. `verificar` sobre
+      el canal: los 4 hashes, el control negativo (un archivo inventado no
+      pasa por `main.dart.js`), `X-Robots-Tag: noindex`. **Canario propio,
+      sin tildes** (memoria: `dart2js` las escapa): bajé `main.dart.js` y
+      grepeé cuatro strings nuevas de este change —"Poner en la tienda",
+      "Sacar de la tienda", "Cambiar el precio", "Ya no se puede volver a
+      publicar" (el texto del fix de MEDIO 2)—, las cuatro aparecen.
+- [x] 10.6 `publicar.sh promover panel` → `hosting:clone` a live, sin
+      recompilar. `publicar.sh verificar` sobre
+      `https://bouquet-vinos.web.app`: los 4 hashes **byte a byte iguales**
+      a los del canal ya verificado, commit `7c93581` confirmado. Sin push
+      entre verificar y promover.
 - [ ] 10.7 **Que alguien publique un vino de verdad y lo mire en la tienda.**
-      Sin esto el change no se archiva.
+      Sin esto el change no se archiva. Sigue bloqueado: los 20 productos de
+      producción son `muestra: true`.
 - [ ] 10.8 `/opsx:archive`, recién después de 10.7.
