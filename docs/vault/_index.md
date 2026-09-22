@@ -74,6 +74,62 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### EP-04: las fotos del panel, functions desplegada — el panel sigue sin desplegar (2026-09-22)
+
+**HU-04.1, HU-04.3 y HU-04.4 construidas** (grupos 1-8 del change
+[`panel-fotos-de-un-vino`](../../openspec/changes/panel-fotos-de-un-vino/proposal.md)),
+con el porqué en [ADR 015](architecture/decisions/015-fotos-del-panel.md).
+HU-04.2 (reordenar fotos) queda afuera, con disparador — ver *Lo que está
+pendiente*.
+
+**El hallazgo central: el clasificador de packshot se midió y se REFUTÓ.**
+`trim()` y la luminosidad de borde separan el control negativo sintético
+(botella sobre una mesa) de la mayoría de los 19 packshots reales del seed,
+pero `nieto-senetiner-bonarda.png` —un packshot legítimo, ya en el catálogo—
+puntúa PEOR que el control negativo en las dos medidas. **Ningún umbral sobre
+el archivo distingue una foto de cámara de un packshot sin marcar como
+sospechosa una foto que ya está bien.** Por eso el panel no adivina: dibuja la
+foto exactamente como la va a dibujar la vidriera —papel + `multiply`— y deja
+que el operador mire.
+
+**`procesarFoto`, primera Cloud Function del proyecto, desplegada y
+`ACTIVE`**, verificado con la API cruda de Cloud Functions, no con el texto
+del CLI: el primer intento dio **exit 0** y `functions:list` mostraba la
+function, pero la API decía `"state": "FAILED"`, `CloudRunServiceNotFound` —
+`@bouquet/contratos` es un symlink de workspace que nunca se publicó a npm, y
+Cloud Build corre sin él. Resuelto empaquetando `contratos` DENTRO del bundle
+con `esbuild` y sacándolo de `package.json` del todo. **Cuarto intento:
+`ACTIVE`.**
+
+**El panel está escrito, con los 6 puntos de `cazador-de-puertas`
+confirmados** —control positivo y negativo cada uno—: `procesarFoto` la llama
+`repositorio_de_fotos_firebase.dart:73`, `SeccionDeFotos` cuelga de
+`enrutador.dart` → `PaginaDelVino` → `formulario_del_vino.dart:155`, y los dos
+providers nuevos tienen call site real.
+
+⚠️ **El panel todavía NO se desplegó** — Grupo 9 de `tasks.md`: CI
+`alcance=panel` → `publicar.sh preview` → `promover` → `verificar`. Y quedan
+dos verificaciones que sólo puede hacer el dueño: **subir una foto real a un
+vino real y mirarla en la tienda** (10.1) y **decir si la previsualización le
+sirve** (10.2) — es la única pregunta que decide si alguna vez hace falta el
+recorte de fondo.
+
+| Qué | Cómo |
+|---|---|
+| El clasificador refutado | 19 packshots reales + 1 control negativo sintético, medidos con `trim()` y luminosidad de borde. El legítimo puntúa peor que el sintético en las dos medidas |
+| La tubería no diverge | `functions/test/foto/tuberia.test.ts`: mismo SHA-256 entre el seed (subproceso real) y `tuberia.ts`, con control negativo (mutar un número la rompe) |
+| La callable, en producción | API cruda de Cloud Functions: `state: ACTIVE`, v2, callable, us-central1, nodejs24, 256 MB — única entrada de la tabla |
+| El panel, sin huérfanos | `cazador-de-puertas`: 6 puntos, cada uno con control positivo (>0) y negativo (0 con un símbolo inventado) |
+| Presupuesto de lecturas | **Cero.** La callable no lee Firestore; `arrayUnion`/`arrayRemove` son ciegos |
+
+Sigue bloqueado, y documentado con su causa: **3.7** (probar contra el
+emulador local — el *discovery* de Functions no completa en esta máquina,
+aislado con medición: el mismo `lib/index.js` carga en 1,2 s como archivo
+real) y **4.3** (probar la callable en producción con un usuario real —
+mintear un token de prueba pide `iam.serviceAccountTokenCreator`, que el
+clasificador frena por "Permission Grant"). Los dos detallados en
+[ADR 015](architecture/decisions/015-fotos-del-panel.md).
+
 ### EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda (2026-09-22)
 
 **HU-03.5, HU-03.6 y HU-03.7 construidas**, en el change
@@ -96,11 +152,16 @@ slug con uno de muestra — el modo de falla exacto que HU-03.7 existe para
 cerrar. Detalle de los nueve, en
 [ADR 014](architecture/decisions/014-publicar-un-vino.md).
 
-⚠️ **Falta el deploy del panel** —Grupo 10 de `tasks.md`, CI `alcance=panel` →
-`publicar.sh preview` → `promover` → `verificar`— y **falta que alguien
-publique un vino real y lo mire**: los 20 productos de producción siguen
-siendo `muestra: true`, así que publicar y despublicar todavía no se probaron
-contra uno de verdad. Lo segundo bloquea que el change se archive.
+~~⚠️ **Falta el deploy del panel**~~ **Desplegado y verificado el 2026-09-22**
+—Grupo 10 de `tasks.md` completo, commit `0125347`: CI `alcance=panel` →
+`publicar.sh preview` → `promover` → `verificar`—. **Esta misma línea quedó
+vieja dos días**: `0125347` tocó `_verdad.md` y `tasks.md` de
+`panel-publicar-un-vino` pero no este archivo, y `cazador-de-puertas` la
+encontró de nuevo el 2026-09-22, auditando el change de las fotos. Lo que
+sigue pendiente de verdad es que **alguien publique un vino real y lo mire**:
+los 20 productos de producción siguen siendo `muestra: true`, así que publicar
+y despublicar todavía no se probaron contra uno de verdad. Eso sigue
+bloqueando que el change se archive.
 
 ### El producto se endureció, y la ficha lleva descripción (2026-09-21)
 
@@ -290,94 +351,12 @@ redirija preservando el `desde` no distingue una ruta real de una inventada:
 Se corrió el control negativo y por eso se sabe. Lo que sí prueba que la ruta
 existe son los canarios del bundle y los 4 casos nuevos de `destino_test.dart`.
 
-### El panel tiene puerta: entrar, sin acceso y la estructura (2026-09-16)
-
-**Nace el panel de verdad**: EP-01 entera (HU-01.1 a 01.5) y los habilitadores
-H1 a H4, en el change
-[`panel-entrar`](../../openspec/changes/panel-entrar/proposal.md). El porqué
-de cada decisión está en
-[ADR 011](architecture/decisions/011-entrar-al-panel.md).
-
-⚠️ **El proyecto no tenía Auth.** La API devolvía `CONFIGURATION_NOT_FOUND`,
-medido con dos controles: una ruta inventada da un 404 en HTML y un proyecto
-con Auth da su configuración. Tampoco había ninguna app registrada. El usuario
-inicializó Auth con mail y Google, y la protección contra enumeración de mails
-quedó prendida.
-
-**La dirección visual la eligió el dueño mirando tres direcciones**: *"me
-gusta el esquema de colores de la B pero me parece más eficiente la búsqueda
-de A"*. Nace la **mezcla C**, espejada en
-[`tokens.md` §7](design/tokens.md).
-
-⚠️ **La sonda de Auth encontró un agujero que ningún documento tenía: el
-registro anticipado.** Con la API key pública, cualquiera registra el mail de
-un familiar con una contraseña suya. Si el script le diera el permiso a *"la
-cuenta de ese mail"*, el panel quedaría en manos de quien la registró. **El
-script se niega**. Su test falla si se saca la condición, y eso se comprobó
-mutándola.
-
-**Y confirmó la trampa que anotaba HU-01.1**: con el mail sin verificar,
-entrar con Google desvincula la contraseña. El panel no ofrece registrarse, y
-la contraseña nace por un correo que verifica el mail, así que no puede pasar.
-
-| Qué | Cómo |
-|---|---|
-| El script de accesos | Contra el emulador de Auth, cada requisito con un caso aceptado y uno rechazado. **Mutación:** sin la condición del mail verificado, falla exactamente el caso del registro anticipado |
-| Sin huérfanos | Ninguna clase nueva sin quien la abra: el control negativo, un símbolo inventado, da 0. Dos tokens sin uso se sacaron |
-| Las fronteras | 0 colores literales fuera de `lib/theme/`; el SDK de Firebase sólo en `data/` y `core/firebase/`; ningún widget pasa de 200 líneas; arnés 35/35 |
-| Compila | Por el analizador del editor, que ya corría y no marcó nada, y `dart format`. **El build lo contesta CI**: acá no se compila |
-
-⚠️ **`dart test` lo frenó el clasificador del modo auto** en esta máquina, y
-eso que `CLAUDE.md` no lo prohíbe (sí prohíbe `flutter test`). La suite de
-Dart corre en CI, y ya corrió: `suite_dart` en `success`, no `skipped`.
-
-#### Publicado, y lo que apareció al mirarlo (2026-09-17)
-
-**Vive en [`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con los
-bytes que compiló CI: `hosting:clone` del canal a live, **sin recompilar**.
-
-⚠️ **LA BANDA DE ARRIBA SE DIBUJABA PERFECTA Y NO EXISTÍA PARA UN LECTOR DE
-PANTALLA.** El `ShellRoute` mete un `Navigator`, y el `BlockSemantics` de su
-barrera modal borra la semántica de todo lo pintado **antes** que ella. La
-banda era el primer hijo de un `Column`:
-
-| Se pinta | Qué tenía el árbol de accesibilidad |
-|---|---|
-| Banda arriba, antes del `Navigator` | Nada: ni `bouquet`, ni las pestañas, ni el mail, ni *Salir* |
-| Barra inferior a 390 px, slot del `Scaffold`, después del body | `button:Catálogo`, `button:Pedidos` |
-
-Las dos en la misma pantalla y la misma sesión, y un resize que fuerza el
-rebuild no cambió nada (no eran nodos rancios). La banda pasó al slot `appBar`,
-que el `Scaffold` pinta después. El arreglo **no movió un píxel**: las capturas
-de antes y después son iguales. [ADR 011
-§6](architecture/decisions/011-entrar-al-panel.md) lo deja con NO REVERTIR.
-
-**Lo destapó que el driver no encontrara la pestaña, no una lectura del
-código** — y el código se lee correcto: la banda tiene sus `Semantics`, las
-pestañas son `button`, y `Marca` hasta aporta su propia etiqueta. Ninguna
-revisión del diff lo iba a agarrar. Octava vez en el proyecto que mirar
-encuentra lo que leer no.
-
-⚠️ **Y el instrumento mintió dos veces, en las dos direcciones.** Primero leía
-sólo los hijos directos de `flt-semantics` y daba **vacío**; después perdía
-**todo título**, porque Flutter emite un encabezado como `<h2>` y no como
-`<flt-semantics>`: dos pantallas correctas —*"Esa página no existe"* y *"Tu
-cuenta todavía no tiene acceso"*— figuraban como fallas. **Lo que salvó la
-medición fue el control negativo**, que siguió dando negativo después de
-ensanchar el extractor: sin él, leer el subárbol entero es un sello de goma.
-
-| Qué | Cómo |
-|---|---|
-| Live sirve lo verificado | Los cuatro hashes de live **iguales** a los del canal, y `main.dart.js` cambió de `62136648…` a `bd1973436526b868` entre los dos builds: el canario discrimina. Antes de promover, `/` y `/COMMIT` daban **404** |
-| No se indexa | `X-Robots-Tag: noindex` en live, y control negativo: una ruta inventada la contesta `index.html` y su hash **no** coincide con `main.dart.js` |
-| El recorrido, renderizado sobre live | **24 aserciones en verde, 0 en rojo**, con Chrome sin cabeza por CDP y cuentas de control: entrar, contraseña equivocada, volver a `/pedidos` con el `?desde`, recargar, la pestaña, ruta inventada, 390 px sin scroll, salir, sin permiso con su mail, el permiso dado **con la pantalla abierta** sin volver a escribir la contraseña, y el correo a un mail sin cuenta |
-| La banda es alcanzable | Las tres interacciones de la banda salieron **por semántica**, sin el clic por píxel que hubo que usar contra el build anterior |
-| Mirado | 1440 y 390 px, las dos pantallas y las dos barras |
-| Sin cuentas de control | Borradas: `listUsers` devuelve **0 usuarios**, no sólo 0 con permiso, y el mismo listador las mostraba minutos antes |
-
-⚠️ **El recorrido no se puede repetir:** vivía en el scratchpad y dependía de
-las cuentas de control, que se borraron. Se reescribe o se promueve a
-`scripts/panel/` el día que haga falta.
+> ⚠️ **"El panel tiene puerta" (2026-09-16) se movió a
+> [`changelog/_log.md`](changelog/_log.md#el-panel-tiene-puerta-entrar-sin-acceso-y-la-estructura-2026-09-16)
+> el 2026-09-22**, al construirse EP-04 y llegar el dashboard a 6 entradas. El
+> porqué de cada decisión de EP-01 sigue en
+> [ADR 011](architecture/decisions/011-entrar-al-panel.md), incluido el NO
+> REVERTIR de §6.
 
 ### Lo que quedó abierto
 
@@ -449,7 +428,7 @@ por eso los "pendiente de deploy" mienten por construcción.
 
 La lista completa está en
 [ARQUITECTURA §11](../../ARQUITECTURA.md#11-lo-que-queda-abierto-con-su-disparador).
-Los cuatro que bloquean algo:
+Los que bloquean algo:
 
 | Pendiente | Disparador | Desde |
 |---|---|---|
@@ -459,6 +438,11 @@ Los cuatro que bloquean algo:
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
 | ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
+| **HU-04.2 — reordenar fotos y elegir la principal** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)): choca con ARQUITECTURA §5.3, que prohíbe reescribir el array entero | El primer vino con dos fotos | 2026-09-22 |
+| **El recorte de fondo de una foto de cámara**, con un modelo real — el clasificador por umbral se midió y se refutó (ADR 015 §2) | Que la previsualización resulte insuficiente, mirándola | 2026-09-22 |
+| **Los crudos huérfanos en Storage** si `procesarFoto` falla a mitad de camino: no son alcanzables y no rompen nada | Cuando pesen | 2026-09-22 |
+| ⚠️ **El color del papel de la previsualización está copiado entre el panel (Dart, `Tokens.papelVentana`) y la vidriera (CSS, `--papel-ventana`)** — puede desincronizarse, sin nada automático que lo detecte | La próxima vez que alguien toque uno de los dos sistemas de diseño | 2026-09-22 |
+| **4.3 — probar `procesarFoto` en producción con un usuario real, bloqueado por el clasificador** (otorgar `iam.serviceAccountTokenCreator`, aunque temporal y reversible, es "Permission Grant") | Que el usuario autorice el rol temporal, o que el dueño suba una foto real (10.1) — lo que pase primero | 2026-09-22 |
 
 ---
 

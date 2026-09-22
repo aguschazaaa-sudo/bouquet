@@ -1,7 +1,8 @@
 /**
  * Punto de entrada de las Cloud Functions de bouquet.
  *
- * Andamio: todavia no exporta ninguna function.  Las tres del paso 4 de
+ * `procesarFoto` es la PRIMERA function del proyecto
+ * (openspec/changes/panel-fotos-de-un-vino). Las tres del paso 4 de
  * ARQUITECTURA §12 -- `crearOrden` (transaccion), `entroEnPagada` (trigger con
  * marcador de idempotencia) y `consultarOrden` (callable) -- se escriben en su
  * propio change.
@@ -17,4 +18,4 @@
  *    segundo evento cobra dos veces.
  */
 
-export {};
+export { procesarFoto } from './foto/procesar_foto.ts';

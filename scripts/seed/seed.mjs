@@ -30,6 +30,7 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 import { validarCajasSugeridas, verificarComposicion } from '../../packages/contratos/src/cajas.ts';
+import { TUBERIA_DE_FOTO } from '../../packages/contratos/src/foto.ts';
 import { validarProducto } from '../../packages/contratos/src/producto.ts';
 import { BUCKET, conectar, leerCatalogo, rutasSembradas } from './proyecto.mjs';
 
@@ -50,6 +51,11 @@ const PLACEHOLDERS = new Map([
  * WebP, recortada al borde de la botella. El recorte lo pidieron las dos
  * maquetas por separado: `object-fit` iguala la caja, no la botella, y sin
  * recortar el fondo una botella ocupa el 81 % del alto y otra el 100 %.
+ *
+ * Los tres numeros salen de `contratos/foto.ts`, no estan en linea aca: es
+ * la MISMA tuberia que aplica `procesarFoto` sobre lo que sube el panel
+ * (openspec/changes/panel-fotos-de-un-vino). `tuberia.test.ts` exige que las
+ * dos den el mismo SHA-256 sobre la misma entrada.
  */
 async function prepararFoto(ruta) {
   const original = readFileSync(ruta);
@@ -65,9 +71,9 @@ async function prepararFoto(ruta) {
   if (!['jpeg', 'png', 'webp'].includes(formato)) return { ok: false, motivo: `formato ${formato}` };
 
   const webp = await sharp(original)
-    .trim({ threshold: 12 })
-    .resize({ height: 1200, withoutEnlargement: true })
-    .webp({ quality: 82 })
+    .trim({ threshold: TUBERIA_DE_FOTO.umbralRecorte })
+    .resize({ height: TUBERIA_DE_FOTO.alto, withoutEnlargement: true })
+    .webp({ quality: TUBERIA_DE_FOTO.calidadWebp })
     .toBuffer();
   return { ok: true, webp, hash: sha256(webp).slice(0, 16) };
 }

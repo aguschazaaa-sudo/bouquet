@@ -9,6 +9,110 @@
 
 ---
 
+## Salió el 2026-09-22, al construirse EP-04
+
+Séptima entrada. Sale la de "El panel tiene puerta" (2026-09-16): con la
+entrada de EP-04 (las fotos, `docs/vault/architecture/decisions/015-fotos-del-panel.md`)
+sumada al dashboard, era la más vieja de las cinco que había. Lo que sigue
+vigente de ella no vive en esta entrada: [ADR 011](../architecture/decisions/011-entrar-al-panel.md)
+tiene el porqué de cada decisión de EP-01 y su §6 deja con **NO REVERTIR** el
+arreglo de la banda invisible para lectores de pantalla — el bug que costó
+mirar renderizado en vez de leer el diff, la octava vez en el proyecto que
+pasó eso. `tokens.md §7` sigue teniendo la mezcla visual que eligió el dueño.
+Nada de lo medido acá cambió: EP-01 sigue en producción sin tocarse desde que
+se escribió.
+
+### El panel tiene puerta: entrar, sin acceso y la estructura (2026-09-16)
+
+**Nace el panel de verdad**: EP-01 entera (HU-01.1 a 01.5) y los habilitadores
+H1 a H4, en el change
+[`panel-entrar`](../../../openspec/changes/panel-entrar/proposal.md). El porqué
+de cada decisión está en
+[ADR 011](../architecture/decisions/011-entrar-al-panel.md).
+
+⚠️ **El proyecto no tenía Auth.** La API devolvía `CONFIGURATION_NOT_FOUND`,
+medido con dos controles: una ruta inventada da un 404 en HTML y un proyecto
+con Auth da su configuración. Tampoco había ninguna app registrada. El usuario
+inicializó Auth con mail y Google, y la protección contra enumeración de mails
+quedó prendida.
+
+**La dirección visual la eligió el dueño mirando tres direcciones**: *"me
+gusta el esquema de colores de la B pero me parece más eficiente la búsqueda
+de A"*. Nace la **mezcla C**, espejada en
+[`tokens.md` §7](../design/tokens.md).
+
+⚠️ **La sonda de Auth encontró un agujero que ningún documento tenía: el
+registro anticipado.** Con la API key pública, cualquiera registra el mail de
+un familiar con una contraseña suya. Si el script le diera el permiso a *"la
+cuenta de ese mail"*, el panel quedaría en manos de quien la registró. **El
+script se niega**. Su test falla si se saca la condición, y eso se comprobó
+mutándola.
+
+**Y confirmó la trampa que anotaba HU-01.1**: con el mail sin verificar,
+entrar con Google desvincula la contraseña. El panel no ofrece registrarse, y
+la contraseña nace por un correo que verifica el mail, así que no puede pasar.
+
+| Qué | Cómo |
+|---|---|
+| El script de accesos | Contra el emulador de Auth, cada requisito con un caso aceptado y uno rechazado. **Mutación:** sin la condición del mail verificado, falla exactamente el caso del registro anticipado |
+| Sin huérfanos | Ninguna clase nueva sin quien la abra: el control negativo, un símbolo inventado, da 0. Dos tokens sin uso se sacaron |
+| Las fronteras | 0 colores literales fuera de `lib/theme/`; el SDK de Firebase sólo en `data/` y `core/firebase/`; ningún widget pasa de 200 líneas; arnés 35/35 |
+| Compila | Por el analizador del editor, que ya corría y no marcó nada, y `dart format`. **El build lo contesta CI**: acá no se compila |
+
+⚠️ **`dart test` lo frenó el clasificador del modo auto** en esta máquina, y
+eso que `CLAUDE.md` no lo prohíbe (sí prohíbe `flutter test`). La suite de
+Dart corre en CI, y ya corrió: `suite_dart` en `success`, no `skipped`.
+
+#### Publicado, y lo que apareció al mirarlo (2026-09-17)
+
+**Vive en [`bouquet-vinos.web.app`](https://bouquet-vinos.web.app)**, con los
+bytes que compiló CI: `hosting:clone` del canal a live, **sin recompilar**.
+
+⚠️ **LA BANDA DE ARRIBA SE DIBUJABA PERFECTA Y NO EXISTÍA PARA UN LECTOR DE
+PANTALLA.** El `ShellRoute` mete un `Navigator`, y el `BlockSemantics` de su
+barrera modal borra la semántica de todo lo pintado **antes** que ella. La
+banda era el primer hijo de un `Column`:
+
+| Se pinta | Qué tenía el árbol de accesibilidad |
+|---|---|
+| Banda arriba, antes del `Navigator` | Nada: ni `bouquet`, ni las pestañas, ni el mail, ni *Salir* |
+| Barra inferior a 390 px, slot del `Scaffold`, después del body | `button:Catálogo`, `button:Pedidos` |
+
+Las dos en la misma pantalla y la misma sesión, y un resize que fuerza el
+rebuild no cambió nada (no eran nodos rancios). La banda pasó al slot `appBar`,
+que el `Scaffold` pinta después. El arreglo **no movió un píxel**: las capturas
+de antes y después son iguales. [ADR 011
+§6](../architecture/decisions/011-entrar-al-panel.md) lo deja con NO REVERTIR.
+
+**Lo destapó que el driver no encontrara la pestaña, no una lectura del
+código** — y el código se lee correcto: la banda tiene sus `Semantics`, las
+pestañas son `button`, y `Marca` hasta aporta su propia etiqueta. Ninguna
+revisión del diff lo iba a agarrar. Octava vez en el proyecto que mirar
+encuentra lo que leer no.
+
+⚠️ **Y el instrumento mintió dos veces, en las dos direcciones.** Primero leía
+sólo los hijos directos de `flt-semantics` y daba **vacío**; después perdía
+**todo título**, porque Flutter emite un encabezado como `<h2>` y no como
+`<flt-semantics>`: dos pantallas correctas —*"Esa página no existe"* y *"Tu
+cuenta todavía no tiene acceso"*— figuraban como fallas. **Lo que salvó la
+medición fue el control negativo**, que siguió dando negativo después de
+ensanchar el extractor: sin él, leer el subárbol entero es un sello de goma.
+
+| Qué | Cómo |
+|---|---|
+| Live sirve lo verificado | Los cuatro hashes de live **iguales** a los del canal, y `main.dart.js` cambió de `62136648…` a `bd1973436526b868` entre los dos builds: el canario discrimina. Antes de promover, `/` y `/COMMIT` daban **404** |
+| No se indexa | `X-Robots-Tag: noindex` en live, y control negativo: una ruta inventada la contesta `index.html` y su hash **no** coincide con `main.dart.js` |
+| El recorrido, renderizado sobre live | **24 aserciones en verde, 0 en rojo**, con Chrome sin cabeza por CDP y cuentas de control: entrar, contraseña equivocada, volver a `/pedidos` con el `?desde`, recargar, la pestaña, ruta inventada, 390 px sin scroll, salir, sin permiso con su mail, el permiso dado **con la pantalla abierta** sin volver a escribir la contraseña, y el correo a un mail sin cuenta |
+| La banda es alcanzable | Las tres interacciones de la banda salieron **por semántica**, sin el clic por píxel que hubo que usar contra el build anterior |
+| Mirado | 1440 y 390 px, las dos pantallas y las dos barras |
+| Sin cuentas de control | Borradas: `listUsers` devuelve **0 usuarios**, no sólo 0 con permiso, y el mismo listador las mostraba minutos antes |
+
+⚠️ **El recorrido no se puede repetir:** vivía en el scratchpad y dependía de
+las cuentas de control, que se borraron. Se reescribe o se promueve a
+`scripts/panel/` el día que haga falta.
+
+---
+
 ## Salió el 2026-09-22, al cerrarse EP-03
 
 Sexta entrada. Salió ésta y no la del catálogo y las bodegas (2026-09-17):

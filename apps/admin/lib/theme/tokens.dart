@@ -32,6 +32,23 @@ abstract final class Tokens {
   static const papelHondo = Color(0xFFF2EADB);
 
   /// marfil 84 % + dorado, oklab. Detras de la botella y de los avisos.
+  ///
+  /// **Es, byte a byte, la misma formula que `--papel-ventana` de la
+  /// vidriera** (`apps/tienda/src/shared/tokens/tokens.css:48`:
+  /// `color-mix(in oklab, var(--marfil) 84%, var(--dorado))`), el tono
+  /// contra el que `catalogo.css:568-570` dibuja el centro del degrade
+  /// detras de la botella con `mix-blend-mode: multiply`. La previsualizacion
+  /// de una foto de vino (`features/fotos/presentation/ventana_de_previsualizacion.dart`)
+  /// multiplica contra este mismo color -- via
+  /// `Theme.of(context).colorScheme.surfaceContainerHighest`, nunca
+  /// `Tokens.papelVentana` directo desde una pantalla (ver el comentario de
+  /// `tema.dart`) -- para mostrar la foto como la va a componer la tienda
+  /// (design.md decision 7 de `panel-fotos-de-un-vino`).
+  ///
+  /// **Son dos sistemas de diseno distintos que hoy coinciden en el
+  /// valor.** Si alguno de los dos cambia su formula sin avisarle al otro,
+  /// la previsualizacion deja de aproximar lo que dibuja la vidriera. No hay
+  /// test que lo detecte: es una copia a mano, anotada aca a proposito.
   static const papelVentana = Color(0xFFEFE5D1);
 
   static const tinta1 = tinta;

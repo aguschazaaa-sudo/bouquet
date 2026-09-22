@@ -3,9 +3,10 @@
 - **Fecha:** 2026-09-16
 - **Estado:** con **dos rondas de respuestas del dueño**, las dos del
   2026-09-16. Falta un dato suyo: el número de WhatsApp de la tienda.
-  **Construidas: EP-01 entera (2026-09-16) y EP-02 + HU-03.1 (2026-09-17)**;
-  **en curso: HU-03.2 a HU-03.4** (2026-09-18) — el estado no se tilda acá, se
-  calcula con el `grep` de abajo
+  **Construidas: EP-01 entera (2026-09-16), EP-02 + HU-03.1 (2026-09-17), EP-03
+  entera (2026-09-22, HU-03.2 a 03.7) y EP-04 salvo HU-04.2 (2026-09-22,
+  HU-04.1 · HU-04.3 · HU-04.4)** — el estado no se tilda acá, se calcula con el
+  `grep` de abajo
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)
@@ -122,14 +123,23 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
 
 ## Lo que apareció planificando, y ningún documento sabía
 
-1. **Una foto subida desde el panel no llega como la espera la vidriera.** La
-   vidriera sirve la foto **ya recortada en WebP**, sin `next/image`
-   ([ADR 008](../../architecture/decisions/008-catalogo-stock-y-carrito.md)), y
-   hoy ese recorte lo hace el seed con `sharp`. Desde el panel llega cruda: falta
-   una pieza, en el cliente o en una function de Storage. → HU-04.1
+1. ~~**Una foto subida desde el panel no llega como la espera la vidriera.**~~
+   **Cerrado el 2026-09-22** en
+   [ADR 015](../../architecture/decisions/015-fotos-del-panel.md):
+   `procesarFoto`, una Cloud Function **callable**, aplica la MISMA tubería que
+   el seed —`trim(12)` → `resize(1200)` → `webp(82)`—, compartiendo los tres
+   números vía `packages/contratos/src/foto.ts` sin compartir el código
+   (`contratos` no puede depender de `sharp`; el número sí, el `sharp.trim()`
+   no). La vidriera sigue sirviendo la foto ya recortada en WebP, sin
+   `next/image` ([ADR 008](../../architecture/decisions/008-catalogo-stock-y-carrito.md)).
+   → HU-04.1
 2. **Reordenar fotos choca con una regla.** [ARQUITECTURA §5.3](../../../../ARQUITECTURA.md#53-escrituras-concurrentes-en-arrays)
    manda `arrayUnion`/`arrayRemove` y *nunca* reescribir el array, pero un
-   cambio de orden **es** reescribirlo. → HU-04.2
+   cambio de orden **es** reescribirlo. → HU-04.2. **Sigue sin construirse, a
+   propósito**: `panel-fotos-de-un-vino`
+   ([ADR 015](../../architecture/decisions/015-fotos-del-panel.md)) la deja
+   afuera con disparador — el primer vino con dos fotos; el seed tiene una
+   sola por producto —, no la resuelve
 3. **Las reglas no validan la transición de `estadoEntrega`.** Sólo miran qué
    campos cambian (`editaSolo`). La tabla está en el espejo de Dart
    (`transicionEntregaValida`), así que un panel con un error puede mover una

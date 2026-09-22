@@ -46,6 +46,9 @@ dependencies:
   # mismo lo verifica `test/core/contratos/texto_test.dart` contra las
   # fixtures generadas por el TypeScript.
   diacritic: ^0.1.6
+  image_picker: ^1.2.3
+  firebase_storage: ^12.4.10
+  cloud_functions: ^5.6.2
 
 dev_dependencies:
   # package:test y no solo flutter_test: el test del espejo del enum es Dart

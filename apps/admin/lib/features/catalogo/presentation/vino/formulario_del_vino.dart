@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../fotos/presentation/seccion_de_fotos.dart';
 import '../../catalogo_providers.dart';
 import '../../domain/borrador_de_vino.dart';
 import '../../domain/catalogo.dart';
@@ -21,7 +22,12 @@ import 'textos_del_vino.dart';
 /// `borrador_de_vino_test.dart`, que corren en una maquina donde esto no
 /// compila.
 class FormularioDelVino extends ConsumerStatefulWidget {
-  const FormularioDelVino({super.key, this.original, required this.alTerminar});
+  const FormularioDelVino({
+    super.key,
+    this.original,
+    required this.alTerminar,
+    this.claveDeFotos,
+  });
 
   /// El vino como se abrio, o `null` para cargar uno nuevo. Se lee **una
   /// vez**: lo que llega despues por el stream no pisa lo que se esta
@@ -29,6 +35,13 @@ class FormularioDelVino extends ConsumerStatefulWidget {
   final ProductoDelPanel? original;
 
   final VoidCallback alTerminar;
+
+  /// La clave de `SeccionDeFotos`, para que `RevisionParaPublicar` -- fuera
+  /// de este `ListView`, arriba del todo -- pueda hacer
+  /// `Scrollable.ensureVisible` hasta acá (`PaginaDelVino`,
+  /// panel-vino "El aviso de sin foto... lleva a la solución"). `null` en
+  /// un alta: ahí no hay ningun aviso que pueda necesitarla todavia.
+  final GlobalKey? claveDeFotos;
 
   @override
   ConsumerState<FormularioDelVino> createState() => _FormularioDelVinoState();
@@ -135,6 +148,14 @@ class _FormularioDelVinoState extends ConsumerState<FormularioDelVino> {
                   revision: revision,
                   problemaDe: problemaDe,
                   alCambiar: _cambiar,
+                ),
+                const SizedBox(height: 28),
+                const Divider(),
+                const SizedBox(height: 20),
+                SeccionDeFotos(
+                  key: widget.claveDeFotos,
+                  productoId: widget.original?.id,
+                  imagenes: widget.original?.imagenes ?? const [],
                 ),
                 const SizedBox(height: 28),
                 PieDelFormulario(

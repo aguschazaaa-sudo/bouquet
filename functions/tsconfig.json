@@ -1,17 +1,33 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "lib": ["ES2023"],
-    "outDir": "lib",
-    "rootDir": "src",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": true,
+
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "allowImportingTsExtensions": false,
     "esModuleInterop": true,
+
+    // Node 24 ejecuta TypeScript borrando los tipos, sin transpilar. Mismo
+    // motivo que packages/contratos/tsconfig.json: el deploy corre
+    // `src/index.ts` directo, sin build, y `node --test` sobre los `.ts` de
+    // `test/` funciona sin un paso intermedio.
+    //
+    // Medido el 2026-09-22: Node NO resuelve un especificador `./x.js` contra
+    // un archivo `x.ts` -- falla con ERR_MODULE_NOT_FOUND. El unico
+    // especificador que Node ejecuta en forma nativa es el que termina en
+    // `.ts`, y eso es justo lo que `allowImportingTsExtensions` +
+    // `rewriteRelativeImportExtensions` habilitan sin romper `tsc --noEmit`.
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+
     "skipLibCheck": true,
-    "declaration": false
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

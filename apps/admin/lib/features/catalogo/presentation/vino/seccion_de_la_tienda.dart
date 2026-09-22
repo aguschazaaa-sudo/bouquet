@@ -21,10 +21,18 @@ class SeccionDeLaTienda extends StatelessWidget {
     super.key,
     required this.producto,
     required this.catalogo,
+    this.alIrAFotos,
   });
 
   final ProductoDelPanel producto;
   final Catalogo catalogo;
+
+  /// `null` cuando no hay a dónde llevar (no debería pasar acá: esta
+  /// sección sólo se compone para un vino que ya existe, y ése siempre
+  /// tiene una `SeccionDeFotos` más abajo, en el formulario). Se forwardea
+  /// tal cual a `RevisionParaPublicar` -- panel-vino, "El aviso de sin foto
+  /// que ya existe lleva a la solución".
+  final VoidCallback? alIrAFotos;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +47,11 @@ class SeccionDeLaTienda extends StatelessWidget {
         const SizedBox(height: 10),
         InterruptorDeTienda(producto: producto, catalogo: catalogo),
         const SizedBox(height: 8),
-        RevisionParaPublicar(producto: producto, catalogo: catalogo),
+        RevisionParaPublicar(
+          producto: producto,
+          catalogo: catalogo,
+          alIrAFotos: alIrAFotos,
+        ),
         const SizedBox(height: 12),
         ComoSeVeEnLaTienda(producto: producto, catalogo: catalogo),
         if (producto.publicado) ...[

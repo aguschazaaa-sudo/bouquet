@@ -60,23 +60,50 @@ class PaginaDelVino extends ConsumerWidget {
               alTerminar: volver,
             ),
             AsyncData(:final value) => switch (value.vino(id!)) {
-              final vino? => Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                    child: SeccionDeLaTienda(producto: vino, catalogo: value),
-                  ),
-                  const Divider(height: 1),
-                  Expanded(
-                    child: FormularioDelVino(
-                      // Otro vino es otro formulario: el estado no se arrastra.
-                      key: ValueKey(vino.id),
-                      original: vino,
-                      alTerminar: volver,
-                    ),
-                  ),
-                ],
+              final vino? => Builder(
+                builder: (_) {
+                  // Misma clave para el mismo vino en cada build (compara
+                  // por valor, `GlobalObjectKey`): el aviso de "sin foto" de
+                  // `RevisionParaPublicar` -- adentro de `SeccionDeLaTienda`,
+                  // arriba del formulario -- la usa para llevar al operador
+                  // hasta `SeccionDeFotos`, que vive adentro del `ListView`
+                  // real de `FormularioDelVino` (spec panel-vino, "El aviso
+                  // de sin foto... lleva a la solución").
+                  final claveDeFotos = GlobalObjectKey('fotos-de-${vino.id}');
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: SeccionDeLaTienda(
+                          producto: vino,
+                          catalogo: value,
+                          alIrAFotos: () {
+                            final destino = claveDeFotos.currentContext;
+                            if (destino != null) {
+                              Scrollable.ensureVisible(
+                                destino,
+                                duration: const Duration(milliseconds: 300),
+                                curve: Curves.easeInOut,
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: FormularioDelVino(
+                          // Otro vino es otro formulario: el estado no se
+                          // arrastra.
+                          key: ValueKey(vino.id),
+                          original: vino,
+                          alTerminar: volver,
+                          claveDeFotos: claveDeFotos,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
               null => ListaVacia(
                 icono: Icons.search_off,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/presentation/aviso.dart';
+import '../../../fotos/presentation/textos_de_fotos.dart'
+    show textoIrACargarFoto;
 import '../../domain/catalogo.dart';
 import '../../domain/en_la_tienda.dart';
 import '../../domain/producto_del_panel.dart';
@@ -19,10 +21,17 @@ class RevisionParaPublicar extends StatelessWidget {
     super.key,
     required this.producto,
     required this.catalogo,
+    this.alIrAFotos,
   });
 
   final ProductoDelPanel producto;
   final Catalogo catalogo;
+
+  /// panel-vino, "El aviso de sin foto que ya existe lleva a la solución":
+  /// hasta `panel-fotos-de-un-vino` esta alarma no tenía respuesta posible.
+  /// `null` sólo se usaría si algún día se llamara a este widget sin la
+  /// sección de fotos en la misma página -- hoy no pasa.
+  final VoidCallback? alIrAFotos;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +45,21 @@ class RevisionParaPublicar extends StatelessWidget {
       );
     }
     if (revision.sinFoto) {
-      return const Aviso(texto: textoSinFotoAlPublicar);
+      final irAFotos = alIrAFotos;
+      if (irAFotos == null) return const Aviso(texto: textoSinFotoAlPublicar);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Aviso(texto: textoSinFotoAlPublicar),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: irAFotos,
+              child: const Text(textoIrACargarFoto),
+            ),
+          ),
+        ],
+      );
     }
     return const SizedBox.shrink();
   }
