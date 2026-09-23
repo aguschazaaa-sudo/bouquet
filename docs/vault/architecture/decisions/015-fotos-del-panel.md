@@ -3,7 +3,10 @@
 - **Fecha:** 2026-09-22
 - **Estado:** aceptada y **aplicada en el código**. **Functions desplegada y
   `ACTIVE` en producción** (verificado con la API cruda de Cloud Functions,
-  cuarto intento); **panel sin desplegar** todavía: ver *Lo que falta*
+  cuarto intento) y **el panel también se desplegó el 2026-09-22**. ⚠️ **Pero
+  la callable NO es alcanzable desde el navegador: su preflight da 403 sin
+  headers de CORS** — medido el 2026-09-22, ver *Lo que falta*. `ACTIVE` dice
+  que el servicio existe, **no** que un navegador lo pueda llamar
 - **Decide:** que una foto subida desde el panel se procese con **la misma
   tubería que el seed** (`trim(12)` → `resize(1200)` → `webp(82)`), en una
   Cloud Function **callable** y no en un trigger de Storage; y que el panel
@@ -234,6 +237,38 @@ plan.
   rompe nada; se limpia con un script el día que los huérfanos pesen.
 
 ## Lo que falta
+
+- ⚠️ **La callable no es alcanzable desde el navegador: el preflight da 403, y
+  el panel lo muestra como un error de CORS.** Lo encontró el dueño usando el
+  panel; medido después con `curl` crudo el 2026-09-22. `OPTIONS` con `Origin`
+  y `Access-Control-Request-Method: POST` sobre
+  `https://us-central1-bouquet-vinos.cloudfunctions.net/procesarFoto` devuelve
+  **403 de `Google Frontend`, sin un solo header `Access-Control-Allow-*`**.
+  **Control negativo:** el mismo `OPTIONS` contra una function inventada da
+  **404**, así que el 403 es de esta function y no del frontend contra
+  cualquier `OPTIONS`. **El control que aísla la causa:** un `POST` anónimo
+  devuelve **el mismo 403 HTML** en vez del JSON `UNAUTHENTICATED` que
+  devolvería la callable — **el código nunca corre**: lo frena IAM antes, y por
+  eso el `cors: true` que `onCall` trae por defecto no se ejecuta nunca. Falta
+  `allUsers` como `roles/run.invoker` en el servicio de Cloud Run de
+  `procesarfoto`. **No es el bucket, y eso también está medido:** el endpoint de
+  subida contesta el preflight con `Access-Control-Allow-Origin: *` y una
+  descarga con `Origin` también, **aunque el bucket no tenga política CORS** (la
+  API JSON de Storage lo devuelve sin campo `cors`) — `gsutil cors set` no
+  arregla nada acá. **Consecuencia: el crudo se sube y queda huérfano en cada
+  intento.** Y explica por qué 4.3 y 10.1 nunca se pudieron hacer: ninguna de
+  las dos podía pasar. **Repararlo es un otorgamiento de permiso, así que lo
+  corre una persona** — no se hizo en esta sesión a propósito.
+- ⚠️ **Dos defectos de uso que el dueño vio el 2026-09-22 y este ADR no
+  contempló**, los dos asentados en `_index.md` → *Lo que quedó abierto*: (a) el
+  formulario del vino usa mal el espacio —una columna de 640 px y el resto de la
+  pantalla vacío—; y (b) **cargar un vino con su foto son tres gestos**
+  (guardar, volver a entrar y subir, publicar), porque §1 apoyó el flujo en que
+  la ruta de Storage y el `arrayUnion` necesitan el id del producto. Eso razonó
+  el flujo desde lo que el SDK necesita, no desde lo que hace una persona con
+  una botella nueva en la mano. **Las salidas —reservar el id antes de guardar,
+  un crudo de borrador que se mueve, o un alta que hace las tres cosas al
+  confirmar— piden un change con su propio ADR, no un parche.**
 
 - **4.3 — probar la callable en producción con un usuario real, bloqueado por
   el clasificador.** Mintear un ID token de prueba necesita

@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-22 - commit `79a7534` **+ cambios sin commitear** - huella del cuerpo `0e9895abb0d8`
+> **Generado:** 2026-09-23 - commit `7285195` **+ cambios sin commitear** - huella del cuerpo `8a5ed142a7c6`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.28.3
+### Scripts de la raiz - `bouquet` 0.28.4
 
 | Script | Comando |
 |---|---|
