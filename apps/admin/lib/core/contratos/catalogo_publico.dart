@@ -61,6 +61,19 @@ Balde balde({required int stock, required int botellas}) {
 /// negativo que la pantalla sumaria.
 int tope({required int stock}) => math.max(0, math.min(stock, topePorPedido));
 
+/// El balde, en palabras. Espejo de `textoDelBalde` de `producto.ts`:
+/// `disponible` no se anuncia, lo normal no se anuncia (mismo criterio que
+/// voz.md §9.2, aunque esto es panel y no pasa por `voz`).
+///
+/// Vive aca, con [Balde], y no en un feature: lo usan la ficha del vino
+/// (`catalogo`) y la seccion de stock (`stock`), y ninguno de los dos puede
+/// importar al otro.
+String? textoDelBalde(Balde b) => switch (b) {
+  Balde.disponible => null,
+  Balde.quedanPocas => 'Quedan pocas',
+  Balde.agotado => 'Se agotó',
+};
+
 /// Espejo de `CLASES_DE_DESCARTE` de `producto.ts`, sin `'entra'`: las cinco
 /// razones por las que `armarCatalogo` deja a un producto afuera de la
 /// vidriera. `domain/en_la_tienda.dart` decide cual aplica a un producto del

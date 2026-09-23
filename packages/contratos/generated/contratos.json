@@ -950,6 +950,217 @@
       }
     ]
   },
+  "stock": {
+    "motivosDeAjuste": [
+      "conteo",
+      "rotura",
+      "otro"
+    ],
+    "topeDeStock": 5000,
+    "codigosDeRechazo": [
+      "cambio-el-stock",
+      "pasa-el-tope"
+    ],
+    "casos": [
+      {
+        "porque": "reponer 6 sobre 4",
+        "stock": 4,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": 6
+        },
+        "valido": true,
+        "resultado": {
+          "ok": true,
+          "despues": 10
+        }
+      },
+      {
+        "porque": "reponer sobre cero",
+        "stock": 0,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": 1
+        },
+        "valido": true,
+        "resultado": {
+          "ok": true,
+          "despues": 1
+        }
+      },
+      {
+        "porque": "reponer justo hasta el tope",
+        "stock": 4990,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": 10
+        },
+        "valido": true,
+        "resultado": {
+          "ok": true,
+          "despues": 5000
+        }
+      },
+      {
+        "porque": "reponer pasa el tope por una",
+        "stock": 4990,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": 11
+        },
+        "valido": true,
+        "resultado": {
+          "ok": false,
+          "codigo": "pasa-el-tope"
+        }
+      },
+      {
+        "porque": "reponer cero no repone nada",
+        "stock": 4,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": 0
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "reponer una cantidad negativa",
+        "stock": 4,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": -3
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "reponer una fraccion",
+        "stock": 4,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": 1.5
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "reponer un texto",
+        "stock": 4,
+        "operacion": {
+          "tipo": "reponer",
+          "cantidad": "6"
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "corregir hacia abajo, lo visto coincide",
+        "stock": 10,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 10,
+          "valor": 7,
+          "motivo": "rotura"
+        },
+        "valido": true,
+        "resultado": {
+          "ok": true,
+          "despues": 7
+        }
+      },
+      {
+        "porque": "corregir hacia arriba, lo visto coincide",
+        "stock": 3,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 3,
+          "valor": 12,
+          "motivo": "conteo"
+        },
+        "valido": true,
+        "resultado": {
+          "ok": true,
+          "despues": 12
+        }
+      },
+      {
+        "porque": "corregir a cero",
+        "stock": 5,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 5,
+          "valor": 0,
+          "motivo": "otro"
+        },
+        "valido": true,
+        "resultado": {
+          "ok": true,
+          "despues": 0
+        }
+      },
+      {
+        "porque": "corregir cuando se vendieron dos en el medio",
+        "stock": 8,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 10,
+          "valor": 7,
+          "motivo": "conteo"
+        },
+        "valido": true,
+        "resultado": {
+          "ok": false,
+          "codigo": "cambio-el-stock"
+        }
+      },
+      {
+        "porque": "corregir al mismo valor",
+        "stock": 10,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 10,
+          "valor": 10,
+          "motivo": "conteo"
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "corregir pasado el tope",
+        "stock": 10,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 10,
+          "valor": 5001,
+          "motivo": "conteo"
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "corregir con un motivo que no existe",
+        "stock": 10,
+        "operacion": {
+          "tipo": "corregir",
+          "visto": 10,
+          "valor": 7,
+          "motivo": "porque-si"
+        },
+        "valido": false,
+        "resultado": null
+      },
+      {
+        "porque": "una operacion que no existe",
+        "stock": 10,
+        "operacion": {
+          "tipo": "vaciar"
+        },
+        "valido": false,
+        "resultado": null
+      }
+    ]
+  },
   "publico": {
     "estados": [
       "recibida",

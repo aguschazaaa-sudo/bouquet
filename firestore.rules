@@ -252,6 +252,27 @@ service cloud.firestore {
       // arriba permite y tiene vuelta atras.  El seed sigue borrando porque
       // usa el Admin SDK (scripts/seed/proyecto.mjs), que no pasa por aca.
       allow delete: if false;
+
+      // -------------------------------------------- movimientos de stock
+      //
+      // `productos/{id}/movimientos/{idMovimiento}` es el MARCADOR de
+      // idempotencia de la callable `moverStock` (EP-05, ADR 016), y de paso
+      // el registro de quien movio el stock, cuando y desde donde hasta
+      // donde.  Lo escribe SOLO esa callable, con el Admin SDK, en la MISMA
+      // transaccion que el cambio de `stock`.
+      //
+      // Cerrado a los clientes por el mismo motivo que `ordenes/marcadores`:
+      // si el panel pudiera CREAR uno, marcaria un movimiento como hecho sin
+      // que ocurra; si pudiera BORRARLO, lo dejaria ocurrir dos veces.  Las
+      // dos cosas son stock.  Tampoco se lee desde el panel todavia: verlos
+      // es HU-05.4 y espera su disparador; cuando llegue, se abre `read` aca
+      // y no antes.
+      //
+      // Esta subcoleccion NO entra en la lectura del catalogo ni en la del
+      // panel: `collection('productos')` no trae subcolecciones.
+      match /movimientos/{idMovimiento} {
+        allow read, write: if false;
+      }
     }
 
     // -------------------------------------------------------------- bodegas

@@ -3,6 +3,11 @@
 > Hito 1 · **Workflow D en todas las historias** — `revisor-pagos` obligatorio ·
 > [volver al mapa](overview.md)
 
+> **Construida el 2026-09-23** (HU-05.1 a 05.3), sin openspec: la decisión, el
+> presupuesto de lecturas y los ocho hallazgos de `revisor-pagos` están en
+> [ADR 016](../../architecture/decisions/016-mover-el-stock.md). HU-05.4 sigue
+> con su disparador.
+
 **Objetivo:** que la tienda nunca venda lo que no hay, y que el número del
 panel sea el del depósito.
 

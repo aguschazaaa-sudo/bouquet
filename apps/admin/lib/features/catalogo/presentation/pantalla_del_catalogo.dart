@@ -6,6 +6,7 @@ import '../../../app/rutas.dart';
 import '../../../core/presentation/campo_de_busqueda.dart';
 import '../../../core/presentation/cargando.dart';
 import '../../../core/presentation/fallo_con_reintento.dart';
+import '../../../core/presentation/lista_vacia.dart';
 import '../catalogo_providers.dart';
 import '../domain/catalogo.dart';
 import 'acceso_a_bodegas.dart';
@@ -26,6 +27,7 @@ class PantallaDelCatalogo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final catalogo = ref.watch(catalogoProvider);
     final busqueda = ref.watch(busquedaProvider);
+    final soloPorReponer = ref.watch(soloPorReponerProvider);
 
     return Column(
       children: [
@@ -57,6 +59,19 @@ class PantallaDelCatalogo extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                // HU-05.3: el numero es lo que dice si vale la pena tocarlo.
+                child: FilterChip(
+                  label: Text(
+                    'Por reponer (${catalogo.valueOrNull?.cuantosPorReponer ?? 0})',
+                  ),
+                  selected: soloPorReponer,
+                  onSelected: (v) =>
+                      ref.read(soloPorReponerProvider.notifier).state = v,
+                ),
+              ),
             ],
           ),
         ),
@@ -76,6 +91,9 @@ class PantallaDelCatalogo extends ConsumerWidget {
             AsyncData(:final value) => _Encontrados(
               catalogo: value,
               busqueda: busqueda,
+              soloPorReponer: soloPorReponer,
+              alVerTodos: () =>
+                  ref.read(soloPorReponerProvider.notifier).state = false,
               alLimpiar: () => ref.read(busquedaProvider.notifier).state = '',
               alAbrir: (id) => context.go(Rutas.vino(id)),
             ),
@@ -92,19 +110,44 @@ class _Encontrados extends StatelessWidget {
   const _Encontrados({
     required this.catalogo,
     required this.busqueda,
+    required this.soloPorReponer,
+    required this.alVerTodos,
     required this.alLimpiar,
     required this.alAbrir,
   });
 
   final Catalogo catalogo;
   final String busqueda;
+
+  /// El filtro de HU-05.3, encima de la busqueda.
+  final bool soloPorReponer;
+  final VoidCallback alVerTodos;
   final VoidCallback alLimpiar;
   final ValueChanged<String> alAbrir;
 
   @override
   Widget build(BuildContext context) {
-    final renglones = catalogo.filtrar(busqueda);
+    final renglones = catalogo.filtrar(
+      busqueda,
+      soloPorReponer: soloPorReponer,
+    );
     final tema = Theme.of(context);
+
+    // Con el filtro puesto, "no hay ninguno" es una BUENA noticia y se dice
+    // como tal: el vacio generico ("ningun vino coincide") suena a que algo
+    // fallo, y manda a buscar de nuevo lo que simplemente no falta.
+    if (soloPorReponer && renglones.isEmpty) {
+      return ListaVacia(
+        icono: Icons.check_circle_outline,
+        texto: busqueda.isEmpty
+            ? 'No hay nada por reponer: todos tus vinos tienen stock.'
+            : 'Ningún vino por reponer coincide con lo que buscaste.',
+        accion: OutlinedButton(
+          onPressed: alVerTodos,
+          child: const Text('Ver todos'),
+        ),
+      );
+    }
 
     return Column(
       children: [

@@ -9,6 +9,120 @@
 
 ---
 
+## Salió el 2026-09-23, al escribirse EP-05
+
+Octava entrada. Sale la de "El catálogo se ve y las bodegas se cargan"
+(2026-09-17): con la de EP-05 (mover el stock, [ADR 016](../architecture/decisions/016-mover-el-stock.md))
+sumada al dashboard, era la más vieja de las cinco. El porqué de EP-02 sigue en
+[ADR 012](../architecture/decisions/012-el-catalogo-del-panel.md); lo medido
+acá —`dart analyze` sí corre, dart2js escapa los no-ASCII, el barrido de
+hooks con rutas relativas miente— quedó resumido en el puntero del dashboard.
+
+### El catálogo se ve y las bodegas se cargan (2026-09-17)
+
+**EP-02 entera (HU-02.1 a 02.4) y HU-03.1**, en el change
+[`panel-catalogo-y-bodegas`](../../../openspec/changes/panel-catalogo-y-bodegas/proposal.md).
+El porqué está en [ADR 012](../architecture/decisions/012-el-catalogo-del-panel.md).
+**No tocó `firestore.rules`**: `productos` y `bodegas` ya tenían lo que hacía
+falta, así que el deploy fue sólo front.
+
+⚠️ **ARQUITECTURA §7 decía que la normalización vivía en `packages/contratos`
+"con sus fixtures, un solo lugar". No vivía en ninguno.** Lo único parecido era
+un slugify escrito a mano adentro de `PanelDeFiltros.tsx`. Ahora existe
+—`normalizar`, `clave`, `aSlug`, `seParecen`— con su espejo en Dart verificado
+contra fixtures generadas por el TypeScript, igual que el enum de estados.
+
+⚠️ **Dart no trae normalización Unicode en el SDK.** No hay `String.normalize`,
+así que sacar acentos pedía `diacritic` o una tabla de caracteres a mano. Se
+eligió la dependencia: una tabla falla **en silencio** con el carácter que
+nadie pensó, y "Château" habría dado el slug `ch-teau` sin que nada avisara.
+
+**Y las fixtures encontraron dos cosas que nadie iba a ver leyendo:**
+
+| Lo que se suponía | Lo que se midió |
+|---|---|
+| `removeDiacritics` de la eszett da `ss` | da **`s`** — el test falló y se corrigió la expectativa, no el código |
+| El espacio del precio es la barra espaciadora | es **U+00A0**: `24 a0 31 32 2e 35 30 30 2c 30 30` |
+
+El segundo importa: `$12,500.00` y `$ 12.500,00` no son el mismo número mal
+alineado, son dos números. `formatearARS` también se espeja, por fixtures.
+
+**La baranda del borrado tiene dos capas, y ninguna vive en las reglas.**
+Contar los vinos de una bodega adentro de `firestore.rules` serían `get()`
+facturados por evaluación, invisibles en toda auditoría porque no aparecen en
+ninguna query — el costo que ADR 008 evita con el custom claim. Así que: con
+vinos, el botón **no existe** (no está apagado: no está); y al confirmar, una
+query fresca con `Source.server` que cuesta 1 lectura y cierra la ventana entre
+que se abrió la pantalla y se apretó el botón. **Lo que queda abierto está
+escrito**: las reglas todavía permiten el `delete`, y el día que haya más de un
+rol esto se vuelve a decidir.
+
+⚠️ **`dart analyze` SÍ corre en esta máquina.** Terminó y encontró dos infos
+reales (un `<id>` en un doc comment, un parámetro `otro` en vez de `other`).
+`CLAUDE.md` prohíbe `flutter analyze`, que es otra cosa — **el panel dejó de
+depender sólo de CI para saber si compila**, que era su único ciclo de
+feedback.
+
+⚠️ **Y el barrido de hooks mintió una vez, con un verde.** Corrido con rutas
+**relativas**, los cuatro hooks daban 0 en un archivo que tenía
+`Colors.transparent` adentro: sus `case` piden `*/apps/admin/lib/*`, y una ruta
+sin barra inicial no matchea. Con ruta absoluta, `no-hardcoded-colors` bloqueó
+en la primera corrida. **Lo salvó el control positivo** —un archivo canario con
+un color literal—, que es lo único que distingue "no hay hallazgos" de "no se
+midió".
+
+| Qué | Cómo |
+|---|---|
+| Compila | `dart analyze lib test` → **No issues found** |
+| Suites | `dart test` **78/78**; `npm test` verde; `npm run tipos` en 0 |
+| El contrato | `auditar_estados.mjs`, ampliado: fixtures de texto y de plata con sus dos controles cada una, y que el panel las espeje. **Se vio fallar** antes de escribir el espejo |
+| Sin huérfanos | 39 símbolos nuevos, todos con quien los abra. Control negativo: un símbolo inventado da 0 |
+| Las fronteras | `layer-boundary`, `one-widget-per-file`, `widget-size-guard` y `no-hardcoded-colors` sobre los 19 archivos, con ruta absoluta |
+| Presupuesto | **230 lecturas** en frío, 1 por alta y 1 por borrado. 10 sesiones = 4,6 % de la cuota |
+
+**El presupuesto de ARQUITECTURA §6.3 estaba optimista y ahora tiene número.**
+Decía ~200 *"con caché de sesión"*, suponiendo que sobrevive entre sesiones — y
+la de Riverpod muere con la pestaña. **230 es contra lo que hay que medir.**
+
+#### Publicado, y lo que NADIE miró todavía (2026-09-17)
+
+**Live sirve los bytes que compiló CI**: `hosting:clone` del canal a live, sin
+recompilar. Mismo `main.dart.js` (`f2a7d72a22b1c297`) en el canal y en live,
+mismo commit `3b46a39`, `X-Robots-Tag: noindex` puesto.
+
+**El canario discrimina, y se midió el ANTES.** Antes de promover, live tenía
+la cadena vieja y ninguna de las seis nuevas; después, al revés. Los dos
+controles —una cadena de Pedidos que no se tocó y una inventada— dieron lo que
+tenían que dar en las dos corridas.
+
+⚠️ **Y la primera sonda dio TODO "no", incluida una cadena que sí estaba.**
+`dart2js` **escapa los no-ASCII**: "Catálogo" vive en el bundle como
+`Catálogo`. Buscar la cadena cruda da cero para todo y se lee como "el
+deploy no llegó". **Lo destapó el control positivo con una cadena ASCII pura**
+—"Ese mail no parece estar bien escrito"—, que sí apareció.
+
+| Qué se verificó | Cómo |
+|---|---|
+| Los bytes | `publicar.sh verificar`: 4 hashes, control negativo (un archivo inventado no pasa por `main.dart.js`) y el `noindex` |
+| Que la app **arranca** | CDP sobre live: el árbol de semántica lee la pantalla de entrada entera y hay **0 errores de consola**. Una cadena en el bundle no prueba que arranque |
+| El router en producción | `/catalogo/bodegas` redirige a `/entrar?desde=/catalogo/bodegas` |
+| **La query de HU-02.4** | Corrida de verdad contra Firestore por REST: `fichaVino.bodegaId == muestra-catena-zapata` devuelve 1 documento y una bodega inventada devuelve **0**. Sin índice compuesto |
+
+⚠️ **NADIE MIRÓ EL CATÁLOGO RENDERIZADO CON DATOS.** El panel pide sesión y la
+única cuenta con permiso es la del dueño. Lo verificado llega hasta la puerta:
+que los bytes son los que se compilaron, que la app arranca y que la query que
+usa la pantalla anda. **Lo que falta es exactamente lo que `CLAUDE.md` dice que
+hago mal**: desplegarse no es que alguien lo haya mirado. El change
+`panel-catalogo-y-bodegas` **queda abierto** hasta que el dueño entre y mire.
+
+⚠️ **Y un chequeo que NO probó lo que parecía.** Que `/catalogo/bodegas`
+redirija preservando el `desde` no distingue una ruta real de una inventada:
+`/catalogo/ruta-inventada-2026` hace exactamente lo mismo estando deslogueado.
+Se corrió el control negativo y por eso se sabe. Lo que sí prueba que la ruta
+existe son los canarios del bundle y los 4 casos nuevos de `destino_test.dart`.
+
+---
+
 ## Salió el 2026-09-22, al construirse EP-04
 
 Séptima entrada. Sale la de "El panel tiene puerta" (2026-09-16): con la

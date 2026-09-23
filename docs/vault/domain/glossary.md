@@ -83,6 +83,17 @@ cálculo.
 las dos redacciones conviven en el mismo pool, la mitad de las veces se miente.
 El balde es el dato público; el número es interno.
 
+### Movimiento de stock
+Un cambio del `stock` de un producto, hecho por la callable `moverStock` y
+nunca por el panel directo. **Reponer** suma lo que entra; **corregir** fija el
+valor que se contó en el depósito, con un motivo de una lista corta (*conteo*,
+*rotura*, *otro*) y el `visto`: el stock que se tenía en pantalla al contar, que
+la callable exige que siga siendo ése — un valor absoluto pisa las ventas del
+medio. Cada uno deja un marcador `productos/{id}/movimientos/{idMovimiento}`
+con quién, cuándo, antes y después, que es a la vez su clave de idempotencia y
+su registro. El `idMovimiento` nace al abrir la hoja y **no se regenera**.
+[ADR 016](../architecture/decisions/016-mover-el-stock.md).
+
 ### Tipo
 `simple` o `compuesto`. **Explícito e inmutable.** Nadie deduce "compuesto"
 porque falte el `stock`: ésa es la forma de dejar a la venta un producto mal

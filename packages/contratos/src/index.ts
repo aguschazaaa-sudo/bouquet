@@ -18,3 +18,4 @@ export * from './cajas.ts';
 export * from './envio.ts';
 export * from './texto.ts';
 export * from './foto.ts';
+export * from './stock.ts';

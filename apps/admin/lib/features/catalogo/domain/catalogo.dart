@@ -1,3 +1,4 @@
+import '../../../core/contratos/catalogo_publico.dart';
 import '../../../core/contratos/texto.dart';
 import 'bodega.dart';
 import 'producto_del_panel.dart';
@@ -94,14 +95,53 @@ class Catalogo {
   /// No es difusa a proposito (ARQUITECTURA §7): con menos de 200 productos
   /// no hace falta, y una busqueda difusa aca seria la segunda
   /// implementacion de la busqueda de la vidriera.
-  List<RenglonDelCatalogo> filtrar(String consulta) {
+  ///
+  /// Con [soloPorReponer], HU-05.3: solo los agotados y los que quedan pocos,
+  /// **los que menos botellas tienen primero** — un agotado antes que uno que
+  /// quedan pocas. Sigue filtrando por texto encima de eso.
+  List<RenglonDelCatalogo> filtrar(
+    String consulta, {
+    bool soloPorReponer = false,
+  }) {
     final buscada = normalizar(consulta);
-    if (buscada.isEmpty) return renglones;
-    return [
+    if (buscada.isEmpty && !soloPorReponer) return renglones;
+    final lista = [
       for (final r in renglones)
-        if (r.coincideCon(buscada)) r,
+        if ((buscada.isEmpty || r.coincideCon(buscada)) &&
+            (!soloPorReponer || _hayQueReponer(r.producto)))
+          r,
     ];
+    if (soloPorReponer) {
+      // `List.sort` de Dart NO es estable: el desempate por nombre es lo que
+      // deja el orden igual en cada rebuild.
+      lista.sort((a, b) {
+        final porStock = _botellasEnStock(
+          a.producto,
+        ).compareTo(_botellasEnStock(b.producto));
+        return porStock != 0
+            ? porStock
+            : _porNombre(a.producto.nombre, b.producto.nombre);
+      });
+    }
+    return lista;
   }
+
+  /// Cuantos vinos hay que reponer (HU-05.3): el numero del filtro. **Cero
+  /// lecturas**, sale del catalogo en memoria.
+  int get cuantosPorReponer =>
+      renglones.where((r) => _hayQueReponer(r.producto)).length;
+
+  /// Agotado, o quedan pocas — el mismo `balde` que decide la vidriera, en
+  /// botellas. Un compuesto (sin stock propio) no se repone: su stock sale de
+  /// sus componentes.
+  static bool _hayQueReponer(ProductoDelPanel p) {
+    final stock = p.stock;
+    return stock != null &&
+        balde(stock: stock, botellas: p.botellas) != Balde.disponible;
+  }
+
+  static int _botellasEnStock(ProductoDelPanel p) =>
+      (p.stock ?? 0) * p.botellas;
 
   /// Cuantos productos apuntan a esta bodega. **Cero lecturas**: sale del
   /// conteo que se armo al cruzar.

@@ -6,6 +6,7 @@ import '../../../../app/rutas.dart';
 import '../../../../core/presentation/cargando.dart';
 import '../../../../core/presentation/fallo_con_reintento.dart';
 import '../../../../core/presentation/lista_vacia.dart';
+import '../../../stock/presentation/seccion_del_stock.dart';
 import '../../catalogo_providers.dart';
 import 'formulario_del_vino.dart';
 import 'seccion_de_la_tienda.dart';
@@ -88,6 +89,15 @@ class PaginaDelVino extends ConsumerWidget {
                               );
                             }
                           },
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                        child: SeccionDelStock(
+                          productoId: vino.id,
+                          nombre: vino.nombre,
+                          stock: vino.stock,
+                          botellas: vino.botellas,
                         ),
                       ),
                       const Divider(height: 1),

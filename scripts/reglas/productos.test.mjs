@@ -162,6 +162,50 @@ describe('el stock lo escribe solo el servidor', () => {
   });
 });
 
+// ------------------------------------------------------------ movimientos
+
+// El marcador de `moverStock` (EP-05, ADR 016).  Lo escribe el servidor con
+// el Admin SDK, que no pasa por las reglas: se simula con `sembrar`.
+describe('los movimientos de stock son del servidor', () => {
+  const movimiento = (db, id = 'mov-0000000000000001') => doc(db, 'productos', SLUG, 'movimientos', id);
+  const datos = { antes: 4, despues: 10, por: 'operador' };
+
+  test('el panel no crea, ni lee, ni corrige, ni borra un movimiento', async () => {
+    // Control positivo: sobre el MISMO producto el panel si lee y edita.  Sin
+    // esto, un `assertFails` de abajo pasaria tambien con todo cerrado.
+    await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
+    await assertSucceeds(getDoc(producto(admin)));
+    await assertSucceeds(updateDoc(producto(admin), { precio: 2100000 }));
+
+    await assertFails(setDoc(movimiento(admin), datos));
+    await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
+    await assertFails(getDoc(movimiento(admin)));
+    await assertFails(updateDoc(movimiento(admin), { despues: 999 }));
+    await assertFails(deleteDoc(movimiento(admin)));
+  });
+
+  test('un comprador y un anonimo tampoco', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
+    await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
+    for (const db of [comprador, anonimo]) {
+      await assertFails(getDoc(movimiento(db)));
+      await assertFails(setDoc(movimiento(db, 'mov-0000000000000002'), datos));
+    }
+  });
+
+  test('despues de que el servidor mueve el stock, el panel sigue pudiendo editar el vino', async () => {
+    // El dia que esto falle, cada reposicion deja el producto sin poder
+    // editarse: el `hasOnly` de la ficha o la regla del stock verian un campo
+    // que el panel no escribio.  Lo que la callable escribe es SOLO `stock`.
+    await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
+    await sembrar(`productos/${SLUG}`, vino({ stock: 10 }));
+    await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
+    await assertSucceeds(updateDoc(producto(admin), { nombre: 'Trumpeter Malbec Reserva' }));
+    // Y el panel sigue sin poder tocar el numero que el servidor dejo.
+    await assertFails(updateDoc(producto(admin), { stock: 999 }));
+  });
+});
+
 // ----------------------------------------------------------- presentacion
 
 describe('la presentacion es inmutable', () => {

@@ -5,7 +5,9 @@ import '../../../theme/tema.dart';
 import '../../../theme/tokens.dart';
 import '../domain/catalogo.dart';
 import '../domain/producto_del_panel.dart';
+import 'etiqueta_en_la_tienda.dart';
 import 'motivo_corto_de_tienda.dart';
+import 'stock_del_renglon.dart';
 
 /// Un vino en la lista del catalogo (HU-03.1). El renglon de la libreta: la
 /// linea de abajo es `filetePapel`, no una `Divider` gris.
@@ -83,6 +85,7 @@ class RenglonDeProducto extends StatelessWidget {
                     ),
                   ),
                 ],
+                StockDelRenglon(stock: p.stock, botellas: p.botellas),
               ],
             ),
           ),
@@ -99,7 +102,7 @@ class RenglonDeProducto extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 6),
-              _EnLaTienda(publicado: p.publicado),
+              EtiquetaEnLaTienda(publicado: p.publicado),
               if (motivoCorto case final motivo?)
                 MotivoCortoDeTienda(texto: motivo),
             ],
@@ -121,6 +124,8 @@ class RenglonDeProducto extends StatelessWidget {
       if (sinBodega) 'sin bodega, no aparece en la tienda' else bodega,
       enPesos(p.precio),
       if (p.publicado) 'en la tienda' else 'no está en la tienda',
+      if (StockDelRenglon.paraLeer(p.stock, p.botellas) case final stock?)
+        stock,
       if (motivoCorto != null) 'pero la tienda no lo muestra: $motivoCorto',
     ];
     return partes.join('. ');
@@ -161,38 +166,6 @@ class _Procedencia extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Si la vidriera lo muestra. Lo normal no se anuncia con color: el que
-/// resalta es el que falta terminar.
-class _EnLaTienda extends StatelessWidget {
-  const _EnLaTienda({required this.publicado});
-
-  final bool publicado;
-
-  @override
-  Widget build(BuildContext context) {
-    final tema = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        // `null` y no un transparente literal: `no-hardcoded-colors.sh` no
-        // deja un solo color escrito a mano fuera de `theme/`, y tiene razon
-        // — la excepcion del "es solo transparente" es por donde empieza.
-        color: publicado ? tema.colorScheme.surfaceContainerHighest : null,
-        borderRadius: BorderRadius.circular(6),
-        border: publicado
-            ? null
-            : Border.all(color: tema.colorScheme.onSurfaceVariant),
-      ),
-      child: Text(
-        publicado ? 'En la tienda' : 'Sin publicar',
-        style: tema.textTheme.labelSmall?.copyWith(
-          color: tema.colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }

@@ -74,3 +74,12 @@ final catalogoProvider = Provider<AsyncValue<Catalogo>>((ref) {
 /// a Bodegas y volver**: el operador que estaba mirando "malbec" no tiene que
 /// volver a escribirlo.
 final busquedaProvider = StateProvider<String>((ref) => '');
+
+/// Si la lista muestra solo lo que hay que reponer (HU-05.3): los agotados y
+/// los que quedan pocos.
+///
+/// Un provider, igual que [busquedaProvider], para que el filtro **sobreviva a
+/// abrir un vino y volver**: quien esta cargando mercaderia recorre la lista
+/// entrando y saliendo de cada vino, y que el filtro se apague solo en cada
+/// vuelta lo haria volver a encenderlo doce veces.
+final soloPorReponerProvider = StateProvider<bool>((ref) => false);

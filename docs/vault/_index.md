@@ -74,6 +74,58 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### EP-05: mover el stock, escrito, probado y revisado — sin desplegar (2026-09-23)
+
+**HU-05.1, HU-05.2 y HU-05.3**, **sin openspec, a pedido del dueño**: el
+[ADR 016](architecture/decisions/016-mover-el-stock.md) y
+[`EP-05`](features/panel/EP-05-stock.md) son la especificación. Con esto el
+hito 1 queda **escrito entero** salvo HU-04.2 y HU-05.4, las dos con
+disparador. **Workflow D**: `revisor-pagos` corrió sobre el backend **antes**
+de commitear.
+
+**`moverStock`, segunda Cloud Function y primera que escribe plata.** El panel
+no escribe `stock` (las reglas lo congelan, ADR 008): pide `reponer` (suma) o
+`corregir` (fija un valor, con `visto` = el stock que el operador tenía
+en pantalla, rechazado si ya no es ése — el `precioUnitarioVisto` del stock).
+Idempotente por un marcador `productos/{id}/movimientos/{idMovimiento}`, en la
+misma transacción que el cambio. Tope de 5.000 unidades: **decisión mía, el
+dueño la puede cambiar**.
+
+**El revisor encontró un bug mío que ninguna prueba veía**: las hojas del panel
+generaban un `idMovimiento` nuevo al cambiar la cantidad, también tras un
+error ambiguo — repone 6, timeout con la transacción ya commiteada, cambia a
+12, queda 28 en vez de 22. **Corregido: un id por hoja, nunca se regenera.**
+Ocho hallazgos, tres corregidos y el resto anotados con su disparador, en el
+ADR.
+
+| Qué | Cómo |
+|---|---|
+| El contrato | `contratos` 205 tests; el JSON fresco; 16 fixtures **calculadas** por el TypeScript, que el panel verifica |
+| La transacción | 19 casos contra el emulador de Firestore, con concurrencia real. **Mutada**: sin la rama del marcador y sin la baranda de `visto`, fallan 7 casos, exactamente los que tocan idempotencia y `visto` |
+| Las reglas | 57 casos (+3). **Mutando** `movimientos` a `esAdmin()` falla exactamente el que lo prueba |
+| El panel | `dart test` **245/245**; `dart analyze lib test`: **No issues found**. **Mutado** en tres puntos (validez de `Corregir`, el filtro, la traducción de un código): los tres se detectan |
+| Sin huérfanos | 33 símbolos grepeados, cada uno con quien lo abra; control negativo con uno inventado. **Encontró `estaVacia` huérfana y se sacó** |
+| Hooks | Los 4 del panel × 25 archivos con ruta absoluta: 0 bloqueos; el canario con `Colors.red` bloquea |
+| Presupuesto | **3 lecturas** por movimiento; 100 al día = 0,6 % de la cuota. HU-05.3: **cero** |
+
+⚠️ **NADIE VIO NADA RENDERIZADO, y nada de EP-05 está desplegado.** Orden: reglas
+→ `moverStock` (con `--only`, para no tocar `procesarFoto`) → tres controles
+sobre las dos → recién ahí el panel. Y **que el dueño reponga un vino de verdad**
+es lo único que cierra esto.
+
+⚠️ **Dos cosas que este ADR deja para el futuro y no son de esta sesión:**
+`corregir` **pisa lo vendido y no despachado** —bloquea `crearOrden`— y, con el
+tramo 4, **cada movimiento va a disparar una purga** (hasta el 93 % de la cuota
+si se carga stock después de publicar). Los dos, con cuentas, en el ADR.
+
+**Y v0.29.0 se desplegó hoy** (2026-09-23), lo que este dashboard decía "sin
+desplegar": los tres defectos de EP-04 que encontró el dueño. Publicado con los
+bytes que compiló CI (corrida `35921864306`): 4 hashes iguales entre canal y
+live, control negativo, `noindex`, y un canario discriminante —dos cadenas
+nuevas en 0 antes y 1 después, una vieja en 1 antes y 0 después—. **Sigue sin
+mirarlo nadie renderizado.**
+
+
 ### EP-04: las fotos del panel, desplegadas — y el dueño encontró que la callable no se puede llamar (2026-09-22)
 
 **HU-04.1, HU-04.3 y HU-04.4 construidas** (grupos 1-8 del change
@@ -151,8 +203,8 @@ una autorización en el chat destrabe; **lo corrió el dueño a mano, y quedó
 RESUELTO y verificado con los mismos tres controles** (`curl`, en *Lo que
 quedó abierto*). Los otros dos están **escritos** (ADR 015 §5 y §6): el
 formulario usa dos columnas en escritorio, y cargar, subir la foto y publicar
-pasan a ser un solo gesto — **todavía sin desplegar ni verificar en
-producción.**
+pasan a ser un solo gesto — **desplegados el 2026-09-23** (v0.29.0, ver la
+entrada de arriba), **sin que nadie los haya mirado renderizados todavía.**
 
 ### EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda (2026-09-22)
 
@@ -272,108 +324,14 @@ del [mapa del panel](features/panel/overview.md)). Pregunta para el dueño.
 máquina: lo compila CI. Y aun publicado, la única cuenta con permiso es la del
 dueño.
 
-### El catálogo se ve y las bodegas se cargan (2026-09-17)
-
-**EP-02 entera (HU-02.1 a 02.4) y HU-03.1**, en el change
-[`panel-catalogo-y-bodegas`](../../openspec/changes/panel-catalogo-y-bodegas/proposal.md).
-El porqué está en [ADR 012](architecture/decisions/012-el-catalogo-del-panel.md).
-**No tocó `firestore.rules`**: `productos` y `bodegas` ya tenían lo que hacía
-falta, así que el deploy fue sólo front.
-
-⚠️ **ARQUITECTURA §7 decía que la normalización vivía en `packages/contratos`
-"con sus fixtures, un solo lugar". No vivía en ninguno.** Lo único parecido era
-un slugify escrito a mano adentro de `PanelDeFiltros.tsx`. Ahora existe
-—`normalizar`, `clave`, `aSlug`, `seParecen`— con su espejo en Dart verificado
-contra fixtures generadas por el TypeScript, igual que el enum de estados.
-
-⚠️ **Dart no trae normalización Unicode en el SDK.** No hay `String.normalize`,
-así que sacar acentos pedía `diacritic` o una tabla de caracteres a mano. Se
-eligió la dependencia: una tabla falla **en silencio** con el carácter que
-nadie pensó, y "Château" habría dado el slug `ch-teau` sin que nada avisara.
-
-**Y las fixtures encontraron dos cosas que nadie iba a ver leyendo:**
-
-| Lo que se suponía | Lo que se midió |
-|---|---|
-| `removeDiacritics` de la eszett da `ss` | da **`s`** — el test falló y se corrigió la expectativa, no el código |
-| El espacio del precio es la barra espaciadora | es **U+00A0**: `24 a0 31 32 2e 35 30 30 2c 30 30` |
-
-El segundo importa: `$12,500.00` y `$ 12.500,00` no son el mismo número mal
-alineado, son dos números. `formatearARS` también se espeja, por fixtures.
-
-**La baranda del borrado tiene dos capas, y ninguna vive en las reglas.**
-Contar los vinos de una bodega adentro de `firestore.rules` serían `get()`
-facturados por evaluación, invisibles en toda auditoría porque no aparecen en
-ninguna query — el costo que ADR 008 evita con el custom claim. Así que: con
-vinos, el botón **no existe** (no está apagado: no está); y al confirmar, una
-query fresca con `Source.server` que cuesta 1 lectura y cierra la ventana entre
-que se abrió la pantalla y se apretó el botón. **Lo que queda abierto está
-escrito**: las reglas todavía permiten el `delete`, y el día que haya más de un
-rol esto se vuelve a decidir.
-
-⚠️ **`dart analyze` SÍ corre en esta máquina.** Terminó y encontró dos infos
-reales (un `<id>` en un doc comment, un parámetro `otro` en vez de `other`).
-`CLAUDE.md` prohíbe `flutter analyze`, que es otra cosa — **el panel dejó de
-depender sólo de CI para saber si compila**, que era su único ciclo de
-feedback.
-
-⚠️ **Y el barrido de hooks mintió una vez, con un verde.** Corrido con rutas
-**relativas**, los cuatro hooks daban 0 en un archivo que tenía
-`Colors.transparent` adentro: sus `case` piden `*/apps/admin/lib/*`, y una ruta
-sin barra inicial no matchea. Con ruta absoluta, `no-hardcoded-colors` bloqueó
-en la primera corrida. **Lo salvó el control positivo** —un archivo canario con
-un color literal—, que es lo único que distingue "no hay hallazgos" de "no se
-midió".
-
-| Qué | Cómo |
-|---|---|
-| Compila | `dart analyze lib test` → **No issues found** |
-| Suites | `dart test` **78/78**; `npm test` verde; `npm run tipos` en 0 |
-| El contrato | `auditar_estados.mjs`, ampliado: fixtures de texto y de plata con sus dos controles cada una, y que el panel las espeje. **Se vio fallar** antes de escribir el espejo |
-| Sin huérfanos | 39 símbolos nuevos, todos con quien los abra. Control negativo: un símbolo inventado da 0 |
-| Las fronteras | `layer-boundary`, `one-widget-per-file`, `widget-size-guard` y `no-hardcoded-colors` sobre los 19 archivos, con ruta absoluta |
-| Presupuesto | **230 lecturas** en frío, 1 por alta y 1 por borrado. 10 sesiones = 4,6 % de la cuota |
-
-**El presupuesto de ARQUITECTURA §6.3 estaba optimista y ahora tiene número.**
-Decía ~200 *"con caché de sesión"*, suponiendo que sobrevive entre sesiones — y
-la de Riverpod muere con la pestaña. **230 es contra lo que hay que medir.**
-
-#### Publicado, y lo que NADIE miró todavía (2026-09-17)
-
-**Live sirve los bytes que compiló CI**: `hosting:clone` del canal a live, sin
-recompilar. Mismo `main.dart.js` (`f2a7d72a22b1c297`) en el canal y en live,
-mismo commit `3b46a39`, `X-Robots-Tag: noindex` puesto.
-
-**El canario discrimina, y se midió el ANTES.** Antes de promover, live tenía
-la cadena vieja y ninguna de las seis nuevas; después, al revés. Los dos
-controles —una cadena de Pedidos que no se tocó y una inventada— dieron lo que
-tenían que dar en las dos corridas.
-
-⚠️ **Y la primera sonda dio TODO "no", incluida una cadena que sí estaba.**
-`dart2js` **escapa los no-ASCII**: "Catálogo" vive en el bundle como
-`Catálogo`. Buscar la cadena cruda da cero para todo y se lee como "el
-deploy no llegó". **Lo destapó el control positivo con una cadena ASCII pura**
-—"Ese mail no parece estar bien escrito"—, que sí apareció.
-
-| Qué se verificó | Cómo |
-|---|---|
-| Los bytes | `publicar.sh verificar`: 4 hashes, control negativo (un archivo inventado no pasa por `main.dart.js`) y el `noindex` |
-| Que la app **arranca** | CDP sobre live: el árbol de semántica lee la pantalla de entrada entera y hay **0 errores de consola**. Una cadena en el bundle no prueba que arranque |
-| El router en producción | `/catalogo/bodegas` redirige a `/entrar?desde=/catalogo/bodegas` |
-| **La query de HU-02.4** | Corrida de verdad contra Firestore por REST: `fichaVino.bodegaId == muestra-catena-zapata` devuelve 1 documento y una bodega inventada devuelve **0**. Sin índice compuesto |
-
-⚠️ **NADIE MIRÓ EL CATÁLOGO RENDERIZADO CON DATOS.** El panel pide sesión y la
-única cuenta con permiso es la del dueño. Lo verificado llega hasta la puerta:
-que los bytes son los que se compilaron, que la app arranca y que la query que
-usa la pantalla anda. **Lo que falta es exactamente lo que `CLAUDE.md` dice que
-hago mal**: desplegarse no es que alguien lo haya mirado. El change
-`panel-catalogo-y-bodegas` **queda abierto** hasta que el dueño entre y mire.
-
-⚠️ **Y un chequeo que NO probó lo que parecía.** Que `/catalogo/bodegas`
-redirija preservando el `desde` no distingue una ruta real de una inventada:
-`/catalogo/ruta-inventada-2026` hace exactamente lo mismo estando deslogueado.
-Se corrió el control negativo y por eso se sabe. Lo que sí prueba que la ruta
-existe son los canarios del bundle y los 4 casos nuevos de `destino_test.dart`.
+> ⚠️ **"El catálogo se ve y las bodegas se cargan" (2026-09-17) se movió a
+> [`changelog/_log.md`](changelog/_log.md#el-catálogo-se-ve-y-las-bodegas-se-cargan-2026-09-17)
+> el 2026-09-23**, al escribirse EP-05 y llegar el dashboard a 6 entradas. El
+> porqué de cada decisión de EP-02 sigue en
+> [ADR 012](architecture/decisions/012-el-catalogo-del-panel.md). Lo que sigue
+> vigente de ella y no vive en otro lado: **`dart analyze` SÍ corre en esta
+> máquina** (`flutter analyze` no), y **dart2js escapa los no-ASCII**, así que
+> un canario con tilde da CERO en `main.dart.js` aunque el deploy haya llegado.
 
 > ⚠️ **"El panel tiene puerta" (2026-09-16) se movió a
 > [`changelog/_log.md`](changelog/_log.md#el-panel-tiene-puerta-entrar-sin-acceso-y-la-estructura-2026-09-16)
@@ -387,8 +345,8 @@ existe son los canarios del bundle y los 4 casos nuevos de `destino_test.dart`.
 | Qué | Por qué | Quién |
 |---|---|---|
 | ~~⚠️ **La callable `procesarFoto` NO es alcanzable desde el navegador: el preflight da 403, y el panel lo muestra como error de CORS**~~ **RESUELTO el 2026-09-23, por el dueño** | Lo vio usando el panel; medido después con `curl` crudo el 2026-09-22, y el `ACTIVE` de la API de Cloud Functions **no lo veía**. `OPTIONS` con `Origin` y `Access-Control-Request-Method: POST` devolvía **403 Forbidden** de `Google Frontend`, **sin un solo header `Access-Control-Allow-*`**. **Control negativo:** una function inventada daba **404**. **El control que aisló la causa:** un `POST` anónimo devolvía **el mismo 403 HTML**, no el JSON `UNAUTHENTICATED` de la callable — el código nunca corría, lo frenaba IAM antes. Faltaba `allUsers` como `roles/run.invoker`. **No era el bucket** (medido aparte). El clasificador de permisos frenó el otorgamiento dos veces el 2026-09-23 —la segunda con autorización explícita en la conversación—, así que lo corrió **el dueño a mano**. **Verificado con los mismos tres controles:** el preflight ahora da **204** con los headers de CORS, el negativo **sigue en 404**, y el `POST` anónimo ahora da **401 JSON real** (`UNAUTHENTICATED`) en vez del HTML de IAM. Detalle completo en [ADR 015](architecture/decisions/015-fotos-del-panel.md#lo-que-falta). | el dueño + `functions` |
-| ✅ **Escrito el 2026-09-23: el formulario del vino usa el espacio de escritorio con dos columnas** (`DisposicionDelFormulario`, ADR 015 §6) — reemplaza el `ConstrainedBox(maxWidth: 640)` fijo. Debajo de 900 px sigue apilado en una columna, igual que antes (celular, y Android). **Todavía sin desplegar ni verificar mirándolo en producción.** | Lo vio el dueño mirándolo — CLAUDE.md: compilar, pasar tests y desplegarse son tres cosas distintas de que **alguien lo haya mirado renderizado**, y eso sigue pendiente acá. **Disparador:** desplegar `admin` y mirarlo renderizado, en escritorio y en Android. Desde 2026-09-22. | el dueño + `admin-presentacion` |
-| ✅ **Escrito el 2026-09-23: cargar un vino, sumarle una foto y publicarlo pasan a ser UN gesto** (ADR 015 §5) — se revirtió, sólo para `imagenes` y `publicado`, la exclusión de `AltaDeVino`/`documentoNuevo` que forzaba los tres viajes separados; `stock` y `tipo` siguen sin salir del alta, sin tocar. `SeccionDeFotos` sube con el slug todavía sin guardar (`agregarAlDocumento: false`, sin `arrayUnion` hasta confirmar); `PieDelFormulario` suma el tilde **"Publicar apenas se cargue"**, con default `true`. Medido antes de escribir: ni `procesarFoto`, ni `storage.rules`, ni `firestore.rules` pedían el documento guardado — sólo lo pedía el panel. **Todavía sin desplegar, sin CI, ni verificado con el dueño cargando un vino de verdad.** El default `true` del tilde es una decisión de producto, no sólo técnica: queda para que el dueño la confirme o la cambie. | El dueño lo dijo con las palabras del que lo usa: *"no tiene sentido primero cargar el vino, para después subir la foto, para después activar"*. **Disparador:** CI (`alcance=tests`), después desplegar `admin` y que el dueño cargue un vino real. Desde 2026-09-22. | el dueño + `admin-presentacion` + `admin-datos` |
+| ✅ **Escrito el 2026-09-23: el formulario del vino usa el espacio de escritorio con dos columnas** (`DisposicionDelFormulario`, ADR 015 §6) — reemplaza el `ConstrainedBox(maxWidth: 640)` fijo. Debajo de 900 px sigue apilado en una columna, igual que antes (celular, y Android). **Desplegado el 2026-09-23** (v0.29.0, bytes verificados con canario), **pero nadie lo miró renderizado.** | Lo vio el dueño mirándolo — CLAUDE.md: compilar, pasar tests y desplegarse son tres cosas distintas de que **alguien lo haya mirado renderizado**, y eso sigue pendiente acá. **Disparador:** que el dueño lo mire renderizado, en escritorio y en Android. Desde 2026-09-22. | el dueño + `admin-presentacion` |
+| ✅ **Escrito el 2026-09-23: cargar un vino, sumarle una foto y publicarlo pasan a ser UN gesto** (ADR 015 §5) — se revirtió, sólo para `imagenes` y `publicado`, la exclusión de `AltaDeVino`/`documentoNuevo` que forzaba los tres viajes separados; `stock` y `tipo` siguen sin salir del alta, sin tocar. `SeccionDeFotos` sube con el slug todavía sin guardar (`agregarAlDocumento: false`, sin `arrayUnion` hasta confirmar); `PieDelFormulario` suma el tilde **"Publicar apenas se cargue"**, con default `true`. Medido antes de escribir: ni `procesarFoto`, ni `storage.rules`, ni `firestore.rules` pedían el documento guardado — sólo lo pedía el panel. **Desplegado el 2026-09-23** (v0.29.0, CI verde con la suite de Dart), **todavía sin verificar con el dueño cargando un vino de verdad.** El default `true` del tilde es una decisión de producto, no sólo técnica: queda para que el dueño la confirme o la cambie. | El dueño lo dijo con las palabras del que lo usa: *"no tiene sentido primero cargar el vino, para después subir la foto, para después activar"*. **Disparador:** que el dueño cargue un vino real, con foto, en un solo gesto — y confirme o cambie el default `true` del tilde. Desde 2026-09-22. | el dueño + `admin-presentacion` + `admin-datos` |
 | **Falta la lista de mails de la familia** | El **dueño ya entra**: entró con Google el 2026-09-17 y `acceso.mjs dar` le puso el claim —verificado leyendo su registro, `{"rol":"admin"}`, y el listador pasó de 0 a 1—. Es la única cuenta de Auth. Para cada uno de los demás: `node scripts/acceso/acceso.mjs dar <mail>`, y que entre con Google o toque *"¿No tenés contraseña?"*. **El orden importa poco:** si entran antes de tener permiso, caen en `/sin-acceso` y con el botón *"Ya me dieron acceso"* pasan sin volver a escribir nada. **Disparador:** cuando el dueño pase los mails. Desde 2026-09-16. | el dueño |
 | ~~**Entrar con Google no está verificado en live por una persona**~~ **VERIFICADO el 2026-09-17: lo hizo el dueño** | Entró con Google en live, se le creó la cuenta —`providers: google.com`, mail verificado, sin claims— y cayó en `/sin-acceso`, que es exactamente lo que el diseño dice que pase. ⚠️ **Queda un hueco chico:** eso fue **antes** de acotar la API key, así que el flujo de Google **con la restricción puesta** no está probado. Lo que sí está probado con la restricción es una llamada real a Auth desde el navegador en live y en el canal. `firebaseapp.com` está en la lista justo porque por ahí pasa el handler de Google, pero eso es un razonamiento, no una medición. **Disparador:** la próxima vez que alguien entre con Google —basta con que el dueño salga y vuelva a entrar—. Desde 2026-09-17. | el dueño |
 | ~~**La API key web del panel no está restringida**~~ **RESUELTO el 2026-09-17**, y lo corrió el dueño porque el clasificador del modo auto frena tocar la key (*"Modify Shared Resources"*) | La key es pública por diseño —viaja adentro de `main.dart.js`, así que guardarla como secret no cambia nada: el navegador la necesita en claro—, pero estaba sin acotar: `browserKeyRestrictions` **vacío** y 27 servicios habilitados, `identitytoolkit` entre ellos. Ahora acepta tres hosts: el panel, `firebaseapp.com` —por donde pasa el handler de Google— y el canal `panel`. **Verificado con las dos mitades, y el antes medido:** un `POST` a `accounts:signInWithPassword` con `Referer` inventado daba **400 `INVALID_LOGIN_CREDENTIALS`** (la atendía) y ahora da **403 blocked**, mientras los tres hosts permitidos siguen dando 400, o sea que llegan. Y de punta a punta con un navegador real pidiendo el correo de contraseña desde live y desde el canal: los dos contestan el aviso, sin nada de bloqueo en consola. ⚠️ **La trampa que sólo apareció con el tercer control: un comodín en medio de una etiqueta (`bouquet-vinos--*.web.app`) la API lo ACEPTA y no matchea nada** — se guarda sin protestar y el canal seguía dando 403. Va el host literal. **Ojo con lo que esto NO es:** el `Referer` lo falsifica cualquiera con `curl -H`, así que corta abuso casual y robo de cuota, no a alguien decidido; contra el registro anticipado lo que protege es la negativa del script (ADR 011), y apagar el alta pública está descartado ahí mismo. **Deja una obligación:** un canal con otro nombre no va a poder entrar hasta que su host esté en la lista — anotado en `publicar.sh`. | el dueño |
@@ -470,6 +428,11 @@ Los que bloquean algo:
 | **Los crudos huérfanos en Storage** si `procesarFoto` falla a mitad de camino: no son alcanzables y no rompen nada. Entre el 2026-09-22 y el 2026-09-23 se produjo uno en CADA intento de subida, mientras el preflight de la callable daba 403 — **RESUELTO el CORS el 2026-09-23** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)), vuelve a ser el caso raro original | Cuando pesen, y hay que barrer los que deje un fallo a mitad de camino | 2026-09-22 |
 | ⚠️ **El color del papel de la previsualización está copiado entre el panel (Dart, `Tokens.papelVentana`) y la vidriera (CSS, `--papel-ventana`)** — puede desincronizarse, sin nada automático que lo detecte | La próxima vez que alguien toque uno de los dos sistemas de diseño | 2026-09-22 |
 | **4.3 — probar `procesarFoto` en producción con un usuario real, bloqueado por el clasificador** (otorgar `iam.serviceAccountTokenCreator`, aunque temporal y reversible, es "Permission Grant") | Que el usuario autorice el rol temporal, o que el dueño suba una foto real (10.1) — lo que pase primero | 2026-09-22 |
+| ⚠️ **`corregir` pisa lo vendido y todavía no despachado** ([ADR 016](architecture/decisions/016-mover-el-stock.md), hallazgo 1): con 2 botellas vendidas sin despachar, el panel muestra 8, el operador cuenta 10 en la estantería y `visto` coincide — quedan 10 y se venden 2 que no existen. Hoy no se puede disparar (no hay órdenes). **Bloquea `crearOrden`**: la hoja tiene que mostrar *"N vendidas sin despachar"* | **Disparador: bloquea el deploy de `crearOrden`.** | 2026-09-23 |
+| ⚠️ **Tramo 4 y `moverStock`**: cada movimiento va a disparar la purga de la vidriera, y si cambia el balde de un vino publicado son **232 lecturas** —no las ~20 de ARQUITECTURA §6.3—; con 200 vinos publicados, hasta el 93 % de la cuota. **Cargar el stock ANTES de publicar lo evita** ([ADR 016](architecture/decisions/016-mover-el-stock.md)) | Cuando se escriba el tramo 4 | 2026-09-23 |
+| **Los 19 casos del emulador de `moverStock` y los de reglas no corren en CI** (hallazgo 8; agrava el 7 de ADR 008): hoy se corren a mano y una de las dos suites protege la plata | La sesión de `crearOrden` | 2026-09-23 |
+| **HU-05.4 — ver los movimientos de un vino.** El dato ya se guarda en `productos/{id}/movimientos`; leerlo va con `orderBy('en').limit(20)`, nunca sin `limit`. `borrar.mjs` deja la subcolección huérfana | La primera diferencia de stock que nadie sepa explicar | 2026-09-23 |
+| **El tope de 5.000 unidades por vino** es una decisión mía, no del dueño ([ADR 016](architecture/decisions/016-mover-el-stock.md) §1) | Que el dueño lo confirme, o el primer vino real que se le acerque | 2026-09-23 |
 
 ---
 

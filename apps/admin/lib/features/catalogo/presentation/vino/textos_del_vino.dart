@@ -34,15 +34,6 @@ String enumerar(Iterable<String> cosas) {
   return '${lista.sublist(0, lista.length - 1).join(', ')} y ${lista.last}';
 }
 
-/// El balde, en palabras. Espejo de `textoDelBalde` de `producto.ts`:
-/// `disponible` no se anuncia, lo normal no se anuncia (mismo criterio que
-/// voz.md §9.2, aunque esto es panel y no pasa por `voz`).
-String? textoDelBalde(Balde b) => switch (b) {
-  Balde.disponible => null,
-  Balde.quedanPocas => 'Quedan pocas',
-  Balde.agotado => 'Se agotó',
-};
-
 /// Por qué la tienda NO muestra HOY este vino (HU-03.7), en el estado REAL
 /// -- nunca "qué pasaría si". Espejo, motivo a motivo, de los escenarios de
 /// `panel-espejo-vidriera`. Usar junto con `revisarParaLaTienda`, nunca con

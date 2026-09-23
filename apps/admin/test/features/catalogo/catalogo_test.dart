@@ -116,6 +116,100 @@ void main() {
     });
   });
 
+  group('por reponer (HU-05.3)', () {
+    // Seis casos que cubren cada lado de cada borde: agotado, quedan pocas
+    // (justo en el umbral de 6 botellas, y uno mas), de sobra, una caja, un
+    // compuesto. Sin los DOS lados de cada borde un filtro que devuelve todo
+    // —o nada— pasaria igual.
+    Catalogo armado() => Catalogo.armar(
+      productos: [
+        vino('agotado', 'Agotado', stock: 0),
+        vino('seis', 'Seis botellas', stock: 6),
+        vino('siete', 'Siete botellas', stock: 7),
+        vino('sobra', 'Con stock de sobra', stock: 40),
+        // Una caja de 6 con 1 unidad son 6 botellas: quedan pocas. Con 2 son
+        // 12: no. El balde se cuenta en BOTELLAS, no en unidades de venta.
+        vino('caja-una', 'Caja una', botellas: 6, stock: 1),
+        vino('caja-dos', 'Caja dos', botellas: 6, stock: 2),
+        vino('compuesto', 'Compuesto', stock: null),
+      ],
+      bodegas: [norton],
+    );
+
+    List<String> ids(List<RenglonDelCatalogo> rs) => [
+      for (final r in rs) r.producto.id,
+    ];
+
+    test('entran los agotados y los que quedan pocas; el resto no', () {
+      final c = armado();
+      expect(
+        ids(c.filtrar('', soloPorReponer: true)).toSet(),
+        equals({'agotado', 'seis', 'caja-una'}),
+      );
+      // El control positivo del otro lado: los que NO entran existen.
+      expect(ids(c.renglones), containsAll(['siete', 'sobra', 'caja-dos']));
+    });
+
+    test('un compuesto no se repone: no tiene stock propio', () {
+      expect(
+        ids(armado().filtrar('', soloPorReponer: true)),
+        isNot(contains('compuesto')),
+      );
+    });
+
+    test(
+      'los agotados van primero, y despues los que menos botellas tienen',
+      () {
+        final orden = ids(armado().filtrar('', soloPorReponer: true));
+        expect(orden.first, equals('agotado'));
+        expect(orden.indexOf('agotado'), lessThan(orden.indexOf('seis')));
+      },
+    );
+
+    test('con stock igual desempata por nombre, siempre en el mismo orden', () {
+      // "seis" y "caja-una" tienen 6 botellas los dos: sin desempate el orden
+      // dependeria del sort de Dart, que no es estable.
+      final orden = ids(armado().filtrar('', soloPorReponer: true));
+      expect(orden, equals(['agotado', 'caja-una', 'seis']));
+      expect(ids(armado().filtrar('', soloPorReponer: true)), equals(orden));
+    });
+
+    test('sigue filtrando por texto encima', () {
+      final c = armado();
+      expect(
+        ids(c.filtrar('caja', soloPorReponer: true)),
+        equals(['caja-una']),
+      );
+      // Y "sobra" existe pero no hay que reponerlo: no aparece.
+      expect(c.filtrar('sobra', soloPorReponer: true), isEmpty);
+      expect(ids(c.filtrar('sobra')), equals(['sobra']));
+    });
+
+    test('sin el filtro no cambia nada respecto de antes', () {
+      final c = armado();
+      expect(c.filtrar(''), equals(c.renglones));
+      expect(c.filtrar('', soloPorReponer: false), equals(c.renglones));
+    });
+
+    test('cuantosPorReponer cuenta lo mismo que devuelve el filtro', () {
+      final c = armado();
+      expect(c.cuantosPorReponer, equals(3));
+      expect(
+        c.cuantosPorReponer,
+        equals(c.filtrar('', soloPorReponer: true).length),
+      );
+    });
+
+    test('un catalogo sin nada que reponer da cero y lista vacia', () {
+      final c = Catalogo.armar(
+        productos: [vino('a', 'A', stock: 40), vino('b', 'B', stock: 100)],
+        bodegas: [norton],
+      );
+      expect(c.cuantosPorReponer, equals(0));
+      expect(c.filtrar('', soloPorReponer: true), isEmpty);
+    });
+  });
+
   group('vinosDe (HU-02.4)', () {
     final c = Catalogo.armar(
       productos: [

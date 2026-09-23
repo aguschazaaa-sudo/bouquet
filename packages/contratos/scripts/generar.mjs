@@ -44,6 +44,14 @@ import {
   tope,
 } from '../src/producto.ts';
 import { proyectarEstadoPublico } from '../src/proyeccion.ts';
+import {
+  CASOS_DE_MOVIMIENTO,
+  CODIGOS_DE_RECHAZO,
+  MOTIVOS_DE_AJUSTE,
+  TOPE_DE_STOCK,
+  aplicarOperacion,
+  parsearPedidoDeMovimiento,
+} from '../src/stock.ts';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 export const DESTINO = join(AQUI, '..', 'generated', 'contratos.json');
@@ -91,6 +99,35 @@ function fixturesDelCatalogo() {
       entra: enCatalogo.has(c.documento.id),
       motivo: motivoPorId.get(c.documento.id) ?? null,
     })),
+  };
+}
+
+/**
+ * Las fixtures de mover el stock, CALCULADAS con el parser y la cuenta de hoy.
+ * `valido` es lo que dice `parsearPedidoDeMovimiento`; `resultado` es lo que
+ * dice `aplicarOperacion` sobre el stock del caso -- `null` si ni siquiera
+ * es una operacion valida.  El panel las verifica contra su espejo en Dart.
+ */
+function fixturesDelStock() {
+  return {
+    motivosDeAjuste: [...MOTIVOS_DE_AJUSTE],
+    topeDeStock: TOPE_DE_STOCK,
+    codigosDeRechazo: [...CODIGOS_DE_RECHAZO],
+    casos: CASOS_DE_MOVIMIENTO.map((c) => {
+      // El id y el producto son de relleno: lo que se prueba es la operacion.
+      const pedido = parsearPedidoDeMovimiento({
+        productoId: 'caso',
+        idMovimiento: 'caso-de-movimiento-0001',
+        operacion: c.operacion,
+      });
+      return {
+        porque: c.porque,
+        stock: c.stock,
+        operacion: c.operacion,
+        valido: pedido.ok,
+        resultado: pedido.ok ? aplicarOperacion(c.stock, pedido.valor.operacion) : null,
+      };
+    }),
   };
 }
 
@@ -152,6 +189,7 @@ export function construirContrato() {
     // Sin esto el panel reimplementa el descarte, las dos se desincronizan y
     // el modo de falla es silencioso: un vino publicado que no aparece nunca.
     catalogo: fixturesDelCatalogo(),
+    stock: fixturesDelStock(),
     publico: {
       estados: [...ESTADOS_PUBLICOS],
       requierenAccion: [...REQUIEREN_ACCION],

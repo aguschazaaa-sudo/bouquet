@@ -15,8 +15,9 @@
   IAM a un **401 JSON real de la callable**
   (`{"error":{"message":"hace falta estar autenticado","status":"UNAUTHENTICATED"}}`)
   — la prueba de que el código ahora corre. **También el 2026-09-23:** §5 y
-  §6 —los dos defectos de uso que el dueño encontró el mismo día— están
-  **escritos, sin desplegar ni verificar en producción todavía**
+  §6 —los dos defectos de uso que el dueño encontró el mismo día— fueron
+  **desplegados el 2026-09-23 (v0.29.0)**, con los bytes que compiló CI y un
+  canario discriminante en live; **nadie los miró renderizado todavía**
 - **Decide:** que una foto subida desde el panel se procese con **la misma
   tubería que el seed** (`trim(12)` → `resize(1200)` → `webp(82)`), en una
   Cloud Function **callable** y no en un trigger de Storage; y que el panel
@@ -306,8 +307,9 @@ plan.
   cada subida que falla a mitad de camino** (eso no lo arregla el CORS, es
   Decisión 4/Consecuencias de este mismo ADR), pero ya no en CADA intento.
 - ✅ **Escrito el 2026-09-23** (§5, abajo): los dos defectos de uso de arriba.
-  **Todavía no desplegado ni verificado en producción** — sigue el checklist:
-  CI, deploy de `admin`, verificar con el panel real.
+  **Desplegado el 2026-09-23** (v0.29.0). Lo que falta es lo que ninguna
+  medición reemplaza: que el dueño cargue un vino real, con foto, en un solo
+  gesto, y lo mire.
 
 - **4.3 — probar la callable en producción con un usuario real, bloqueado por
   el clasificador.** Mintear un ID token de prueba necesita

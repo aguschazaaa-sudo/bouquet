@@ -21,6 +21,7 @@
 import { getStorage } from 'firebase-admin/storage';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
+import { exigirAdmin } from '../auth.ts';
 import { appDeFunctions } from '../firebase.ts';
 import { procesarTuberia } from './tuberia.ts';
 import { TOPE_DE_BYTES, detectarFormato } from './validar.ts';
@@ -48,16 +49,11 @@ function esperaString(valor: unknown, campo: string): string {
 export const procesarFoto = onCall<DatosDeEntrada, Promise<RespuestaDeProcesarFoto>>(
   { region: 'us-central1' },
   async (request) => {
-    // 1. Autenticado.
-    if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'hace falta estar autenticado');
-    }
-    // 2. El claim rol:admin. Las reglas de Firestore/Storage NO protegen esta
-    //    callable -corre con el Admin SDK y las saltea por diseno- asi que
-    //    esta es la unica puerta.
-    if (request.auth.token['rol'] !== 'admin') {
-      throw new HttpsError('permission-denied', 'hace falta el rol admin');
-    }
+    // 1 y 2. Autenticado y con el claim rol:admin. Las reglas de
+    //    Firestore/Storage NO protegen esta callable -corre con el Admin SDK
+    //    y las saltea por diseno- asi que esta es la unica puerta. Es la
+    //    MISMA guarda que `moverStock` (auth.ts): una sola copia.
+    exigirAdmin(request);
 
     const productoId = esperaString(request.data?.productoId, 'productoId');
     const rutaCruda = esperaString(request.data?.ruta, 'ruta');
