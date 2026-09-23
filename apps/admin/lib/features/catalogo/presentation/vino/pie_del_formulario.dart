@@ -17,6 +17,8 @@ class PieDelFormulario extends StatelessWidget {
     required this.esNuevo,
     required this.guardando,
     required this.fallo,
+    required this.activar,
+    required this.alCambiarActivar,
     required this.alGuardar,
   });
 
@@ -24,6 +26,11 @@ class PieDelFormulario extends StatelessWidget {
   final bool esNuevo;
   final bool guardando;
   final String? fallo;
+
+  /// El tilde "Publicar apenas se cargue" (ADR 015 §5). Sin efecto fuera de
+  /// un alta -- `esNuevo` es quien decide si este widget lo muestra.
+  final bool activar;
+  final ValueChanged<bool> alCambiarActivar;
   final VoidCallback alGuardar;
 
   @override
@@ -39,6 +46,21 @@ class PieDelFormulario extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (esNuevo)
+          CheckboxListTile(
+            value: activar,
+            onChanged: guardando ? null : (v) => alCambiarActivar(v ?? false),
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Publicar apenas se cargue'),
+            subtitle: Text(
+              activar
+                  ? 'Va a aparecer en la tienda al toque -- "agotado" hasta '
+                        'la próxima reposición de stock.'
+                  : 'Se carga sin publicar: todavía no va a aparecer en la '
+                        'tienda.',
+            ),
+          ),
         if (falta != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -63,22 +85,10 @@ class PieDelFormulario extends StatelessWidget {
             guardando
                 ? 'Guardando…'
                 : esNuevo
-                ? 'Cargar el vino'
+                ? (activar ? 'Cargar y publicar' : 'Cargar el vino')
                 : 'Guardar los cambios',
           ),
         ),
-        if (esNuevo)
-          Padding(
-            padding: const EdgeInsets.only(top: 10),
-            child: Text(
-              'Se carga sin publicar y sin stock: todavía no aparece en la '
-              'tienda.',
-              textAlign: TextAlign.center,
-              style: tema.textTheme.bodySmall?.copyWith(
-                color: tema.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
       ],
     );
   }

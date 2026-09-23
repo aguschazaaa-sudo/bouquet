@@ -10,12 +10,12 @@ import '../domain/foto_del_vino.dart' show topeDeFotos;
 
 const textoTituloDeLaSeccion = 'Fotos';
 
-/// Spec panel-vino, "Un alta sin guardar": la ruta de Storage y el
-/// `arrayUnion` necesitan el id del producto, que un borrador todavía no
-/// tiene.
-const textoGuardarPrimero =
-    'Guardá el vino primero: las fotos necesitan que ya tenga una '
-    'dirección.';
+/// ADR 015 §5: la foto se puede subir desde que el nombre da una dirección
+/// -no hace falta guardar el vino antes-, pero sin nombre no hay dónde
+/// guardarla en Storage.
+const textoEscribiElNombrePrimero =
+    'Escribí el nombre primero: las fotos necesitan que el vino ya tenga '
+    'una dirección.';
 
 /// Spec panel-vino "Un vino sin fotos" y panel-fotos-vino "Quitar la única
 /// foto de un vino publicado" -- las dos son el mismo estado

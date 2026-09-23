@@ -26,12 +26,17 @@ class BotonDeAgregarFoto extends ConsumerStatefulWidget {
     required this.cuantasTiene,
     required this.alSubir,
     required this.alFallar,
+    this.agregarAlDocumento = true,
   });
 
   final String productoId;
   final int cuantasTiene;
   final void Function(FotoDelVino foto) alSubir;
   final void Function(String nombre, String texto) alFallar;
+
+  /// `false` en un alta todavia sin guardar (ADR 015 §5): el documento no
+  /// existe, asi que el repositorio no intenta el `arrayUnion`.
+  final bool agregarAlDocumento;
 
   @override
   ConsumerState<BotonDeAgregarFoto> createState() => _BotonDeAgregarFotoState();
@@ -71,6 +76,7 @@ class _BotonDeAgregarFotoState extends ConsumerState<BotonDeAgregarFoto> {
               productoId: widget.productoId,
               bytes: bytes,
               nombreOriginal: archivo.name,
+              agregarAlDocumento: widget.agregarAlDocumento,
             );
         widget.alSubir(foto);
         cuantasTiene++;

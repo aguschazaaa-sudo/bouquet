@@ -7,10 +7,17 @@ import 'ficha_del_vino.dart';
 
 /// Un vino nuevo (HU-03.2 y HU-03.3).
 ///
-/// ⚠️ **No lleva `publicado`, `stock`, `tipo` ni `imagenes`, a proposito.**
-/// Esos los fija la unica factory del documento, en
-/// `RepositorioDeProductosFirestore.crear`: que un vino nazca sin publicar y
-/// sin stock no puede depender de lo que se toco en un formulario.
+/// ⚠️ **`stock` y `tipo` siguen sin salir de aca, a proposito.** Esos los
+/// fija la unica factory del documento, en
+/// `RepositorioDeProductosFirestore.crear`: que un vino nazca sin stock no
+/// puede depender de lo que se toco en un formulario -- el primero siempre
+/// llega por la reposicion, del servidor (ADR 008 §1).
+///
+/// `imagenes` y `publicar` SI salen de aca desde el 2026-09-23 (ADR 015 §5):
+/// cargar el vino, sumarle una foto y ponerlo a la venta eran tres viajes
+/// separados -- guardar, abrir de nuevo para subir la foto, abrir de nuevo
+/// para publicar -- y el dueño midio que no tiene sentido. `documentoNuevo`
+/// escribe los dos tal cual llegan aca.
 class AltaDeVino {
   const AltaDeVino({
     required this.slug,
@@ -18,6 +25,8 @@ class AltaDeVino {
     required this.ficha,
     required this.precio,
     required this.botellas,
+    this.imagenes = const [],
+    this.publicar = false,
   });
 
   /// Tambien el id del documento (ADR 013 §1).
@@ -33,6 +42,17 @@ class AltaDeVino {
 
   /// Botellas por unidad de venta. Inmutable despues del alta.
   final int botellas;
+
+  /// Lo que ya se subio y proceso mientras el formulario todavia era un
+  /// borrador -- `SeccionDeFotos` las junta con la ruta de Storage
+  /// `productos/{slug}/...` antes de que el documento exista, y las suelta
+  /// aca recien cuando se confirma el alta.
+  final List<String> imagenes;
+
+  /// Si el dueño tildo "Publicar apenas se cargue". `stock` sigue en `0`
+  /// igual: publicar sin stock lo muestra "agotado" en la tienda, no lo
+  /// inventa.
+  final bool publicar;
 
   ColorDelVino get color => ficha.color!;
 }

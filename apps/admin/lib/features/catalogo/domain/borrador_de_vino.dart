@@ -50,6 +50,8 @@ class BorradorDeVino {
     this.descripcion = '',
     this.precio = '',
     this.botellas = 1,
+    this.imagenes = const [],
+    this.activar = true,
   });
 
   /// El formulario de HU-03.4: lo que el vino tiene hoy, escrito como lo
@@ -72,6 +74,8 @@ class BorradorDeVino {
       descripcion: f.descripcion ?? '',
       precio: pesosParaEscribir(p.precio),
       botellas: p.botellas,
+      imagenes: p.imagenes,
+      activar: p.publicado,
     );
   }
 
@@ -96,6 +100,17 @@ class BorradorDeVino {
 
   final String precio;
   final int botellas;
+
+  /// Lo que ya se subio y proceso mientras este era todavia un borrador
+  /// (`SeccionDeFotos`, alta). Vacia en una correccion: ahi las fotos ya
+  /// persistidas viven en `original.imagenes`, no aca.
+  final List<String> imagenes;
+
+  /// El tilde "Publicar apenas se cargue" -- solo tiene efecto en un alta
+  /// (ADR 015 §5). En una correccion el switch de la tienda ya decide esto
+  /// por su cuenta (`interruptor_de_tienda.dart`), asi que este campo se
+  /// ignora.
+  final bool activar;
 
   bool get esNuevo => original == null;
 
@@ -122,6 +137,15 @@ class BorradorDeVino {
   /// Las botellas solo se eligen en el alta: despues son inmutables.
   BorradorDeVino conBotellas(int v) => esNuevo ? _con(botellas: v) : this;
 
+  /// Lo que reporta `SeccionDeFotos` cada vez que suma o saca una foto
+  /// todavia no guardada. Solo tiene efecto en un alta: en una correccion las
+  /// fotos van directo a Firestore con `arrayUnion`/`arrayRemove`, sin pasar
+  /// por aca (ADR 015 §5).
+  BorradorDeVino conImagenes(List<String> v) =>
+      esNuevo ? _con(imagenes: v) : this;
+
+  BorradorDeVino conActivar(bool v) => esNuevo ? _con(activar: v) : this;
+
   BorradorDeVino conVarietal(String uva, {required bool elegida}) {
     final sin = [
       for (final v in varietales)
@@ -143,6 +167,8 @@ class BorradorDeVino {
     String? descripcion,
     String? precio,
     int? botellas,
+    List<String>? imagenes,
+    bool? activar,
   }) => BorradorDeVino(
     original: original,
     nombre: nombre ?? this.nombre,
@@ -157,6 +183,8 @@ class BorradorDeVino {
     descripcion: descripcion ?? this.descripcion,
     precio: precio ?? this.precio,
     botellas: botellas ?? this.botellas,
+    imagenes: imagenes ?? this.imagenes,
+    activar: activar ?? this.activar,
   );
 
   /// La **unica** fuente de "¿se puede guardar?": el boton, los mensajes al
@@ -190,6 +218,8 @@ class BorradorDeVino {
         descripcion: descripcion,
         precio: precio,
         botellas: botellas,
+        imagenes: imagenes,
+        activar: activar,
       );
 }
 
@@ -298,6 +328,8 @@ class _Revisor {
               ficha: ficha,
               precio: precio!,
               botellas: b.botellas,
+              imagenes: b.imagenes,
+              publicar: b.activar,
             )
           : null,
       cambios: original == null

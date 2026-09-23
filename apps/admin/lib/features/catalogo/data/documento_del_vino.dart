@@ -14,11 +14,17 @@ import '../domain/escrituras_del_vino.dart';
 
 /// **La unica factory** de un vino nuevo (HU-03.2, ARQUITECTURA §5.2).
 ///
-/// `publicado`, `stock`, `tipo` e `imagenes` **no salen del alta**: un vino
-/// nace sin publicar, sin stock —el primero llega por la reposicion, del
-/// servidor (HU-05.1)—, simple y sin fotos, lo haya tocado quien lo haya
-/// tocado. `publicado` se escribe siempre: un `where('publicado','==',true)`
-/// no devuelve los documentos sin el campo.
+/// `stock` y `tipo` **siguen sin salir del alta**: un vino nace sin stock
+/// —el primero llega por la reposicion, del servidor (HU-05.1)— y simple,
+/// lo haya tocado quien lo haya tocado.
+///
+/// `publicado` e `imagenes` SI salen de `alta` desde el 2026-09-23 (ADR 015
+/// §5, revierte la exclusion original): la foto se sube mientras el
+/// formulario todavia es un borrador -- Storage y la callable `procesarFoto`
+/// no piden que el documento exista, solo la ruta `productos/{slug}/...` -- y
+/// "Publicar apenas se cargue" es un tilde del mismo formulario. `publicado`
+/// se escribe siempre, tilde o no: un `where('publicado','==',true)` no
+/// devuelve los documentos sin el campo.
 ///
 /// La añada, la graduacion y la descripcion vacias **no se escriben**: las
 /// reglas aceptan el campo ausente, y un `null` guardado no le dice nada a
@@ -33,8 +39,8 @@ Map<String, Object?> documentoNuevo(AltaDeVino alta) {
     'precio': alta.precio,
     'stock': 0,
     'presentacion': {'botellas': alta.botellas},
-    'imagenes': <String>[],
-    'publicado': false,
+    'imagenes': alta.imagenes,
+    'publicado': alta.publicar,
     'fichaVino': {
       'bodegaId': f.bodegaId,
       'varietales': f.varietales,

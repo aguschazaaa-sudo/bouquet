@@ -6,7 +6,16 @@
   cuarto intento) y **el panel también se desplegó el 2026-09-22**. ⚠️ **Pero
   la callable NO es alcanzable desde el navegador: su preflight da 403 sin
   headers de CORS** — medido el 2026-09-22, ver *Lo que falta*. `ACTIVE` dice
-  que el servicio existe, **no** que un navegador lo pueda llamar
+  que el servicio existe, **no** que un navegador lo pueda llamar.
+  **2026-09-23: el otorgamiento de `allUsers`/`roles/run.invoker` que lo
+  arregla sigue sin correr** — lo frenó dos veces el clasificador de permisos
+  de Claude Code, la segunda con autorización explícita en la conversación:
+  el bloqueo es de configuración (`Permission Grant`), no algo que una
+  confirmación en el chat destrabe. Falta una regla de permiso en la
+  configuración de la máquina, o que el dueño corra el comando a mano (queda
+  en *Lo que falta*). **También el 2026-09-23:** §5 y §6 —los dos defectos de
+  uso que el dueño encontró el mismo día— están **escritos, sin desplegar ni
+  verificar en producción todavía**
 - **Decide:** que una foto subida desde el panel se procese con **la misma
   tubería que el seed** (`trim(12)` → `resize(1200)` → `webp(82)`), en una
   Cloud Function **callable** y no en un trigger de Storage; y que el panel
@@ -31,51 +40,7 @@ es la silueta gris de `VentanaDeBotella.tsx:45` no es el catálogo real, es el
 seed sin las fotos del seed.
 
 El overview del panel marcaba en rojo *"falta una pieza: hay que decidir dónde
-se procesa la foto"* y daba por hecho que el problema era el formato. **No lo
-es.** La ventana de la vidriera no es un hueco para una imagen: es un recorte
-con tres supuestos. `VentanaDeBotella.tsx:11-14` iguala la altura con el
-recorte al borde que hizo el seed, no con `object-fit` — *"`object-fit` no
-sabe dónde está la botella dentro del cuadro"* —, y `catalogo.css:583` usa
-`mix-blend-mode: multiply`, que supone que el fondo es blanco (el del
-packshot). Una foto sacada con el teléfono sobre una mesa no cumple ninguno de
-los dos supuestos.
-
-## Decisión
-
-### 1. `procesarFoto`: una callable que aplica la tubería del seed, sin reescribirla
-
-El panel sube el crudo a Storage y llama a `procesarFoto(productoId, ruta)`.
-La callable baja el archivo, aplica **exactamente** los tres pasos que
-`scripts/seed/seed.mjs` ya aplicaba con `sharp` — `trim({ threshold: 12 })` →
-`resize({ height: 1200, withoutEnlargement: true })` → `webp({ quality: 82 })`
-—, sube `productos/{productoId}/{sha256(webp).slice(0,16)}.webp`, borra el
-crudo y devuelve la URL junto con cuánto recortó y las dimensiones finales.
-
-**Los tres números viven una sola vez, en `packages/contratos/src/foto.ts`
-(`TUBERIA_DE_FOTO`), pero el código que los usa está duplicado a propósito**:
-`contratos` no puede depender de `sharp` — su cero-dependencias es una
-decisión del proyecto en una máquina de 7,9 GB —, así que lo compartido son
-los números, no la función. Lo que impide que las dos copias diverjan no es la
-disciplina: es `functions/test/foto/tuberia.test.ts`, que procesa
-`alamos-malbec.jpg` por el seed (como subproceso real, no reimplementando su
-lógica) y por `tuberia.ts`, y exige el **mismo SHA-256**. Con control
-negativo: cambiarle un número a la tubería pone el test en rojo — verificado
-mutando `alto` antes de escribir esta decisión.
-
-**Alternativa descartada:** un paquete `packages/fotos` con `sharp` adentro.
-Más limpio en el papel, pero agrega un workspace y un `node_modules` nativo
-para compartir tres líneas.
-
-### 2. El clasificador de packshot, REFUTADO POR MEDICIÓN — el hallazgo central de este change
-
-La salida obvia era: detectar si la foto subida es un packshot de bodega o una
-foto de cámara, y avisar en el segundo caso. Se midió `trim()` (cuánto
-recorta) y la luminosidad de borde sobre los **19 packshots reales** del seed,
-contra un **control negativo sintético** (la misma botella compuesta sobre un
-fondo de madera):
-
-| | recorta | luminosidad de borde |
-|---|---:|---:|
+se procesa la foto"* y daba por hecho que el problema e|---|---:|---:|
 | 19 packshots reales | 15,1 % – 83,3 % | 116,7 – 244,0 |
 | Botella sobre una mesa (control negativo) | **0,0 %** | 144,8 |
 | `nieto-senetiner-bonarda.png` (packshot legítimo, PNG transparente, recortado al ras) | **0,0 %** | **141,4** |
@@ -123,6 +88,76 @@ escribiera `imagenes`, `firestore.rules` dejaría de ser la puerta de ese
 campo. La callable queda como una función pura de bytes → bytes, fácil de
 testear, sin permisos sobre Firestore; la regla sigue siendo la última
 palabra.
+
+### 5. Cargar, subir la foto y publicar son UN gesto, no tres (2026-09-23)
+
+El dueño usó el panel el 2026-09-22 y encontró que cargar un vino con su foto
+y publicarlo eran tres viajes separados por el diseño original de §1/§4: la
+ruta de Storage y el `arrayUnion` que persiste `imagenes[]` necesitan el id
+del producto, y el documento no existe hasta guardar. Asentado sin reparar en
+`_index.md` → *Lo que quedó abierto* (2026-09-22); acá se repara.
+
+**Medido antes de tocar nada, para no reparar lo que no está roto:**
+
+- `functions/src/foto/procesar_foto.ts` **nunca tocó Firestore.** Valida auth,
+  el claim `rol: admin`, que la ruta sea `productos/{productoId}/{archivo}`,
+  el peso y el formato — todo contra Storage y el argumento, cero lecturas ni
+  escrituras de Firestore. El `arrayUnion` posterior lo hacía el panel
+  (Decisión 4), no la callable.
+- `storage.rules:43-46` sólo exige `esAdmin() && esImagen() && pesaMenosDe5MB()`
+  sobre `productos/{productoId}/{archivo}` — ningún `firestore.get()`, nada
+  que pida que el documento exista.
+- `firestore.rules` — `productoValido(d)` (la función que valida create Y
+  update por igual) ya acepta `imagenes` con URLs y `publicado` en cualquier
+  valor booleano al **crear**: nada ahí asumía que un alta llegaba con
+  `imagenes: []` y `publicado: false` fijos, eso lo imponía sólo
+  `documentoNuevo` del lado del panel.
+- ADR 008 §2: `stock` | sólo el servidor | **"El panel crea con `0`"** — no
+  `null`. Publicar con `stock: 0` no inventa unidades: la tienda lo muestra
+  "agotado" hasta la reposición, que sigue siendo, sin cambios, la única
+  puerta de `stock` (`RepositorioDeProductosFirestore.crear` la sigue fijando
+  en `0` siempre).
+
+**Conclusión: nada en Storage, en las reglas ni en el stock exigía el orden de
+tres pasos — lo exigía únicamente que `AltaDeVino`/`documentoNuevo` excluían
+`imagenes` y `publicado`, a propósito, desde antes de que este ADR existiera.**
+Se revierte esa exclusión para esos dos campos (`escrituras_del_vino.dart`,
+`documento_del_vino.dart`) — **`stock` y `tipo` siguen fuera del alta, sin
+tocar.**
+
+**Lo que cambia:**
+
+- `SeccionDeFotos` deja de exigir que el vino esté guardado: alcanza con que
+  el nombre dé una dirección (`revision.slug`). Sube a
+  `productos/{slug}/...` con ese slug **todavía no persistido**, y
+  `RepositorioDeFotos.subir(..., agregarAlDocumento: false)` se salta el
+  `arrayUnion` porque no hay documento — la URL queda en memoria
+  (`BorradorDeVino.imagenes`) hasta que se confirma el alta.
+- `PieDelFormulario` suma un tilde, **"Publicar apenas se cargue"**, con
+  **default `true`** en un alta nueva: es una decisión de producto, no sólo
+  técnica — el dueño ya hacía las tres cosas cada vez, así que la opción
+  frecuente es ahora la que no hay que buscar. Se puede destildar antes de
+  guardar.
+- `RepositorioDeProductosFirestore.crear` no cambia: sigue siendo una única
+  transacción. Lo único distinto es qué valores le da `documentoNuevo` a
+  `imagenes`/`publicado` — atómico con el resto del alta, no un segundo viaje.
+
+**Lo que NO cambia, a propósito:** una corrección (vino ya guardado) sigue
+subiendo fotos con `arrayUnion` inmediato — ahí el documento ya existe y no
+hay nada que diferir. El switch "Poner en la tienda" (`interruptor_de_tienda`)
+sigue siendo el único camino para publicar/despublicar un vino que ya existe.
+
+### 6. El espacio del formulario (2026-09-23)
+
+El dueño también midió una columna fija de 640 px con el resto de la pantalla
+vacío en una ventana de escritorio (`formulario_del_vino.dart`, antes de esta
+sesión). `DisposicionDelFormulario` reemplaza el `ConstrainedBox` fijo: debajo
+de 900 px de ancho disponible se sigue apilando en una columna (celular, y el
+panel corre en Android); a partir de 900 los datos/venta van a la izquierda y
+las fotos a la derecha, dentro de un ancho máximo de 1100. No es una dirección
+de diseño nueva (no pasó por `/disenio`): es la misma paleta y los mismos
+componentes, sólo reacomodados — sigue siendo un layout, no un sistema de
+diseño nuevo.
 
 ## Tres capas de un mismo problema, encontradas EN el deploy y no en el diseño
 
@@ -257,18 +292,18 @@ plan.
   API JSON de Storage lo devuelve sin campo `cors`) — `gsutil cors set` no
   arregla nada acá. **Consecuencia: el crudo se sube y queda huérfano en cada
   intento.** Y explica por qué 4.3 y 10.1 nunca se pudieron hacer: ninguna de
-  las dos podía pasar. **Repararlo es un otorgamiento de permiso, así que lo
-  corre una persona** — no se hizo en esta sesión a propósito.
-- ⚠️ **Dos defectos de uso que el dueño vio el 2026-09-22 y este ADR no
-  contempló**, los dos asentados en `_index.md` → *Lo que quedó abierto*: (a) el
-  formulario del vino usa mal el espacio —una columna de 640 px y el resto de la
-  pantalla vacío—; y (b) **cargar un vino con su foto son tres gestos**
-  (guardar, volver a entrar y subir, publicar), porque §1 apoyó el flujo en que
-  la ruta de Storage y el `arrayUnion` necesitan el id del producto. Eso razonó
-  el flujo desde lo que el SDK necesita, no desde lo que hace una persona con
-  una botella nueva en la mano. **Las salidas —reservar el id antes de guardar,
-  un crudo de borrador que se mueve, o un alta que hace las tres cosas al
-  confirmar— piden un change con su propio ADR, no un parche.**
+  las dos podía pasar. **Repararlo es un otorgamiento de permiso.** Se intentó
+  el 2026-09-23, dos veces —la segunda con autorización explícita del dueño
+  en la conversación— y las dos las frenó el clasificador de permisos de
+  Claude Code (`Permission Grant`): es un bloqueo de configuración de la
+  máquina, no algo que una autorización en el chat destrabe. Falta que el
+  dueño agregue una regla de permiso para este comando, o lo corra a mano:
+  `gcloud run services add-iam-policy-binding procesarfoto
+  --project=bouquet-vinos --region=us-central1 --member="allUsers"
+  --role="roles/run.invoker"`.
+- ✅ **Escrito el 2026-09-23** (§5, abajo): los dos defectos de uso de arriba.
+  **Todavía no desplegado ni verificado en producción** — sigue el checklist:
+  CI, deploy de `admin`, verificar con el panel real.
 
 - **4.3 — probar la callable en producción con un usuario real, bloqueado por
   el clasificador.** Mintear un ID token de prueba necesita

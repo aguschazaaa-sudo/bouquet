@@ -17,18 +17,38 @@ import 'textos_de_fotos.dart';
 /// `porcentajeRecortado` (`domain/foto_del_vino.dart`), así que una foto de
 /// antes de abrir esta página no tiene aviso posible.
 ///
-/// `productoId == null` es "el vino todavía no se guardó" (spec panel-vino,
-/// "Un alta sin guardar"): ni la ruta de Storage ni el `arrayUnion` tienen
-/// dónde escribir sin el slug, así que acá se corta antes de ofrecer nada.
+/// `productoId == null` es "el nombre todavía no da una dirección" -- ni
+/// Storage ni `procesarFoto` tienen dónde escribir sin ella. **Ya no** exige
+/// que el vino esté guardado (ADR 015 §5, revierte la exclusión original de
+/// `spec panel-vino "Un alta sin guardar"`): `procesarFoto` nunca tocó
+/// Firestore, sólo pide que la ruta `productos/{id}/...` exista en el
+/// bucket, y el `arrayUnion` que sí necesita el documento se salta con
+/// [guardado] en `false`.
 class SeccionDeFotos extends ConsumerStatefulWidget {
   const SeccionDeFotos({
     super.key,
     required this.productoId,
     required this.imagenes,
+    this.guardado = true,
+    this.alCambiarImagenesLocales,
   });
 
+  /// El id del documento en una corrección, o el slug que va a tener -todavía
+  /// sin guardar- en un alta.
   final String? productoId;
+
+  /// Las fotos YA PERSISTIDAS en `productos/{productoId}.imagenes`. Vacía
+  /// siempre en un alta: ahí no hay nada persistido todavía.
   final List<String> imagenes;
+
+  /// `false` en un alta: [productoId] es un slug, no un documento que
+  /// exista, así que subir no agrega a Firestore y quitar es sólo local.
+  final bool guardado;
+
+  /// La lista completa de URLs subidas en esta sesión, cada vez que cambia.
+  /// Sólo se usa cuando [guardado] es `false`: `FormularioDelVino` la guarda
+  /// en `BorradorDeVino.imagenes` para mandarla en el mismo alta.
+  final ValueChanged<List<String>>? alCambiarImagenesLocales;
 
   @override
   ConsumerState<SeccionDeFotos> createState() => _SeccionDeFotosState();
@@ -36,10 +56,32 @@ class SeccionDeFotos extends ConsumerStatefulWidget {
 
 class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
   final _subidasEnEstaSesion = <String, FotoDelVino>{};
+
+  /// Sólo se usa cuando `widget.guardado` es `false`: en una corrección la
+  /// lista persistida (`widget.imagenes`) ya es la fuente de verdad.
+  final _agregadasLocalmente = <String>[];
   final _quitando = <String>{};
   final _fallos = <(String nombre, String texto)>[];
 
+  void _agregar(FotoDelVino foto) {
+    setState(() {
+      _subidasEnEstaSesion[foto.url] = foto;
+      if (!widget.guardado) _agregadasLocalmente.add(foto.url);
+    });
+    if (!widget.guardado) {
+      widget.alCambiarImagenesLocales?.call(List.of(_agregadasLocalmente));
+    }
+  }
+
   Future<void> _quitar(String productoId, String url) async {
+    if (!widget.guardado) {
+      setState(() {
+        _agregadasLocalmente.remove(url);
+        _subidasEnEstaSesion.remove(url);
+      });
+      widget.alCambiarImagenesLocales?.call(List.of(_agregadasLocalmente));
+      return;
+    }
     setState(() => _quitando.add(url));
     try {
       await ref
@@ -60,7 +102,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
     final productoId = widget.productoId;
-    final imagenes = widget.imagenes;
+    final imagenes = widget.guardado ? widget.imagenes : _agregadasLocalmente;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -74,7 +116,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
         ),
         const SizedBox(height: 10),
         if (productoId == null)
-          const Aviso(texto: textoGuardarPrimero)
+          const Aviso(texto: textoEscribiElNombrePrimero)
         else ...[
           if (imagenes.isEmpty) const Aviso(texto: textoSinFotosTodavia),
           // Una fila por foto, como el catálogo (`RenglonDeProducto`): esta
@@ -99,8 +141,8 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
           BotonDeAgregarFoto(
             productoId: productoId,
             cuantasTiene: imagenes.length,
-            alSubir: (foto) =>
-                setState(() => _subidasEnEstaSesion[foto.url] = foto),
+            agregarAlDocumento: widget.guardado,
+            alSubir: _agregar,
             alFallar: (nombre, texto) =>
                 setState(() => _fallos.add((nombre, texto))),
           ),

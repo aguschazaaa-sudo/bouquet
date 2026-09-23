@@ -27,6 +27,8 @@ AltaDeVino alta({
   int? graduacion,
   String? descripcion,
   int botellas = 1,
+  List<String> imagenes = const [],
+  bool publicar = false,
 }) => AltaDeVino(
   slug: 'norton-malbec',
   nombre: 'Norton Malbec',
@@ -42,6 +44,8 @@ AltaDeVino alta({
   ),
   precio: 1250000,
   botellas: botellas,
+  imagenes: imagenes,
+  publicar: publicar,
 );
 
 void main() {
@@ -112,6 +116,18 @@ void main() {
       expect(documentoNuevo(alta(botellas: 3))['presentacion'], {
         'botellas': 3,
       });
+    });
+
+    // ADR 015 §5: revierte la exclusion original de imagenes/publicado --
+    // stock y tipo siguen fijos, estos dos ahora salen del alta.
+    test('las fotos subidas durante el alta y "publicar" SI salen de ahi', () {
+      final d = documentoNuevo(
+        alta(imagenes: const ['https://ejemplo.test/a.webp'], publicar: true),
+      );
+      expect(d['imagenes'], ['https://ejemplo.test/a.webp']);
+      expect(d['publicado'], isTrue);
+      expect(d['stock'], 0, reason: 'stock sigue sin salir del alta');
+      expect(d['tipo'], 'simple', reason: 'tipo sigue sin salir del alta');
     });
   });
 

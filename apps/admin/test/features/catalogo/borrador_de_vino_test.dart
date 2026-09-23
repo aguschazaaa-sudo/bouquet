@@ -80,6 +80,36 @@ void main() {
       expect(r.cambios, isNull);
     });
 
+    // ADR 015 §5: cargar el vino, sumarle una foto y publicarlo eran tres
+    // viajes separados; ahora las dos ultimas son parte del mismo alta.
+    test('las fotos subidas como borrador y el tilde de activar viajan '
+        'en el alta', () {
+      final r = completo()
+          .conImagenes(const ['https://ejemplo.test/a.webp'])
+          .conActivar(false)
+          .revisar(catalogo(), anioActual: anio);
+      expect(r.alta!.imagenes, ['https://ejemplo.test/a.webp']);
+      expect(r.alta!.publicar, isFalse);
+    });
+
+    test('por omision, un alta nueva ya viene con activar en true', () {
+      final r = completo().revisar(catalogo(), anioActual: anio);
+      expect(r.alta!.publicar, isTrue);
+      expect(r.alta!.imagenes, isEmpty);
+    });
+
+    test('conImagenes y conActivar no hacen nada en una correccion', () {
+      final b = BorradorDeVino.desde(
+        vino('norton-malbec-reserva'),
+      ).conImagenes(const ['https://ejemplo.test/a.webp']).conActivar(true);
+      expect(
+        b.imagenes,
+        isEmpty,
+        reason: 'una correccion no tiene borrador de fotos',
+      );
+      expect(b.activar, isFalse, reason: 'el original no estaba publicado');
+    });
+
     test('un borrador vacio dice que falta, campo por campo', () {
       final r = const BorradorDeVino().revisar(catalogo(), anioActual: anio);
       expect(r.sePuedeGuardar, isFalse);

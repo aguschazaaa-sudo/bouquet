@@ -33,6 +33,7 @@ class RepositorioDeFotosFirebase implements RepositorioDeFotos {
     required String productoId,
     required Uint8List bytes,
     required String nombreOriginal,
+    bool agregarAlDocumento = true,
   }) async {
     // Los bytes deciden el formato -- NUNCA el nombre ni el path (design.md
     // decision 3, ARQUITECTURA §5.4). Rechazar aca, antes de tocar la red,
@@ -81,17 +82,19 @@ class RepositorioDeFotosFirebase implements RepositorioDeFotos {
 
     final foto = _fotoDesde(resultado.data);
 
-    try {
-      await _db.collection(_coleccion).doc(productoId).update({
-        // `arrayUnion`, nunca reescribir la lista: dos personas cargando
-        // fotos del mismo vino a la vez no se pisan (ARQUITECTURA §5.3,
-        // design.md decision 5 -- el `arrayUnion` lo hace el panel, no la
-        // callable, para que `firestore.rules` siga siendo la ultima
-        // palabra sobre `imagenes[]`).
-        _campoDeImagenes: FieldValue.arrayUnion([foto.url]),
-      });
-    } catch (e) {
-      throw comoFalloDeFotos(e, nombreOriginal);
+    if (agregarAlDocumento) {
+      try {
+        await _db.collection(_coleccion).doc(productoId).update({
+          // `arrayUnion`, nunca reescribir la lista: dos personas cargando
+          // fotos del mismo vino a la vez no se pisan (ARQUITECTURA §5.3,
+          // design.md decision 5 -- el `arrayUnion` lo hace el panel, no la
+          // callable, para que `firestore.rules` siga siendo la ultima
+          // palabra sobre `imagenes[]`).
+          _campoDeImagenes: FieldValue.arrayUnion([foto.url]),
+        });
+      } catch (e) {
+        throw comoFalloDeFotos(e, nombreOriginal);
+      }
     }
 
     return foto;

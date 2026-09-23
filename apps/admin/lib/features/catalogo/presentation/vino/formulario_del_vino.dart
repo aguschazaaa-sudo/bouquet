@@ -8,6 +8,7 @@ import '../../domain/catalogo.dart';
 import '../../domain/fallo_de_catalogo.dart';
 import '../../domain/producto_del_panel.dart';
 import 'confirmacion_de_caja.dart';
+import 'disposicion_del_formulario.dart';
 import 'pie_del_formulario.dart';
 import 'seccion_de_la_venta.dart';
 import 'seccion_del_vino.dart';
@@ -124,52 +125,56 @@ class _FormularioDelVinoState extends ConsumerState<FormularioDelVino> {
         ? revision.problemaDe(c)
         : null;
 
+    final datos = SeccionDelVino(
+      borrador: _borrador,
+      revision: revision,
+      catalogo: catalogo,
+      problemaDe: problemaDe,
+      alCambiar: _cambiar,
+    );
+    final venta = SeccionDeLaVenta(
+      borrador: _borrador,
+      revision: revision,
+      problemaDe: problemaDe,
+      alCambiar: _cambiar,
+    );
+    final fotos = SeccionDeFotos(
+      key: widget.claveDeFotos,
+      productoId: widget.original?.id ?? _slugParaFotos(revision),
+      imagenes: widget.original?.imagenes ?? const [],
+      guardado: widget.original != null,
+      alCambiarImagenesLocales: widget.original != null
+          ? null
+          : (urls) => _cambiar(null, _borrador.conImagenes(urls)),
+    );
+    final pie = PieDelFormulario(
+      revision: revision,
+      esNuevo: _borrador.esNuevo,
+      guardando: _guardando,
+      fallo: _fallo,
+      activar: _borrador.activar,
+      alCambiarActivar: (v) => _cambiar(null, _borrador.conActivar(v)),
+      alGuardar: () => _guardar(revision),
+    );
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
         Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 640),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SeccionDelVino(
-                  borrador: _borrador,
-                  revision: revision,
-                  catalogo: catalogo,
-                  problemaDe: problemaDe,
-                  alCambiar: _cambiar,
-                ),
-                const SizedBox(height: 28),
-                const Divider(),
-                const SizedBox(height: 20),
-                SeccionDeLaVenta(
-                  borrador: _borrador,
-                  revision: revision,
-                  problemaDe: problemaDe,
-                  alCambiar: _cambiar,
-                ),
-                const SizedBox(height: 28),
-                const Divider(),
-                const SizedBox(height: 20),
-                SeccionDeFotos(
-                  key: widget.claveDeFotos,
-                  productoId: widget.original?.id,
-                  imagenes: widget.original?.imagenes ?? const [],
-                ),
-                const SizedBox(height: 28),
-                PieDelFormulario(
-                  revision: revision,
-                  esNuevo: _borrador.esNuevo,
-                  guardando: _guardando,
-                  fallo: _fallo,
-                  alGuardar: () => _guardar(revision),
-                ),
-              ],
-            ),
+          child: DisposicionDelFormulario(
+            datos: datos,
+            venta: venta,
+            fotos: fotos,
+            pie: pie,
           ),
         ),
       ],
     );
   }
+
+  /// El slug que va a tener el documento, mientras el alta todavía es un
+  /// borrador (ADR 015 §5). `null` sin nombre: ahí `aSlug` da `''`, y
+  /// `SeccionDeFotos` no tiene dónde escribir en Storage todavía.
+  String? _slugParaFotos(Revision revision) =>
+      revision.slug.isEmpty ? null : revision.slug;
 }
