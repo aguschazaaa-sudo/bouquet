@@ -1,9 +1,11 @@
 # ADR 016 — Mover el stock: reponer y corregir
 
 - **Fecha:** 2026-09-23
-- **Estado:** aceptada y **escrita**. Backend y panel todavía **sin desplegar
-  ni verificar en producción** — el orden es reglas → `moverStock` → panel, y
-  este encabezado se actualiza con cada paso (ver *Verificación*)
+- **Estado:** aceptada y **desplegada el 2026-09-23**, en el orden reglas →
+  `moverStock` → panel (`aff14bb`), verificada con la API cruda y con los tres
+  controles sobre `moverStock` y `procesarFoto`. **Falta lo único que ninguna
+  medición reemplaza: que el dueño reponga un vino de verdad** (ver
+  *Verificación*)
 - **Decide:** cómo se escribe `stock` desde el panel, dado que las reglas de
   Firestore le prohíben escribirlo ([ADR 008](008-catalogo-stock-y-carrito.md)
   §1): una callable `moverStock` con dos operaciones, `reponer` y `corregir`,
@@ -264,8 +266,11 @@ Se actualiza a medida que ocurre. **Hoy:**
 | La transacción | 19 casos contra el emulador de Firestore, con concurrencia real (12 reposiciones a la vez suman exacto; 2 correcciones con el mismo `visto`, gana una). **Mutada**: sin la rama del marcador y sin la baranda de `visto`, fallan 7 casos, exactamente los de idempotencia y de `visto` | ✅ |
 | Las reglas | 57 casos; **mutando** `movimientos` a `esAdmin()`, falla exactamente el caso que lo prueba | ✅ |
 | Revisión de plata | `revisor-pagos`, 8 hallazgos, ver arriba | ✅ |
-| Desplegado | reglas → `moverStock` → 3 controles sobre `moverStock` y `procesarFoto` | ⏳ |
-| El panel | CI → canal → canario → promover → verificar | ⏳ |
+| Reglas | API de Rules: ruleset `0c73d24a` idéntico al archivo local; `movimientos` en 1 y una colección inventada en 0 | ✅ |
+| `moverStock` | API de Cloud Functions: `ACTIVE`, GEN_2, callable; `allUsers` como invoker (lo puso el CLI); preflight **204**, `POST` anónimo **401 JSON**, función inventada **404** — sobre `moverStock` **y** `procesarFoto` (intacta) | ✅ |
+| El panel | CI `panel` (`suite_dart` 197→244) y `tests` (`suite_ts` 185→205); canal → canario (6 cadenas nuevas: 0 en live, ≥1 en el canal) → promover → 4 hashes iguales. Live sirve `aff14bb` | ✅ |
+| Que la app arranca | CDP sobre live: `/entrar`, Flutter montado, 0 errores de consola | ✅ |
+| **Llamarla como usuario real** | **No se pudo:** mintear un token lo frena el clasificador. Las 19 pruebas del emulador cubren la transacción; **no cubren el Admin SDK contra el Firestore real ni el permiso de la cuenta de servicio** | ⏳ |
 | **Que alguien lo use** | El dueño repone un vino de verdad y lo mira | ⏳ **Nadie lo vio renderizado** |
 
 ## Lo que queda abierto
@@ -277,7 +282,10 @@ Se actualiza a medida que ocurre. **Hoy:**
 - **HU-05.4** — ver los movimientos de un producto. **Disparador:** la primera
   diferencia que nadie sepa explicar. El dato ya se guarda.
 - **Confirmar el tope de 5.000** con el dueño (§1).
-- **El `procesarFoto` desplegado no usa todavía `exigirAdmin`** si el deploy fue
-  `--only functions:moverStock` (§ hallazgo 3): el código del repo sí. Es la
-  misma guarda con los mismos mensajes; se ponen al día en el próximo deploy
-  completo de functions.
+- **El `procesarFoto` desplegado NO usa todavía `exigirAdmin`**: el deploy fue
+  `--only functions:moverStock` (hallazgo 3) y su fecha de actualización sigue
+  siendo la del 2026-09-22. El código del repo sí la usa. Es la misma guarda con
+  los mismos mensajes (el `POST` anónimo da el mismo 401), pero **repo y
+  producción difieren en esa función** hasta el próximo deploy completo de
+  functions, que tiene que repetir los tres controles sobre `procesarFoto`
+  porque el permiso público lo puso el dueño a mano.

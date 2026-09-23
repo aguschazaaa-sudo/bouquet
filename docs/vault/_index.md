@@ -74,7 +74,7 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
-### EP-05: mover el stock, escrito, probado y revisado — sin desplegar (2026-09-23)
+### EP-05: mover el stock, desplegado y verificado por bytes — falta que el dueño lo use (2026-09-23)
 
 **HU-05.1, HU-05.2 y HU-05.3**, **sin openspec, a pedido del dueño**: el
 [ADR 016](architecture/decisions/016-mover-el-stock.md) y
@@ -108,10 +108,26 @@ ADR.
 | Hooks | Los 4 del panel × 25 archivos con ruta absoluta: 0 bloqueos; el canario con `Colors.red` bloquea |
 | Presupuesto | **3 lecturas** por movimiento; 100 al día = 0,6 % de la cuota. HU-05.3: **cero** |
 
-⚠️ **NADIE VIO NADA RENDERIZADO, y nada de EP-05 está desplegado.** Orden: reglas
-→ `moverStock` (con `--only`, para no tocar `procesarFoto`) → tres controles
-sobre las dos → recién ahí el panel. Y **que el dueño reponga un vino de verdad**
-es lo único que cierra esto.
+**Desplegado en el orden fijo, y verificado con la API cruda, no con el
+texto del CLI:**
+
+| Paso | Cómo se verificó |
+|---|---|
+| Reglas | El CLI dijo "released"; la API de Rules dice ruleset `0c73d24a`, **idéntico byte a byte al archivo local**, con `movimientos` en 1 (control positivo) y una colección inventada en 0 |
+| `moverStock` | `--only functions:moverStock`, para no tocar `procesarFoto`. API de Cloud Functions: **`ACTIVE`**, GEN_2, callable, nodejs24. **`allUsers` figura como invoker sin ayuda del dueño** —esta vez el CLI sí lo puso—. Los tres controles, sobre **las dos** funciones: preflight **204** con `access-control-allow-*`, `POST` anónimo **401 JSON `UNAUTHENTICATED`** (el código corre) y una función inventada **404**. `procesarFoto` quedó intacta (su fecha de actualización sigue siendo la del 22) |
+| El panel | CI `alcance=panel` (corrida `35932577780`: análisis, build, `suite_dart` **197 → 244**) y `alcance=tests` (`35935139170`: `suite_ts` **185 → 205, +20 exactos**). Preview → canal → **canario** (seis cadenas nuevas en 0 en live y ≥1 en el canal, más un control positivo y uno inventado) → `promover` → los 4 hashes iguales, `noindex`. Live sirve `aff14bb` |
+| Que la app arranca | Chrome headless por CDP sobre live: redirige a `/entrar`, Flutter montado, **0 errores de consola**, la pantalla de entrada se lee y un texto inventado no aparece |
+
+Una limitación del canario: EP-05 sólo agrega texto, así que **no había una
+cadena vieja que desapareciera**; discrimina por el lado de lo nuevo.
+
+⚠️ **Lo que NO se pudo verificar, y por qué:** llamar a `moverStock` como
+usuario real. Mintear un token de prueba lo frena el clasificador de permisos
+(el mismo bloqueo del 4.3 de EP-05/ADR 015), y crear una cuenta de prueba en
+el Auth de producción es invasivo. **Las 19 pruebas contra el emulador cubren
+la transacción; lo que no cubren es el Admin SDK contra el Firestore real ni
+el permiso de la cuenta de servicio.** Lo cierra que el dueño **reponga un
+vino de verdad y lo mire** —y nadie vio nada de EP-05 renderizado—.
 
 ⚠️ **Dos cosas que este ADR deja para el futuro y no son de esta sesión:**
 `corregir` **pisa lo vendido y no despachado** —bloquea `crearOrden`— y, con el
