@@ -3,19 +3,20 @@
 - **Fecha:** 2026-09-22
 - **Estado:** aceptada y **aplicada en el código**. **Functions desplegada y
   `ACTIVE` en producción** (verificado con la API cruda de Cloud Functions,
-  cuarto intento) y **el panel también se desplegó el 2026-09-22**. ⚠️ **Pero
-  la callable NO es alcanzable desde el navegador: su preflight da 403 sin
-  headers de CORS** — medido el 2026-09-22, ver *Lo que falta*. `ACTIVE` dice
-  que el servicio existe, **no** que un navegador lo pueda llamar.
-  **2026-09-23: el otorgamiento de `allUsers`/`roles/run.invoker` que lo
-  arregla sigue sin correr** — lo frenó dos veces el clasificador de permisos
-  de Claude Code, la segunda con autorización explícita en la conversación:
-  el bloqueo es de configuración (`Permission Grant`), no algo que una
-  confirmación en el chat destrabe. Falta una regla de permiso en la
-  configuración de la máquina, o que el dueño corra el comando a mano (queda
-  en *Lo que falta*). **También el 2026-09-23:** §5 y §6 —los dos defectos de
-  uso que el dueño encontró el mismo día— están **escritos, sin desplegar ni
-  verificar en producción todavía**
+  cuarto intento) y **el panel también se desplegó el 2026-09-22**. **CORS
+  RESUELTO el 2026-09-23:** el clasificador de permisos frenó el
+  otorgamiento dos veces —la segunda con autorización explícita en la
+  conversación—, así que lo corrió el dueño a mano. **Verificado con los
+  tres controles, no con el `etag` verde de la respuesta:** el preflight
+  `OPTIONS` pasó de 403 sin headers a **204 No Content** con
+  `access-control-allow-origin`, `-methods: POST` y `-headers: content-type`;
+  el control negativo (function inventada) **sigue en 404**, así que la
+  medición no cambió de criterio; y un `POST` anónimo pasó del HTML 403 de
+  IAM a un **401 JSON real de la callable**
+  (`{"error":{"message":"hace falta estar autenticado","status":"UNAUTHENTICATED"}}`)
+  — la prueba de que el código ahora corre. **También el 2026-09-23:** §5 y
+  §6 —los dos defectos de uso que el dueño encontró el mismo día— están
+  **escritos, sin desplegar ni verificar en producción todavía**
 - **Decide:** que una foto subida desde el panel se procese con **la misma
   tubería que el seed** (`trim(12)` → `resize(1200)` → `webp(82)`), en una
   Cloud Function **callable** y no en un trigger de Storage; y que el panel
@@ -273,34 +274,37 @@ plan.
 
 ## Lo que falta
 
-- ⚠️ **La callable no es alcanzable desde el navegador: el preflight da 403, y
-  el panel lo muestra como un error de CORS.** Lo encontró el dueño usando el
-  panel; medido después con `curl` crudo el 2026-09-22. `OPTIONS` con `Origin`
-  y `Access-Control-Request-Method: POST` sobre
-  `https://us-central1-bouquet-vinos.cloudfunctions.net/procesarFoto` devuelve
-  **403 de `Google Frontend`, sin un solo header `Access-Control-Allow-*`**.
-  **Control negativo:** el mismo `OPTIONS` contra una function inventada da
-  **404**, así que el 403 es de esta function y no del frontend contra
-  cualquier `OPTIONS`. **El control que aísla la causa:** un `POST` anónimo
-  devuelve **el mismo 403 HTML** en vez del JSON `UNAUTHENTICATED` que
-  devolvería la callable — **el código nunca corre**: lo frena IAM antes, y por
-  eso el `cors: true` que `onCall` trae por defecto no se ejecuta nunca. Falta
-  `allUsers` como `roles/run.invoker` en el servicio de Cloud Run de
-  `procesarfoto`. **No es el bucket, y eso también está medido:** el endpoint de
-  subida contesta el preflight con `Access-Control-Allow-Origin: *` y una
-  descarga con `Origin` también, **aunque el bucket no tenga política CORS** (la
-  API JSON de Storage lo devuelve sin campo `cors`) — `gsutil cors set` no
-  arregla nada acá. **Consecuencia: el crudo se sube y queda huérfano en cada
-  intento.** Y explica por qué 4.3 y 10.1 nunca se pudieron hacer: ninguna de
-  las dos podía pasar. **Repararlo es un otorgamiento de permiso.** Se intentó
-  el 2026-09-23, dos veces —la segunda con autorización explícita del dueño
-  en la conversación— y las dos las frenó el clasificador de permisos de
-  Claude Code (`Permission Grant`): es un bloqueo de configuración de la
-  máquina, no algo que una autorización en el chat destrabe. Falta que el
-  dueño agregue una regla de permiso para este comando, o lo corra a mano:
+- ~~⚠️ **La callable no es alcanzable desde el navegador: el preflight da 403,
+  y el panel lo muestra como un error de CORS.**~~ **RESUELTO el 2026-09-23,
+  por el dueño.** Lo encontró usando el panel el 2026-09-22; medido después
+  con `curl` crudo. `OPTIONS` con `Origin` y `Access-Control-Request-Method:
+  POST` sobre `https://us-central1-bouquet-vinos.cloudfunctions.net/procesarFoto`
+  devolvía **403 de `Google Frontend`, sin un solo header
+  `Access-Control-Allow-*`**. **Control negativo:** el mismo `OPTIONS` contra
+  una function inventada daba **404**, así que el 403 era de esta function y
+  no del frontend contra cualquier `OPTIONS`. **El control que aisló la
+  causa:** un `POST` anónimo devolvía **el mismo 403 HTML** en vez del JSON
+  `UNAUTHENTICATED` que devolvería la callable — **el código nunca
+  corría**: lo frenaba IAM antes. Faltaba `allUsers` como `roles/run.invoker`
+  en el servicio de Cloud Run de `procesarfoto`. **No era el bucket** (medido
+  aparte: el endpoint de subida y una descarga con `Origin` contestaban
+  `Access-Control-Allow-Origin: *` aunque el bucket no tuviera política CORS).
+  El clasificador de permisos de Claude Code frenó el otorgamiento dos veces
+  el 2026-09-23 —la segunda con autorización explícita en la conversación—,
+  así que lo corrió **el dueño, a mano**:
   `gcloud run services add-iam-policy-binding procesarfoto
   --project=bouquet-vinos --region=us-central1 --member="allUsers"
-  --role="roles/run.invoker"`.
+  --role="roles/run.invoker"`. **Verificado con los mismos tres controles, no
+  con el `etag` verde de la respuesta:** el preflight ahora da **204 No
+  Content** con `access-control-allow-origin`,
+  `access-control-allow-methods: POST` y
+  `access-control-allow-headers: content-type`; el control negativo **sigue
+  en 404** (la medición no cambió de criterio); y el `POST` anónimo ahora da
+  **401 JSON real de la callable**
+  (`{"error":{"message":"hace falta estar autenticado","status":"UNAUTHENTICATED"}}`),
+  no el HTML de IAM — el código corre. **Sigue habiendo un crudo huérfano por
+  cada subida que falla a mitad de camino** (eso no lo arregla el CORS, es
+  Decisión 4/Consecuencias de este mismo ADR), pero ya no en CADA intento.
 - ✅ **Escrito el 2026-09-23** (§5, abajo): los dos defectos de uso de arriba.
   **Todavía no desplegado ni verificado en producción** — sigue el checklist:
   CI, deploy de `admin`, verificar con el panel real.
