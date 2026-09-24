@@ -246,7 +246,7 @@ la bandeja. Es lo primero que hay que construir después de este cambio (HU-07.6
   para una sola tarea.
 - **Escribir la Orden desde el panel con las reglas** — el descuento de stock y
   el número van en una transacción que las reglas no pueden expresar
-  ([ARQUITECTURA §4.3](../../../ARQUITECTURA.md)); `allow create: if false`.
+  ([ARQUITECTURA §4.3](../../../../ARQUITECTURA.md)); `allow create: if false`.
 - **`estadoPago: 'pagada'` con una marca `cobradoPorFuera`** — dispara
   `entroEnPagada` y afirma el cobro (§3).
 

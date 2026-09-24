@@ -5,7 +5,7 @@
 `ESTADOS_PAGO` MUST incluir `por_fuera`, un estado del que nada sale y al que nada entra después del nacimiento: su lista de transiciones es vacía y ningún otro estado lo lista como destino.
 
 Describe un cobro que el sistema **no sigue**: el de un pedido de WhatsApp
-([ADR 018 §3](../../../../docs/vault/architecture/decisions/018-pedidos-de-whatsapp.md)).
+([ADR 018 §3](../../../../../docs/vault/architecture/decisions/018-pedidos-de-whatsapp.md)).
 
 #### Scenario: Nada sale de `por_fuera`
 - **WHEN** se pregunta por cada estado de pago como destino desde `por_fuera`
