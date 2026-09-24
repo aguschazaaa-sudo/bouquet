@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-24 - commit `2f241fe` **+ cambios sin commitear** - huella del cuerpo `f726b19554a5`
+> **Generado:** 2026-09-24 - commit `93034cc` **+ cambios sin commitear** - huella del cuerpo `8ede6b531162`
 
 ---
 
@@ -75,7 +75,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.31.0
+### Scripts de la raiz - `bouquet` 0.31.1
 
 | Script | Comando |
 |---|---|
@@ -207,152 +207,156 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 
 | Simbolo | Clase | Estado | Quien lo abre |
 |---|---|---|---|
-| `ESTADOS_PAGO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `packages/contratos/test/proyeccion.test.ts` |
-| `EstadoPago` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `.deploy/tienda/vendor/contratos/src/proyeccion.ts`, `packages/contratos/test/orden.test.ts` |
-| `NACE_PAGO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts` |
-| `TRANSICIONES_PAGO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/scripts/generar.mjs` |
-| `ESTADOS_ENTREGA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `packages/contratos/test/proyeccion.test.ts` |
-| `EstadoEntrega` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `.deploy/tienda/vendor/contratos/src/proyeccion.ts`, `packages/contratos/test/orden.test.ts` |
-| `NACE_ENTREGA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/scripts/generar.mjs` |
-| `TRANSICIONES_ENTREGA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/scripts/generar.mjs` |
-| `transicionPagoValida` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/test/orden.test.ts` |
-| `transicionEntregaValida` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEn` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEnPagada` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEnReembolsada` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEnDespachada` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEnEntregada` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEnCancelada` | valor | abierto | `.deploy/tienda/vendor/contratos/src/orden.ts`, `packages/contratos/test/orden.test.ts` |
-| `ESTADOS_PUBLICOS` | valor | abierto | `.deploy/tienda/vendor/contratos/src/proyeccion.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
-| `EstadoPublico` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/proyeccion.ts` |
-| `proyectarEstadoPublico` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/proyeccion.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
-| `ROTULOS` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `.deploy/tienda/vendor/contratos/src/proyeccion.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
-| `REQUIEREN_ACCION` | valor | abierto | `.deploy/tienda/vendor/contratos/src/proyeccion.ts`, `packages/contratos/scripts/generar.mjs` |
-| `Centavos` | tipo | abierto | `.deploy/tienda/src/features/carrito/checkout/ElResumen.tsx`, `.deploy/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `.deploy/tienda/src/shared/ui/Precio.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/dinero.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/shared/ui/Precio.tsx` |
-| `centavos` | funcion | abierto | `.deploy/tienda/src/features/carrito/LineaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/TotalDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/checkout/ElResumen.tsx`, `.deploy/tienda/src/features/catalogo/FichaDeVino.tsx`, `.deploy/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `.deploy/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/src/shared/ui/Precio.tsx`, `.deploy/tienda/vendor/contratos/src/dinero.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/server/envios.ts`, `apps/tienda/src/shared/ui/Precio.tsx`, `apps/tienda/test/envios.test.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts`, `packages/contratos/test/envio.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `CERO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/dinero.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `packages/contratos/test/caja.test.ts` |
-| `desdePesos` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/dinero.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts` |
-| `sumar` | funcion | abierto | `.deploy/tienda/src/features/carrito/textos.ts`, `.deploy/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/dinero.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/server/envios.ts`, `functions/src/stock/mover.ts`, `packages/contratos/test/dinero.test.ts` |
-| `porCantidad` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/dinero.ts`, `packages/contratos/test/dinero.test.ts` |
-| `formatearARS` | funcion | abierto | `.deploy/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `.deploy/tienda/src/shared/ui/Precio.tsx`, `.deploy/tienda/vendor/contratos/src/dinero.ts`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `apps/tienda/src/shared/ui/Precio.tsx`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/dinero.test.ts` |
-| `MONTOS_DE_MUESTRA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/dinero.ts`, `packages/contratos/scripts/generar.mjs` |
-| `TIPOS_DE_PRODUCTO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `TipoDeProducto` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `COLORES` | valor | abierto | `.deploy/tienda/src/app/carrito/page.tsx`, `.deploy/tienda/src/app/layout.tsx`, `.deploy/tienda/src/app/pedido/page.tsx`, `.deploy/tienda/src/features/catalogo/PestanasDeColor.tsx`, `.deploy/tienda/src/features/catalogo/filtros.ts`, `.deploy/tienda/src/features/landing/seleccion.ts`, `.deploy/tienda/src/shared/tokens/colores.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/app/layout.tsx`, `apps/tienda/src/app/pedido/page.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/src/shared/tokens/colores.ts` |
-| `Color` | tipo | abierto | `.deploy/tienda/src/features/catalogo/PestanasDeColor.tsx`, `.deploy/tienda/src/features/catalogo/filtros.ts`, `.deploy/tienda/src/features/catalogo/textos.ts`, `.deploy/tienda/src/features/landing/seleccion.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts` |
-| `VARIETALES` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_varietales.mjs` |
-| `Varietal` | tipo | abierto | `.deploy/tienda/src/features/landing/seleccion.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/landing/seleccion.ts` |
-| `GRADUACION_MINIMA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `scripts/ci/auditar_varietales.mjs` |
-| `GRADUACION_MAXIMA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `scripts/ci/auditar_varietales.mjs` |
-| `DESCRIPCION_MAXIMA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_varietales.mjs` |
-| `FichaVino` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `ProductoSimple` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `ProductoCompuesto` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `Producto` | tipo | abierto | `.deploy/tienda/src/features/navegacion/secciones.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/navegacion/secciones.ts`, `packages/contratos/test/producto.test.ts` |
-| `BALDES` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
-| `Balde` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `UMBRAL_QUEDAN_POCAS` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs` |
-| `TOPE_POR_PEDIDO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
-| `viajaSolo` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/test/producto.test.ts` |
-| `balde` | funcion | abierto | `.deploy/tienda/src/app/carrito/page.tsx`, `.deploy/tienda/src/features/carrito/LineaDelCarrito.tsx`, `.deploy/tienda/src/features/catalogo/EstadoDelVino.tsx`, `.deploy/tienda/src/features/catalogo/FichaDeVino.tsx`, `.deploy/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `.deploy/tienda/src/features/catalogo/filtros.ts`, `.deploy/tienda/src/features/catalogo/textos.ts`, `.deploy/tienda/src/features/landing/seleccion.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `tope` | funcion | abierto | `.deploy/tienda/src/app/vinos/[slug]/page.tsx`, `.deploy/tienda/src/app/vinos/page.tsx`, `.deploy/tienda/src/features/carrito/ControlDeCaja.tsx`, `.deploy/tienda/src/features/carrito/ControlDeCompra.tsx`, `.deploy/tienda/src/features/carrito/LineaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `.deploy/tienda/vendor/contratos/src/stock.ts`, `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `functions/src/foto/procesar_foto.ts`, `functions/src/foto/validar.ts`, `functions/src/stock/mover.ts`, `functions/test/stock/mover.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts`, `packages/contratos/test/stock.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/auditar_varietales.mjs`, `scripts/reglas/productos.test.mjs` |
-| `textoDelBalde` | funcion | abierto | `.deploy/tienda/src/features/carrito/LineaDelCarrito.tsx`, `.deploy/tienda/src/features/catalogo/EstadoDelVino.tsx`, `.deploy/tienda/src/features/catalogo/textos.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `packages/contratos/test/producto.test.ts` |
-| `esCorte` | funcion | abierto | `.deploy/tienda/src/features/catalogo/DatosDelVino.tsx`, `.deploy/tienda/src/features/catalogo/HojaDelVino.tsx`, `.deploy/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `.deploy/tienda/src/features/catalogo/filtros.ts`, `.deploy/tienda/src/features/catalogo/textos.ts`, `.deploy/tienda/src/features/landing/seleccion.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
-| `Validacion` | tipo | abierto | `.deploy/tienda/src/features/carrito/checkout/borrador.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `.deploy/tienda/vendor/contratos/src/orden.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `.deploy/tienda/vendor/contratos/src/stock.ts`, `apps/tienda/src/features/carrito/checkout/borrador.ts` |
-| `validarProducto` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/test/producto.test.ts`, `scripts/seed/seed.mjs` |
-| `ProductoPublicado` | tipo | abierto | `.deploy/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/src/features/catalogo/DatosDelVino.tsx`, `.deploy/tienda/src/features/catalogo/EstadoDelVino.tsx`, `.deploy/tienda/src/features/catalogo/FichaDeVino.tsx`, `.deploy/tienda/src/features/catalogo/HojaDelVino.tsx`, `.deploy/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `.deploy/tienda/src/features/catalogo/NotaDelVino.tsx`, `.deploy/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `.deploy/tienda/src/features/catalogo/PestanasDeColor.tsx`, `.deploy/tienda/src/features/catalogo/SinResultados.tsx`, `.deploy/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `.deploy/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `.deploy/tienda/src/features/catalogo/filtros.ts`, `.deploy/tienda/src/features/catalogo/textos.ts`, `.deploy/tienda/src/features/landing/seleccion.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/NotaDelVino.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `proyectarProducto` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `DocumentoCrudo` | tipo | abierto | `.deploy/tienda/src/server/catalogo.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
-| `Descarte` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `Catalogo` | tipo | abierto | `.deploy/tienda/src/server/catalogo.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/server/catalogo.ts` |
-| `CatalogoArmado` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `armarCatalogo` | funcion | abierto | `.deploy/tienda/src/server/catalogo.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/server/catalogo.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `CasoDeBalde` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `CASOS_DE_BALDE` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
-| `CLASES_DE_DESCARTE` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
-| `ClaseDeDescarte` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `CasoDeDescarte` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts` |
-| `BODEGAS_DE_MUESTRA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
-| `CASOS_DE_DESCARTE` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
-| `VERSION_DEL_CARRITO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `LineaDeCarrito` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `ProductoDelCarrito` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `Carrito` | tipo | abierto | `.deploy/tienda/src/app/carrito/page.tsx`, `.deploy/tienda/src/features/carrito/almacen.ts`, `.deploy/tienda/src/features/carrito/useCarrito.ts`, `.deploy/tienda/src/features/navegacion/secciones.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/carrito/useCarrito.ts`, `apps/tienda/src/features/navegacion/secciones.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `esProductoId` | valor | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/stock.ts` |
-| `parsearCarrito` | funcion | abierto | `.deploy/tienda/src/features/carrito/almacen.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/stock.ts`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/test/almacen.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `carritoVacio` | funcion | abierto | `.deploy/tienda/src/features/carrito/almacen.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/test/almacen.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `Cambio` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `fijarCantidad` | funcion | abierto | `.deploy/tienda/src/features/carrito/ControlDeCompra.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `packages/contratos/test/carrito.test.ts` |
-| `agregar` | funcion | abierto | `.deploy/tienda/src/features/carrito/ControlDeCaja.tsx`, `.deploy/tienda/src/features/carrito/ControlDeCompra.tsx`, `.deploy/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `.deploy/tienda/src/features/carrito/textos.ts`, `.deploy/tienda/src/features/catalogo/FichaDeVino.tsx`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/reglas/productos.test.mjs` |
-| `quitar` | funcion | abierto | `.deploy/tienda/src/features/carrito/ControlDeCompra.tsx`, `.deploy/tienda/src/features/carrito/LineaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/textos.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/acceso/acceso.mjs`, `scripts/acceso/acceso.test.mjs`, `scripts/reglas/productos.test.mjs` |
-| `unidadesEnCarrito` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `ESTADOS_DE_LINEA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `EstadoDeLinea` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `LineaResuelta` | tipo | abierto | `.deploy/tienda/src/features/carrito/LineaDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx` |
-| `CarritoResuelto` | tipo | abierto | `.deploy/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `.deploy/tienda/src/features/carrito/TotalDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/checkout/ElResumen.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx` |
-| `resolverCarrito` | funcion | abierto | `.deploy/tienda/src/features/carrito/ControlDeCaja.tsx`, `.deploy/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/TotalDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts` |
-| `BOTELLAS_POR_CAJA` | valor | abierto | `.deploy/tienda/src/features/catalogo/ReglaDeLaCaja.tsx`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/catalogo/ReglaDeLaCaja.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/envio.test.ts` |
-| `botellasEnCarrito` | funcion | abierto | `.deploy/tienda/src/features/carrito/TotalDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
-| `botellasSueltas` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
-| `botellasGuardadas` | funcion | abierto | `.deploy/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
-| `botellasSueltasGuardadas` | funcion | abierto | `.deploy/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
-| `CargaDelPedido` | tipo | abierto | `.deploy/tienda/src/features/carrito/checkout/useCotizacion.ts`, `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts`, `apps/tienda/test/envios.test.ts`, `packages/contratos/test/envio.test.ts` |
-| `cargaDelPedido` | funcion | abierto | `.deploy/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts` |
-| `EstadoDeLaCaja` | tipo | abierto | `.deploy/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `.deploy/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx` |
-| `contarCaja` | funcion | abierto | `.deploy/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
-| `estadoDeLaCaja` | funcion | abierto | `.deploy/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `.deploy/tienda/src/features/carrito/TotalDelCarrito.tsx`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
-| `sePuedeCobrar` | funcion | abierto | `.deploy/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/carrito.ts`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
-| `LineaDePedido` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts` |
-| `PedidoDeCompra` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/carrito.ts`, `packages/contratos/test/carrito.test.ts` |
-| `CajaSugerida` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts`, `packages/contratos/test/cajas.test.ts` |
-| `CajasArmadas` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts` |
-| `validarCajasSugeridas` | funcion | abierto | `.deploy/tienda/src/server/catalogo.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/cajas.test.ts`, `scripts/seed/seed.mjs` |
-| `verificarComposicion` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `packages/contratos/test/cajas.test.ts`, `scripts/seed/seed.mjs` |
-| `ESTADOS_DE_LUGAR` | valor | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts` |
-| `EstadoDeLugar` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts` |
-| `LugarDeCaja` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts` |
-| `CajaSugeridaResuelta` | tipo | abierto | `.deploy/tienda/src/features/carrito/ControlDeCaja.tsx`, `.deploy/tienda/src/features/catalogo/CarrilDeCajas.tsx`, `.deploy/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `.deploy/tienda/src/server/catalogo.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/catalogo/CarrilDeCajas.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/server/catalogo.ts` |
-| `CajasResueltas` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/cajas.ts` |
-| `resolverCajasSugeridas` | funcion | abierto | `.deploy/tienda/src/server/catalogo.ts`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/cajas.test.ts` |
-| `llenarConLaCaja` | funcion | abierto | `.deploy/tienda/src/features/carrito/ControlDeCaja.tsx`, `.deploy/tienda/vendor/contratos/src/cajas.ts`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `packages/contratos/test/cajas.test.ts` |
-| `CAJA_KG` | valor | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/server/envios.ts`, `packages/contratos/test/envio.test.ts` |
-| `Bulto` | tipo | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/server/envios.ts` |
-| `pesoDelBultoKg` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/envio.ts`, `packages/contratos/test/envio.test.ts` |
-| `bultosDelPedido` | funcion | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `apps/tienda/src/server/envios.ts`, `packages/contratos/test/envio.test.ts` |
-| `cajasADespachar` | funcion | abierto | `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/envio.test.ts` |
-| `pesoDelPedidoKg` | funcion | abierto | `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/envio.test.ts` |
-| `MODALIDADES_DE_ENTREGA` | valor | abierto | `.deploy/tienda/vendor/contratos/src/envio.ts` |
-| `ModalidadDeEntrega` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/envio.ts` |
-| `DestinoDeEnvio` | tipo | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/server/envios.ts` |
-| `PROVINCIAS` | valor | abierto | `.deploy/tienda/src/features/carrito/checkout/ADondeVa.tsx`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/ADondeVa.tsx` |
-| `ProvinciaIso` | tipo | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/server/envios.ts` |
-| `esProvinciaIso` | funcion | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/server/envios.ts` |
-| `nombreDeProvincia` | funcion | abierto | `.deploy/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx` |
-| `OpcionDeEnvio` | tipo | abierto | `.deploy/tienda/src/features/carrito/checkout/ComoViaja.tsx`, `.deploy/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/ComoViaja.tsx`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `apps/tienda/src/server/envios.ts` |
-| `ProveedorDeEnvio` | tipo | abierto | `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/server/envios.ts` |
-| `totalConEnvio` | funcion | abierto | `.deploy/tienda/src/features/carrito/checkout/ElResumen.tsx`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `packages/contratos/test/envio.test.ts` |
-| `SIN_CARGO` | valor | abierto | `.deploy/tienda/src/features/carrito/checkout/ElResumen.tsx`, `.deploy/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx` |
-| `normalizarTelefonoAR` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/envio.ts`, `packages/contratos/test/envio.test.ts` |
-| `DatosDeEntrega` | tipo | abierto | `.deploy/tienda/src/features/carrito/checkout/borrador.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/borrador.ts` |
-| `validarDatosDeEntrega` | funcion | abierto | `.deploy/tienda/src/features/carrito/checkout/borrador.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/test/envio.test.ts` |
-| `MotivoSinCotizacion` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/envio.ts` |
-| `ResultadoDeCotizacion` | tipo | abierto | `.deploy/tienda/src/features/carrito/checkout/useCotizacion.ts`, `.deploy/tienda/src/server/envios.ts`, `.deploy/tienda/vendor/contratos/src/envio.ts`, `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts` |
-| `normalizar` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/texto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `clave` | funcion | abierto | `.deploy/tienda/src/features/carrito/almacen.ts`, `.deploy/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `.deploy/tienda/src/features/catalogo/SinResultados.tsx`, `.deploy/tienda/src/features/catalogo/filtros.ts`, `.deploy/tienda/src/features/oficio/SelloDeContacto.tsx`, `.deploy/tienda/vendor/contratos/src/producto.ts`, `.deploy/tienda/vendor/contratos/src/stock.ts`, `.deploy/tienda/vendor/contratos/src/texto.ts`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/oficio/SelloDeContacto.tsx`, `apps/tienda/test/almacen.test.ts`, `functions/src/stock/mover_stock.ts`, `functions/test/foto/procesar_foto.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/stock.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/acceso/acceso.test.mjs`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/generar_verdad.mjs`, `scripts/tienda/preparar_despliegue.mjs` |
-| `aSlug` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/texto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `seParecen` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/texto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `ENTRADAS_DE_TEXTO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/producto.ts`, `.deploy/tienda/vendor/contratos/src/texto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
-| `PARES_DE_TEXTO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/texto.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
-| `TUBERIA_DE_FOTO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/foto.ts`, `functions/src/foto/tuberia.ts`, `scripts/seed/seed.mjs` |
-| `MOTIVOS_DE_AJUSTE` | valor | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
-| `TOPE_DE_STOCK` | valor | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
-| `PedidoDeMovimiento` | tipo | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `functions/src/stock/mover.ts`, `packages/contratos/test/stock.test.ts` |
-| `parsearPedidoDeMovimiento` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `functions/src/stock/mover_stock.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
-| `CODIGOS_DE_RECHAZO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
-| `aplicarOperacion` | funcion | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `functions/src/stock/mover.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
-| `CASOS_DE_MOVIMIENTO` | valor | abierto | `.deploy/tienda/vendor/contratos/src/stock.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
+| `ESTADOS_PAGO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `packages/contratos/test/proyeccion.test.ts` |
+| `EstadoPago` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `NACE_PAGO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts` |
+| `TRANSICIONES_PAGO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
+| `ESTADOS_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `packages/contratos/test/proyeccion.test.ts` |
+| `EstadoEntrega` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `NACE_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
+| `TRANSICIONES_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
+| `transicionPagoValida` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `transicionEntregaValida` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `entroEn` | funcion | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
+| `entroEnPagada` | valor | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
+| `entroEnReembolsada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `entroEnDespachada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `entroEnEntregada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `entroEnCancelada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
+| `ESTADOS_PUBLICOS` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
+| `EstadoPublico` | tipo | **SIN PUERTA - nadie** | - |
+| `proyectarEstadoPublico` | funcion | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
+| `ROTULOS` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
+| `REQUIEREN_ACCION` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
+| `Centavos` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/shared/ui/Precio.tsx` |
+| `centavos` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/server/envios.ts`, `apps/tienda/src/shared/ui/Precio.tsx`, `apps/tienda/test/envios.test.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts`, `packages/contratos/test/envio.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `CERO` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/caja.test.ts` |
+| `desdePesos` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts` |
+| `sumar` | funcion | abierto | `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/server/envios.ts`, `functions/src/stock/mover.ts`, `packages/contratos/test/dinero.test.ts` |
+| `porCantidad` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
+| `formatearARS` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `apps/tienda/src/shared/ui/Precio.tsx`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/dinero.test.ts` |
+| `MONTOS_DE_MUESTRA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
+| `TIPOS_DE_PRODUCTO` | valor | **SIN PUERTA - nadie** | - |
+| `TipoDeProducto` | tipo | **SIN PUERTA - nadie** | - |
+| `COLORES` | valor | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/app/layout.tsx`, `apps/tienda/src/app/pedido/page.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/src/shared/tokens/colores.ts` |
+| `Color` | tipo | abierto | `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts` |
+| `VARIETALES` | valor | abierto | `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_varietales.mjs` |
+| `Varietal` | tipo | abierto | `apps/tienda/src/features/landing/seleccion.ts` |
+| `GRADUACION_MINIMA` | valor | abierto | `scripts/ci/auditar_varietales.mjs` |
+| `GRADUACION_MAXIMA` | valor | abierto | `scripts/ci/auditar_varietales.mjs` |
+| `DESCRIPCION_MAXIMA` | valor | abierto | `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_varietales.mjs` |
+| `FichaVino` | tipo | **SIN PUERTA - nadie** | - |
+| `ProductoSimple` | tipo | **SIN PUERTA - nadie** | - |
+| `ProductoCompuesto` | tipo | **SIN PUERTA - nadie** | - |
+| `Producto` | tipo | abierto | `apps/tienda/src/features/navegacion/secciones.ts`, `packages/contratos/test/producto.test.ts` |
+| `BALDES` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
+| `Balde` | tipo | **SIN PUERTA - nadie** | - |
+| `UMBRAL_QUEDAN_POCAS` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
+| `TOPE_POR_PEDIDO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
+| `viajaSolo` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/producto.test.ts` |
+| `balde` | funcion | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `tope` | funcion | abierto | `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `functions/src/foto/procesar_foto.ts`, `functions/src/foto/validar.ts`, `functions/src/stock/mover.ts`, `functions/test/stock/mover.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts`, `packages/contratos/test/stock.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/auditar_varietales.mjs`, `scripts/reglas/productos.test.mjs` |
+| `textoDelBalde` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `packages/contratos/test/producto.test.ts` |
+| `esCorte` | funcion | abierto | `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
+| `Validacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts` |
+| `validarProducto` | funcion | abierto | `packages/contratos/test/producto.test.ts`, `scripts/seed/seed.mjs` |
+| `ProductoPublicado` | tipo | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/NotaDelVino.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `proyectarProducto` | funcion | **SIN PUERTA - nadie** | - |
+| `DocumentoCrudo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
+| `Descarte` | tipo | **SIN PUERTA - nadie** | - |
+| `Catalogo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts` |
+| `CatalogoArmado` | tipo | **SIN PUERTA - nadie** | - |
+| `armarCatalogo` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `CasoDeBalde` | tipo | **SIN PUERTA - nadie** | - |
+| `CASOS_DE_BALDE` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
+| `CLASES_DE_DESCARTE` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
+| `ClaseDeDescarte` | tipo | **SIN PUERTA - nadie** | - |
+| `CasoDeDescarte` | tipo | **SIN PUERTA - nadie** | - |
+| `BODEGAS_DE_MUESTRA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
+| `CASOS_DE_DESCARTE` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
+| `VERSION_DEL_CARRITO` | valor | **SIN PUERTA - nadie** | - |
+| `LineaDeCarrito` | tipo | **SIN PUERTA - nadie** | - |
+| `ProductoDelCarrito` | tipo | **SIN PUERTA - nadie** | - |
+| `Carrito` | tipo | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/carrito/useCarrito.ts`, `apps/tienda/src/features/navegacion/secciones.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `esProductoId` | valor | **SIN PUERTA - nadie** | - |
+| `parsearCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/test/almacen.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `carritoVacio` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/test/almacen.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `Cambio` | tipo | **SIN PUERTA - nadie** | - |
+| `fijarCantidad` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `packages/contratos/test/carrito.test.ts` |
+| `agregar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/reglas/productos.test.mjs` |
+| `quitar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/acceso/acceso.mjs`, `scripts/acceso/acceso.test.mjs`, `scripts/reglas/productos.test.mjs` |
+| `unidadesEnCarrito` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `ESTADOS_DE_LINEA` | valor | **SIN PUERTA - nadie** | - |
+| `EstadoDeLinea` | tipo | **SIN PUERTA - nadie** | - |
+| `LineaResuelta` | tipo | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx` |
+| `CarritoResuelto` | tipo | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx` |
+| `resolverCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts` |
+| `BOTELLAS_POR_CAJA` | valor | abierto | `apps/tienda/src/features/catalogo/ReglaDeLaCaja.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/envio.test.ts` |
+| `botellasEnCarrito` | funcion | abierto | `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
+| `botellasSueltas` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
+| `botellasGuardadas` | funcion | abierto | `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
+| `botellasSueltasGuardadas` | funcion | abierto | `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
+| `CargaDelPedido` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts`, `apps/tienda/test/envios.test.ts`, `packages/contratos/test/envio.test.ts` |
+| `cargaDelPedido` | funcion | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts` |
+| `EstadoDeLaCaja` | tipo | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx` |
+| `contarCaja` | funcion | abierto | `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
+| `estadoDeLaCaja` | funcion | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
+| `sePuedeCobrar` | funcion | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
+| `LineaDePedido` | tipo | **SIN PUERTA - nadie** | - |
+| `PedidoDeCompra` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/carrito.test.ts` |
+| `CajaSugerida` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/cajas.test.ts` |
+| `CajasArmadas` | tipo | **SIN PUERTA - nadie** | - |
+| `validarCajasSugeridas` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/cajas.test.ts`, `scripts/seed/seed.mjs` |
+| `verificarComposicion` | funcion | abierto | `packages/contratos/test/cajas.test.ts`, `scripts/seed/seed.mjs` |
+| `ESTADOS_DE_LUGAR` | valor | **SIN PUERTA - nadie** | - |
+| `EstadoDeLugar` | tipo | **SIN PUERTA - nadie** | - |
+| `LugarDeCaja` | tipo | **SIN PUERTA - nadie** | - |
+| `CajaSugeridaResuelta` | tipo | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/catalogo/CarrilDeCajas.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/server/catalogo.ts` |
+| `CajasResueltas` | tipo | **SIN PUERTA - nadie** | - |
+| `resolverCajasSugeridas` | funcion | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/cajas.test.ts` |
+| `llenarConLaCaja` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `packages/contratos/test/cajas.test.ts` |
+| `CAJA_KG` | valor | abierto | `apps/tienda/src/server/envios.ts`, `packages/contratos/test/envio.test.ts` |
+| `Bulto` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
+| `pesoDelBultoKg` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/envio.test.ts` |
+| `bultosDelPedido` | funcion | abierto | `apps/tienda/src/server/envios.ts`, `packages/contratos/test/envio.test.ts` |
+| `cajasADespachar` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/envio.test.ts` |
+| `pesoDelPedidoKg` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/envio.test.ts` |
+| `MODALIDADES_DE_ENTREGA` | valor | **SIN PUERTA - nadie** | - |
+| `ModalidadDeEntrega` | tipo | **SIN PUERTA - nadie** | - |
+| `DestinoDeEnvio` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
+| `PROVINCIAS` | valor | abierto | `apps/tienda/src/features/carrito/checkout/ADondeVa.tsx` |
+| `ProvinciaIso` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
+| `esProvinciaIso` | funcion | abierto | `apps/tienda/src/server/envios.ts` |
+| `nombreDeProvincia` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx` |
+| `OpcionDeEnvio` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/ComoViaja.tsx`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `apps/tienda/src/server/envios.ts` |
+| `ProveedorDeEnvio` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
+| `totalConEnvio` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `packages/contratos/test/envio.test.ts` |
+| `SIN_CARGO` | valor | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx` |
+| `normalizarTelefonoAR` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/envio.test.ts` |
+| `DatosDeEntrega` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts` |
+| `validarDatosDeEntrega` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/test/envio.test.ts` |
+| `MotivoSinCotizacion` | tipo | **SIN PUERTA - nadie** | - |
+| `ResultadoDeCotizacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts` |
+| `normalizar` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `clave` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/oficio/SelloDeContacto.tsx`, `apps/tienda/test/almacen.test.ts`, `functions/src/stock/mover_stock.ts`, `functions/test/foto/procesar_foto.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/stock.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/acceso/acceso.test.mjs`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/generar_verdad.mjs`, `scripts/tienda/preparar_despliegue.mjs` |
+| `aSlug` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `seParecen` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `ENTRADAS_DE_TEXTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
+| `PARES_DE_TEXTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
+| `TUBERIA_DE_FOTO` | valor | abierto | `functions/src/foto/tuberia.ts`, `scripts/seed/seed.mjs` |
+| `MOTIVOS_DE_AJUSTE` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
+| `TOPE_DE_STOCK` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
+| `PedidoDeMovimiento` | tipo | abierto | `functions/src/stock/mover.ts`, `packages/contratos/test/stock.test.ts` |
+| `parsearPedidoDeMovimiento` | funcion | abierto | `functions/src/stock/mover_stock.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
+| `CODIGOS_DE_RECHAZO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
+| `aplicarOperacion` | funcion | abierto | `functions/src/stock/mover.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
+| `CASOS_DE_MOVIMIENTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
 
-**144 simbolos exportados. 0 SIN PUERTA.**
+**144 simbolos exportados. 47 SIN PUERTA.**
+
+Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `Balde`, `viajaSolo`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `CasoDeBalde`, `ClaseDeDescarte`, `CasoDeDescarte`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `botellasSueltas`, `LineaDePedido`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `pesoDelBultoKg`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `normalizarTelefonoAR`, `MotivoSinCotizacion`.
+
+Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
 ## 8. Lo que todavia no existe
 
@@ -373,4 +377,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 222. Archivos de test: 37. Casos de test: 555.
+Archivos de codigo recorridos: 133. Archivos de test: 37. Casos de test: 555.

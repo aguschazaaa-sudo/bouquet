@@ -57,6 +57,13 @@ const MARCA_PROCEDENCIA = '> **Generado:**';
 
 const IGNORAR_NOMBRE = new Set([
   'node_modules',
+  // `.deploy/tienda` es una COPIA de la tienda y de `packages/contratos` que
+  // arma `scripts/tienda/preparar_despliegue.mjs` para App Hosting. La excluye
+  // `.gitignore` y CI nunca la tiene: generar `_verdad.md` con una copia al
+  // lado la cuenta como consumidor de cada simbolo de `contratos`. Medido el
+  // 2026-09-23 (corrida 35941118142): 150 lineas faltan, 146 sobran. Misma
+  // familia que `functions/lib`, mas abajo.
+  '.deploy',
   '.git',
   '.next',
   '.dart_tool',

@@ -87,6 +87,14 @@ lock trae un workspace ajeno, o si `npm ci --dry-run` —la comprobación que ha
 la nube— no pasa. **Se midió que ese control discrimina**: con una dependencia
 que el lock no tiene, `npm ci` sale con 1.
 
+⚠️ **Y la copia contamina `_verdad.md`**: el generador la escaneaba y contaba
+`.deploy/tienda/vendor/contratos/` como un consumidor de cada símbolo de
+`contratos`, y en CI —que no tiene la carpeta— el archivo no coincidía (150
+líneas faltan, 146 sobran, corrida `35941118142`). Mi primer `push` de esto salió
+**rojo por eso**. `generar_verdad.mjs` ignora `.deploy` por nombre, con el control
+de que la huella sea la misma con la carpeta y sin ella. Es la segunda vez que un
+artefacto de build nuevo lo rompe (antes, `functions/lib`).
+
 ⚠️ npm **no borra** del lock los workspaces que dejaron de existir: los marca
 `"extraneous": true` y los deja. El script los poda; sin eso el lock queda
 inconsistente y se entera uno a los 18 segundos de un build.
