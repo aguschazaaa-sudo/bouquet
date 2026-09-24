@@ -79,26 +79,32 @@
 
 ## 7. Commit y CI
 
-- [ ] 7.1 `/commit` leyendo el diff.
-- [ ] 7.2 `git diff aff14bb..HEAD --stat -- apps/admin`: sólo este cambio.
+- [x] 7.1 `/commit` leyendo el diff.
+- [x] 7.2 `git diff aff14bb..HEAD --stat -- apps/admin`: sólo este cambio.
       `aff14bb` es lo que sirve live, así que es lo que el deploy arrastra.
-- [ ] 7.3 `gh workflow run ci.yml -f alcance=panel`. **Leer la corrida, no el
+- [x] 7.3 `gh workflow run ci.yml -f alcance=panel`. **Leer la corrida, no el
       color**: `suite_dart` tiene que subir exactamente los casos nuevos contra
       la corrida `35932577780` (244).
 
 ## 8. Desplegar el panel y verificar
 
-- [ ] 8.1 `bash scripts/panel/publicar.sh preview <corrida>`: hashes y commit
-      coinciden.
-- [ ] 8.2 **Canario discriminante, sin tildes**, chequeado **nuevo** antes de
+- [x] 8.1 `bash scripts/panel/publicar.sh preview <corrida>`: hashes y commit
+      coinciden. Corrida **36043832300**, commit `1ab7bb0`, `suite_dart` **244 → 254**.
+- [x] 8.2 **Canario discriminante, sin tildes**, chequeado **nuevo** antes de
       usarlo (`grep` en el repo y 0 en el `main.dart.js` vivo): aparece
       `"Usar como principal"` y **desaparece** `"Tu cuenta no tiene permiso
       para subir fotos."`. Uno de cada lado, más un control inventado.
-- [ ] 8.3 `publicar.sh promover panel`. No pushear nada entre 8.2 y 8.3.
-- [ ] 8.4 `publicar.sh verificar https://bouquet-vinos.web.app`: los 4 hashes
+- [x] 8.3 `publicar.sh promover panel`. No pushear nada entre 8.2 y 8.3.
+- [x] 8.4 `publicar.sh verificar https://bouquet-vinos.web.app`: los 4 hashes
       iguales al canal, `noindex`, y el canario de 8.2 dado vuelta en vivo.
-- [ ] 8.5 Que la app arranca: Chrome headless por CDP sobre live, 0 errores de
-      consola.
+      Medido: LIVE antes nuevo=0/viejo=1; canal 1/0; LIVE después 1/0; control
+      positivo (`Sacar esta foto`) 1 en los tres; inventado 0.
+- [x] 8.5 Que la app arranca: Chrome headless por CDP sobre live, 0 errores de
+      consola. Redirige a `/entrar`, texto leído del árbol de semántica con
+      control positivo ("Entrar") y negativo (una cadena inventada: no aparece).
+      **La primera corrida dio texto vacío y NO se tomó por buena**: faltaba
+      esperar a que Flutter armara la semántica. **No cubre** la sección de
+      fotos: hay que entrar con una cuenta, y no se puede desde acá.
 
 ## 9. Lo que sólo puede hacer el dueño
 

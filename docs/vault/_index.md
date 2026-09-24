@@ -76,7 +76,8 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### La foto principal: HU-04.2 recortada, y el estado del hito 1 medido (2026-09-24)
 
-**Escrita y verificada en local; el deploy está abajo.** Change
+**Desplegada y verificada por bytes el 2026-09-24 (v0.32.0, commit `1ab7bb0`); nadie la
+miró renderizada.** Change
 [`panel-foto-principal`](../../openspec/changes/panel-foto-principal/proposal.md),
 con el porqué en [ADR 015 §7](architecture/decisions/015-fotos-del-panel.md). Cada
 foto que no es la primera tiene **"Usar como principal"**, un toque y sin
@@ -100,8 +101,11 @@ Falta que el dueño cargue su catálogo, y eso no lo hace ningún código.
 | Sin huérfanos | 10 símbolos grepeados, cada uno con call site fuera de su archivo; control negativo con uno inventado: 0. Ruta: `enrutador` → `PaginaDelVino` → `FormularioDelVino` → `SeccionDeFotos` |
 | Hooks | `probar_hooks.sh` 35/35 |
 | Presupuesto | 1 lectura por cambio + 1 por sesión abierta: ~150/día, **0,3 %** |
+| CI | `alcance=panel`, corrida `36043832300`: `suite_dart` **244 → 254, +10 exactos** (`suite_ts` `skipped`: no se tocó lógica de `functions`) |
+| El deploy | Canal → **canario discriminante** (`Usar como principal`: live 0 → 1; `permiso para subir fotos`: 1 → 0; control positivo en 1; inventado en 0) → `promover` → los 4 hashes iguales, `noindex`, `commit publicado: 1ab7bb0` |
+| Que arranca | Chrome por CDP sobre live: `/entrar`, Flutter montado, **0 errores de consola**, texto leído con control positivo y negativo |
 
-**Sin probar:** la transacción contra Firestore. Los tests del panel son de dominio puro
+**Sin probar, y ahora ya en producción:** la transacción contra Firestore. Los tests del panel son de dominio puro
 y no hay emulador en la suite del panel: lo que corre es `conPrincipal`, no
 `runTransaction`. La concurrencia (otra persona sube una foto en el medio) queda
 verificada por razonamiento sobre el contrato del SDK, **no por una prueba**.
