@@ -11,8 +11,8 @@
   §1): una callable `moverStock` con dos operaciones, `reponer` y `corregir`,
   idempotente, con la baranda `visto` contra el valor absoluto que pisa ventas
 - **Historias:** HU-05.1 · HU-05.2 · HU-05.3 ([EP-05](../../features/panel/EP-05-stock.md)).
-  **HU-05.4** (ver los movimientos de un producto) queda afuera, con su
-  disparador — pero el dato que necesita ya se guarda (§3)
+  **HU-05.4** (ver los movimientos de un producto) se construyó el
+  2026-09-24, antes de su disparador — ver §6
 - **Toca:** [ADR 008](008-catalogo-stock-y-carrito.md) (cumple lo que dejó
   escrito: *"la reposición llega por una callable del servidor"*) y
   [ADR 015](015-fotos-del-panel.md) (la guarda de admin de `procesarFoto` pasa
@@ -165,6 +165,60 @@ contesta `already-exists`, que el panel dice como *"Ese movimiento ya se había
 registrado: mirá el stock antes de volver a intentar"*. Volver a hacerlo "más
 inteligente" reabre el bug.
 
+### 6. Leer los movimientos (HU-05.4, 2026-09-24)
+
+**Se construyó antes de su disparador** (*"la primera diferencia que nadie sepa
+explicar"*), a pedido del dueño y para cerrar el hito 1. Sin openspec, como el
+resto de EP-05: este apartado es la especificación.
+
+**Qué se ve:** un botón *"Ver los últimos movimientos"* en la sección de stock
+de la ficha, que abre una **hoja** (la misma forma que las de reponer y
+corregir) con los últimos 20, el más nuevo primero: *qué se hizo* (`Cargó 32
+botellas`, `Corrigió el stock (rotura)`), *de cuánto a cuánto*, *quién* y
+*cuándo*. La unidad es la de venta del vino. **Una hoja y no una lista en la
+ficha**: la sección de stock está en una `Column` sin scroll encima del
+formulario, y veinte renglones ahí desbordan la pantalla.
+
+**Las reglas dejan de cerrar `read`**, y `write` sigue cerrado (§3 sigue en
+pie: un panel que pudiera crear o borrar un marcador rompería la idempotencia):
+
+```
+allow get: if esAdmin();
+allow list: if esAdmin() && request.query.limit <= 50;
+allow create, update, delete: if false;
+```
+
+**`list` exige un `limit` de hasta 50.** La colección no se borra nunca (§ de los
+hallazgos, punto 2) y una lectura sin límite leería **toda**. Sin `limit` la
+expresión no evalúa y la regla rechaza: es el efecto buscado. Se midió contra
+el emulador, con el borde (50 pasa, 51 no), sin `limit` (rechaza) y con un
+comprador y un anónimo (rechazan). **Mutando** la exigencia de `limit`,
+fallan exactamente los dos casos que la prueban. Suite de reglas 57 → 59.
+
+**Presupuesto de lecturas:** **20 como máximo por apertura de la hoja**, y
+**cero** con la hoja cerrada: la ficha no lee nada de más. Con 20 aperturas al
+día son 400, el 0,8 % de los 50.000. `orderBy('en')` sobre un solo campo no
+pide índice compuesto.
+
+**Quién movió: `Vos` u `Otra persona`, y nada más.** El movimiento guarda el
+`uid`, no un nombre, y la sesión del panel tiene el mail pero no el `uid` de
+los demás. Decir *"Otra persona"* es verdad; inventar un nombre no lo sería.
+**Disparador para mostrar nombres:** que la familia sea más de una persona
+usando el panel y alguien pregunte *"¿quién fue?"*. Se resolvería guardando el
+mail en el movimiento, y eso toca `moverStock`.
+
+**El parser no lanza y no descarta.** Un documento de forma rara, o de un
+`tipo` que este panel no conoce (mañana habrá `venta` y `cancelación` con
+`crearOrden`), sale como *"Movimiento de stock"* con lo que se pueda leer: un
+movimiento que se ve mal es un dato, uno que falta es un misterio. Los errores
+de **lectura** sí suben, y la hoja los dibuja como un fallo con *"Volver a
+intentar"*, nunca como una lista vacía.
+
+**Lo que NO está probado:** la lectura contra Firestore real desde el panel
+(`RepositorioDeMovimientosFirestore` no tiene prueba: los tests del panel son de
+dominio puro). El parser y los textos sí, incluido el movimiento real de
+producción (`reponer 32`, `0 → 32`).
+
 ## Por qué NO las alternativas
 
 | Alternativa | Por qué no |
@@ -196,7 +250,7 @@ Campo obligatorio. Cuantificado por el agente `presupuesto-lecturas` y
 
 **HU-05.3 cuesta cero:** el filtro y su contador salen del `catalogoProvider`
 en memoria, y las hojas reciben el stock por parámetro. No hay listeners
-nuevos. **Nada lee `movimientos`**: no el panel, no la vidriera, no el seed; y
+nuevos. **Nada lee `movimientos` (hasta HU-05.4, §6)**: ni la vidriera, ni el seed; y
 `collection('productos')` no trae subcolecciones. No escala con las visitas.
 
 ⚠️ **Dos riesgos del futuro que este ADR deja escritos** (los midió el agente):
@@ -279,8 +333,8 @@ Se actualiza a medida que ocurre. **Hoy:**
   y los de reglas se corren a mano, y ahora hay dos suites así. Pesa más que
   antes porque una es la que protege la plata. **Disparador:** la sesión de
   `crearOrden`, como ya estaba anotado en ADR 008.
-- **HU-05.4** — ver los movimientos de un producto. **Disparador:** la primera
-  diferencia que nadie sepa explicar. El dato ya se guarda.
+- ~~**HU-05.4** — ver los movimientos de un producto.~~ **Construida el
+  2026-09-24** (§6). Falta que el dueño la mire y diga si la hoja le sirve.
 - **Confirmar el tope de 5.000** con el dueño (§1).
 - **El `procesarFoto` desplegado NO usa todavía `exigirAdmin`**: el deploy fue
   `--only functions:moverStock` (hallazgo 3) y su fecha de actualización sigue

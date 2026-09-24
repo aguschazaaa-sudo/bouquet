@@ -261,17 +261,23 @@ service cloud.firestore {
       // donde.  Lo escribe SOLO esa callable, con el Admin SDK, en la MISMA
       // transaccion que el cambio de `stock`.
       //
-      // Cerrado a los clientes por el mismo motivo que `ordenes/marcadores`:
-      // si el panel pudiera CREAR uno, marcaria un movimiento como hecho sin
-      // que ocurra; si pudiera BORRARLO, lo dejaria ocurrir dos veces.  Las
-      // dos cosas son stock.  Tampoco se lee desde el panel todavia: verlos
-      // es HU-05.4 y espera su disparador; cuando llegue, se abre `read` aca
-      // y no antes.
+      // ESCRIBIRLOS esta cerrado a los clientes por el mismo motivo que
+      // `ordenes/marcadores`: si el panel pudiera CREAR uno, marcaria un
+      // movimiento como hecho sin que ocurra; si pudiera BORRARLO, lo dejaria
+      // ocurrir dos veces.  Las dos cosas son stock.
+      //
+      // LEERLOS se abrio con HU-05.4 (ADR 016 §6): el panel los muestra, con
+      // los mas nuevos primero.  `list` exige un `limit` de hasta 50: la
+      // coleccion crece sin fin (nunca se borra) y una lectura sin limite
+      // leeria TODA.  Sin `limit` la regla no evalua y rechaza; ese es el
+      // efecto buscado, no un descuido.
       //
       // Esta subcoleccion NO entra en la lectura del catalogo ni en la del
       // panel: `collection('productos')` no trae subcolecciones.
       match /movimientos/{idMovimiento} {
-        allow read, write: if false;
+        allow get: if esAdmin();
+        allow list: if esAdmin() && request.query.limit <= 50;
+        allow create, update, delete: if false;
       }
     }
 

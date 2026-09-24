@@ -1,7 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/firebase/firebase_providers.dart';
+import 'data/repositorio_de_movimientos_firestore.dart';
 import 'data/repositorio_de_stock_firebase.dart';
+import 'domain/movimiento_de_stock.dart';
+import 'domain/repositorio_de_movimientos.dart';
 import 'domain/repositorio_de_stock.dart';
 
 /// El unico archivo de la feature que conoce la implementacion.
@@ -10,3 +13,20 @@ import 'domain/repositorio_de_stock.dart';
 final repositorioDeStockProvider = Provider<RepositorioDeStock>(
   (ref) => RepositorioDeStockFirebase(ref.watch(functionsProvider)),
 );
+
+final repositorioDeMovimientosProvider = Provider<RepositorioDeMovimientos>(
+  (ref) => RepositorioDeMovimientosFirestore(
+    ref.watch(firestoreProvider),
+    ref.watch(authProvider),
+  ),
+);
+
+/// Los últimos movimientos de un vino (HU-05.4). Se pide **cuando se abre la
+/// hoja**, nunca al abrir la ficha: el que no mira los movimientos no paga
+/// sus lecturas. `autoDispose`: cada apertura lee de nuevo, así que un
+/// movimiento recién hecho aparece.
+final movimientosProvider = FutureProvider.autoDispose
+    .family<List<MovimientoDeStock>, String>(
+      (ref, productoId) =>
+          ref.watch(repositorioDeMovimientosProvider).ultimos(productoId),
+    );

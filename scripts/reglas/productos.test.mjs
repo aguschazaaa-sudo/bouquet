@@ -21,7 +21,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { arrayRemove, arrayUnion, deleteDoc, deleteField, doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { arrayRemove, arrayUnion, collection, collectionGroup, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -166,11 +166,12 @@ describe('el stock lo escribe solo el servidor', () => {
 
 // El marcador de `moverStock` (EP-05, ADR 016).  Lo escribe el servidor con
 // el Admin SDK, que no pasa por las reglas: se simula con `sembrar`.
-describe('los movimientos de stock son del servidor', () => {
+describe('los movimientos de stock: el panel los lee, el servidor los escribe', () => {
   const movimiento = (db, id = 'mov-0000000000000001') => doc(db, 'productos', SLUG, 'movimientos', id);
+  const coleccion = (db) => collection(db, 'productos', SLUG, 'movimientos');
   const datos = { antes: 4, despues: 10, por: 'operador' };
 
-  test('el panel no crea, ni lee, ni corrige, ni borra un movimiento', async () => {
+  test('el panel no crea, ni corrige, ni borra un movimiento', async () => {
     // Control positivo: sobre el MISMO producto el panel si lee y edita.  Sin
     // esto, un `assertFails` de abajo pasaria tambien con todo cerrado.
     await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
@@ -179,16 +180,42 @@ describe('los movimientos de stock son del servidor', () => {
 
     await assertFails(setDoc(movimiento(admin), datos));
     await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
-    await assertFails(getDoc(movimiento(admin)));
     await assertFails(updateDoc(movimiento(admin), { despues: 999 }));
     await assertFails(deleteDoc(movimiento(admin)));
   });
 
-  test('un comprador y un anonimo tampoco', async () => {
+  test('el panel lee uno y lista los ultimos, con limite (HU-05.4)', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
+    await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
+    await assertSucceeds(getDoc(movimiento(admin)));
+    // La consulta REAL del panel: los mas nuevos primero, 20.
+    await assertSucceeds(getDocs(query(coleccion(admin), orderBy('en', 'desc'), limit(20))));
+    // El borde: 50 pasa, 51 no.
+    await assertSucceeds(getDocs(query(coleccion(admin), limit(50))));
+    await assertFails(getDocs(query(coleccion(admin), limit(51))));
+  });
+
+  test('listarlos SIN limite se rechaza: leeria la coleccion entera', async () => {
+    await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
+    await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
+    await assertFails(getDocs(coleccion(admin)));
+    await assertFails(getDocs(query(coleccion(admin), orderBy('antes', 'desc'))));
+  });
+
+  test('un collectionGroup sobre movimientos se rechaza, tambien siendo admin', async () => {
+    // Hoy lo niega el `/{documento=**}` de mas abajo.  Si alguien agrega un
+    // `match /{path=**}/movimientos/{id}` (p. ej. para crearOrden), esto avisa.
+    await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
+    await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
+    await assertFails(getDocs(query(collectionGroup(admin, 'movimientos'), limit(20))));
+  });
+
+  test('un comprador y un anonimo no leen ni escriben', async () => {
     await sembrar(`productos/${SLUG}`, vino({ stock: 4 }));
     await sembrar(`productos/${SLUG}/movimientos/mov-0000000000000001`, datos);
     for (const db of [comprador, anonimo]) {
       await assertFails(getDoc(movimiento(db)));
+      await assertFails(getDocs(query(coleccion(db), limit(20))));
       await assertFails(setDoc(movimiento(db, 'mov-0000000000000002'), datos));
     }
   });

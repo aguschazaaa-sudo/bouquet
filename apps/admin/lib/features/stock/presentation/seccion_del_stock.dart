@@ -4,6 +4,8 @@ import '../../../core/contratos/catalogo_publico.dart';
 import '../../../theme/tokens.dart';
 import 'hoja_de_correccion.dart';
 import 'hoja_de_reposicion.dart';
+import 'hoja_de_movimientos.dart';
+import 'textos_de_movimientos.dart' show textoVerMovimientos;
 import 'textos_del_stock.dart';
 
 /// El stock de un vino y las dos maneras de moverlo (HU-05.1 y HU-05.2).
@@ -130,6 +132,16 @@ class SeccionDelStock extends StatelessWidget {
                 child: const Text('Corregir el stock'),
               ),
             ],
+          ),
+          TextButton.icon(
+            onPressed: () => HojaDeMovimientos.mostrar(
+              context,
+              productoId: productoId,
+              nombre: nombre,
+              botellas: botellas,
+            ),
+            icon: const Icon(Icons.history),
+            label: const Text(textoVerMovimientos),
           ),
         ],
       ),

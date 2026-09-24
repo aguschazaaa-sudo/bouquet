@@ -5,8 +5,8 @@
 
 > **Construida el 2026-09-23** (HU-05.1 a 05.3), sin openspec: la decisión, el
 > presupuesto de lecturas y los ocho hallazgos de `revisor-pagos` están en
-> [ADR 016](../../architecture/decisions/016-mover-el-stock.md). HU-05.4 sigue
-> con su disparador.
+> [ADR 016](../../architecture/decisions/016-mover-el-stock.md). **HU-05.4 se construyó el 2026-09-24**
+> (ADR 016 §6), antes de su disparador.
 
 **Objetivo:** que la tienda nunca venda lo que no hay, y que el número del
 panel sea el del depósito.
@@ -66,7 +66,9 @@ pocos, **para** reponer a tiempo.
 —reposiciones, ajustes, ventas, cancelaciones—, **para** explicar una
 diferencia.
 
-- **Disparador:** la primera diferencia que nadie sepa explicar. Hasta
-  entonces, no.
+- **CONSTRUIDA el 2026-09-24**, antes de su disparador (*la primera
+  diferencia que nadie sepa explicar*), para cerrar el hito 1. Una hoja con los
+  últimos 20; **dice `Vos` u `Otra persona`, no un nombre** porque el movimiento
+  guarda un uid ([ADR 016 §6](../../architecture/decisions/016-mover-el-stock.md)).
 - **Abierto:** es una colección nueva y lecturas nuevas; su presupuesto se
   cuantifica en el ADR antes de proponerla (`CLAUDE.md`).
