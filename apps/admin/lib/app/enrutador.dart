@@ -12,6 +12,9 @@ import '../features/catalogo/presentation/vino/pagina_del_vino.dart';
 import '../features/estructura/presentation/estructura_del_panel.dart';
 import '../features/estructura/presentation/pagina_no_encontrada.dart';
 import '../features/estructura/presentation/pantalla_de_espera.dart';
+import '../features/pedidos/domain/orden.dart';
+import '../features/pedidos/presentation/pagina_de_cargar_pedido.dart';
+import '../features/pedidos/presentation/pagina_del_pedido.dart';
 import '../features/pedidos/presentation/pantalla_de_pedidos.dart';
 import 'destino.dart';
 import 'rutas.dart';
@@ -74,6 +77,26 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
             path: Rutas.pedidos,
             pageBuilder: (_, _) =>
                 const NoTransitionPage(child: PantallaDePedidos()),
+            routes: [
+              // `nuevo` ANTES que `:id`, para que la palabra no se lea como un
+              // id (HU-10.1).
+              GoRoute(
+                path: 'nuevo',
+                builder: (_, _) => const PaginaDeCargarPedido(),
+              ),
+              // El detalle recibe la Orden que la bandeja ya cargo por `extra`:
+              // desde la lista no lee nada. Por URL directa lee un documento.
+              GoRoute(
+                path: ':id',
+                builder: (_, estado) => PaginaDelPedido(
+                  id: estado.pathParameters['id']!,
+                  ordenInicial: switch (estado.extra) {
+                    final Orden o => o,
+                    _ => null,
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),

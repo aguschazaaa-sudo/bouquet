@@ -8,7 +8,6 @@ import 'textos_del_stock.dart';
 
 const textoTituloDeMovimientos = 'Movimientos';
 const textoVerMovimientos = 'Ver los últimos movimientos';
-const textoOcultarMovimientos = 'Ocultar los movimientos';
 const textoSinMovimientos =
     'Todavía no hay movimientos: el stock no se cargó ni se corrigió desde el '
     'panel.';
@@ -20,6 +19,12 @@ const textoNoSePudieronLeer =
 ///
 ///   `Cargó 32 botellas` · `Cargó 2 cajas de 6` · `Corrigió el stock (conteo)`
 String queSeHizo(MovimientoDeStock m, {required int botellas}) {
+  // Una venta no es una operacion que el operador pida: se dice aparte.
+  final venta = m.venta;
+  if (venta != null) {
+    final numero = venta.numero == null ? '' : ' (pedido ${venta.numero})';
+    return 'Se vendió ${_unidades(venta.cantidad, botellas)}$numero';
+  }
   final operacion = m.operacion;
   return switch (operacion) {
     Reponer(:final cantidad) => 'Cargó ${_unidades(cantidad, botellas)}',

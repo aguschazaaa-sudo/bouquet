@@ -13,6 +13,7 @@ class MovimientoDeStock {
     required this.despues,
     required this.operacion,
     required this.esMio,
+    this.venta,
   });
 
   final String id;
@@ -29,8 +30,27 @@ class MovimientoDeStock {
   /// movimiento de una versión más nueva se muestra igual, sin detalle.
   final OperacionDeStock? operacion;
 
+  /// Si el movimiento es una **venta** de `crearOrdenDelPanel` (ADR 018 §8) y
+  /// no algo que el operador pidio: cuanto se vendio y de que pedido. Vive
+  /// aparte de [operacion] a proposito: `OperacionDeStock` es lo que el operador
+  /// PIDE a `moverStock`, y una venta no se pide desde una hoja.
+  final VentaDePedido? venta;
+
   /// Lo hizo quien está mirando. El movimiento guarda el uid y nada más:
   /// **no hay forma de decir el nombre de otra persona**, así que la pantalla
   /// distingue *vos* de *otra persona*.
   final bool esMio;
+}
+
+/// Lo que una venta le saco al stock de un vino: cuantas unidades y de que
+/// pedido (ADR 018 §8). Es el `operacion` de un movimiento `venta-<idPedido>`.
+class VentaDePedido {
+  const VentaDePedido({required this.cantidad, required this.numero});
+
+  /// Unidades de venta que se vendieron.
+  final int cantidad;
+
+  /// El numero del pedido, el que dice el comprador. `null` si el movimiento no
+  /// lo trae: se muestra la venta igual, sin numero.
+  final int? numero;
 }

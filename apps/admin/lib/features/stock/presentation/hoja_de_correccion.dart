@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/contratos/stock.dart';
-import '../../../core/presentation/aviso.dart';
 import '../domain/cantidad_escrita.dart';
 import '../domain/fallo_de_stock.dart';
 import '../domain/id_de_movimiento.dart';
 import '../stock_providers.dart';
+import 'aviso_de_ventas_sin_despachar.dart';
 import 'campo_de_cantidad.dart';
 import 'encabezado_de_hoja.dart';
+import 'resultado_de_la_correccion.dart';
 import 'selector_de_motivo.dart';
 import 'textos_del_stock.dart';
 
@@ -150,6 +151,12 @@ class _HojaDeCorreccionState extends ConsumerState<HojaDeCorreccion> {
                 titulo: 'Corregir el stock',
                 nombre: widget.nombre,
               ),
+              // Lo vendido y sin despachar sigue en la estanteria: contarlo sin
+              // restarlo pisa la venta (ADR 018 §9).
+              AvisoDeVentasSinDespachar(
+                productoId: widget.productoId,
+                botellas: widget.botellas,
+              ),
               const SizedBox(height: 18),
               CampoDeCantidad(
                 controlador: _escrito,
@@ -168,17 +175,7 @@ class _HojaDeCorreccionState extends ConsumerState<HojaDeCorreccion> {
                 habilitado: !_guardando,
                 alCambiar: (m) => setState(() => _motivo = m),
               ),
-              if (queda != null) ...[
-                const SizedBox(height: 12),
-                Text(queda, style: Theme.of(context).textTheme.bodyMedium),
-              ],
-              if (_fallo case final fallo?) ...[
-                const SizedBox(height: 14),
-                Aviso(
-                  texto: textoDelFalloDeStock(fallo),
-                  tono: TonoDelAviso.error,
-                ),
-              ],
+              ResultadoDeLaCorreccion(queda: queda, fallo: _fallo),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: _sePuedeGuardar ? _guardar : null,
