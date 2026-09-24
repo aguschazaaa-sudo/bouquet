@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-24 - commit `4c86f81` - huella del cuerpo `631e66a307e7`
+> **Generado:** 2026-09-24 - commit `63eeaca` - huella del cuerpo `2ba6342bee76`
 
 ---
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.36.0
+### Scripts de la raiz - `bouquet` 0.36.2
 
 | Script | Comando |
 |---|---|
@@ -117,7 +117,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/features/stock/codigos_de_stock_test.dart` | 10 |
 | `apps/admin/test/features/stock/movimientos_test.dart` | 15 |
 | `apps/admin/test/features/stock/textos_y_cantidades_test.dart` | 20 |
-| `apps/admin/test/features/stock/ventas_sin_despachar_test.dart` | 16 |
+| `apps/admin/test/features/stock/ventas_sin_despachar_test.dart` | 17 |
 | `apps/tienda/test/almacen.test.ts` | 1 |
 | `apps/tienda/test/envios.test.ts` | 13 |
 | `apps/tienda/test/filtros.test.ts` | 10 |
@@ -143,7 +143,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `scripts/acceso/acceso.test.mjs` | 11 |
 | `scripts/reglas/ordenes.test.mjs` | 16 |
 | `scripts/reglas/productos.test.mjs` | 60 |
-| **total** | **763** |
+| **total** | **764** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -406,4 +406,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 141. Archivos de test: 50. Casos de test: 763.
+Archivos de codigo recorridos: 141. Archivos de test: 50. Casos de test: 764.
