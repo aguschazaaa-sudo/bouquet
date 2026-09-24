@@ -38,3 +38,21 @@ EstadoPago estadoDePagoInicial(Origen origen) =>
 
 /// Cuantas lineas distintas puede tener un pedido. Espejo de `TOPE_DE_LINEAS`.
 const topeDeLineasDelPedido = 30;
+
+/// El precio de una unidad de venta no pasa de esto, en centavos. Espejo de
+/// `PRECIO_MAXIMO`: es el mayor que, por el maximo de unidades y de lineas, da
+/// un entero seguro. Un vino con un precio mayor no se vende y se dice.
+const precioMaximo = 60047995031;
+
+/// El largo maximo de cada texto libre de la entrega. Espejo de
+/// `LARGOS_DE_ENTREGA`: sin tope, una `referencia` de 900.000 caracteres deja
+/// la Orden cerca del MiB de Firestore (ADR 018, hallazgo 8 de `revisor-pagos`).
+const largosDeEntrega = <String, int>{
+  'nombre': 120,
+  'email': 254,
+  'calle': 120,
+  'numero': 20,
+  'piso': 20,
+  'referencia': 300,
+  'localidad': 120,
+};

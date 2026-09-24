@@ -39,6 +39,10 @@ Esta propuesta la cita y no la repite.
   pedido, la bandeja por estado de entrega y el detalle— sobre un espejo de la
   Orden en Dart.
 - Se borra `textoOcultarMovimientos`, una constante huérfana que dejó HU-05.4.
+- **Se sumó por la revisión de `revisor-pagos`** (ver el ADR 018, sección final):
+  el aviso de *vendidas sin despachar* en la hoja de corrección, la venta en el
+  historial del vino, un `already-exists` que trae el número, `sin-precio`, topes de
+  precio y de largo, y un endurecimiento de la regla `update` de `ordenes`.
 
 **No cambia:** la vidriera, `procesarFoto`, `moverStock`, ni el cobro. Tampoco se
 puede **cancelar** ni **despachar** un pedido desde el panel todavía: son EP-07.
@@ -56,6 +60,11 @@ puede **cancelar** ni **despachar** un pedido desde el panel todavía: son EP-07
   (HU-06.1).
 - `detalle-del-pedido`: un pedido entero, con el rótulo que sale de la proyección
   (HU-06.2).
+- `stock-vendido-sin-despachar`: el aviso en la hoja de corrección de stock y la
+  venta en el historial del vino. **Entró por `revisor-pagos`** (hallazgos 1 y 2):
+  [ADR 016](../../../docs/vault/architecture/decisions/016-mover-el-stock.md) lo dejó
+  escrito como bloqueante del deploy de `crearOrden`, y este cambio activa ese
+  descuento.
 
 ### Modified Capabilities
 

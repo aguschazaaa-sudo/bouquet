@@ -32,7 +32,7 @@ export type EstadoPublico = (typeof ESTADOS_PUBLICOS)[number];
  * ahi el avance normal.
  *
  * No hay `default` que trague casos: un par sin rama seria un rotulo
- * inventado, y hay un test que recorre los 30.
+ * inventado, y hay un test que recorre los 36.
  */
 export function proyectarEstadoPublico(pago: EstadoPago, entrega: EstadoEntrega): EstadoPublico {
   // 1. Cancelada manda sobre todo lo demas.
@@ -62,7 +62,7 @@ export function proyectarEstadoPublico(pago: EstadoPago, entrega: EstadoEntrega)
   if (pago === 'rechazada') return 'pago_rechazado';
   if (pago === 'en_proceso') return 'confirmando';
 
-  // 7-9. Avance normal. Aca pago solo puede ser 'pendiente' o 'pagada'.
+  // 7-9. Avance normal. Aca pago solo puede ser 'pendiente', 'pagada' o 'por_fuera'.
   if (entrega === 'despachada') return 'en_camino';
   if (entrega === 'preparando') return 'en_preparacion';
   //    Sin preparar: pagada (hay que armarlo), por_fuera (hay que armarlo, y el

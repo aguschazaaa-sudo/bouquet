@@ -34,6 +34,22 @@ export const TOPE_DE_LINEAS = 30;
 const ID_DE_PEDIDO = /^[A-Za-z0-9_-]{16,64}$/;
 
 /**
+ * Firestore reserva los ids `__...__`.  Como el id del pedido ES el id de la
+ * Orden, uno asi pasaba el parser y Firestore lo rechazaba: el operador veia
+ * `internal` en vez de un motivo (hallazgo 7 de `revisor-pagos`).
+ */
+const RESERVADO = /^__.*__$/;
+
+/**
+ * El precio de una unidad de venta no pasa de esto, en centavos.  Es el mayor
+ * que, multiplicado por el maximo de unidades por linea y de lineas, todavia da
+ * un entero seguro: por encima, `sumar` lanza un `RangeError` que la callable
+ * contestaria como `internal` en vez de rechazar con un motivo (hallazgo 6).
+ * ~600 millones de pesos por unidad: ningun vino se acerca.
+ */
+export const PRECIO_MAXIMO = Math.floor(Number.MAX_SAFE_INTEGER / (TOPE_DE_STOCK * TOPE_DE_LINEAS));
+
+/**
  * Lo que recibe `crearOrdenDelPanel`.
  *
  * `entrega` ya viene NORMALIZADO: `validarDatosDeEntrega` es el mismo
@@ -75,8 +91,8 @@ function parsearLinea(x: unknown, indice: number): Validacion<LineaDePedido> {
   }
   // Un precio de 0 no es un precio: pasa la comparacion contra un producto
   // publicado con `precio: 0` y deja una venta a cero (hallazgo 2, ADR 008).
-  if (!esEnteroSano(x.precioUnitarioVisto) || x.precioUnitarioVisto < 1) {
-    return { ok: false, motivo: `${donde}: el precio visto es un entero de centavos, mayor que cero` };
+  if (!esEnteroSano(x.precioUnitarioVisto) || x.precioUnitarioVisto < 1 || x.precioUnitarioVisto > PRECIO_MAXIMO) {
+    return { ok: false, motivo: `${donde}: el precio visto es un entero de centavos, de 1 a ${PRECIO_MAXIMO}` };
   }
   return {
     ok: true,
@@ -91,6 +107,11 @@ function parsearLinea(x: unknown, indice: number): Validacion<LineaDePedido> {
 /**
  * RECHAZA lo que no cumple; no lo corrige.  Devuelve el PRIMER motivo.
  *
+ * En la RAIZ y en las LINEAS rechaza una clave de mas.  Dentro de `entrega` no:
+ * `validarDatosDeEntrega` rearma el objeto y descarta lo que no conoce, asi que
+ * una clave de mas no llega a la Orden (`origen`, `estadoPago` o `propio` ahi
+ * adentro no hacen nada), pero tampoco se rechaza.
+ *
  * El objeto que devuelve se arma con las claves en ORDEN FIJO: la callable
  * compara las lineas de un reintento contra las guardadas, y eso solo es
  * estable si el orden lo es.
@@ -99,7 +120,11 @@ export function parsearPedidoDelPanel(entrada: unknown): Validacion<PedidoDelPan
   if (!esObjeto(entrada) || !soloClaves(entrada, ['idPedido', 'lineas', 'entrega'])) {
     return { ok: false, motivo: 'el pedido no tiene la forma {idPedido, lineas, entrega}' };
   }
-  if (typeof entrada.idPedido !== 'string' || !ID_DE_PEDIDO.test(entrada.idPedido)) {
+  if (
+    typeof entrada.idPedido !== 'string' ||
+    !ID_DE_PEDIDO.test(entrada.idPedido) ||
+    RESERVADO.test(entrada.idPedido)
+  ) {
     return { ok: false, motivo: 'idPedido invalido' };
   }
 

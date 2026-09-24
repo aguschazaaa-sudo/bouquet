@@ -179,6 +179,11 @@ if (!pedido || !Array.isArray(pedido.telefonos) || !pedido.estadoDePagoInicial) 
     if (s !== null && !/^\+549\d{10}$/.test(s)) problema(`pedido: "${s}" no es E.164 argentino movil`);
   }
 
+  // Las 24 jurisdicciones, sin repetir: el panel arma el selector con esta lista.
+  const isos = (pedido.provincias ?? []).map((p) => p.iso);
+  if (isos.length !== 24) problema(`pedido: hay ${isos.length} provincias y deberian ser 24`);
+  if (new Set(isos).size !== isos.length) problema('pedido: hay codigos ISO de provincia repetidos');
+
   const inicial = pedido.estadoDePagoInicial;
   for (const o of pedido.origenes) {
     if (!contrato.pago.estados.includes(inicial[o])) problema(`pedido: ${o} nace en "${inicial[o]}", que no es un estado de pago`);

@@ -23,8 +23,8 @@ import {
   TRANSICIONES_PAGO,
   estadoDePagoInicial,
 } from '../src/orden.ts';
-import { ENTRADAS_DE_TELEFONO, normalizarTelefonoAR } from '../src/envio.ts';
-import { TOPE_DE_LINEAS } from '../src/pedido.ts';
+import { ENTRADAS_DE_TELEFONO, LARGOS_DE_ENTREGA, PROVINCIAS, normalizarTelefonoAR } from '../src/envio.ts';
+import { PRECIO_MAXIMO, TOPE_DE_LINEAS } from '../src/pedido.ts';
 import { ESTADOS_PUBLICOS, REQUIEREN_ACCION, ROTULOS } from '../src/proyeccion.ts';
 import { MONTOS_DE_MUESTRA, centavos, formatearARS } from '../src/dinero.ts';
 import {
@@ -201,6 +201,11 @@ export function construirContrato() {
       estadoDePagoInicial: Object.fromEntries(ORIGENES.map((o) => [o, estadoDePagoInicial(o)])),
       topeDeLineas: TOPE_DE_LINEAS,
       topeDeCantidad: TOPE_DE_STOCK,
+      precioMaximo: PRECIO_MAXIMO,
+      largosDeEntrega: { ...LARGOS_DE_ENTREGA },
+      // El selector del formulario, y lo que `validarDatosDeEntrega` acepta:
+      // el codigo ISO es lo que el correo espera, no el nombre.
+      provincias: PROVINCIAS.map((p) => ({ iso: p.iso, nombre: p.nombre })),
       telefonos: ENTRADAS_DE_TELEFONO.map((entrada) => ({
         entrada,
         e164: normalizarTelefonoAR(entrada),

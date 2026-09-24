@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-24 - commit `999b803` **+ cambios sin commitear** - huella del cuerpo `1be75220c6b4`
+> **Generado:** 2026-09-24 - commit `2dc6b57` **+ cambios sin commitear** - huella del cuerpo `488ce6da0337`
 
 ---
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.34.0
+### Scripts de la raiz - `bouquet` 0.35.0
 
 | Script | Comando |
 |---|---|
@@ -96,7 +96,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/app/destino_test.dart` | 26 |
 | `apps/admin/test/core/contratos/catalogo_publico_test.dart` | 8 |
 | `apps/admin/test/core/contratos/estados_orden_test.dart` | 14 |
-| `apps/admin/test/core/contratos/pedido_test.dart` | 4 |
+| `apps/admin/test/core/contratos/pedido_test.dart` | 7 |
 | `apps/admin/test/core/contratos/plata_test.dart` | 4 |
 | `apps/admin/test/core/contratos/stock_test.dart` | 9 |
 | `apps/admin/test/core/contratos/telefono_test.dart` | 4 |
@@ -109,6 +109,10 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/features/catalogo/en_la_tienda_test.dart` | 18 |
 | `apps/admin/test/features/catalogo/numeros_escritos_test.dart` | 10 |
 | `apps/admin/test/features/fotos/foto_principal_test.dart` | 10 |
+| `apps/admin/test/features/pedidos/codigos_de_pedidos_test.dart` | 10 |
+| `apps/admin/test/features/pedidos/documento_de_la_orden_test.dart` | 11 |
+| `apps/admin/test/features/pedidos/entrega_escrita_test.dart` | 13 |
+| `apps/admin/test/features/pedidos/pedido_a_cargar_test.dart` | 29 |
 | `apps/admin/test/features/stock/codigos_de_stock_test.dart` | 10 |
 | `apps/admin/test/features/stock/movimientos_test.dart` | 15 |
 | `apps/admin/test/features/stock/textos_y_cantidades_test.dart` | 20 |
@@ -121,6 +125,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `functions/test/foto/ruta.test.ts` | 6 |
 | `functions/test/foto/tuberia.test.ts` | 4 |
 | `functions/test/foto/validar.test.ts` | 7 |
+| `functions/test/pedidos/armar.test.ts` | 22 |
 | `functions/test/stock/firma.test.ts` | 4 |
 | `packages/contratos/test/caja.test.ts` | 30 |
 | `packages/contratos/test/cajas.test.ts` | 34 |
@@ -128,14 +133,15 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `packages/contratos/test/dinero.test.ts` | 7 |
 | `packages/contratos/test/envio.test.ts` | 27 |
 | `packages/contratos/test/orden.test.ts` | 17 |
-| `packages/contratos/test/pedido.test.ts` | 16 |
+| `packages/contratos/test/pedido.test.ts` | 21 |
 | `packages/contratos/test/producto.test.ts` | 33 |
 | `packages/contratos/test/proyeccion.test.ts` | 11 |
 | `packages/contratos/test/stock.test.ts` | 20 |
 | `packages/contratos/test/texto.test.ts` | 15 |
 | `scripts/acceso/acceso.test.mjs` | 11 |
+| `scripts/reglas/ordenes.test.mjs` | 16 |
 | `scripts/reglas/productos.test.mjs` | 60 |
-| **total** | **621** |
+| **total** | **730** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -220,7 +226,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `TRANSICIONES_PAGO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts` |
 | `ORIGENES` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts` |
 | `Origen` | tipo | abierto | `scripts/ci/generar_verdad.mjs` |
-| `estadoDePagoInicial` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `scripts/ci/auditar_estados.mjs` |
+| `estadoDePagoInicial` | funcion | abierto | `functions/src/pedidos/armar.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `ESTADOS_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/orden.test.ts`, `packages/contratos/test/proyeccion.test.ts` |
 | `EstadoEntrega` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `NACE_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
@@ -228,7 +234,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `transicionPagoValida` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `transicionEntregaValida` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `entroEn` | funcion | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
-| `entroEnPagada` | valor | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts` |
+| `entroEnPagada` | valor | abierto | `functions/src/index.ts`, `packages/contratos/test/orden.test.ts`, `scripts/reglas/ordenes.test.mjs` |
 | `entroEnReembolsada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `entroEnDespachada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
 | `entroEnEntregada` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/orden.test.ts` |
@@ -238,12 +244,12 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `proyectarEstadoPublico` | funcion | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
 | `ROTULOS` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
 | `REQUIEREN_ACCION` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/proyeccion.test.ts` |
-| `Centavos` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/shared/ui/Precio.tsx` |
+| `Centavos` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/shared/ui/Precio.tsx`, `functions/src/pedidos/armar.ts` |
 | `centavos` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/ElResumen.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/server/envios.ts`, `apps/tienda/src/shared/ui/Precio.tsx`, `apps/tienda/test/envios.test.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/pedido.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `CERO` | valor | **SIN PUERTA - solo tests** | `packages/contratos/test/caja.test.ts` |
 | `desdePesos` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/dinero.test.ts` |
-| `sumar` | funcion | abierto | `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/server/envios.ts`, `functions/src/stock/mover.ts`, `packages/contratos/test/dinero.test.ts` |
-| `porCantidad` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/dinero.test.ts` |
+| `sumar` | funcion | abierto | `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/TarjetaDeCajaSugerida.tsx`, `apps/tienda/src/server/envios.ts`, `functions/src/pedidos/armar.ts`, `functions/src/stock/mover.ts`, `packages/contratos/test/dinero.test.ts` |
+| `porCantidad` | funcion | abierto | `functions/src/pedidos/armar.ts`, `packages/contratos/test/dinero.test.ts` |
 | `formatearARS` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/OpcionDeEntrega.tsx`, `apps/tienda/src/shared/ui/Precio.tsx`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/dinero.test.ts` |
 | `MONTOS_DE_MUESTRA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs` |
 | `TIPOS_DE_PRODUCTO` | valor | **SIN PUERTA - nadie** | - |
@@ -265,11 +271,11 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `TOPE_POR_PEDIDO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/producto.test.ts` |
 | `viajaSolo` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/producto.test.ts` |
 | `balde` | funcion | abierto | `apps/tienda/src/app/carrito/page.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `tope` | funcion | abierto | `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `functions/src/foto/procesar_foto.ts`, `functions/src/foto/validar.ts`, `functions/src/stock/mover.ts`, `functions/test/stock/mover.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/pedido.test.ts`, `packages/contratos/test/producto.test.ts`, `packages/contratos/test/stock.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/auditar_varietales.mjs`, `scripts/reglas/productos.test.mjs` |
+| `tope` | funcion | abierto | `apps/tienda/src/app/vinos/[slug]/page.tsx`, `apps/tienda/src/app/vinos/page.tsx`, `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `functions/src/foto/procesar_foto.ts`, `functions/src/foto/validar.ts`, `functions/src/pedidos/armar.ts`, `functions/src/stock/mover.ts`, `functions/test/stock/mover.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/pedido.test.ts`, `packages/contratos/test/producto.test.ts`, `packages/contratos/test/stock.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/auditar_varietales.mjs`, `scripts/reglas/productos.test.mjs` |
 | `textoDelBalde` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `packages/contratos/test/producto.test.ts` |
 | `esCorte` | funcion | abierto | `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts` |
 | `Validacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts` |
-| `validarProducto` | funcion | abierto | `packages/contratos/test/producto.test.ts`, `scripts/seed/seed.mjs` |
+| `validarProducto` | funcion | abierto | `functions/src/pedidos/armar.ts`, `functions/test/pedidos/armar.test.ts`, `packages/contratos/test/producto.test.ts`, `scripts/seed/seed.mjs` |
 | `ProductoPublicado` | tipo | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/NotaDelVino.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts` |
 | `proyectarProducto` | funcion | **SIN PUERTA - nadie** | - |
 | `DocumentoCrudo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
@@ -294,7 +300,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `Cambio` | tipo | **SIN PUERTA - nadie** | - |
 | `fijarCantidad` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `packages/contratos/test/carrito.test.ts` |
 | `agregar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCaja.tsx`, `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/ci/auditar_estados.mjs`, `scripts/reglas/productos.test.mjs` |
-| `quitar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/acceso/acceso.mjs`, `scripts/acceso/acceso.test.mjs`, `scripts/reglas/productos.test.mjs` |
+| `quitar` | funcion | abierto | `apps/tienda/src/features/carrito/ControlDeCompra.tsx`, `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/textos.ts`, `functions/test/pedidos/armar.test.ts`, `packages/contratos/test/carrito.test.ts`, `scripts/acceso/acceso.mjs`, `scripts/acceso/acceso.test.mjs`, `scripts/reglas/productos.test.mjs` |
 | `unidadesEnCarrito` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/caja.test.ts`, `packages/contratos/test/carrito.test.ts` |
 | `ESTADOS_DE_LINEA` | valor | **SIN PUERTA - nadie** | - |
 | `EstadoDeLinea` | tipo | **SIN PUERTA - nadie** | - |
@@ -312,7 +318,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `contarCaja` | funcion | abierto | `apps/tienda/src/features/carrito/ContadorDelCarrito.tsx`, `packages/contratos/test/caja.test.ts` |
 | `estadoDeLaCaja` | funcion | abierto | `apps/tienda/src/features/carrito/EstadoDeLaCaja.tsx`, `apps/tienda/src/features/carrito/TotalDelCarrito.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
 | `sePuedeCobrar` | funcion | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts` |
-| `LineaDePedido` | tipo | **SIN PUERTA - nadie** | - |
+| `LineaDePedido` | tipo | abierto | `functions/src/pedidos/armar.ts` |
 | `PedidoDeCompra` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/carrito.test.ts` |
 | `CajaSugerida` | tipo | **SIN PUERTA - solo tests** | `packages/contratos/test/cajas.test.ts` |
 | `CajasArmadas` | tipo | **SIN PUERTA - nadie** | - |
@@ -334,7 +340,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `MODALIDADES_DE_ENTREGA` | valor | **SIN PUERTA - nadie** | - |
 | `ModalidadDeEntrega` | tipo | **SIN PUERTA - nadie** | - |
 | `DestinoDeEnvio` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
-| `PROVINCIAS` | valor | abierto | `apps/tienda/src/features/carrito/checkout/ADondeVa.tsx` |
+| `PROVINCIAS` | valor | abierto | `apps/tienda/src/features/carrito/checkout/ADondeVa.tsx`, `packages/contratos/scripts/generar.mjs` |
 | `ProvinciaIso` | tipo | abierto | `apps/tienda/src/server/envios.ts` |
 | `esProvinciaIso` | funcion | abierto | `apps/tienda/src/server/envios.ts` |
 | `nombreDeProvincia` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx` |
@@ -345,7 +351,8 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `normalizarTelefonoAR` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/pedido.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `ENTRADAS_DE_TELEFONO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts` |
 | `DatosDeEntrega` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts` |
-| `validarDatosDeEntrega` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/test/envio.test.ts` |
+| `LARGOS_DE_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts` |
+| `validarDatosDeEntrega` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts` |
 | `MotivoSinCotizacion` | tipo | **SIN PUERTA - nadie** | - |
 | `ResultadoDeCotizacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts` |
 | `normalizar` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
@@ -363,17 +370,18 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `aplicarOperacion` | funcion | abierto | `functions/src/stock/mover.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
 | `CASOS_DE_MOVIMIENTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
 | `TOPE_DE_LINEAS` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts` |
-| `PedidoDelPanel` | tipo | **SIN PUERTA - nadie** | - |
-| `parsearPedidoDelPanel` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/pedido.test.ts` |
-| `ItemDeOrden` | tipo | **SIN PUERTA - nadie** | - |
+| `PRECIO_MAXIMO` | valor | abierto | `functions/src/pedidos/armar.ts`, `functions/test/pedidos/armar.test.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts` |
+| `PedidoDelPanel` | tipo | abierto | `functions/src/pedidos/armar.ts`, `functions/src/pedidos/crear.ts`, `functions/test/pedidos/armar.test.ts` |
+| `parsearPedidoDelPanel` | funcion | abierto | `functions/src/pedidos/crear_orden_del_panel.ts`, `functions/test/pedidos/armar.test.ts`, `functions/test/pedidos/crear.emulador.mjs`, `packages/contratos/test/pedido.test.ts` |
+| `ItemDeOrden` | tipo | abierto | `functions/src/pedidos/armar.ts` |
 | `ContactoDeOrden` | tipo | **SIN PUERTA - nadie** | - |
 | `EntregaDeOrden` | tipo | **SIN PUERTA - nadie** | - |
-| `OrdenNueva` | tipo | **SIN PUERTA - nadie** | - |
-| `contactoYEntrega` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/pedido.test.ts` |
+| `OrdenNueva` | tipo | abierto | `functions/src/pedidos/armar.ts` |
+| `contactoYEntrega` | funcion | abierto | `functions/src/pedidos/armar.ts`, `functions/src/pedidos/crear.ts`, `packages/contratos/test/pedido.test.ts` |
 
-**156 simbolos exportados. 53 SIN PUERTA.**
+**158 simbolos exportados. 46 SIN PUERTA.**
 
-Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `porCantidad`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `Balde`, `viajaSolo`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `CasoDeBalde`, `ClaseDeDescarte`, `CasoDeDescarte`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `botellasSueltas`, `LineaDePedido`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `pesoDelBultoKg`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `MotivoSinCotizacion`, `PedidoDelPanel`, `parsearPedidoDelPanel`, `ItemDeOrden`, `ContactoDeOrden`, `EntregaDeOrden`, `OrdenNueva`, `contactoYEntrega`.
+Sin puerta hoy: `EstadoPago`, `EstadoEntrega`, `transicionPagoValida`, `transicionEntregaValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `desdePesos`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `Balde`, `viajaSolo`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `CasoDeBalde`, `ClaseDeDescarte`, `CasoDeDescarte`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `botellasSueltas`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `pesoDelBultoKg`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `MotivoSinCotizacion`, `ContactoDeOrden`, `EntregaDeOrden`.
 
 Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
@@ -396,4 +404,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 135. Archivos de test: 42. Casos de test: 621.
+Archivos de codigo recorridos: 141. Archivos de test: 48. Casos de test: 730.

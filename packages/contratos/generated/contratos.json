@@ -1175,6 +1175,114 @@
     },
     "topeDeLineas": 30,
     "topeDeCantidad": 5000,
+    "precioMaximo": 60047995031,
+    "largosDeEntrega": {
+      "nombre": 120,
+      "email": 254,
+      "calle": 120,
+      "numero": 20,
+      "piso": 20,
+      "referencia": 300,
+      "localidad": 120
+    },
+    "provincias": [
+      {
+        "iso": "B",
+        "nombre": "Buenos Aires"
+      },
+      {
+        "iso": "C",
+        "nombre": "Ciudad de Buenos Aires"
+      },
+      {
+        "iso": "K",
+        "nombre": "Catamarca"
+      },
+      {
+        "iso": "H",
+        "nombre": "Chaco"
+      },
+      {
+        "iso": "U",
+        "nombre": "Chubut"
+      },
+      {
+        "iso": "X",
+        "nombre": "Córdoba"
+      },
+      {
+        "iso": "W",
+        "nombre": "Corrientes"
+      },
+      {
+        "iso": "E",
+        "nombre": "Entre Ríos"
+      },
+      {
+        "iso": "P",
+        "nombre": "Formosa"
+      },
+      {
+        "iso": "Y",
+        "nombre": "Jujuy"
+      },
+      {
+        "iso": "L",
+        "nombre": "La Pampa"
+      },
+      {
+        "iso": "F",
+        "nombre": "La Rioja"
+      },
+      {
+        "iso": "M",
+        "nombre": "Mendoza"
+      },
+      {
+        "iso": "N",
+        "nombre": "Misiones"
+      },
+      {
+        "iso": "Q",
+        "nombre": "Neuquén"
+      },
+      {
+        "iso": "R",
+        "nombre": "Río Negro"
+      },
+      {
+        "iso": "A",
+        "nombre": "Salta"
+      },
+      {
+        "iso": "J",
+        "nombre": "San Juan"
+      },
+      {
+        "iso": "D",
+        "nombre": "San Luis"
+      },
+      {
+        "iso": "Z",
+        "nombre": "Santa Cruz"
+      },
+      {
+        "iso": "S",
+        "nombre": "Santa Fe"
+      },
+      {
+        "iso": "G",
+        "nombre": "Santiago del Estero"
+      },
+      {
+        "iso": "V",
+        "nombre": "Tierra del Fuego"
+      },
+      {
+        "iso": "T",
+        "nombre": "Tucumán"
+      }
+    ],
     "telefonos": [
       {
         "entrada": "3548412233",

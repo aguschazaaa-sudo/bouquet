@@ -76,6 +76,22 @@ El panel MUST traducir `sin-stock`, `cambio-el-precio`, `already-exists`, `permi
 - **WHEN** el servidor responde `cambio-el-precio`
 - **THEN** el panel actualiza el precio de esa línea y pide confirmar de nuevo
 
+### Requirement: Un pedido que ya existe SHALL mandar a abrirlo, no a cargar otro
+
+Cuando el servidor responde `already-exists` con un `numero`, el panel MUST decir que ese pedido ya está cargado con ese número y ofrecer abrirlo, y NO MUST ofrecer cargar otro: otro sería un pedido duplicado.
+
+#### Scenario: Reintento con algo cambiado
+- **WHEN** el reintento vuelve con `already-exists` y `numero: 7`
+- **THEN** el panel dice que el pedido 7 ya estaba cargado y ofrece abrirlo, sin dejar el botón de confirmar activo
+
+### Requirement: El selector SHALL marcar los vinos que la tienda no muestra
+
+Un vino elegible que no está publicado MUST mostrarse con la marca *«no está en la tienda»*: se puede vender igual, pero el operador tiene que saberlo.
+
+#### Scenario: Un vino despublicado
+- **WHEN** el vino tiene `publicado: false` y stock
+- **THEN** aparece elegible con la marca, y elegirlo funciona
+
 ### Requirement: Una carga exitosa SHALL dejar el pedido a la vista
 
 Al terminar, el panel MUST mostrar el número de la Orden y llevar a su detalle.

@@ -82,20 +82,22 @@ misma línea pero otra dirección **devuelve la Orden original sin actualizarla*
 Corregir un dato después de crear no es un reintento, y hoy no hay editar (EP-07).
 Queda en el texto de la pantalla de éxito.
 
-### D5. Un núcleo, dos callables
+### D5. Un núcleo, dos callables — con el origen tipado, no parametrizado
 
-`crear.ts` recibe el `origen` como parámetro. **Hoy sólo la del panel lo llama, con
-`whatsapp`**, pero el núcleo no tiene un `if (origen === 'whatsapp')`
-escondido: la diferencia entre origen es un parámetro `ReglasDeOrigen`
-(`{ exigeCajaDeSeis: boolean }`). La de la vidriera, cuando exista, pasa `true`.
+`armarOrden` recibe el `origen` **de quien lo llama**, nunca del pedido, y hoy el
+tipo sólo admite `'whatsapp'`. La diferencia entre orígenes no vive en un `if
+(origen === 'whatsapp')` escondido: el día que exista la de la vidriera, esa
+callable **amplía el tipo y escribe su propia rama** (claim, caja de seis).
 
 *Por qué ahora y no después:* es el punto donde el hallazgo 12 se decide bien o
-mal. Si el núcleo aprende el origen leyendo el pedido, la puerta que se cierra en
-ADR 018 §1 queda abierta en el primer refactor.
+mal. Si el núcleo aprendiera el origen leyendo el pedido, la puerta que se cierra
+en ADR 018 §1 quedaría abierta en el primer refactor. Y `parsearPedidoDelPanel`
+**rechaza** un pedido que traiga `origen` o `estadoPago`.
 
-**No se implementa** la rama `exigeCajaDeSeis: true`: sin consumidor sería código
-sin call site. El parámetro existe, la rama rechaza con `unimplemented` y tiene un
-test que lo dice.
+*Alternativa descartada:* un parámetro `ReglasDeOrigen { exigeCajaDeSeis }` con la
+rama de la vidriera rechazando con `unimplemented`. Se escribió primero en este
+diseño y se sacó al programar: sin consumidor era código muerto con un test que
+lo decía, y el tipo `'whatsapp'` dice lo mismo sin una línea ejecutable.
 
 ### D6. El panel: una feature `pedidos/`, de la hoja a la página
 

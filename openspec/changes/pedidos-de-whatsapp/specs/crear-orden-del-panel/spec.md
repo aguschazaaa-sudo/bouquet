@@ -57,7 +57,7 @@ La callable SHALL, en **una** transacción de Firestore, descontar `cantidad` de
 
 ### Requirement: El mismo `idPedido` SHALL ser una sola Orden
 
-`ordenId` MUST ser el `idPedido` del pedido, de modo que crear la Orden sea escribir su propio marcador. Un reintento con las mismas líneas SHALL devolver el `numero` que ya existe sin tocar nada; con otras líneas, `already-exists`.
+`ordenId` MUST ser el `idPedido` del pedido, de modo que crear la Orden sea escribir su propio marcador. Un reintento con el pedido entero igual —líneas, contacto y entrega— SHALL devolver el `numero` que ya existe sin tocar nada; con cualquier dato distinto, `already-exists` con el `numero` de la Orden que ya existe.
 
 #### Scenario: Reintento tras un timeout
 - **WHEN** se llama dos veces con el mismo `idPedido` y las mismas líneas
@@ -65,7 +65,15 @@ La callable SHALL, en **una** transacción de Firestore, descontar `cantidad` de
 
 #### Scenario: El mismo id con otras líneas
 - **WHEN** se llama con un `idPedido` ya usado y cantidades distintas
-- **THEN** responde `already-exists` y no modifica el stock
+- **THEN** responde `already-exists` con `{ codigo: 'otro-pedido', numero }` y no modifica el stock
+
+#### Scenario: El mismo id con otra dirección
+- **WHEN** se reintenta con el mismo `idPedido` y las mismas líneas, pero otra calle
+- **THEN** responde `already-exists` con el `numero`, y la Orden conserva la calle original
+
+#### Scenario: El mismo id con otro cliente
+- **WHEN** se reintenta con el mismo `idPedido`, las mismas líneas y otro nombre
+- **THEN** responde `already-exists`, y no se crea una segunda Orden
 
 #### Scenario: El reintento tras vender el resto
 - **WHEN** el primer intento tuvo éxito y otro pedido dejó el stock en 0
@@ -130,3 +138,39 @@ La callable MUST aceptar un pedido cuyas botellas sueltas no suman un múltiplo 
 #### Scenario: Cuatro botellas
 - **WHEN** el pedido lleva 4 botellas sueltas
 - **THEN** la Orden se crea
+
+### Requirement: Cada venta SHALL dejar su movimiento en el historial del vino
+
+La transacción MUST escribir, por cada línea, un documento en `productos/{id}/movimientos/venta-{idPedido}` con `operacion: { tipo: 'venta', cantidad, idPedido, numero }`, `antes`, `despues`, `por` y `en`, en la misma transacción que el descuento.
+
+#### Scenario: Un movimiento por línea
+- **WHEN** se carga un pedido de dos vinos
+- **THEN** cada vino tiene un movimiento con lo que se vendió, el stock antes y después, y quién lo cargó
+
+#### Scenario: Un reintento no lo duplica
+- **WHEN** se repite el mismo pedido
+- **THEN** cada vino sigue teniendo un solo movimiento de esa venta
+
+#### Scenario: Un rechazo no deja ninguno
+- **WHEN** una línea del pedido no tiene stock
+- **THEN** ningún vino del pedido tiene un movimiento nuevo
+
+### Requirement: Un vino sin precio SHALL rechazarse con su propio código
+
+La callable MUST rechazar un producto con `precio < 1` con `failed-precondition` y `{ codigo: 'sin-precio', productoId }`, y no con `cambio-el-precio`.
+
+#### Scenario: Un borrador sin precio
+- **WHEN** el vino tiene `precio: 0`
+- **THEN** responde `sin-precio` y no descuenta nada
+
+### Requirement: El pedido SHALL tener topes que impidan un desborde o una Orden enorme
+
+`parsearPedidoDelPanel` MUST rechazar, con un motivo y sin lanzar, un `precioUnitarioVisto` mayor que `PRECIO_MAXIMO`, un `idPedido` reservado (`__x__`) y un texto libre de la entrega que pase su largo máximo.
+
+#### Scenario: Un precio absurdo
+- **WHEN** el precio visto es `1e300`
+- **THEN** el parser rechaza con el motivo y la callable responde `invalid-argument`, no `internal`
+
+#### Scenario: Una referencia enorme
+- **WHEN** la referencia tiene 900.000 caracteres
+- **THEN** el parser la rechaza

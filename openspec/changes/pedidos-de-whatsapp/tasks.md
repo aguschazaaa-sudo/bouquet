@@ -15,22 +15,22 @@
 
 ## 3. Reglas de `ordenes`
 
-- [ ] 3.1 `list` con `request.query.limit <= 50`; `get` sin cambios; `create`/`delete` siguen en `false`
-- [ ] 3.2 `scripts/reglas/ordenes.test.mjs`: admin lee con `limit(25)` y `limit(50)`; falla con 51 y sin límite; comprador y anónimo no leen; nadie crea ni borra; el admin **no** puede escribir `origen`, `estadoPago`, `items`, `numero` ni `total`; `contadores` cerrado
-- [ ] 3.3 Correr la suite contra el emulador y **mutar** la regla del límite para ver que falla exactamente el caso que la prueba
+- [x] 3.1 `list` con `request.query.limit <= 50`; `get` sin cambios; `create`/`delete` siguen en `false`
+- [x] 3.2 `scripts/reglas/ordenes.test.mjs`: admin lee con `limit(25)` y `limit(50)`; falla con 51 y sin límite; comprador y anónimo no leen; nadie crea ni borra; el admin **no** puede escribir `origen`, `estadoPago`, `items`, `numero` ni `total`; `contadores` cerrado
+- [x] 3.3 Correr la suite contra el emulador y **mutar** la regla del límite para ver que falla exactamente el caso que la prueba
 
 ## 4. `functions`: la transacción
 
-- [ ] 4.1 `functions/src/pedidos/armar.ts`: núcleo puro (existe/simple/no-muestra, precio visto, stock, snapshot, total)
-- [ ] 4.2 `functions/test/pedidos/armar.test.ts` con `node --test`, un caso que aplica y uno que rechaza por cada requisito de `crear-orden-del-panel`
-- [ ] 4.3 `functions/src/pedidos/crear.ts`: la transacción con el documento como marcador, `maxAttempts: 10` y `ReglasDeOrigen`
-- [ ] 4.4 `functions/test/pedidos/crear.emulador.mjs`: atomicidad, concurrencia real, números consecutivos, reintento con y sin las mismas líneas, reintento tras vaciar el stock. **Mutar** la rama del marcador y la baranda de stock: fallan exactamente los casos que las prueban
-- [ ] 4.5 `functions/src/pedidos/crear_orden_del_panel.ts` (`exigirAdmin` → parseo → núcleo) y su export en `index.ts`
-- [ ] 4.6 `npm run tipos` y `npm run construir` en `functions/`; `bash scripts/hooks/probar_hooks.sh`
+- [x] 4.1 `functions/src/pedidos/armar.ts`: núcleo puro (existe/simple/no-muestra, precio visto, stock, snapshot, total)
+- [x] 4.2 `functions/test/pedidos/armar.test.ts` con `node --test`, un caso que aplica y uno que rechaza por cada requisito de `crear-orden-del-panel`
+- [x] 4.3 `functions/src/pedidos/crear.ts`: la transacción con el documento como marcador, `maxAttempts: 10` y el origen tipado a `'whatsapp'` (design D5)
+- [x] 4.4 `functions/test/pedidos/crear.emulador.mjs`: atomicidad, concurrencia real, números consecutivos, reintento con y sin las mismas líneas, reintento tras vaciar el stock. **Mutar** la rama del marcador y la baranda de stock: fallan exactamente los casos que las prueban
+- [x] 4.5 `functions/src/pedidos/crear_orden_del_panel.ts` (`exigirAdmin` → parseo → núcleo) y su export en `index.ts`
+- [x] 4.6 `npm run tipos` y `npm run construir` en `functions/`; `bash scripts/hooks/probar_hooks.sh`
 
 ## 5. Revisión y deploy del backend
 
-- [ ] 5.1 `revisor-pagos` sobre reglas + `functions` + `contratos`, **antes del commit**. Corregir lo ALTO y MEDIO; anotar el resto con su disparador
+- [x] 5.1 `revisor-pagos` sobre reglas + `functions` + `contratos`, **antes del commit**. Corregir lo ALTO y MEDIO; anotar el resto con su disparador
 - [ ] 5.2 Commit del backend (`commit`), `gh workflow run ci.yml -f alcance=tests` y leer la resta contra la corrida anterior
 - [ ] 5.3 Deploy de reglas; verificar con la API de Rules (idéntico byte a byte, control positivo y negativo)
 - [ ] 5.4 Deploy de `functions --only functions:crearOrdenDelPanel`; verificar con la API de Cloud Functions (`ACTIVE`, v2, callable) y los tres controles: preflight 204, `POST` anónimo 401 JSON, función inventada 404
@@ -61,3 +61,13 @@
 - [ ] 8.4 Vault: ADR 018 (sección *Verificación*), `_index.md` (tope 5), `EP-06`/`EP-10`, `overview.md`, `changelog`
 - [ ] 8.5 Commit, CI `alcance=panel`, `publicar.sh preview` → canario discriminante → `promover` → `verificar`
 - [ ] 8.6 Decir qué **no** se verificó: la carga real por un usuario, y que nadie lo miró renderizado
+
+## 9. Lo que encontró `revisor-pagos` (2026-09-24, ver ADR 018)
+
+- [x] 9.1 Parser: `idPedido` reservado, `PRECIO_MAXIMO` y largos de la entrega (`LARGOS_DE_ENTREGA`), con tests; espejados en Dart contra el JSON
+- [x] 9.2 Núcleo: `sin-precio` y precio absurdo; la firma del pedido ENTERO (`firmaDelPedido`)
+- [x] 9.3 Transacción: `already-exists` con el número, un movimiento de venta por línea, `timeoutSeconds: 120`. Emulador 27/27, con **mutación** de la firma y del movimiento
+- [x] 9.4 Reglas: `estadoEntrega` uno de los seis y no borrable, notas ≤ 1000, `actualizadaEn` una hora. Suite 83/83 **en serie**, con mutación
+- [ ] 9.5 Stock: el aviso de *vendidas sin despachar* en la hoja de corrección (dominio, datos, presentación) y la venta en la hoja de movimientos
+- [ ] 9.6 Panel: `already-exists` con número manda a abrir el pedido; el selector marca *«no está en la tienda»*
+- [ ] 9.7 ADR 018: sección *Verificación* con lo que se corrió y lo que **no** se pudo verificar

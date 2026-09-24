@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ENTRADAS_DE_TELEFONO, normalizarTelefonoAR } from '../src/envio.ts';
+import { ENTRADAS_DE_TELEFONO, LARGOS_DE_ENTREGA, normalizarTelefonoAR } from '../src/envio.ts';
 import { TOPE_DE_STOCK } from '../src/stock.ts';
-import { TOPE_DE_LINEAS, contactoYEntrega, parsearPedidoDelPanel } from '../src/pedido.ts';
+import { PRECIO_MAXIMO, TOPE_DE_LINEAS, contactoYEntrega, parsearPedidoDelPanel } from '../src/pedido.ts';
 
 // El pedido de una carga normal: el que arma el formulario del panel.
 const entrega = (cambios: Record<string, unknown> = {}) => ({
@@ -90,6 +90,15 @@ test('idPedido: 16 a 64 caracteres seguros', () => {
   rechaza(pedido({ idPedido: 42 }), /idPedido/);
 });
 
+test('idPedido: un id reservado de Firestore (`__x__`) se rechaza', () => {
+  // Como es el id de la Orden, pasaba el parser y Firestore lo rechazaba: el
+  // operador veia `internal` en vez de un motivo.
+  rechaza(pedido({ idPedido: '__pedido-reservado__' }), /idPedido/);
+  // Control positivo: con guiones bajos en el medio o en un solo extremo, si.
+  assert.equal(parsearPedidoDelPanel(pedido({ idPedido: 'pedido__de__prueba__1' })).ok, true);
+  assert.equal(parsearPedidoDelPanel(pedido({ idPedido: '__pedido-de-prueba-1' })).ok, true);
+});
+
 // -------------------------------------------------------------------- lineas
 
 test('sin lineas, o demasiadas', () => {
@@ -119,6 +128,22 @@ test('el precio visto es un entero de centavos mayor que cero', () => {
   }
 });
 
+test('un precio por encima de PRECIO_MAXIMO se RECHAZA con un motivo, no lanza', () => {
+  // `centavos()` lanza un RangeError fuera del rango seguro, y la callable lo
+  // contestaba `internal` en vez de `invalid-argument` (hallazgo 6).
+  assert.equal(parsearPedidoDelPanel(pedido({ lineas: [linea('vino-a', 1, PRECIO_MAXIMO)] })).ok, true, 'el borde exacto pasa');
+  rechaza(pedido({ lineas: [linea('vino-a', 1, PRECIO_MAXIMO + 1)] }), /precio visto/);
+  rechaza(pedido({ lineas: [linea('vino-a', 1, 1e300)] }), /precio visto/);
+  rechaza(pedido({ lineas: [linea('vino-a', 1, Number.MAX_SAFE_INTEGER + 2)] }), /precio visto/);
+});
+
+test('el peor pedido posible no desborda: 30 lineas x cantidad maxima x precio maximo', () => {
+  // La razon de ser de PRECIO_MAXIMO: la suma tiene que ser un entero seguro.
+  const peor = PRECIO_MAXIMO * TOPE_DE_STOCK * TOPE_DE_LINEAS;
+  assert.ok(Number.isSafeInteger(peor), `${peor} no es un entero seguro`);
+  assert.ok(peor <= Number.MAX_SAFE_INTEGER);
+});
+
 test('un productoId con barra o reservado se rechaza', () => {
   rechaza(pedido({ lineas: [linea('otro/doc')] }), /productoId/);
   rechaza(pedido({ lineas: [linea('__reservado__')] }), /productoId/);
@@ -133,6 +158,39 @@ test('los datos de entrega los valida el MISMO validador que la vidriera', () =>
   rechaza(pedido({ entrega: entrega({ destino: { codigoPostal: '50', localidad: 'x', provincia: 'X' } }) }), /codigo postal/);
   rechaza(pedido({ entrega: entrega({ destino: { codigoPostal: '5000', localidad: 'x', provincia: 'ZZ' } }) }), /provincia/);
   rechaza(pedido({ entrega: null }), /datos de entrega/);
+});
+
+test('cada texto libre tiene su tope de largo: el borde pasa y uno mas no', () => {
+  // Una `referencia` de 900.000 caracteres dejaba la Orden cerca del MiB de
+  // Firestore (hallazgo 8).  Cada campo, con su control positivo al lado.
+  const campos: [string, number][] = [
+    ['calle', LARGOS_DE_ENTREGA.calle],
+    ['numero', LARGOS_DE_ENTREGA.numero],
+    ['piso', LARGOS_DE_ENTREGA.piso],
+    ['referencia', LARGOS_DE_ENTREGA.referencia],
+    ['nombre', LARGOS_DE_ENTREGA.nombre],
+  ];
+  for (const [campo, largo] of campos) {
+    assert.equal(parsearPedidoDelPanel(pedido({ entrega: entrega({ [campo]: 'x'.repeat(largo) }) })).ok, true, `${campo} en el borde`);
+    rechaza(pedido({ entrega: entrega({ [campo]: 'x'.repeat(largo + 1) }) }), /larg/);
+  }
+  const localidad = (n: number) => entrega({ destino: { codigoPostal: '5000', localidad: 'x'.repeat(n), provincia: 'X' } });
+  assert.equal(parsearPedidoDelPanel(pedido({ entrega: localidad(LARGOS_DE_ENTREGA.localidad) })).ok, true);
+  rechaza(pedido({ entrega: localidad(LARGOS_DE_ENTREGA.localidad + 1) }), /localidad larga/);
+  // El mail: la forma valida y el largo.
+  const mail = (n: number) => `${'a'.repeat(n - '@e.co'.length)}@e.co`;
+  assert.equal(parsearPedidoDelPanel(pedido({ entrega: entrega({ email: mail(LARGOS_DE_ENTREGA.email) }) })).ok, true);
+  rechaza(pedido({ entrega: entrega({ email: mail(LARGOS_DE_ENTREGA.email + 1) }) }), /email largo/);
+});
+
+test('las claves de mas DENTRO de entrega no llegan a la Orden, aunque no se rechacen', () => {
+  const r = parsearPedidoDelPanel(
+    pedido({ entrega: entrega({ origen: 'vidriera', estadoPago: 'pagada', telefonoE164: '+5490000000000' }) }),
+  );
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  const guardado = JSON.stringify(r.valor.entrega);
+  assert.ok(!/origen|estadoPago|0000000000/.test(guardado), guardado);
 });
 
 test('el pedido no es un objeto', () => {

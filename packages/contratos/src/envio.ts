@@ -345,6 +345,25 @@ export interface DatosDeEntrega {
 
 const LARGO_MAXIMO = 120;
 
+/**
+ * El largo maximo de cada texto libre de la entrega.  Sin esto, una `referencia`
+ * de 900.000 caracteres pasa el validador y la Orden queda cerca del MiB de
+ * Firestore: el commit falla, o entra y la bandeja de 25 descarga megas.  Hoy
+ * solo lo puede hacer un admin; el dia que la vidriera use este validador con un
+ * comprador anonimo, es publico (hallazgo 8 de `revisor-pagos`, ADR 018).
+ *
+ * El panel los espeja en Dart (`largosDeEntrega`), verificados contra el JSON.
+ */
+export const LARGOS_DE_ENTREGA = {
+  nombre: LARGO_MAXIMO,
+  email: 254,
+  calle: LARGO_MAXIMO,
+  numero: 20,
+  piso: 20,
+  referencia: 300,
+  localidad: LARGO_MAXIMO,
+} as const;
+
 function texto(x: unknown): string {
   return typeof x === 'string' ? x.trim() : '';
 }
@@ -370,12 +389,17 @@ export function validarDatosDeEntrega(datos: unknown): Validacion<DatosDeEntrega
 
   const crudo = texto(d.email);
   if (crudo !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(crudo)) return { ok: false, motivo: 'email' };
+  if (crudo.length > LARGOS_DE_ENTREGA.email) return { ok: false, motivo: 'email largo' };
   const email = crudo === '' ? null : crudo;
 
   const calle = texto(d.calle);
   if (calle.length < 2) return { ok: false, motivo: 'calle' };
+  if (calle.length > LARGOS_DE_ENTREGA.calle) return { ok: false, motivo: 'calle larga' };
   const numero = texto(d.numero);
   if (numero === '') return { ok: false, motivo: 'numero' };
+  if (numero.length > LARGOS_DE_ENTREGA.numero) return { ok: false, motivo: 'numero largo' };
+  if (texto(d.piso).length > LARGOS_DE_ENTREGA.piso) return { ok: false, motivo: 'piso largo' };
+  if (texto(d.referencia).length > LARGOS_DE_ENTREGA.referencia) return { ok: false, motivo: 'referencia larga' };
 
   const destino = d.destino as Record<string, unknown> | undefined;
   if (typeof destino !== 'object' || destino === null) return { ok: false, motivo: 'destino' };
@@ -383,6 +407,7 @@ export function validarDatosDeEntrega(datos: unknown): Validacion<DatosDeEntrega
   if (!/^\d{4}$/.test(codigoPostal)) return { ok: false, motivo: 'codigo postal' };
   const localidad = texto(destino.localidad);
   if (localidad === '') return { ok: false, motivo: 'localidad' };
+  if (localidad.length > LARGOS_DE_ENTREGA.localidad) return { ok: false, motivo: 'localidad larga' };
   const provincia = texto(destino.provincia);
   if (!esProvinciaIso(provincia)) return { ok: false, motivo: 'provincia' };
 

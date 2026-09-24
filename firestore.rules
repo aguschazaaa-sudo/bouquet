@@ -353,15 +353,40 @@ service cloud.firestore {
     // callable `consultarOrden(numero, email)` (§9.1): una lectura directa
     // por id permite ENUMERAR ORDENES AJENAS probando ids.
     match /ordenes/{ordenId} {
-      allow read: if esAdmin();
+      // LEER: el detalle (`get`) sin tope, y la bandeja (`list`) con `limit`
+      // de hasta 50.  Sin `limit` la regla no evalua y rechaza, y ese es el
+      // efecto buscado: una lista sin limite leeria TODAS las ordenes, y es
+      // la unica coleccion del proyecto que crece sin fin con el negocio
+      // (ADR 018 §7).  La bandeja pide 25.
+      allow get: if esAdmin();
+      allow list: if esAdmin() && request.query.limit <= 50;
 
-      // Las ordenes nacen SOLO por la transaccion de `crearOrden` (Admin
-      // SDK), que es la unica que sabe asignar `numero` contra
+      // Las ordenes nacen SOLO por la transaccion de una callable (Admin SDK):
+      // hoy `crearOrdenDelPanel` (ADR 018), y `crearOrden` de la vidriera cuando
+      // exista.  Son las unicas que saben asignar `numero` contra
       // `contadores/ordenes`.  Nadie las crea desde un cliente.
       allow create: if false;
 
+      // El panel mueve la ENTREGA a mano y anota; nada mas (`editaSolo`).  Y lo
+      // que escribe tiene que tener sentido: `affectedKeys()` incluye las claves
+      // BORRADAS, asi que `deleteField()` sobre `estadoEntrega` pasaba el
+      // `hasOnly` y la orden desaparecia de toda bandeja, porque
+      // `where('estadoEntrega', '==', X)` no la trae -- la trampa de `publicado`
+      // (hallazgo 4 de `revisor-pagos`).  Leer un campo que no existe hace
+      // fallar la regla, que es lo que se quiere.
+      //
+      // La TRANSICION valida (que no se pueda pasar de `cancelada` a
+      // `sin_preparar`) sigue siendo del espejo de Dart y de EP-07, no de esta
+      // regla: es la deuda documentada en el overview del panel, hallazgo 3.
       allow update: if esAdmin()
-        && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn']);
+        && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn'])
+        && request.resource.data.estadoEntrega in
+             ['sin_preparar', 'preparando', 'despachada', 'entregada', 'fallida', 'cancelada']
+        && (!('notasOperador' in request.resource.data)
+            || (request.resource.data.notasOperador is string
+                && request.resource.data.notasOperador.size() <= 1000))
+        && (!('actualizadaEn' in request.resource.data)
+            || request.resource.data.actualizadaEn is timestamp);
 
       // Una orden no se borra: se cancela.  Cancelar es un par de estados
       // (ADR 002), no un DELETE -- y el historico de una venta no se tira.
@@ -408,7 +433,7 @@ service cloud.firestore {
 
     // ------------------------------------------------------------ contadores
     // Numeracion secuencial de ordenes.  Se toca UNICAMENTE dentro de la
-    // transaccion de `crearOrden`.  Dos escrituras concurrentes por fuera de
+    // transaccion de las callables que crean ordenes.  Dos escrituras concurrentes por fuera de
     // esa transaccion dan dos ordenes con el mismo numero.
     match /contadores/{nombre} {
       allow read, write: if false;
