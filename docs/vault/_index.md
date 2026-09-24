@@ -74,6 +74,40 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### HU-05.4: los movimientos de stock se leen — y el hito 1 queda escrito entero (2026-09-24)
+
+**Escrita; el deploy y su verificación van abajo.** Sin openspec, a pedido del dueño:
+[ADR 016 §6](architecture/decisions/016-mover-el-stock.md) es la especificación. Un botón
+*"Ver los últimos movimientos"* en la sección de stock abre una hoja con los últimos 20:
+qué se hizo, de cuánto a cuánto (con la unidad), quién y cuándo. **Con esto las 24 historias
+del hito 1 están escritas.** Ninguna está cerrada: falta lo que sólo puede hacer el dueño.
+
+**Toca `firestore.rules`**: el deploy es reglas → panel. `read` de `movimientos` pasa de
+cerrado a `get` de admin y `list` de admin **con `limit` ≤ 50**; `write` sigue cerrado.
+Se construyó **antes de su disparador**, para cerrar el hito.
+
+**Workflow D: `revisor-pagos` corrió ANTES de commitear**: ningún ALTO ni MEDIO, cinco BAJO.
+Corregidos cuatro: el parser podía **ocultar la lista entera** con un solo documento roto
+(`NaN`, o un `en` que no fuera Timestamp) y la pantalla habría culpado a la conexión; el
+*"de 8 a 10"* de un vino de caja no decía que son **cajas** (60 botellas, no 10); dos pruebas
+que faltaban (la consulta real `orderBy('en').limit(20)` y que un `collectionGroup` siga
+rechazado); y una línea del ADR que decía *"nada lee movimientos"*. El quinto sigue abierto,
+con su porqué: `seed.mjs` reescribe `stock` y `borrar.mjs` deja huérfana la subcolección, así
+que sólo en los vinos de muestra la historia puede no explicar el número.
+
+| Qué | Cómo |
+|---|---|
+| Las reglas | Emulador: **60 casos** (+3). Un `get` y un `list` con `limit` pasan (control positivo); sin `limit`, con 51, un comprador, un anónimo y un `collectionGroup` rechazan. **Mutando** la exigencia de `limit`, fallan exactamente los 2 casos que la prueban |
+| El panel | `dart test` de `stock/`: **45 casos**; `dart analyze lib test`: **No issues found**. Incluye el movimiento REAL de producción (`reponer 32`, `0 → 32`) |
+| Sin huérfanos | 9 símbolos grepeados con call site fuera de su archivo; control negativo: 0. Ruta: `enrutador` → `PaginaDelVino` → `SeccionDelStock` → `HojaDeMovimientos` |
+| Presupuesto | **≤ 20 lecturas por apertura de la hoja, 0 con la hoja cerrada**; 20 aperturas al día = 400, el **0,8 %** de la cuota |
+
+**Dice `Vos` u `Otra persona`, no un nombre**: el movimiento guarda un uid. Mostrar nombres
+tocaría `moverStock`; queda con disparador en el ADR.
+
+**Sin probar:** la lectura de Firestore real desde el panel (`RepositorioDeMovimientosFirestore`
+no tiene prueba propia; el parser y los textos sí).
+
 ### La foto principal: HU-04.2 recortada, y el estado del hito 1 medido (2026-09-24)
 
 **Desplegada y verificada por bytes el 2026-09-24 (v0.32.0, commit `1ab7bb0`); nadie la
@@ -89,7 +123,7 @@ vino con dos fotos"* y se midió que no pasó: **0 de 22 productos**. Se tomó i
 porque, hoy, cambiar la principal obliga a sacar la foto y volver a subirla.
 
 **El hito 1, medido en producción el 2026-09-24** (no leído de este archivo):
-22 de 24 historias escritas; faltan HU-04.2 —esta— y HU-05.4. **0 cerradas**: ningún
+24 de 24 historias escritas (HU-04.2 recortada; HU-05.4 se escribió después, ver arriba). **0 cerradas**: ningún
 change se archivó. **0 vinos reales**: de 22 productos, 20 son `muestra: true`, uno es
 `vino-de-prueba` (32 de stock, 1 foto, publicado) y otro `ve`, una prueba del dueño.
 Falta que el dueño cargue su catálogo, y eso no lo hace ningún código.
@@ -303,38 +337,12 @@ formulario usa dos columnas en escritorio, y cargar, subir la foto y publicar
 pasan a ser un solo gesto — **desplegados el 2026-09-23** (v0.29.0, ver la
 entrada de arriba), **sin que nadie los haya mirado renderizados todavía.**
 
-### EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda (2026-09-22)
-
-**HU-03.5, HU-03.6 y HU-03.7 construidas**, en el change
-[`panel-publicar-un-vino`](../../openspec/changes/panel-publicar-un-vino/proposal.md)
-([ADR 014](architecture/decisions/014-publicar-un-vino.md)). Con esto **EP-03
-queda cerrada**: cambiar el precio con una baranda que mide contra la mediana
-del catálogo, publicar y despublicar sin poder borrar nunca, y ver en el panel
-lo mismo que decide `armarCatalogo` —con el motivo, cuando un publicado no
-aparece.
-
-**La segunda pasada de `revisor-pagos` (Workflow D, obligatoria) corrió
-`armarCatalogo` de verdad contra 12 documentos de contraste**, no a ojo: **2
-ALTO, 3 MEDIO, 4 BAJO — los 9 corregidos antes de commitear**, al revés de la
-primera pasada de este mismo ADR, que había corrido después. Los dos ALTO: un
-vino publicado con el formulario de edición abierto podía mandar un precio
-nuevo **sin** la baranda de HU-03.5 —`precioFijo` quedaba congelado en el
-momento en que se abrió la página—; y `revisarParaLaTienda` podía decir
-"publicado" de un vino que la vidriera en realidad descartaba por compartir
-slug con uno de muestra — el modo de falla exacto que HU-03.7 existe para
-cerrar. Detalle de los nueve, en
-[ADR 014](architecture/decisions/014-publicar-un-vino.md).
-
-~~⚠️ **Falta el deploy del panel**~~ **Desplegado y verificado el 2026-09-22**
-—Grupo 10 de `tasks.md` completo, commit `0125347`: CI `alcance=panel` →
-`publicar.sh preview` → `promover` → `verificar`—. **Esta misma línea quedó
-vieja dos días**: `0125347` tocó `_verdad.md` y `tasks.md` de
-`panel-publicar-un-vino` pero no este archivo, y `cazador-de-puertas` la
-encontró de nuevo el 2026-09-22, auditando el change de las fotos. Lo que
-sigue pendiente de verdad es que **alguien publique un vino real y lo mire**:
-los 20 productos de producción siguen siendo `muestra: true`, así que publicar
-y despublicar todavía no se probaron contra uno de verdad. Eso sigue
-bloqueando que el change se archive.
+> ⚠️ **"EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda" (2026-09-22) se movió a
+> [`changelog/_log.md`](changelog/_log.md#ep-03-queda-cerrada-publicar-cambiar-el-precio-y-verse-en-la-tienda-2026-09-22)
+> el 2026-09-24**, al construirse HU-05.4 y llegar el dashboard a 6 entradas. El porqué está en
+> [ADR 014](architecture/decisions/014-publicar-un-vino.md). Lo que sigue vigente y no vive en otro
+> lado: **falta que alguien publique un vino REAL y lo mire en la tienda** (los 20 son `muestra: true`),
+> y eso bloquea archivar `panel-publicar-un-vino`.
 
 > ⚠️ **"El producto se endureció, y la ficha lleva descripción" (2026-09-21) se movió a
 > [`changelog/_log.md`](changelog/_log.md#el-producto-se-endureció-y-la-ficha-lleva-descripción-2026-09-21)
@@ -460,7 +468,6 @@ Los que bloquean algo:
 | ⚠️ **`corregir` pisa lo vendido y todavía no despachado** ([ADR 016](architecture/decisions/016-mover-el-stock.md), hallazgo 1): con 2 botellas vendidas sin despachar, el panel muestra 8, el operador cuenta 10 en la estantería y `visto` coincide — quedan 10 y se venden 2 que no existen. Hoy no se puede disparar (no hay órdenes). **Bloquea `crearOrden`**: la hoja tiene que mostrar *"N vendidas sin despachar"* | **Disparador: bloquea el deploy de `crearOrden`.** | 2026-09-23 |
 | ⚠️ **Tramo 4 y `moverStock`**: cada movimiento va a disparar la purga de la vidriera, y si cambia el balde de un vino publicado son **232 lecturas** —no las ~20 de ARQUITECTURA §6.3—; con 200 vinos publicados, hasta el 93 % de la cuota. **Cargar el stock ANTES de publicar lo evita** ([ADR 016](architecture/decisions/016-mover-el-stock.md)) | Cuando se escriba el tramo 4 | 2026-09-23 |
 | **Los 19 casos del emulador de `moverStock` y los de reglas no corren en CI** (hallazgo 8; agrava el 7 de ADR 008): hoy se corren a mano y una de las dos suites protege la plata | La sesión de `crearOrden` | 2026-09-23 |
-| **HU-05.4 — ver los movimientos de un vino.** El dato ya se guarda en `productos/{id}/movimientos`; leerlo va con `orderBy('en').limit(20)`, nunca sin `limit`. `borrar.mjs` deja la subcolección huérfana | La primera diferencia de stock que nadie sepa explicar | 2026-09-23 |
 | **El tope de 5.000 unidades por vino** es una decisión mía, no del dueño ([ADR 016](architecture/decisions/016-mover-el-stock.md) §1) | Que el dueño lo confirme, o el primer vino real que se le acerque | 2026-09-23 |
 | **`/favicon.ico` da 404 en la vidriera** (único error de consola de la preview): la tienda no tiene favicon | Antes de publicar de verdad | 2026-09-23 |
 | ⚠️ **La cuenta de servicio de la preview tiene `firebase.sdkAdminServiceAgent`**, que incluye escritura y el CLI re-otorga en cada deploy ([ADR 017](architecture/decisions/017-preview-cerrada.md) §6). La vidriera sólo lee | **Antes de publicar de verdad**: una cuenta dedicada con `roles/datastore.viewer` | 2026-09-23 |

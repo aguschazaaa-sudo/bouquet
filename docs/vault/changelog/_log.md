@@ -9,6 +9,47 @@
 
 ---
 
+## Salió el 2026-09-24 (más tarde), al construirse HU-05.4
+
+Sale la de "EP-03 queda cerrada" (2026-09-22): con la de los movimientos de stock sumada
+al dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 014](../architecture/decisions/014-publicar-un-vino.md).
+
+### EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda (2026-09-22)
+
+**HU-03.5, HU-03.6 y HU-03.7 construidas**, en el change
+[`panel-publicar-un-vino`](../../../openspec/changes/panel-publicar-un-vino/proposal.md)
+([ADR 014](../architecture/decisions/014-publicar-un-vino.md)). Con esto **EP-03
+queda cerrada**: cambiar el precio con una baranda que mide contra la mediana
+del catálogo, publicar y despublicar sin poder borrar nunca, y ver en el panel
+lo mismo que decide `armarCatalogo` —con el motivo, cuando un publicado no
+aparece.
+
+**La segunda pasada de `revisor-pagos` (Workflow D, obligatoria) corrió
+`armarCatalogo` de verdad contra 12 documentos de contraste**, no a ojo: **2
+ALTO, 3 MEDIO, 4 BAJO — los 9 corregidos antes de commitear**, al revés de la
+primera pasada de este mismo ADR, que había corrido después. Los dos ALTO: un
+vino publicado con el formulario de edición abierto podía mandar un precio
+nuevo **sin** la baranda de HU-03.5 —`precioFijo` quedaba congelado en el
+momento en que se abrió la página—; y `revisarParaLaTienda` podía decir
+"publicado" de un vino que la vidriera en realidad descartaba por compartir
+slug con uno de muestra — el modo de falla exacto que HU-03.7 existe para
+cerrar. Detalle de los nueve, en
+[ADR 014](../architecture/decisions/014-publicar-un-vino.md).
+
+~~⚠️ **Falta el deploy del panel**~~ **Desplegado y verificado el 2026-09-22**
+—Grupo 10 de `tasks.md` completo, commit `0125347`: CI `alcance=panel` →
+`publicar.sh preview` → `promover` → `verificar`—. **Esta misma línea quedó
+vieja dos días**: `0125347` tocó `_verdad.md` y `tasks.md` de
+`panel-publicar-un-vino` pero no este archivo, y `cazador-de-puertas` la
+encontró de nuevo el 2026-09-22, auditando el change de las fotos. Lo que
+sigue pendiente de verdad es que **alguien publique un vino real y lo mire**:
+los 20 productos de producción siguen siendo `muestra: true`, así que publicar
+y despublicar todavía no se probaron contra uno de verdad. Eso sigue
+bloqueando que el change se archive.
+
+---
+
 ## Salió el 2026-09-24, al construirse la foto principal
 
 Sale la de "El producto se endureció" (2026-09-21): con la de la foto principal
