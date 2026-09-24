@@ -13,6 +13,7 @@ export const ESTADOS_PUBLICOS = [
   'confirmando',
   'pago_rechazado',
   'pagada',
+  'por_preparar',
   'en_preparacion',
   'en_camino',
   'entregada',
@@ -26,7 +27,7 @@ export const ESTADOS_PUBLICOS = [
 export type EstadoPublico = (typeof ESTADOS_PUBLICOS)[number];
 
 /**
- * Total sobre los 5 x 6 = 30 pares. El orden de las ramas ES la logica:
+ * Total sobre los 6 x 6 = 36 pares. El orden de las ramas ES la logica:
  * los terminales de entrega mandan, despues los terminales de pago, y recien
  * ahi el avance normal.
  *
@@ -50,8 +51,10 @@ export function proyectarEstadoPublico(pago: EstadoPago, entrega: EstadoEntrega)
 
   // 3. Llego. Si ademas no se cobro, es un caso operativo real (contra
   //    entrega que el repartidor no cobro) y no puede quedar disfrazado.
+  //    `por_fuera` entrega sin ser impaga: su cobro no lo sigue el sistema, asi
+  //    que no puede quedar marcado para siempre como plata que falta (ADR 018 §3).
   if (entrega === 'entregada') {
-    return pago === 'pagada' ? 'entregada' : 'entregada_impaga';
+    return pago === 'pagada' || pago === 'por_fuera' ? 'entregada' : 'entregada_impaga';
   }
 
   // 4-6. Terminales y transitorios del pago, sobre una entrega que avanza.
@@ -62,6 +65,9 @@ export function proyectarEstadoPublico(pago: EstadoPago, entrega: EstadoEntrega)
   // 7-9. Avance normal. Aca pago solo puede ser 'pendiente' o 'pagada'.
   if (entrega === 'despachada') return 'en_camino';
   if (entrega === 'preparando') return 'en_preparacion';
+  //    Sin preparar: pagada (hay que armarlo), por_fuera (hay que armarlo, y el
+  //    cobro no es asunto del sistema) o pendiente (falta cobrar).
+  if (pago === 'por_fuera') return 'por_preparar';
   return pago === 'pagada' ? 'pagada' : 'recibida';
 }
 
@@ -81,6 +87,9 @@ export const ROTULOS: Readonly<Record<EstadoPublico, { cliente: string; operador
   confirmando: { cliente: 'Confirmando...', operador: 'Pago en proceso' },
   pago_rechazado: { cliente: 'No pudimos cobrar el pago', operador: 'Pago rechazado' },
   pagada: { cliente: 'Pago acreditado', operador: 'Pagada - falta preparar' },
+  // Ni "pagada" (afirmaria un cobro que nadie comprobo) ni "recibida" (dice
+  // "falta cobrar"). Un pedido de WhatsApp se cobra por fuera.
+  por_preparar: { cliente: 'Pedido recibido', operador: 'Cobro por fuera - falta preparar' },
   en_preparacion: { cliente: 'Preparando tu pedido', operador: 'En preparacion' },
   en_camino: { cliente: 'En camino', operador: 'Despachada' },
   entregada: { cliente: 'Entregado', operador: 'Entregada' },
@@ -94,6 +103,7 @@ export const ROTULOS: Readonly<Record<EstadoPublico, { cliente: string; operador
 /** Los que exigen que alguien haga algo. Son la bandeja de entrada del panel. */
 export const REQUIEREN_ACCION: readonly EstadoPublico[] = [
   'pagada',
+  'por_preparar',
   'entregada_impaga',
   'no_entregada',
   'cancelada_con_pago',

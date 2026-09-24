@@ -8,11 +8,13 @@
       "en_proceso",
       "pagada",
       "rechazada",
-      "reembolsada"
+      "reembolsada",
+      "por_fuera"
     ],
     "naceEn": [
       "pendiente",
-      "pagada"
+      "pagada",
+      "por_fuera"
     ],
     "transiciones": {
       "pendiente": [
@@ -31,7 +33,8 @@
         "en_proceso",
         "pagada"
       ],
-      "reembolsada": []
+      "reembolsada": [],
+      "por_fuera": []
     }
   },
   "entrega": {
@@ -1161,12 +1164,87 @@
       }
     ]
   },
+  "pedido": {
+    "origenes": [
+      "vidriera",
+      "whatsapp"
+    ],
+    "estadoDePagoInicial": {
+      "vidriera": "pendiente",
+      "whatsapp": "por_fuera"
+    },
+    "topeDeLineas": 30,
+    "topeDeCantidad": 5000,
+    "telefonos": [
+      {
+        "entrada": "3548412233",
+        "e164": "+5493548412233"
+      },
+      {
+        "entrada": "+54 9 351 555 1234",
+        "e164": "+5493515551234"
+      },
+      {
+        "entrada": "0351 15-555-1234",
+        "e164": "+5493515551234"
+      },
+      {
+        "entrada": "351 15 555 1234",
+        "e164": "+5493515551234"
+      },
+      {
+        "entrada": "(0351) 155-551234",
+        "e164": "+5493515551234"
+      },
+      {
+        "entrada": "011 15 4444 5555",
+        "e164": "+5491144445555"
+      },
+      {
+        "entrada": "+54 11 4444-5555",
+        "e164": "+5491144445555"
+      },
+      {
+        "entrada": "54 9 11 4444 5555",
+        "e164": "+5491144445555"
+      },
+      {
+        "entrada": "5493515551234",
+        "e164": "+5493515551234"
+      },
+      {
+        "entrada": "  351 555 1234  ",
+        "e164": "+5493515551234"
+      },
+      {
+        "entrada": "",
+        "e164": null
+      },
+      {
+        "entrada": "abc",
+        "e164": null
+      },
+      {
+        "entrada": "12345678",
+        "e164": null
+      },
+      {
+        "entrada": "351 555 12345678",
+        "e164": null
+      },
+      {
+        "entrada": "+1 415 555 2671",
+        "e164": null
+      }
+    ]
+  },
   "publico": {
     "estados": [
       "recibida",
       "confirmando",
       "pago_rechazado",
       "pagada",
+      "por_preparar",
       "en_preparacion",
       "en_camino",
       "entregada",
@@ -1178,6 +1256,7 @@
     ],
     "requierenAccion": [
       "pagada",
+      "por_preparar",
       "entregada_impaga",
       "no_entregada",
       "cancelada_con_pago"
@@ -1198,6 +1277,10 @@
       "pagada": {
         "cliente": "Pago acreditado",
         "operador": "Pagada - falta preparar"
+      },
+      "por_preparar": {
+        "cliente": "Pedido recibido",
+        "operador": "Cobro por fuera - falta preparar"
       },
       "en_preparacion": {
         "cliente": "Preparando tu pedido",
@@ -1262,7 +1345,13 @@
       "reembolsada|despachada": "reembolsada",
       "reembolsada|entregada": "entregada_impaga",
       "reembolsada|fallida": "no_entregada",
-      "reembolsada|cancelada": "reembolsada"
+      "reembolsada|cancelada": "reembolsada",
+      "por_fuera|sin_preparar": "por_preparar",
+      "por_fuera|preparando": "en_preparacion",
+      "por_fuera|despachada": "en_camino",
+      "por_fuera|entregada": "entregada",
+      "por_fuera|fallida": "no_entregada",
+      "por_fuera|cancelada": "cancelada"
     }
   }
 }

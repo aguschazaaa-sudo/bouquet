@@ -294,6 +294,33 @@ export function normalizarTelefonoAR(entrada: string): string | null {
   return `+549${d}`;
 }
 
+/**
+ * Numeros tal como los escribe la gente, para las fixtures que el panel
+ * verifica contra su espejo en Dart.  Cada uno tiene un `normalizarTelefonoAR`
+ * calculado ACA, no escrito a mano del otro lado.
+ *
+ * Hay de los DOS lados a proposito: sin uno que devuelve `null`, una
+ * implementacion que normaliza todo pasa; sin uno que devuelve un numero, una
+ * que rechaza todo tambien.  Y cada caso de `15` cubre un corte distinto.
+ */
+export const ENTRADAS_DE_TELEFONO: readonly string[] = [
+  '3548412233',
+  '+54 9 351 555 1234',
+  '0351 15-555-1234',
+  '351 15 555 1234',
+  '(0351) 155-551234',
+  '011 15 4444 5555',
+  '+54 11 4444-5555',
+  '54 9 11 4444 5555',
+  '5493515551234',
+  '  351 555 1234  ',
+  '',
+  'abc',
+  '12345678',
+  '351 555 12345678',
+  '+1 415 555 2671',
+];
+
 // ----------------------------------------------------- datos de la entrega
 
 /**

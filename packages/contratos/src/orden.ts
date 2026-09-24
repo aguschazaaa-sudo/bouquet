@@ -25,6 +25,7 @@ export const ESTADOS_PAGO = [
   'pagada',
   'rechazada',
   'reembolsada',
+  'por_fuera',
 ] as const;
 
 export type EstadoPago = (typeof ESTADOS_PAGO)[number];
@@ -37,7 +38,7 @@ export type EstadoPago = (typeof ESTADOS_PAGO)[number];
  * viene. Un trigger que espere la transicion pendiente -> pagada NUNCA se
  * dispara para estas, y no falla: simplemente no corre.
  */
-export const NACE_PAGO: readonly EstadoPago[] = ['pendiente', 'pagada'];
+export const NACE_PAGO: readonly EstadoPago[] = ['pendiente', 'pagada', 'por_fuera'];
 
 export const TRANSICIONES_PAGO: Readonly<Record<EstadoPago, readonly EstadoPago[]>> = {
   pendiente: ['en_proceso', 'pagada', 'rechazada'],
@@ -45,7 +46,33 @@ export const TRANSICIONES_PAGO: Readonly<Record<EstadoPago, readonly EstadoPago[
   pagada: ['reembolsada'],
   rechazada: ['en_proceso', 'pagada'], // reintento: una tarjeta rechazada se vuelve a intentar
   reembolsada: [],
+  // Terminal, y no por olvido: describe un cobro que el sistema NO sigue (el de
+  // un pedido de WhatsApp). Nada sale de aca y a nadie se llega despues de
+  // nacer: si el pago pudiera pasar a `pagada`, `entroEnPagada` avisaria un
+  // cobro que nunca paso por el sistema. ADR 018 §3.
+  por_fuera: [],
 };
+
+// ===========================================================================
+// El origen - de donde vino la Orden
+// ===========================================================================
+
+export const ORIGENES = ['vidriera', 'whatsapp'] as const;
+
+export type Origen = (typeof ORIGENES)[number];
+
+/**
+ * El estado de pago con el que NACE una Orden de cada origen.  Es la unica
+ * fuente de esa correspondencia: la callable no la reescribe.
+ *
+ * `por_fuera` es de whatsapp y NADA MAS, y `pendiente` es de la vidriera y nada
+ * mas.  Una vidriera que naciera `por_fuera` no seria cobrada nunca; un pedido
+ * de WhatsApp que naciera `pendiente` quedaria para siempre entre los que
+ * requieren accion.  ADR 018 §3.
+ */
+export function estadoDePagoInicial(origen: Origen): EstadoPago {
+  return origen === 'whatsapp' ? 'por_fuera' : 'pendiente';
+}
 
 // ===========================================================================
 // Eje 2 - la entrega

@@ -22,7 +22,17 @@
 
 /// Ver ARQUITECTURA §4.2 para el significado de cada estado y desde dónde
 /// se entra.
-enum EstadoPago { pendiente, en_proceso, pagada, rechazada, reembolsada }
+///
+/// `por_fuera` es el cobro que el sistema **no sigue**: el de un pedido de
+/// WhatsApp (ADR 018 §3). Es terminal y nace así: nada sale ni llega a él.
+enum EstadoPago {
+  pendiente,
+  en_proceso,
+  pagada,
+  rechazada,
+  reembolsada,
+  por_fuera,
+}
 
 /// Estados en los que una Orden puede NACER en el eje de pago.
 ///
@@ -31,7 +41,11 @@ enum EstadoPago { pendiente, en_proceso, pagada, rechazada, reembolsada }
 /// espere la transición `pendiente -> pagada` nunca se dispara para estas
 /// órdenes — por eso los triggers usan `entroEnPagada`, no un chequeo de
 /// transición (ADR 002, "Una Orden puede NACER en el estado final").
-const Set<EstadoPago> naceEnPago = {EstadoPago.pendiente, EstadoPago.pagada};
+const Set<EstadoPago> naceEnPago = {
+  EstadoPago.pendiente,
+  EstadoPago.pagada,
+  EstadoPago.por_fuera,
+};
 
 /// A qué estados puede pasar cada estado. `rechazada` no es terminal: el
 /// caso normal es que el cliente reintente con otro medio (ADR 002).
@@ -45,6 +59,9 @@ const Map<EstadoPago, Set<EstadoPago>> transicionesPago = {
   EstadoPago.pagada: {EstadoPago.reembolsada},
   EstadoPago.rechazada: {EstadoPago.en_proceso, EstadoPago.pagada},
   EstadoPago.reembolsada: {},
+  // Terminal: si pudiera pasar a `pagada`, `entroEnPagada` avisaría un cobro
+  // que nunca pasó por el sistema (ADR 018 §3).
+  EstadoPago.por_fuera: {},
 };
 
 /// Misma regla que `transicionPagoValida` en TS: `antes == null` es una

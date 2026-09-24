@@ -4,19 +4,20 @@ import assert from 'node:assert/strict';
 import { ESTADOS_ENTREGA, ESTADOS_PAGO } from '../src/orden.ts';
 import {
   ESTADOS_PUBLICOS,
+  REQUIEREN_ACCION,
   ROTULOS,
   proyectarEstadoPublico,
 } from '../src/proyeccion.ts';
 
 // ===========================================================================
-// El test que hace que la proyeccion sea confiable: recorre los 30 pares.
+// El test que hace que la proyeccion sea confiable: recorre los 36 pares.
 //
 // Sin esto, un par sin rama devolveria undefined y la UI dibujaria un rotulo
 // vacio. Es el equivalente de "un test que pasa por omision" (LECCIONES 4.1.9)
 // pero al reves: aca la omision se busca a proposito.
 // ===========================================================================
 
-test('los 30 pares tienen un estado publico definido, con rotulo', () => {
+test('los 36 pares tienen un estado publico definido, con rotulo', () => {
   let pares = 0;
   const vistos = new Set<string>();
 
@@ -34,7 +35,7 @@ test('los 30 pares tienen un estado publico definido, con rotulo', () => {
     }
   }
 
-  assert.equal(pares, 30, 'la aritmetica: 5 estados de pago x 6 de entrega');
+  assert.equal(pares, 36, 'la aritmetica: 6 estados de pago x 6 de entrega');
 
   // Control al reves: ningun estado publico declarado queda sin producirse.
   // Un estado que nadie puede alcanzar es codigo muerto con rotulo.
@@ -78,4 +79,50 @@ test('el avance normal', () => {
   assert.equal(proyectarEstadoPublico('pagada', 'preparando'), 'en_preparacion');
   assert.equal(proyectarEstadoPublico('pagada', 'despachada'), 'en_camino');
   assert.equal(proyectarEstadoPublico('pagada', 'entregada'), 'entregada');
+});
+
+// ===========================================================================
+// `por_fuera`: el cobro de un pedido de WhatsApp, que el sistema no sigue.
+// ADR 018 §3.
+// ===========================================================================
+
+test('un pedido de WhatsApp recorre la entrega sin caer en un estado de plata', () => {
+  assert.equal(proyectarEstadoPublico('por_fuera', 'sin_preparar'), 'por_preparar');
+  assert.equal(proyectarEstadoPublico('por_fuera', 'preparando'), 'en_preparacion');
+  assert.equal(proyectarEstadoPublico('por_fuera', 'despachada'), 'en_camino');
+  assert.equal(proyectarEstadoPublico('por_fuera', 'fallida'), 'no_entregada');
+});
+
+test('un pedido de WhatsApp entregado NO es entregada_impaga', () => {
+  // El caso que justifica el estado: con `pendiente` este par daria
+  // `entregada_impaga` y el pedido quedaria para siempre entre los que
+  // requieren accion.
+  assert.equal(proyectarEstadoPublico('por_fuera', 'entregada'), 'entregada');
+  assert.equal(proyectarEstadoPublico('pendiente', 'entregada'), 'entregada_impaga');
+});
+
+test('un pedido de WhatsApp cancelado NO pide devolver plata', () => {
+  assert.equal(proyectarEstadoPublico('por_fuera', 'cancelada'), 'cancelada');
+  assert.notEqual(proyectarEstadoPublico('por_fuera', 'cancelada'), 'cancelada_con_pago');
+});
+
+test('por_preparar requiere accion y no afirma un cobro', () => {
+  assert.ok(REQUIEREN_ACCION.includes('por_preparar'));
+  for (const rotulo of [ROTULOS.por_preparar.cliente, ROTULOS.por_preparar.operador]) {
+    assert.ok(!/acreditad|cobrar/i.test(rotulo), `"${rotulo}" afirma o reclama un cobro`);
+  }
+  assert.equal(ROTULOS.por_preparar.operador, 'Cobro por fuera - falta preparar');
+});
+
+test('por_preparar solo lo produce por_fuera: ningun otro par de pago llega ahi', () => {
+  for (const pago of ESTADOS_PAGO) {
+    for (const entrega of ESTADOS_ENTREGA) {
+      const esperado = pago === 'por_fuera' && entrega === 'sin_preparar';
+      assert.equal(
+        proyectarEstadoPublico(pago, entrega) === 'por_preparar',
+        esperado,
+        `(${pago}, ${entrega})`,
+      );
+    }
+  }
 });

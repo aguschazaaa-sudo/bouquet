@@ -2,6 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  ORIGENES,
+  TRANSICIONES_PAGO,
+  estadoDePagoInicial,
   entroEn,
   entroEnDespachada,
   entroEnEntregada,
@@ -122,4 +125,44 @@ test('un pago que llega despues de cancelar no toca el eje de entrega', () => {
   assert.equal(transicionPagoValida(antes.pago, despues.pago), true);
   assert.equal(despues.entrega, 'cancelada', 'la entrega no se movio');
   assert.equal(entroEnPagada(antes.pago, despues.pago), true, 'el efecto de cobro igual corre');
+});
+
+// ===========================================================================
+// `por_fuera` y el origen.  ADR 018 §3.
+// ===========================================================================
+
+test('por_fuera es terminal: nada sale y a nada se llega despues de nacer', () => {
+  assert.deepEqual(TRANSICIONES_PAGO.por_fuera, []);
+  for (const destino of ESTADOS_PAGO) {
+    assert.equal(
+      transicionPagoValida('por_fuera', destino),
+      destino === 'por_fuera',
+      `por_fuera -> ${destino}`,
+    );
+  }
+  // Ningun otro estado lo lista como destino: si pendiente pudiera pasar a
+  // por_fuera, un pedido de la vidriera se podria marcar "cobrado por fuera".
+  for (const [desde, hacia] of Object.entries(TRANSICIONES_PAGO)) {
+    assert.ok(!hacia.includes('por_fuera' as EstadoPago), `${desde} llega a por_fuera`);
+  }
+});
+
+test('una Orden puede nacer por_fuera', () => {
+  assert.equal(transicionPagoValida(undefined, 'por_fuera'), true);
+});
+
+test('por_fuera NO dispara entroEnPagada, ni naciendo ni despues', () => {
+  assert.equal(entroEnPagada(undefined, 'por_fuera'), false);
+  assert.equal(entroEnPagada('por_fuera', 'por_fuera'), false);
+  // Control positivo: el helper sigue disparando donde debe.
+  assert.equal(entroEnPagada(undefined, 'pagada'), true);
+});
+
+test('el origen fija el estado de pago con el que nace la Orden', () => {
+  assert.equal(estadoDePagoInicial('whatsapp'), 'por_fuera');
+  assert.equal(estadoDePagoInicial('vidriera'), 'pendiente');
+  // Los dos nacimientos son validos, y son DISTINTOS: si dieran lo mismo la
+  // funcion no decidiria nada.
+  for (const o of ORIGENES) assert.equal(transicionPagoValida(undefined, estadoDePagoInicial(o)), true);
+  assert.notEqual(estadoDePagoInicial('whatsapp'), estadoDePagoInicial('vidriera'));
 });

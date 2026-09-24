@@ -18,9 +18,13 @@ import {
   ESTADOS_PAGO,
   NACE_ENTREGA,
   NACE_PAGO,
+  ORIGENES,
   TRANSICIONES_ENTREGA,
   TRANSICIONES_PAGO,
+  estadoDePagoInicial,
 } from '../src/orden.ts';
+import { ENTRADAS_DE_TELEFONO, normalizarTelefonoAR } from '../src/envio.ts';
+import { TOPE_DE_LINEAS } from '../src/pedido.ts';
 import { ESTADOS_PUBLICOS, REQUIEREN_ACCION, ROTULOS } from '../src/proyeccion.ts';
 import { MONTOS_DE_MUESTRA, centavos, formatearARS } from '../src/dinero.ts';
 import {
@@ -190,6 +194,18 @@ export function construirContrato() {
     // el modo de falla es silencioso: un vino publicado que no aparece nunca.
     catalogo: fixturesDelCatalogo(),
     stock: fixturesDelStock(),
+    // El pedido del panel (HU-10.1, ADR 018).  El panel espeja el normalizador
+    // de telefono y necesita los topes; ambos viajan CALCULADOS, no escritos.
+    pedido: {
+      origenes: [...ORIGENES],
+      estadoDePagoInicial: Object.fromEntries(ORIGENES.map((o) => [o, estadoDePagoInicial(o)])),
+      topeDeLineas: TOPE_DE_LINEAS,
+      topeDeCantidad: TOPE_DE_STOCK,
+      telefonos: ENTRADAS_DE_TELEFONO.map((entrada) => ({
+        entrada,
+        e164: normalizarTelefonoAR(entrada),
+      })),
+    },
     publico: {
       estados: [...ESTADOS_PUBLICOS],
       requierenAccion: [...REQUIEREN_ACCION],

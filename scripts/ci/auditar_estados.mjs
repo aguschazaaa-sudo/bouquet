@@ -155,6 +155,52 @@ if (!contrato.plata || !Array.isArray(contrato.plata.casos) || !contrato.plata.c
 }
 
 // ---------------------------------------------------------------------------
+// 2 ter bis. El pedido del panel (HU-10.1, ADR 018).
+//
+// El panel muestra como quedo un telefono antes de confirmar, y el servidor
+// guarda el que sale de `normalizarTelefonoAR`.  Si los dos difieren, `wa.me`
+// abre el chat de otra persona.  Mismas dos preguntas que en el texto: sin un
+// numero que se normaliza y uno que se rechaza, una implementacion que
+// acepta todo o que rechaza todo pasa.
+//
+// Y el origen: `whatsapp` y `vidriera` tienen que nacer con estados de pago
+// DISTINTOS, o la funcion no decide nada.
+// ---------------------------------------------------------------------------
+const pedido = contrato.pedido;
+const antesDelPedido = fallos;
+
+if (!pedido || !Array.isArray(pedido.telefonos) || !pedido.estadoDePagoInicial) {
+  problema('el contrato no trae la seccion `pedido` con `telefonos` y `estadoDePagoInicial`');
+} else {
+  const salidas = pedido.telefonos.map((t) => t.e164);
+  if (!salidas.some((s) => s !== null)) problema('pedido: ningun telefono se normaliza -- falta el control positivo');
+  if (!salidas.some((s) => s === null)) problema('pedido: ningun telefono se rechaza -- falta el control negativo');
+  for (const s of salidas) {
+    if (s !== null && !/^\+549\d{10}$/.test(s)) problema(`pedido: "${s}" no es E.164 argentino movil`);
+  }
+
+  const inicial = pedido.estadoDePagoInicial;
+  for (const o of pedido.origenes) {
+    if (!contrato.pago.estados.includes(inicial[o])) problema(`pedido: ${o} nace en "${inicial[o]}", que no es un estado de pago`);
+    if (!contrato.pago.naceEn.includes(inicial[o])) problema(`pedido: ${o} nace en "${inicial[o]}", que no esta en naceEn`);
+  }
+  if (new Set(pedido.origenes.map((o) => inicial[o])).size !== pedido.origenes.length) {
+    problema('pedido: dos origenes nacen con el mismo estado de pago -- la funcion no decide nada');
+  }
+  // `por_fuera` no se alcanza por transicion: el unico camino es nacer asi.
+  if (contrato.pago.transiciones.por_fuera?.length) {
+    problema('pedido: `por_fuera` tiene transiciones de salida y tiene que ser terminal');
+  }
+  if (Object.values(contrato.pago.transiciones).some((h) => h.includes('por_fuera'))) {
+    problema('pedido: algun estado de pago pasa a `por_fuera`; sólo se nace asi');
+  }
+
+  if (fallos === antesDelPedido) {
+    console.log(`ok  el pedido del panel: ${salidas.length} telefonos con sus dos controles, y los origenes nacen distinto`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 2 quater. Las fixtures del catalogo: el balde, el tope y los descartes.
 //
 // El panel dice si un vino se ve en la tienda, y cuando no se ve dice por que.
@@ -318,7 +364,7 @@ if (!existsSync(DIR_ADMIN)) {
   // funcion a texto.ts, regenerar el JSON, y el panel seguir con su propia
   // implementacion sin que nada lo diga -- que es exactamente la segunda
   // implementacion que ARQUITECTURA §7 existe para no tener.
-  const sinEspejo = ['normalizar', 'clave', 'aSlug', 'seParecen', 'enPesos'].filter(
+  const sinEspejo = ['normalizar', 'clave', 'aSlug', 'seParecen', 'enPesos', 'normalizarTelefonoAR'].filter(
     (f) => !new RegExp(String.raw`\b` + f + String.raw`\(`).test(fuente),
   );
   if (sinEspejo.length) {

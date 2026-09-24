@@ -1,17 +1,17 @@
 ## 1. Contratos: el estado, la proyección y el pedido
 
-- [ ] 1.1 `orden.ts`: `por_fuera` en `ESTADOS_PAGO`, en `NACE_PAGO` y en `TRANSICIONES_PAGO` (vacía); `ORIGENES` y `estadoDePagoInicial`
-- [ ] 1.2 `proyeccion.ts`: estado público `por_preparar`, los 36 pares, su rótulo y su lugar en `REQUIEREN_ACCION`
-- [ ] 1.3 `pedido.ts`: `PedidoDelPanel`, `parsearPedidoDelPanel`, `ItemDeOrden`, `TOPE_DE_LINEAS`; rechaza línea repetida, `origen`/`estadoPago` y datos de entrega inválidos
-- [ ] 1.4 Fixtures de teléfono calculadas (`ENTRADAS_DE_TELEFONO`) y `generar.mjs` emite los 36 pares, el origen, el pedido y los teléfonos
-- [ ] 1.5 Tests de `contratos` (`orden`, `proyeccion`, `pedido`): los 36 pares, `por_fuera` sin entrada ni salida, `entroEnPagada` falso; **mutar** un par y ver que falla
-- [ ] 1.6 Bump de versión, **después** `node packages/contratos/scripts/generar.mjs`, y `scripts/ci/auditar_estados.mjs` en verde
+- [x] 1.1 `orden.ts`: `por_fuera` en `ESTADOS_PAGO`, en `NACE_PAGO` y en `TRANSICIONES_PAGO` (vacía); `ORIGENES` y `estadoDePagoInicial`
+- [x] 1.2 `proyeccion.ts`: estado público `por_preparar`, los 36 pares, su rótulo y su lugar en `REQUIEREN_ACCION`
+- [x] 1.3 `pedido.ts`: `PedidoDelPanel`, `parsearPedidoDelPanel`, `ItemDeOrden`, `TOPE_DE_LINEAS`; rechaza línea repetida, `origen`/`estadoPago` y datos de entrega inválidos
+- [x] 1.4 Fixtures de teléfono calculadas (`ENTRADAS_DE_TELEFONO`) y `generar.mjs` emite los 36 pares, el origen, el pedido y los teléfonos
+- [x] 1.5 Tests de `contratos` (`orden`, `proyeccion`, `pedido`): los 36 pares, `por_fuera` sin entrada ni salida, `entroEnPagada` falso; **mutar** un par y ver que falla
+- [x] 1.6 Bump de versión, **después** `node packages/contratos/scripts/generar.mjs`, y `scripts/ci/auditar_estados.mjs` en verde
 
 ## 2. Contratos en el panel (Dart)
 
-- [ ] 2.1 `estado_pago.dart` con `por_fuera`; `estado_publico.dart` con `por_preparar` y los 36 pares
-- [ ] 2.2 `core/contratos/telefono.dart`, espejo de `normalizarTelefonoAR`
-- [ ] 2.3 Los tests de Dart contra el JSON (`estados_orden_test`, `telefono_test`); `dart analyze lib test` limpio
+- [x] 2.1 `estado_pago.dart` con `por_fuera`; `estado_publico.dart` con `por_preparar` y los 36 pares
+- [x] 2.2 `core/contratos/telefono.dart`, espejo de `normalizarTelefonoAR`
+- [x] 2.3 Los tests de Dart contra el JSON (`estados_orden_test`, `telefono_test`); `dart analyze lib test` limpio
 
 ## 3. Reglas de `ordenes`
 

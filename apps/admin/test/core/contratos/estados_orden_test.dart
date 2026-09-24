@@ -59,6 +59,32 @@ void main() {
     });
   });
 
+  group('por_fuera', () {
+    test('es terminal: nada sale y a nada se llega después de nacer', () {
+      expect(transicionesPago[EstadoPago.por_fuera], isEmpty);
+      for (final destino in EstadoPago.values) {
+        expect(
+          transicionPagoValida(EstadoPago.por_fuera, destino),
+          destino == EstadoPago.por_fuera,
+          reason: 'por_fuera -> ${destino.name}',
+        );
+      }
+      for (final entrada in transicionesPago.entries) {
+        expect(
+          entrada.value,
+          isNot(contains(EstadoPago.por_fuera)),
+          reason: '${entrada.key.name} llega a por_fuera',
+        );
+      }
+    });
+
+    test('una Orden puede nacer por_fuera, y no dispara entroEnPagada', () {
+      expect(transicionPagoValida(null, EstadoPago.por_fuera), isTrue);
+      expect(entroEnPagada(null, EstadoPago.por_fuera), isFalse);
+      expect(entroEnPagada(null, EstadoPago.pagada), isTrue);
+    });
+  });
+
   group('EstadoEntrega', () {
     test('cubre exactamente los estados del contrato', () {
       final delContrato = Set<String>.from(
@@ -103,7 +129,7 @@ void main() {
       expect(delEnum, equals(delContrato));
     });
 
-    test('la proyección cubre los mismos 30 pares, con el mismo resultado', () {
+    test('la proyección cubre los mismos 36 pares, con el mismo resultado', () {
       final proyeccionContrato =
           contrato['publico']['proyeccion'] as Map<String, dynamic>;
       expect(proyeccion.length, equals(proyeccionContrato.length));
@@ -119,6 +145,61 @@ void main() {
           reason: 'par "${entrada.key}"',
         );
       }
+    });
+
+    test('los estados que requieren acción son los del contrato', () {
+      final delContrato = Set<String>.from(
+        contrato['publico']['requierenAccion'] as List,
+      );
+      final propio = estadosPublicosQueRequierenAccion
+          .map((e) => e.name)
+          .toSet();
+      expect(propio, equals(delContrato));
+      // `por_preparar` hay que armarlo, igual que uno pagado.
+      expect(propio, contains('por_preparar'));
+    });
+
+    test('los rótulos son los del contrato, palabra por palabra', () {
+      final rotulos = contrato['publico']['rotulos'] as Map<String, dynamic>;
+      for (final entrada in rotulos.entries) {
+        final estado = EstadoPublico.values.byName(entrada.key);
+        final r = rotulosEstadoPublico[estado]!;
+        expect(
+          r.cliente,
+          equals(entrada.value['cliente']),
+          reason: entrada.key,
+        );
+        expect(
+          r.operador,
+          equals(entrada.value['operador']),
+          reason: entrada.key,
+        );
+      }
+    });
+
+    test('por_fuera entrega sin caer en un estado de plata', () {
+      // El caso que justifica el estado: con `pendiente`, entregada daría
+      // `entregada_impaga` y el pedido quedaría marcado para siempre.
+      expect(
+        proyectarEstadoPublico(EstadoPago.por_fuera, EstadoEntrega.entregada),
+        EstadoPublico.entregada,
+      );
+      expect(
+        proyectarEstadoPublico(EstadoPago.por_fuera, EstadoEntrega.cancelada),
+        EstadoPublico.cancelada,
+      );
+      expect(
+        proyectarEstadoPublico(
+          EstadoPago.por_fuera,
+          EstadoEntrega.sin_preparar,
+        ),
+        EstadoPublico.por_preparar,
+      );
+      // Control positivo: el mismo par con `pendiente` sí es impaga.
+      expect(
+        proyectarEstadoPublico(EstadoPago.pendiente, EstadoEntrega.entregada),
+        EstadoPublico.entregada_impaga,
+      );
     });
 
     test('cada estado público tiene rótulo para cliente y operador', () {

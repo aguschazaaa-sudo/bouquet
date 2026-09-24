@@ -1,6 +1,6 @@
 // ignore_for_file: constant_identifier_names
 //
-// La proyección pública de una Orden: los 5 x 6 = 30 pares de (EstadoPago,
+// La proyección pública de una Orden: los 6 x 6 = 36 pares de (EstadoPago,
 // EstadoEntrega) reducidos a UN rótulo por par. Espejo de
 // `proyectarEstadoPublico` en packages/contratos/src/orden.ts (y del bloque
 // "publico" de generated/contratos.json).
@@ -19,6 +19,7 @@ enum EstadoPublico {
   confirmando,
   pago_rechazado,
   pagada,
+  por_preparar,
   en_preparacion,
   en_camino,
   entregada,
@@ -34,6 +35,7 @@ enum EstadoPublico {
 /// entregado y visualmente "listo", pero sin cobrar.
 const Set<EstadoPublico> estadosPublicosQueRequierenAccion = {
   EstadoPublico.pagada,
+  EstadoPublico.por_preparar,
   EstadoPublico.entregada_impaga,
   EstadoPublico.no_entregada,
   EstadoPublico.cancelada_con_pago,
@@ -64,6 +66,12 @@ const Map<EstadoPublico, RotuloEstado> rotulosEstadoPublico = {
   EstadoPublico.pagada: RotuloEstado(
     cliente: 'Pago acreditado',
     operador: 'Pagada - falta preparar',
+  ),
+  // Ni "pagada" (afirmaría un cobro que nadie comprobó) ni "recibida" (dice
+  // "falta cobrar"): un pedido de WhatsApp se cobra por fuera.
+  EstadoPublico.por_preparar: RotuloEstado(
+    cliente: 'Pedido recibido',
+    operador: 'Cobro por fuera - falta preparar',
   ),
   EstadoPublico.en_preparacion: RotuloEstado(
     cliente: 'Preparando tu pedido',
@@ -134,6 +142,14 @@ const Map<String, EstadoPublico> proyeccion = {
   'reembolsada|entregada': EstadoPublico.entregada_impaga,
   'reembolsada|fallida': EstadoPublico.no_entregada,
   'reembolsada|cancelada': EstadoPublico.reembolsada,
+  // `por_fuera` recorre la entrega sin caer en un estado de plata: entregada
+  // NO es impaga, y cancelada no pide devolver nada (ADR 018 §3).
+  'por_fuera|sin_preparar': EstadoPublico.por_preparar,
+  'por_fuera|preparando': EstadoPublico.en_preparacion,
+  'por_fuera|despachada': EstadoPublico.en_camino,
+  'por_fuera|entregada': EstadoPublico.entregada,
+  'por_fuera|fallida': EstadoPublico.no_entregada,
+  'por_fuera|cancelada': EstadoPublico.cancelada,
 };
 
 /// La única función que arma el rótulo público. `domain/orden.dart` la usa
