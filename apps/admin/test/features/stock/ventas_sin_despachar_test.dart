@@ -154,7 +154,8 @@ void main() {
         botellas: 1,
       );
       expect(soloDuda, contains('no llegamos a leerlos todos'));
-      expect(soloDuda, contains('Si siguen en la estantería'));
+      // Tambien da la condicion: si siguen en la estanteria se restan.
+      expect(soloDuda, contains('si siguen en la estantería'));
     });
 
     test('no dice "no hay" cuando no pudo leer', () {
