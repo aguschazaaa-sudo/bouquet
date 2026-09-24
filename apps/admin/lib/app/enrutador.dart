@@ -77,26 +77,34 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
             path: Rutas.pedidos,
             pageBuilder: (_, _) =>
                 const NoTransitionPage(child: PantallaDePedidos()),
-            routes: [
-              // `nuevo` ANTES que `:id`, para que la palabra no se lea como un
-              // id (HU-10.1).
-              GoRoute(
-                path: 'nuevo',
-                builder: (_, _) => const PaginaDeCargarPedido(),
-              ),
-              // El detalle recibe la Orden que la bandeja ya cargo por `extra`:
-              // desde la lista no lee nada. Por URL directa lee un documento.
-              GoRoute(
-                path: ':id',
-                builder: (_, estado) => PaginaDelPedido(
-                  id: estado.pathParameters['id']!,
-                  ordenInicial: switch (estado.extra) {
-                    final Orden o => o,
-                    _ => null,
-                  },
-                ),
-              ),
-            ],
+          ),
+          // HERMANAS de `/pedidos` y no hijas, a proposito: una ruta hija se apila
+          // ENCIMA de la pantalla de su padre, que sigue viva y leyendo abajo. Con
+          // hijas, abrir un pedido por URL directa armaba la bandeja (25 lecturas
+          // de mas), y volver despues de cargar mostraba la lista vieja, sin el
+          // pedido recien cargado: un operador que no ve su pedido lo carga otra
+          // vez, y un duplicado no se puede cancelar (ADR 018 §10,
+          // `presupuesto-lecturas`). Como hermanas, ir a ellas descarta la bandeja
+          // y volver la lee de nuevo. La navegacion las sigue marcando como
+          // Pedidos: `estaActiva` mira el prefijo `/pedidos/`.
+          //
+          // `nuevo` ANTES que `:id`, para que la palabra no se lea como un id
+          // (HU-10.1).
+          GoRoute(
+            path: Rutas.nuevoPedido,
+            builder: (_, _) => const PaginaDeCargarPedido(),
+          ),
+          // El detalle recibe la Orden que la bandeja ya cargo por `extra`: desde
+          // la lista no lee nada. Por URL directa lee un documento.
+          GoRoute(
+            path: '${Rutas.pedidos}/:id',
+            builder: (_, estado) => PaginaDelPedido(
+              id: estado.pathParameters['id']!,
+              ordenInicial: switch (estado.extra) {
+                final Orden o => o,
+                _ => null,
+              },
+            ),
           ),
         ],
       ),

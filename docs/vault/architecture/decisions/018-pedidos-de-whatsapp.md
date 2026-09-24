@@ -206,22 +206,37 @@ estantería** hasta que se despachan. El dueño cuenta 10, corrige con `visto: 8
 valor: 10` y `moverStock` lo acepta porque `visto` coincide: **la base dice 10
 cuando hay 8 disponibles**, y la próxima venta sobrevende dos botellas.
 
-**Decisión:** la hoja de corrección **dice cuántas unidades hay vendidas y sin
-despachar** de ese vino, y explica que ya están descontadas pero siguen en la
-estantería: *«al contar, restale esas N»*. Se cuenta leyendo los pedidos en
-`sin_preparar` y `preparando` (`limit(50)`) y sumando sus ítems de ese vino:
+**Decisión:** la hoja de corrección **dice cuántas unidades del vino están en
+pedidos que todavía no figuran como despachados**, y da las dos salidas: *«ya están
+descontadas del stock; si siguen en la estantería, restale esas N a lo que cuentes;
+si ya salieron, contá lo que hay»*. Se cuenta leyendo los pedidos en `sin_preparar` y
+`preparando` (`limit(50)`) y sumando sus ítems:
 
+- ⚠️ **El aviso es condicional a propósito, y por una razón que salió al revisar el
+  presupuesto: el panel todavía no puede marcar un pedido como despachado** (EP-07).
+  Todos los pedidos quedan en `sin_preparar`, aunque las botellas ya hayan salido.
+  Decir *«siguen en la estantería, restale»* a secas haría **restar de más** en ese
+  caso, que es el error inverso al que el aviso evita. Sólo el operador sabe dónde
+  están las botellas: se le da el dato y las dos salidas. **Cuando exista el
+  despacho (EP-07), el número pasa a ser fiable y el texto puede ser más firme.**
 - **Sin campo nuevo en la Orden ni índice.** Un `productoIds[]` con `array-contains`
-  lo haría exacto, pero es un esquema y un índice que hoy no se justifican con
-  una familia y pocas decenas de pedidos abiertos. Si se llenan más de 50, el aviso
-  **dice que el número puede ser mayor** en vez de afirmar uno incompleto.
-- **Cuesta hasta 50 lecturas por apertura de la hoja**, que es una operación rara
-  (contar el depósito). No suma al catálogo ni a la bandeja.
+  lo haría exacto, pero es un esquema y un índice que hoy no se justifican. Si se
+  llenan más de 50, el aviso **dice que el número puede ser mayor** en vez de
+  afirmar uno incompleto.
+- **Se lee UNA vez y se comparte entre todos los vinos** (`PedidosAbiertos`,
+  `pedidosAbiertosProvider`, vivo 2 minutos y **sólo si la lectura salió bien**: un
+  error no se cachea). Leerlo por vino costaba hasta 50 lecturas cada vez que se
+  abría la hoja: un conteo de 200 vinos eran **~10.000 lecturas, el 20 % de la
+  cuota** (`presupuesto-lecturas`). Ahora son ~50 por ventana de 2 minutos. El costo
+  es que un pedido cargado hace menos de 2 minutos puede no verse en el aviso.
 - Es un **aviso**, no una baranda: no bloquea corregir. Restar por uno no es
   posible sin saber qué ya salió, y bloquear frenaría un conteo legítimo.
 
-Disparador para el campo exacto (`productoIds[]`): más de 50 pedidos sin despachar,
-o el primer conteo que el aviso no alcance a explicar.
+⚠️ **Sin despacho, el tope de 50 se alcanza rápido**: los pedidos se acumulan en
+`sin_preparar` y, a 20 por día, desde el tercero el aviso dice siempre *«puede haber
+más»*. Es el disparador de `productoIds[]` y **se cumple en la primera semana de uso
+real**. La salida de fondo es EP-07, no el índice: con pedidos que salen de
+`sin_preparar`, el conjunto abierto deja de crecer.
 
 ### 10. Lo que un pedido mal cargado NO tiene todavía (hallazgo 5)
 
@@ -254,17 +269,36 @@ la bandeja. Es lo primero que hay que construir después de este cambio (HU-07.6
 
 Cuota: **50.000/día**, compartida con el panel y la preview.
 
+Medido por `presupuesto-lecturas` contra el código (2026-09-24), con 3 personas, 20
+pedidos por día de 3 líneas y 30 aperturas de la bandeja por día:
+
 | Operación | Lecturas | Al día |
 |---|---:|---|
-| Cargar un pedido de `n` líneas | `n` productos + 1 contador + 1 Orden (el marcador) = **n + 2 por intento**, y `n + 1` escrituras más los movimientos | 20 pedidos de 3 líneas: **100 (0,2 %)** |
-| …con un panel abierto | el listener del catálogo relee los `n` productos que cambian: **2n + 2** | 20 pedidos de 3 líneas: **160 (0,3 %)** |
-| Abrir la hoja de corrección de un vino | hasta **50** (los pedidos `sin_preparar` y `preparando`) | contar el depósito es raro: unas pocas al día |
-| Abrir la bandeja | hasta 25 por estado | 10 aperturas × 3 estados: **750 (1,5 %)**, techo |
-| Abrir un detalle desde la lista | **0** | — |
-| Abrir un detalle por URL directa | 1 | — |
+| Cargar un pedido de `n` líneas | `n` productos + 1 contador + 1 Orden (el marcador) = **n + 2 por intento**; un reintento que ya encuentra la Orden cuesta **1** | 20 pedidos: **100 (0,2 %)**; con 2 intentos, 200 |
+| …lo que le cobra al listener del catálogo | `n` **por cada panel abierto**: con 3 paneles, **4n + 2** en total | 3 paneles: **180** |
+| Abrir la bandeja | hasta 25, y **cambiar de estado o volver a entrar relee** | 30 × 25 = **750 (1,5 %)**; ×3 estados cuando exista EP-07: 2.250 |
+| Detalle desde la lista | **0** (llega por `extra`) | — |
+| Detalle después de cargar, o «abrir el existente» | **1**: va sin `extra`. *Faltaba en la primera cuenta* | 20 |
+| Detalle por URL directa | **1**, porque `nuevo` y `:id` son rutas **hermanas** de `/pedidos` (si fueran hijas, armarían la bandeja abajo: 26) | ~0 |
+| Formulario y hoja de vinos | **0**: usa `productosProvider`, el stream del catálogo que ya existe | — |
+| Hoja de corrección | **hasta 50 por lectura, compartida 2 minutos** entre todos los vinos (§9) | 5 hojas: ~250; **un conteo de 200 vinos: ~50 por ventana** (eran 10.000) |
 
-**Total: ~1.000/día, 2 %.** El techo de la bandeja es una cota, no un promedio:
-la mayoría de las aperturas traen bastante menos de 25.
+**Escrituras** (otra cuota, 20.000/día): **2n + 2 por pedido** —`n` de stock, `n`
+movimientos, el contador y la Orden—; con 20 pedidos, 160 (0,8 %). *La primera cuenta
+decía «n + 1 más los movimientos»: estaba mal.*
+
+**Total nuevo: ~1.200/día (2,4 %)**; sumado a lo que ya gasta el panel (~3.150), **~4.300
+(8,7 %)**. Peor caso realista: ~4.200 (8,4 %) sin conteo de inventario.
+
+⚠️ **Con la preview martillada no entra, y ya no entraba**: 1.440 × 34 = 48.960 sólo
+la preview. Con el catálogo de hoy el panel suma ~1.160 y la cuota queda en el borde
+(50.120); este cambio es lo que la pasa (~51.300, 102,6 %). **Lo que hay que recortar
+es la preview** (apagarla o no compartir la URL), no este cambio.
+
+**Lo que la primera versión de esta sección decía mal:** *«la mayoría de las aperturas
+traen bastante menos de 25»* es **falso hasta EP-07**: nada saca un pedido de
+`sin_preparar`, así que a 20 por día **desde el segundo día cada apertura cuesta 25**.
+El techo es el promedio.
 
 ## Lo que este ADR deja abierto, con su disparador
 
@@ -278,6 +312,9 @@ la mayoría de las aperturas traen bastante menos de 25.
 | ⚠️ **Sin `cancelar`**: un pedido mal cargado o duplicado **no sale de la bandeja**, y su stock ya bajó (§10). Puede costar vino | **HU-07.6, lo primero que sigue.** Mientras tanto se repone con `moverStock` y se avisa a quien prepara |
 | **`productoIds[]` en la Orden**, para contar las vendidas sin despachar exactas (§9) | Más de 50 pedidos sin despachar, o un conteo que el aviso no explique |
 | **La regla `update` de `ordenes` no valida la TRANSICIÓN** (`cancelada → sin_preparar` pasa) | EP-07: es el hallazgo 3 del [mapa](../../features/panel/overview.md). Hoy sólo se cerró que `estadoEntrega` no se pueda borrar ni inventar |
+| ⚠️ **Sin EP-07 los pedidos no salen de `sin_preparar`**: el panel los carga y los ve, pero no los puede avanzar. La bandeja se llena, el aviso de §9 no es fiable y el tope de 50 se cumple en una semana | **EP-07 (despachar y cancelar), lo que sigue** |
+| **Cada venta escribe `productos.stock`**: cuando exista el tramo 4 (`revalidarVidriera`), una venta que cambie el balde de un vino publicado costará **232 lecturas** ([`_index.md`](../../_index.md)), no las ~20 de ARQUITECTURA §6.3 | Cuando se escriba el tramo 4 |
+| **La preview cerrada de la vidriera** ya consume la cuota entera si la martillan | Antes de compartir la URL fuera de la familia |
 | **`crearOrden` de la vidriera** también necesita el aviso de §9 y su propio parser (`PedidoDeCompra` sigue sin validador) | La sesión del cobro |
 | **Los casos del emulador de esta callable no corren en CI**, igual que los de `moverStock` (ADR 016, hallazgo 8) | La sesión de `crearOrden` |
 

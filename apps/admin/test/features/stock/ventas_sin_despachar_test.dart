@@ -5,8 +5,8 @@ import 'package:admin/features/stock/presentation/textos_de_movimientos.dart';
 import 'package:admin/features/stock/presentation/textos_de_ventas_sin_despachar.dart';
 import 'package:test/test.dart';
 
-/// HU-05.2 y HU-05.4, spec `stock-vendido-sin-despachar`: el aviso de lo vendido
-/// y sin despachar, y la venta en el historial del vino. ADR 018 §8 y §9,
+/// HU-05.2 y HU-05.4, spec `stock-vendido-sin-despachar`: el aviso de lo que hay en
+/// pedidos abiertos, y la venta en el historial del vino. ADR 018 §8 y §9,
 /// hallazgos 1 y 2 de `revisor-pagos`.
 ///
 /// Dart puro con `package:test`: corre en segundos, `flutter test` esta
@@ -20,42 +20,46 @@ Map<String, Object?> _pedido(List<(String, Object?)> items) => {
 };
 
 void main() {
-  group('cuanto de un vino esta vendido y sin despachar', () {
-    test('suma las unidades de ese vino en todos los pedidos abiertos', () {
-      final v = ventasSinDespacharDe('vino-a', [
+  group('cuanto de cada vino hay en pedidos abiertos', () {
+    test('suma las unidades de cada vino en todos los pedidos', () {
+      final abiertos = pedidosAbiertosDe([
         _pedido([('vino-a', 2), ('vino-b', 9)]),
         _pedido([('vino-a', 3)]),
       ]);
-      expect(v.unidades, 5);
-      expect(v.completo, isTrue);
-      expect(v.hayQueAvisar, isTrue);
+      expect(abiertos.de('vino-a').unidades, 5);
+      expect(abiertos.de('vino-b').unidades, 9);
+      expect(abiertos.de('vino-a').completo, isTrue);
+      expect(abiertos.de('vino-a').hayQueAvisar, isTrue);
     });
 
-    test(
-      'otro vino no cuenta: sin pedidos de este, no hay nada que avisar',
-      () {
-        final v = ventasSinDespacharDe('vino-a', [
-          _pedido([('vino-b', 4)]),
-          _pedido([('vino-c', 1)]),
-        ]);
-        expect(v.unidades, 0);
-        expect(v.hayQueAvisar, isFalse);
-        // Control positivo: el mismo conjunto, mirando el vino que si esta.
-        expect(
-          ventasSinDespacharDe('vino-b', [
-            _pedido([('vino-b', 4)]),
-            _pedido([('vino-c', 1)]),
-          ]).unidades,
-          4,
-        );
-      },
-    );
+    test('un vino que ningun pedido lleva no tiene nada que avisar', () {
+      final abiertos = pedidosAbiertosDe([
+        _pedido([('vino-b', 4)]),
+        _pedido([('vino-c', 1)]),
+      ]);
+      final v = abiertos.de('vino-a');
+      expect(v.unidades, 0);
+      expect(v.hayQueAvisar, isFalse);
+      // Control positivo: el mismo conjunto, mirando el vino que si esta.
+      expect(abiertos.de('vino-b').unidades, 4);
+    });
 
     test('sin pedidos abiertos no hay nada que avisar', () {
-      final v = ventasSinDespacharDe('vino-a', []);
+      final v = pedidosAbiertosDe([]).de('vino-a');
       expect(v.unidades, 0);
       expect(v.completo, isTrue);
       expect(v.hayQueAvisar, isFalse);
+    });
+
+    test('se lee UNA vez y sirve para todos los vinos', () {
+      // La razon de ser de `PedidosAbiertos`: un inventario de 200 vinos no
+      // relee 50 pedidos por cada uno.
+      final abiertos = pedidosAbiertosDe([
+        for (var i = 0; i < 10; i++) _pedido([('vino-$i', i + 1)]),
+      ]);
+      for (var i = 0; i < 10; i++) {
+        expect(abiertos.de('vino-$i').unidades, i + 1);
+      }
     });
 
     test(
@@ -65,14 +69,13 @@ void main() {
           topeDePedidosAbiertos,
           (_) => _pedido([('vino-b', 1)]),
         );
-        final v = ventasSinDespacharDe('vino-a', pedidos);
+        final v = pedidosAbiertosDe(pedidos).de('vino-a');
         expect(v.unidades, 0);
         expect(v.completo, isFalse, reason: 'pudo haber mas pedidos sin leer');
         expect(v.hayQueAvisar, isTrue, reason: 'la duda tambien es un aviso');
         // Un pedido menos que el tope: completo.
         expect(
-          ventasSinDespacharDe(
-            'vino-a',
+          pedidosAbiertosDe(
             pedidos.take(topeDePedidosAbiertos - 1).toList(),
           ).completo,
           isTrue,
@@ -81,7 +84,7 @@ void main() {
     );
 
     test('un pedido de forma rara no esconde el aviso ni lanza', () {
-      final v = ventasSinDespacharDe('vino-a', [
+      final abiertos = pedidosAbiertosDe([
         {'items': 'nada'},
         {'sin': 'items'},
         {
@@ -92,24 +95,34 @@ void main() {
             {'productoId': 'vino-a', 'cantidad': 0},
             {'productoId': 'vino-a', 'cantidad': -3},
             {'productoId': 'vino-a', 'cantidad': 2.5},
+            {'productoId': 7, 'cantidad': 9},
             {'productoId': 'vino-a', 'cantidad': 4},
           ],
         },
       ]);
-      expect(v.unidades, 4, reason: 'solo la linea sana suma');
+      expect(
+        abiertos.de('vino-a').unidades,
+        4,
+        reason: 'solo la linea sana suma',
+      );
+      expect(abiertos.unidadesPorVino.keys, ['vino-a']);
     });
   });
 
   group('lo que dice el aviso', () {
-    test('dice que ya estan descontadas Y que siguen en la estanteria', () {
+    test('da el dato y las DOS salidas: siguen o ya salieron', () {
       final t = textoDeVentasSinDespachar(
         const VentasSinDespachar(unidades: 2, completo: true),
         botellas: 1,
       );
-      expect(t, contains('2 botellas vendidas'));
+      expect(t, contains('2 botellas'));
       expect(t, contains('descontadas'));
-      expect(t, contains('estantería'));
+      expect(t, contains('Si siguen en la estantería'));
       expect(t, contains('restale esas 2'));
+      // Hasta EP-07 el panel no marca despachos: un pedido cuyas botellas ya
+      // salieron sigue figurando abierto. Decir "restale" a secas hace restar de
+      // mas en ese caso.
+      expect(t, contains('si ya salieron'));
       expect(t, isNot(contains('muchos pedidos')));
     });
 
@@ -118,8 +131,8 @@ void main() {
         const VentasSinDespachar(unidades: 1, completo: true),
         botellas: 1,
       );
-      expect(t, contains('1 botella vendida'));
-      expect(t, contains('restale esa.'));
+      expect(t, contains('1 botella en pedidos'));
+      expect(t, contains('restale esa a lo que cuentes'));
     });
 
     test('un vino de caja lo dice en cajas, no en botellas sueltas', () {
@@ -141,6 +154,7 @@ void main() {
         botellas: 1,
       );
       expect(soloDuda, contains('no llegamos a leerlos todos'));
+      expect(soloDuda, contains('Si siguen en la estantería'));
     });
 
     test('no dice "no hay" cuando no pudo leer', () {

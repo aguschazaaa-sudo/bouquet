@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/firebase/firebase_providers.dart';
@@ -40,12 +42,36 @@ final repositorioDeVentasSinDespacharProvider =
       ),
     );
 
-/// Lo vendido y sin despachar de un vino (HU-05.2, ADR 018 §9). Se pide **cuando
-/// se abre la hoja de correccion**, nunca antes: hasta 50 lecturas por apertura,
-/// y contar el deposito es una operacion rara. `autoDispose`: cada apertura lee
-/// de nuevo, asi que un pedido recien cargado se cuenta.
-final ventasSinDespacharProvider = FutureProvider.autoDispose
-    .family<VentasSinDespachar, String>(
-      (ref, productoId) =>
-          ref.watch(repositorioDeVentasSinDespacharProvider).de(productoId),
+/// Cuanto vive lo leido de los pedidos abiertos. Contar el deposito entero abre la
+/// hoja de correccion de muchos vinos seguidos: leerlo por cada uno eran ~10.000
+/// lecturas con 200 vinos. **Dos minutos**: alcanza para un conteo, y un pedido
+/// cargado hace menos que eso puede no verse en el aviso (es un aviso, no una
+/// baranda).
+const vidaDePedidosAbiertos = Duration(minutes: 2);
+
+/// Los pedidos abiertos, leidos UNA vez y compartidos (HU-05.2, ADR 018 §9). Se
+/// pide **cuando se abre la hoja de correccion**, nunca antes.
+///
+/// Se queda vivo [vidaDePedidosAbiertos] **solo si la lectura salio bien**: un
+/// error no se cachea, asi que volver a abrir la hoja reintenta.
+final pedidosAbiertosProvider = FutureProvider.autoDispose<PedidosAbiertos>((
+  ref,
+) async {
+  final enlace = ref.keepAlive();
+  final reloj = Timer(vidaDePedidosAbiertos, enlace.close);
+  ref.onDispose(reloj.cancel);
+  try {
+    return await ref.watch(repositorioDeVentasSinDespacharProvider).abiertos();
+  } catch (_) {
+    enlace.close();
+    rethrow;
+  }
+});
+
+/// Lo que hay en pedidos abiertos de UN vino, sacado de lo ya leido: no lee nada.
+final ventasSinDespacharProvider = Provider.autoDispose
+    .family<AsyncValue<VentasSinDespachar>, String>(
+      (ref, productoId) => ref
+          .watch(pedidosAbiertosProvider)
+          .whenData((abiertos) => abiertos.de(productoId)),
     );

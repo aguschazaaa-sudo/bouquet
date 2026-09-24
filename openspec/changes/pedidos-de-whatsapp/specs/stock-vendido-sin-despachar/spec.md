@@ -1,14 +1,18 @@
 ## ADDED Requirements
 
-### Requirement: La hoja de corrección SHALL decir cuántas unidades hay vendidas sin despachar
+### Requirement: La hoja de corrección SHALL decir cuántas unidades hay en pedidos que no figuran como despachados
 
-La hoja de corrección de stock MUST mostrar, para el vino que se corrige, la suma de las unidades de sus ítems en pedidos con `estadoEntrega` `sin_preparar` o `preparando`, y explicar que ya están descontadas del stock pero siguen en la estantería.
+La hoja de corrección de stock MUST mostrar, para el vino que se corrige, la suma de las unidades de sus ítems en pedidos con `estadoEntrega` `sin_preparar` o `preparando`, decir que ya están descontadas del stock, y dar **las dos salidas**: si siguen en la estantería se restan de lo que se cuenta, y si ya salieron no.
 
-Es un aviso y NO una baranda: no impide corregir.
+Es condicional a propósito: mientras el panel no pueda marcar un despacho (EP-07), un pedido cuyas botellas ya salieron sigue figurando abierto, y ordenar «restale esas» haría restar de más. Es un aviso y NO una baranda: no impide corregir.
 
-#### Scenario: Hay vendidas sin despachar
+#### Scenario: Hay pedidos abiertos con ese vino
 - **WHEN** el vino tiene 2 unidades en un pedido `sin_preparar` y 3 en uno `preparando`
-- **THEN** la hoja dice que hay 5 vendidas sin despachar y que al contar hay que restarlas
+- **THEN** la hoja dice que hay 5 en pedidos que todavía no figuran como despachados, que ya están descontadas, y que si siguen en la estantería hay que restarlas y si ya salieron no
+
+#### Scenario: El aviso no da una orden a secas
+- **WHEN** se lee el texto del aviso
+- **THEN** menciona tanto el caso de que sigan en la estantería como el de que ya hayan salido
 
 #### Scenario: No hay
 - **WHEN** ningún pedido abierto lleva ese vino
@@ -45,3 +49,19 @@ La lista de movimientos (HU-05.4) MUST mostrar un movimiento de venta como *«Se
 #### Scenario: Una venta en la hoja de movimientos
 - **WHEN** el vino tiene un movimiento con `operacion.tipo: 'venta'`, cantidad 2 y pedido 7
 - **THEN** la hoja dice que se vendieron 2 por el pedido 7, de cuánto a cuánto quedó el stock
+
+### Requirement: Los pedidos abiertos SHALL leerse una vez y compartirse entre los vinos
+
+El panel MUST leer los pedidos abiertos una sola vez y sacar de esa lectura lo de cada vino, y NO MUST releerlos por cada hoja que se abre: contar el depósito abre la hoja de muchos vinos seguidos. Lo leído SHALL conservarse un tiempo corto y sólo si la lectura salió bien.
+
+#### Scenario: Dos hojas seguidas
+- **WHEN** el operador abre la hoja de corrección de dos vinos distintos en menos de dos minutos
+- **THEN** se hace una sola lectura de pedidos
+
+#### Scenario: Un error no se cachea
+- **WHEN** la lectura falla y el operador vuelve a abrir la hoja
+- **THEN** se reintenta la lectura
+
+#### Scenario: Un vino que ningún pedido lleva
+- **WHEN** ningún pedido abierto lleva el vino de la segunda hoja
+- **THEN** esa hoja no muestra el aviso, sin haber leído nada más
