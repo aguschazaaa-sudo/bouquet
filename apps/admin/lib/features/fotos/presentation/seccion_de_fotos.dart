@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/presentation/aviso.dart';
 import '../domain/fallo_de_fotos.dart';
 import '../domain/foto_del_vino.dart';
+import '../domain/foto_principal.dart';
 import '../fotos_providers.dart';
 import 'boton_de_agregar_foto.dart';
 import 'renglon_de_foto.dart';
@@ -61,6 +62,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
   /// lista persistida (`widget.imagenes`) ya es la fuente de verdad.
   final _agregadasLocalmente = <String>[];
   final _quitando = <String>{};
+  bool _cambiandoPrincipal = false;
   final _fallos = <(String nombre, String texto)>[];
 
   void _agregar(FotoDelVino foto) {
@@ -98,6 +100,40 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
     }
   }
 
+  /// HU-04.2. En un alta sin guardar se reordena la lista local, sin tocar la
+  /// base; en un vino guardado lo hace el repositorio con una transacción que
+  /// relee `imagenes`, nunca con la lista de esta pantalla (§5.3).
+  Future<void> _hacerPrincipal(String productoId, String url) async {
+    if (!widget.guardado) {
+      final nueva = conPrincipal(_agregadasLocalmente, url);
+      if (nueva == null) return;
+      setState(() {
+        _agregadasLocalmente
+          ..clear()
+          ..addAll(nueva);
+      });
+      widget.alCambiarImagenesLocales?.call(List.of(nueva));
+      return;
+    }
+    setState(() => _cambiandoPrincipal = true);
+    try {
+      await ref
+          .read(repositorioDeFotosProvider)
+          .hacerPrincipal(productoId: productoId, url: url);
+    } on FalloDeFotos catch (e) {
+      if (mounted) {
+        setState(
+          () => _fallos.add((
+            textoNoSePudoCambiarLaPrincipal,
+            textoDelFalloDeFotos(e.error),
+          )),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cambiandoPrincipal = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
@@ -124,13 +160,20 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
           // (spec panel-vino "La página del vino tiene una sección de
           // fotos"), así que crecer verticalmente con la cantidad de fotos
           // no desborda nada -- ya hay un scroll de verdad más arriba.
-          for (final url in imagenes)
+          for (final (posicion, url) in imagenes.indexed)
             RenglonDeFoto(
               key: ValueKey(url),
               url: url,
               recienSubida: _subidasEnEstaSesion[url],
               quitando: _quitando.contains(url),
               alQuitar: () => _quitar(productoId, url),
+              // Con una sola foto no hay nada que elegir (spec "La principal
+              // se marca sólo cuando hay para elegir").
+              esPrincipal: imagenes.length > 1 && posicion == 0,
+              alUsarComoPrincipal: imagenes.length > 1 && posicion > 0
+                  ? () => _hacerPrincipal(productoId, url)
+                  : null,
+              cambiandoPrincipal: _cambiandoPrincipal,
             ),
           if (imagenes.isNotEmpty) const SizedBox(height: 8),
           for (final (nombre, texto) in _fallos)

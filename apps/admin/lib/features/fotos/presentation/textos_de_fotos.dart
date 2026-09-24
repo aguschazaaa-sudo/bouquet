@@ -31,6 +31,12 @@ const textoElegirDeGaleria = 'Elegir de la galería';
 const textoSubiendo = 'Subiendo…';
 const textoQuitarFoto = 'Sacar esta foto';
 
+/// HU-04.2: la primera foto es la única que dibuja la vidriera.
+const textoPrincipal = 'Principal · la que se ve en la tienda';
+const textoUsarComoPrincipal = 'Usar como principal';
+const textoCambiandoLaPrincipal = 'Cambiando…';
+const textoNoSePudoCambiarLaPrincipal = 'No se pudo cambiar la principal';
+
 /// Spec "No recortó nada": la CONSECUENCIA en la tienda -- el fondo no
 /// desaparece --, no el `0 %` crudo que informó `procesarFoto`.
 const textoNoRecorto =
@@ -66,14 +72,16 @@ String get _textoPesaDeMasGenerico =>
 /// SDK que lo originó (spec "Una subida que falla se ve, y dice cuál
 /// falló").
 String textoDelFalloDeFotos(ErrorDeFotos error) => switch (error) {
-  ErrorDeFotos.sinPermiso => 'Tu cuenta no tiene permiso para subir fotos.',
+  ErrorDeFotos.sinPermiso =>
+    'Tu cuenta no tiene permiso para cambiar las fotos.',
   ErrorDeFotos.sinConexion => 'No hay conexión. Probá de nuevo cuando vuelva.',
   ErrorDeFotos.noEsImagen =>
     'Eso no es una foto (jpg, png o webp): no la subimos.',
   ErrorDeFotos.pesaDeMas => _textoPesaDeMasGenerico,
   ErrorDeFotos.fallaLaTransformacion =>
     'No pudimos procesarla. Probá con otra foto.',
-  ErrorDeFotos.desconocido => 'Algo falló al subirla. Probá de nuevo.',
+  ErrorDeFotos.yaNoEsta => 'Esa foto ya no está: otra persona la sacó.',
+  ErrorDeFotos.desconocido => 'Algo falló con la foto. Probá de nuevo.',
 };
 
 /// Spec panel-vino, "El aviso de sin foto que ya existe lleva a la

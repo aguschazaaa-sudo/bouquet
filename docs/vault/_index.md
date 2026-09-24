@@ -74,6 +74,38 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### La foto principal: HU-04.2 recortada, y el estado del hito 1 medido (2026-09-24)
+
+**Escrita y verificada en local; el deploy está abajo.** Change
+[`panel-foto-principal`](../../openspec/changes/panel-foto-principal/proposal.md),
+con el porqué en [ADR 015 §7](architecture/decisions/015-fotos-del-panel.md). Cada
+foto que no es la primera tiene **"Usar como principal"**, un toque y sin
+confirmación. **Se elige la principal y NO se ordenan las demás**: la vidriera lee
+sólo `imagenes[0]` (`VentanaDeBotella.tsx:30`, `seleccion.ts:49`).
+
+⚠️ **Se construyó ANTES de su disparador, a propósito.** El disparador era *"el primer
+vino con dos fotos"* y se midió que no pasó: **0 de 22 productos**. Se tomó igual
+porque, hoy, cambiar la principal obliga a sacar la foto y volver a subirla.
+
+**El hito 1, medido en producción el 2026-09-24** (no leído de este archivo):
+22 de 24 historias escritas; faltan HU-04.2 —esta— y HU-05.4. **0 cerradas**: ningún
+change se archivó. **0 vinos reales**: de 22 productos, 20 son `muestra: true`, uno es
+`vino-de-prueba` (32 de stock, 1 foto, publicado) y otro `ve`, una prueba del dueño.
+Falta que el dueño cargue su catálogo, y eso no lo hace ningún código.
+
+| Qué | Cómo |
+|---|---|
+| La regla | `conPrincipal`, pura: 10 casos con `dart test`. **Mutada** con `.reversed`: falla 1 y se revirtió. Es una mutación **débil**: sólo la agarra el caso de tres fotos |
+| Compila | `dart analyze lib test`: **No issues found** |
+| Sin huérfanos | 10 símbolos grepeados, cada uno con call site fuera de su archivo; control negativo con uno inventado: 0. Ruta: `enrutador` → `PaginaDelVino` → `FormularioDelVino` → `SeccionDeFotos` |
+| Hooks | `probar_hooks.sh` 35/35 |
+| Presupuesto | 1 lectura por cambio + 1 por sesión abierta: ~150/día, **0,3 %** |
+
+**Sin probar:** la transacción contra Firestore. Los tests del panel son de dominio puro
+y no hay emulador en la suite del panel: lo que corre es `conPrincipal`, no
+`runTransaction`. La concurrencia (otra persona sube una foto en el medio) queda
+verificada por razonamiento sobre el contrato del SDK, **no por una prueba**.
+
 ### La vidriera tiene una preview cerrada, y `moverStock` ya se usó de verdad (2026-09-23)
 
 **Desplegada y verificada**: <https://bouquet-tienda--bouquet-vinos.us-east4.hosted.app>,
@@ -300,51 +332,13 @@ los 20 productos de producción siguen siendo `muestra: true`, así que publicar
 y despublicar todavía no se probaron contra uno de verdad. Eso sigue
 bloqueando que el change se archive.
 
-### El producto se endureció, y la ficha lleva descripción (2026-09-21)
-
-**Lo del 18 quedó ENTREGADO**: las reglas de ADR 013 se desplegaron
-(ruleset `a4520800` → `0310466f`) y el panel se promovió con `hosting:clone`
-(live pasó del commit `3b46a39` al `d871218`). **Falta que alguien cargue un
-vino real y lo mire** — 9.6 de `panel-cargar-un-vino`, y sin eso el change no
-se archiva.
-
-**Tres agujeros cerrados en `firestore.rules`**, en el change
-[`panel-publicar-un-vino`](../../openspec/changes/panel-publicar-un-vino/proposal.md),
-con el porqué en [ADR 014](architecture/decisions/014-publicar-un-vino.md):
-un producto **no se borra nunca** (`allow delete: if false`), un vino
-publicado **tiene precio > 0**, y **cada imagen es una URL `https://`**. Los
-dos primeros son los hallazgos 1 y 2 que `revisor-pagos` dejó abiertos en
-ADR 008. ⚠️ **Sin desplegar todavía**: el deploy es reglas → panel.
-
-**La ficha del vino lleva descripción**, punta a punta: contrato, reglas,
-panel y vidriera. El dueño contestó la pregunta que EP-03 tenía abierta desde
-el mapa (hallazgo 14). Tope de **600 caracteres**, que vive en las reglas y no
-sólo en el formulario — el catálogo entero viaja al navegador para filtrarse
-en memoria, así que cada carácter lo paga todo el que abre `/vinos`.
-
-**Dos cosas se midieron contra el emulador en vez de suponerse.** `matches()`
-de las reglas compara **la cadena entera** —`xhttps://…` rebota—, y `size()`
-cuenta **caracteres, no bytes**: 600 eñes entran. Si contara bytes, el tope
-real en castellano sería la mitad del que dice el formulario, y nadie se
-enteraría hasta que un texto normal rebotara.
-
-**Se midió producción ANTES de endurecer nada**, porque una regla nueva puede
-dejar atascado un documento que ya existe: **0** publicados con `precio <= 0`
-y **0** imágenes sin `https://`, cada uno con su control positivo. Y dos
-datos que no se buscaban: `fichaVino` en producción no tenía **ni
-`graduacion` ni `descripcion`**, así que el `hasOnly` crece sin rebotar nada;
-y **los 20 productos son `muestra: true`**, o sea que todavía no hay un solo
-vino real cargado.
-
-**Las reglas se mutaron, de a una.** Cinco mutaciones, cada una rompiendo
-exactamente los casos que la prueban. La que más valía: debilitar **sólo el
-índice 9** de `imagenValida` rompe **sólo** el test que mira la última
-posición — las diez condiciones no son decorativas. Suite de reglas 38 → 53.
-
-⚠️ **Falta la pantalla.** Publicar y despublicar (HU-03.6) y el espejo de la
-vidriera (HU-03.7) **no están construidos**; las reglas que los habilitan sí.
-Y el campo de la descripción todavía no está en el formulario del panel: el
-dominio, el mapeo y los tests sí.
+> ⚠️ **"El producto se endureció, y la ficha lleva descripción" (2026-09-21) se movió a
+> [`changelog/_log.md`](changelog/_log.md#el-producto-se-endureció-y-la-ficha-lleva-descripción-2026-09-21)
+> el 2026-09-24**, al construirse la foto principal y llegar el dashboard a 6 entradas. El
+> porqué está en [ADR 014](architecture/decisions/014-publicar-un-vino.md). Lo que sigue
+> vigente y no vive en otro lado: **las reglas se midieron contra el emulador** (`matches()`
+> compara la cadena entera, `size()` cuenta caracteres) y **en producción hay 0 vinos reales**:
+> los 20 del seed son `muestra: true`.
 
 > ⚠️ **"Cargar un vino: escrito, probado contra el emulador" (2026-09-18) se movió a
 > [`changelog/_log.md`](changelog/_log.md#cargar-un-vino-escrito-probado-contra-el-emulador-sin-desplegar-2026-09-18)
@@ -454,7 +448,7 @@ Los que bloquean algo:
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
 | ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
-| **HU-04.2 — reordenar fotos y elegir la principal** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)): choca con ARQUITECTURA §5.3, que prohíbe reescribir el array entero | El primer vino con dos fotos | 2026-09-22 |
+| **HU-04.2 — ordenar las fotos que NO son la principal.** Elegir la principal se construyó el 2026-09-24 ([ADR 015 §7](architecture/decisions/015-fotos-del-panel.md)); la vidriera lee sólo `imagenes[0]`, así que ordenar el resto no cambia nada visible | El día que la ficha muestre más de una foto | 2026-09-22 |
 | **El recorte de fondo de una foto de cámara**, con un modelo real — el clasificador por umbral se midió y se refutó (ADR 015 §2) | Que la previsualización resulte insuficiente, mirándola | 2026-09-22 |
 | **Los crudos huérfanos en Storage** si `procesarFoto` falla a mitad de camino: no son alcanzables y no rompen nada. Entre el 2026-09-22 y el 2026-09-23 se produjo uno en CADA intento de subida, mientras el preflight de la callable daba 403 — **RESUELTO el CORS el 2026-09-23** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)), vuelve a ser el caso raro original | Cuando pesen, y hay que barrer los que deje un fallo a mitad de camino | 2026-09-22 |
 | ⚠️ **El color del papel de la previsualización está copiado entre el panel (Dart, `Tokens.papelVentana`) y la vidriera (CSS, `--papel-ventana`)** — puede desincronizarse, sin nada automático que lo detecte | La próxima vez que alguien toque uno de los dos sistemas de diseño | 2026-09-22 |

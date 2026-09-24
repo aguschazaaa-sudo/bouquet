@@ -24,7 +24,8 @@
   **no intente detectar** si una foto es un packshot de bodega o una foto de
   cámara — ese detector se midió y se refutó
 - **Historias:** HU-04.1 · HU-04.3 · HU-04.4 ([EP-04](../../features/panel/EP-04-fotos.md)).
-  HU-04.2 queda afuera, con disparador — ver *Lo que NO se construyó*
+  **HU-04.2, recortada a *elegir la principal*, se construyó el 2026-09-24** (§7);
+  ordenar las demás sigue afuera, con disparador — ver *Lo que NO se construyó*
 - **Toca:** [ADR 008](008-catalogo-stock-y-carrito.md) (la vidriera sirve WebP
   sin `next/image`, lo que fija la forma que esta tubería tiene que producir)
 - **Hace cumplir:** `functions/test/foto/` (17 tests: `tuberia.test.ts`,
@@ -161,6 +162,56 @@ de diseño nueva (no pasó por `/disenio`): es la misma paleta y los mismos
 componentes, sólo reacomodados — sigue siendo un layout, no un sistema de
 diseño nuevo.
 
+### 7. Elegir la foto principal (HU-04.2, recortada — 2026-09-24)
+
+**Se recortó la historia.** HU-04.2 pide *elegir la primera y ordenar las demás*. La
+vidriera lee **sólo `imagenes[0]`** (`VentanaDeBotella.tsx:30`, `seleccion.ts:49`), así
+que el orden de la segunda en adelante no le cambia nada a un comprador. Se hace
+la primera mitad; **ordenar las demás queda con disparador: el día que la ficha
+muestre más de una foto.**
+
+**Se construyó antes del disparador que esta tabla le puso** (*"el primer vino con dos
+fotos"*): se midió el 2026-09-24 y son **0 de 22**. La razón es que hoy la única forma de
+cambiar la principal es sacar la foto y volver a subirla, y con el catálogo real
+por cargarse eso es lo primero que se va a necesitar.
+
+**La decisión: una transacción de cliente que relee.** `RepositorioDeFotos.hacerPrincipal`
+lee el documento, aplica `conPrincipal` (pura, en `domain/foto_principal.dart`) **sobre lo
+leído**, y escribe con `tx.update` sólo si cambió. Es la única escritura del panel que
+reescribe `imagenes` entero, y choca con ARQUITECTURA §5.3; lo que esa regla protege —que
+no se pierda la foto que subió otra persona— lo cuida que la lista escrita sea **una
+permutación de la que se leyó en ese intento**. El SDK reintenta con lectura fresca si el
+documento cambió antes del commit.
+
+| Alternativa | Por qué no |
+|---|---|
+| Un campo `principal` aparte | Dos fuentes para la misma pregunta (§5.2) y cuatro lugares que tocar; y un `principal` que apunta a una foto ya sacada es un estado nuevo |
+| `arrayRemove` + `arrayUnion` en un batch, sin leer | Las fotos que se re-agregan salen de la pantalla, que puede estar vieja: si otra persona sacó `A`, el `arrayUnion(A)` **la resucita** |
+| Una callable | Un deploy de `functions` y un arranque en frío para una escritura que las reglas ya permiten |
+| Escribir la lista de la pantalla | Es lo que §5.3 prohíbe |
+
+**Sin reglas nuevas.** `imagenesValidas` ya acepta la lista reescrita. Lo que **no** exigen
+es que sea una permutación de la anterior: esa invariante vive en `conPrincipal` y en sus
+tests, no en las reglas (compararlas pediría desenrollar diez posiciones por lado).
+
+**La excepción sale afuera de la transacción**: el handler devuelve `cambiada` / `yaEra` /
+`yaNoEsta` y `hacerPrincipal` arma el `FalloDeFotos` después, porque en web una excepción
+propia que cruza el puente de promesas de JS puede llegar envuelta. `yaEra` no escribe.
+
+**Dos textos de error dejaron de decir "subir"** (`sinPermiso`, `desconocido`): ahora
+sirven a tres operaciones y "no tenés permiso para subir fotos" era falso al elegir la
+principal.
+
+**Presupuesto de lecturas:** 1 por cambio (la de la transacción) **más 1 por cada sesión
+abierta**, porque `productosProvider` es un `snapshots()`. Con 50 cambios por día y dos
+sesiones: **~150/día, el 0,3 % de los 50.000**. La página no lee nada nuevo.
+
+⚠️ **Con el tramo 4, cambiar la principal de un vino publicado va a disparar una purga**
+(igual que `moverStock`, ADR 016). Conviene elegirla **antes de publicar**.
+
+**Lo que NO está probado:** los tests del panel son de dominio puro; no hay una prueba de
+`runTransaction` contra un emulador. `conPrincipal` está probada, la concurrencia no.
+
 ## Tres capas de un mismo problema, encontradas EN el deploy y no en el diseño
 
 Documentadas acá porque son el tipo de cosa que se repite si no queda escrito.
@@ -223,7 +274,7 @@ embebido y que el paquete no vuelva a aparecer en `package.json`.
 
 | Qué | Por qué no | Disparador |
 |---|---|---|
-| **HU-04.2 — reordenar fotos** | Choca con ARQUITECTURA §5.3, que prohíbe reescribir el array entero, y reordenar **es** reescribirlo. Resolverlo pide una transacción que relee y compara contra lo que el operador vio — el mismo patrón que `precioUnitarioVisto` de `crearOrden`. El seed tiene **una** foto por producto: elegir la principal entre una sola es una pantalla que no decide nada | El primer vino con dos fotos |
+| **HU-04.2 — ordenar las fotos que no son la principal** (elegir la principal **sí** se construyó, §7) | Choca con ARQUITECTURA §5.3, que prohíbe reescribir el array entero, y reordenar **es** reescribirlo. Resolverlo pide una transacción que relee y compara contra lo que el operador vio — el mismo patrón que `precioUnitarioVisto` de `crearOrden`. El seed tiene **una** foto por producto: elegir la principal entre una sola es una pantalla que no decide nada. La vidriera lee sólo `imagenes[0]`: ordenar la segunda en adelante no cambia nada visible | El día que la ficha muestre más de una foto |
 | **Borrar el archivo crudo de Storage al sacar una foto (HU-04.3)** | Las dos mitades no pesan lo mismo: borrar da 404 en las páginas ya cacheadas en el borde hasta la próxima purga (el tramo 4 de Cloudflare no está construido), mientras que dejarlo cuesta unos cientos de KB de Storage | Cuando los crudos huérfanos pesen |
 | **Recorte de fondo con un modelo real** (para la foto de cámara ocasional) | Un modelo ONNX de decenas de MB en el arranque en frío de la function es una superficie que la Decisión 2 de este ADR dice que ni hace falta: el panel muestra y el operador juzga | Que la previsualización resulte insuficiente, mirándola |
 

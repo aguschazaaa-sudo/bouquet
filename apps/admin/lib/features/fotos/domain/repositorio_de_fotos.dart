@@ -41,4 +41,17 @@ abstract interface class RepositorioDeFotos {
   /// 404 en las paginas ya cacheadas en el borde hasta la proxima purga, y
   /// el tramo 4 de Cloudflare no esta construido (proposal.md).
   Future<void> quitar({required String productoId, required String url});
+
+  /// Pone [url] primera en `imagenes` de `productos/{productoId}` (HU-04.2),
+  /// la que dibuja la vidriera.
+  ///
+  /// **Es la única escritura que reescribe `imagenes` entero**, y por eso va
+  /// en una transacción que **relee** el documento y reordena lo leído, nunca
+  /// la lista de la pantalla (ARQUITECTURA §5.3): si otra persona subió una
+  /// foto en el medio, no se pierde. Si [url] ya es la primera no escribe
+  /// nada; si ya no está lanza `FalloDeFotos(ErrorDeFotos.yaNoEsta)`.
+  Future<void> hacerPrincipal({
+    required String productoId,
+    required String url,
+  });
 }

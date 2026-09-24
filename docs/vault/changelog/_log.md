@@ -9,6 +9,60 @@
 
 ---
 
+## Salió el 2026-09-24, al construirse la foto principal
+
+Sale la de "El producto se endureció" (2026-09-21): con la de la foto principal
+sumada al dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 014](../architecture/decisions/014-publicar-un-vino.md).
+
+### El producto se endureció, y la ficha lleva descripción (2026-09-21)
+
+**Lo del 18 quedó ENTREGADO**: las reglas de ADR 013 se desplegaron
+(ruleset `a4520800` → `0310466f`) y el panel se promovió con `hosting:clone`
+(live pasó del commit `3b46a39` al `d871218`). **Falta que alguien cargue un
+vino real y lo mire** — 9.6 de `panel-cargar-un-vino`, y sin eso el change no
+se archiva.
+
+**Tres agujeros cerrados en `firestore.rules`**, en el change
+[`panel-publicar-un-vino`](../../../openspec/changes/panel-publicar-un-vino/proposal.md),
+con el porqué en [ADR 014](../architecture/decisions/014-publicar-un-vino.md):
+un producto **no se borra nunca** (`allow delete: if false`), un vino
+publicado **tiene precio > 0**, y **cada imagen es una URL `https://`**. Los
+dos primeros son los hallazgos 1 y 2 que `revisor-pagos` dejó abiertos en
+ADR 008. ⚠️ **Sin desplegar todavía**: el deploy es reglas → panel.
+
+**La ficha del vino lleva descripción**, punta a punta: contrato, reglas,
+panel y vidriera. El dueño contestó la pregunta que EP-03 tenía abierta desde
+el mapa (hallazgo 14). Tope de **600 caracteres**, que vive en las reglas y no
+sólo en el formulario — el catálogo entero viaja al navegador para filtrarse
+en memoria, así que cada carácter lo paga todo el que abre `/vinos`.
+
+**Dos cosas se midieron contra el emulador en vez de suponerse.** `matches()`
+de las reglas compara **la cadena entera** —`xhttps://…` rebota—, y `size()`
+cuenta **caracteres, no bytes**: 600 eñes entran. Si contara bytes, el tope
+real en castellano sería la mitad del que dice el formulario, y nadie se
+enteraría hasta que un texto normal rebotara.
+
+**Se midió producción ANTES de endurecer nada**, porque una regla nueva puede
+dejar atascado un documento que ya existe: **0** publicados con `precio <= 0`
+y **0** imágenes sin `https://`, cada uno con su control positivo. Y dos
+datos que no se buscaban: `fichaVino` en producción no tenía **ni
+`graduacion` ni `descripcion`**, así que el `hasOnly` crece sin rebotar nada;
+y **los 20 productos son `muestra: true`**, o sea que todavía no hay un solo
+vino real cargado.
+
+**Las reglas se mutaron, de a una.** Cinco mutaciones, cada una rompiendo
+exactamente los casos que la prueban. La que más valía: debilitar **sólo el
+índice 9** de `imagenValida` rompe **sólo** el test que mira la última
+posición — las diez condiciones no son decorativas. Suite de reglas 38 → 53.
+
+⚠️ **Falta la pantalla.** Publicar y despublicar (HU-03.6) y el espejo de la
+vidriera (HU-03.7) **no están construidos**; las reglas que los habilitan sí.
+Y el campo de la descripción todavía no está en el formulario del panel: el
+dominio, el mapeo y los tests sí.
+
+---
+
 ## Salió el 2026-09-23 (más tarde), al desplegarse la preview de la vidriera
 
 Novena entrada. Sale la de "Cargar un vino" (2026-09-18): con la de la preview

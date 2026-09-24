@@ -8,8 +8,12 @@ import 'package:firebase_storage/firebase_storage.dart';
 import '../domain/fallo_de_fotos.dart';
 import '../domain/foto_del_vino.dart';
 import '../domain/formato_de_foto.dart';
+import '../domain/foto_principal.dart';
 import '../domain/repositorio_de_fotos.dart';
 import 'fallos_de_fotos.dart';
+
+/// Lo que decidió la transacción de [RepositorioDeFotosFirebase.hacerPrincipal].
+enum _CambioDePrincipal { cambiada, yaEra, yaNoEsta }
 
 /// Las fotos de un vino, contra Storage, la callable `procesarFoto` y
 /// Firestore.
@@ -114,6 +118,36 @@ class RepositorioDeFotosFirebase implements RepositorioDeFotos {
       throw comoFalloDeFotos(e, url);
     }
   }
+
+  @override
+  Future<void> hacerPrincipal({
+    required String productoId,
+    required String url,
+  }) async {
+    final ref = _db.collection(_coleccion).doc(productoId);
+    final _CambioDePrincipal resultado;
+    try {
+      resultado = await _db.runTransaction((tx) async {
+        final actual = await tx.get(ref);
+        final imagenes = _urlsDe(actual.data()?[_campoDeImagenes]);
+        final nueva = conPrincipal(imagenes, url);
+        if (nueva == null) return _CambioDePrincipal.yaNoEsta;
+        if (nueva.first == imagenes.first) return _CambioDePrincipal.yaEra;
+        tx.update(ref, {_campoDeImagenes: nueva});
+        return _CambioDePrincipal.cambiada;
+      });
+    } catch (e) {
+      throw comoFalloDeFotos(e, url);
+    }
+    // La excepción se arma AFUERA de la transacción: en web una excepción
+    // propia que cruza el puente de promesas puede llegar envuelta.
+    if (resultado == _CambioDePrincipal.yaNoEsta) {
+      throw FalloDeFotos(ErrorDeFotos.yaNoEsta, url);
+    }
+  }
+
+  List<String> _urlsDe(Object? valor) =>
+      valor is List ? valor.whereType<String>().toList() : const <String>[];
 
   /// Lo que devuelve `procesarFoto`: `{ url, ancho, alto,
   /// porcentajeRecortado }`. `num` y no `int` en el mapa -- `cloud_functions`

@@ -4,8 +4,8 @@
 - **Estado:** con **dos rondas de respuestas del dueño**, las dos del
   2026-09-16. Falta un dato suyo: el número de WhatsApp de la tienda.
   **Construidas: EP-01 entera (2026-09-16), EP-02 + HU-03.1 (2026-09-17), EP-03
-  entera (2026-09-22, HU-03.2 a 03.7), EP-04 salvo HU-04.2 (2026-09-22,
-  HU-04.1 · HU-04.3 · HU-04.4) y EP-05 salvo HU-05.4 (2026-09-23, HU-05.1 ·
+  entera (2026-09-22, HU-03.2 a 03.7), EP-04 (2026-09-22 HU-04.1 · HU-04.3 · HU-04.4; **HU-04.2 recortada a *elegir la
+  principal* el 2026-09-24**, change `panel-foto-principal`) y EP-05 salvo HU-05.4 (2026-09-23, HU-05.1 ·
   HU-05.2 · HU-05.3, **sin openspec, a pedido del dueño**: el estado de esas
   tres NO se calcula con el `grep` de abajo porque no tienen change — el ADR
   016 es su especificación)** — el estado no se tilda acá, se calcula con el

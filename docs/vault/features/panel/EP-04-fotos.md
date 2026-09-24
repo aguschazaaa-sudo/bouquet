@@ -37,6 +37,12 @@ teléfono, **para** que se vea en la tienda.
 
 ## HU-04.2 — Elegir la foto principal y ordenarlas
 
+> **Recortada y construida el 2026-09-24**: se elige la principal; **las demás no
+> se ordenan**, porque la vidriera lee sólo `imagenes[0]`. Change
+> [`panel-foto-principal`](../../../../openspec/changes/panel-foto-principal/proposal.md),
+> [ADR 015 §7](../../architecture/decisions/015-fotos-del-panel.md). Ordenar el
+> resto queda con disparador: el día que la ficha muestre más de una foto.
+
 **Como** operador, **quiero** elegir cuál es la primera foto y en qué orden
 van las demás, **para** que la tienda muestre la mejor.
 

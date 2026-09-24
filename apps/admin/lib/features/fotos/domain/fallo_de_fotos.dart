@@ -29,6 +29,12 @@ enum ErrorDeFotos {
   /// archivo real aunque sus bytes pasaron el chequeo de formato.
   fallaLaTransformacion,
 
+  /// Al elegir la principal (HU-04.2): la foto ya no está en `imagenes`
+  /// porque otra persona la sacó entre que se abrió la pantalla y el toque.
+  /// **Nunca llega desde un SDK**: lo arma `RepositorioDeFotosFirebase` cuando
+  /// `conPrincipal` da `null` sobre la lectura fresca de la transacción.
+  yaNoEsta,
+
   desconocido,
 }
 

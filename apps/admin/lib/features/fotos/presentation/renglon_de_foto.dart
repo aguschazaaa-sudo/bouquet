@@ -21,6 +21,9 @@ class RenglonDeFoto extends StatelessWidget {
     this.recienSubida,
     required this.quitando,
     required this.alQuitar,
+    this.esPrincipal = false,
+    this.alUsarComoPrincipal,
+    this.cambiandoPrincipal = false,
   });
 
   final String url;
@@ -32,6 +35,16 @@ class RenglonDeFoto extends StatelessWidget {
 
   final bool quitando;
   final VoidCallback alQuitar;
+
+  /// HU-04.2: la primera foto, la que dibuja la vidriera. Sólo la marca la
+  /// sección cuando hay dos o más: con una sola no hay nada que elegir.
+  final bool esPrincipal;
+
+  /// `null` = sin botón (es la principal, o hay una sola foto).
+  final VoidCallback? alUsarComoPrincipal;
+
+  /// Un cambio de principal está en curso: el botón queda apagado.
+  final bool cambiandoPrincipal;
 
   @override
   Widget build(BuildContext context) {
@@ -54,9 +67,26 @@ class RenglonDeFoto extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: recienSubida != null
-                ? AvisoDeLaFoto(foto: recienSubida)
-                : const SizedBox.shrink(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (esPrincipal)
+                  Text(
+                    textoPrincipal,
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                if (alUsarComoPrincipal != null)
+                  TextButton(
+                    onPressed: cambiandoPrincipal ? null : alUsarComoPrincipal,
+                    child: Text(
+                      cambiandoPrincipal
+                          ? textoCambiandoLaPrincipal
+                          : textoUsarComoPrincipal,
+                    ),
+                  ),
+                if (recienSubida != null) AvisoDeLaFoto(foto: recienSubida),
+              ],
+            ),
           ),
           const SizedBox(width: 4),
           _BotonDeQuitar(quitando: quitando, alQuitar: alQuitar),
