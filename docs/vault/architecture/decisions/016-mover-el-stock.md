@@ -3,9 +3,9 @@
 - **Fecha:** 2026-09-23
 - **Estado:** aceptada y **desplegada el 2026-09-23**, en el orden reglas →
   `moverStock` → panel (`aff14bb`), verificada con la API cruda y con los tres
-  controles sobre `moverStock` y `procesarFoto`. **Falta lo único que ninguna
-  medición reemplaza: que el dueño reponga un vino de verdad** (ver
-  *Verificación*)
+  controles sobre `moverStock` y `procesarFoto`. **Y `moverStock` ya se usó de
+  verdad** (2026-09-24 00:04 UTC, `0 → 32`, un solo movimiento, ver
+  *Verificación*). Falta que el dueño lo mire y diga si le sirve
 - **Decide:** cómo se escribe `stock` desde el panel, dado que las reglas de
   Firestore le prohíben escribirlo ([ADR 008](008-catalogo-stock-y-carrito.md)
   §1): una callable `moverStock` con dos operaciones, `reponer` y `corregir`,
@@ -270,8 +270,8 @@ Se actualiza a medida que ocurre. **Hoy:**
 | `moverStock` | API de Cloud Functions: `ACTIVE`, GEN_2, callable; `allUsers` como invoker (lo puso el CLI); preflight **204**, `POST` anónimo **401 JSON**, función inventada **404** — sobre `moverStock` **y** `procesarFoto` (intacta) | ✅ |
 | El panel | CI `panel` (`suite_dart` 197→244) y `tests` (`suite_ts` 185→205); canal → canario (6 cadenas nuevas: 0 en live, ≥1 en el canal) → promover → 4 hashes iguales. Live sirve `aff14bb` | ✅ |
 | Que la app arranca | CDP sobre live: `/entrar`, Flutter montado, 0 errores de consola | ✅ |
-| **Llamarla como usuario real** | **No se pudo:** mintear un token lo frena el clasificador. Las 19 pruebas del emulador cubren la transacción; **no cubren el Admin SDK contra el Firestore real ni el permiso de la cuenta de servicio** | ⏳ |
-| **Que alguien lo use** | El dueño repone un vino de verdad y lo mira | ⏳ **Nadie lo vio renderizado** |
+| **Llamarla como usuario real** | **No la pude llamar yo** (mintear un token lo frena el clasificador). **Alguien la usó**: a las 00:04 UTC del 2026-09-24 repuso 32 en `vino-de-prueba`, y `productos/vino-de-prueba/movimientos` tiene **un solo** marcador con `antes 0 → despues 32`, `operacion {tipo: reponer, cantidad: 32}` y el uid. Cubre lo que el emulador no: el Admin SDK contra el Firestore real y el permiso de la cuenta de servicio | ✅ |
+| **Que alguien lo mire y diga si le sirve** | Alguien lo usó (arriba); **falta el juicio del dueño** sobre si la pantalla se entiende | ⏳ |
 
 ## Lo que queda abierto
 

@@ -74,6 +74,50 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### La vidriera tiene una preview cerrada, y `moverStock` ya se usó de verdad (2026-09-23)
+
+**Desplegada y verificada**: <https://bouquet-tienda--bouquet-vinos.us-east4.hosted.app>,
+en App Hosting, región `us-east4`, sin dominio, con `noindex` y `maxInstances: 1`.
+El porqué está en [ADR 017](architecture/decisions/017-preview-cerrada.md). Sin
+openspec, a pedido del dueño.
+
+⚠️ **NO es la publicación de la tienda, y los gates de deploy siguen abiertos**:
+no hay puerta de edad (por eso no puede ser pública), el contacto es el WhatsApp
+del desarrollador, el checkout no cobra y el dominio y el tramo 4 no existen.
+**"Cerrada" no significa protegida con contraseña**: quien tenga la URL la ve.
+
+**Lo que costó, y no se repite** (ADR 017 §3): el buildpack de App Hosting toma
+como raíz de la aplicación el `rootDir` y busca **ahí** el lockfile, no más
+arriba, así que **un workspace de npm no se despliega**: el build muere a los 18
+segundos con `fah/missing-lock-file` aunque el lockfile viaje en el zip. Se
+resolvió **desplegando una copia autocontenida** (`scripts/tienda/preparar_despliegue.mjs`):
+la tienda como app común, `contratos` adentro, y el lockfile **sembrado con el de
+la raíz** para que lo que se despliega sea lo que se probó. La documentación de
+Firebase no lo dice; se leyó el código del buildpack.
+
+**Lo que salió de verificar** (con control negativo cada uno):
+
+| Qué | Cómo |
+|---|---|
+| El rollout | API cruda: `-003` `SUCCEEDED` con el 100 %, `-001` y `-002` `FAILED`. El CLI dijo "complete" |
+| `noindex` | En las cinco páginas, dos 404 y un asset |
+| El catálogo | Firestore: 21 publicados, **los 21 nombres están en `/vinos`**. Se ve, renderizado por Chrome real en escritorio y en teléfono (390 px), con 0 fotos rotas |
+| **`moverStock` en producción** | **Alguien repuso 32 en `vino-de-prueba` a las 00:04 UTC** (21:04 en Argentina): `0 → 32`, con su marcador y el uid de quien lo hizo, **un solo movimiento, sin duplicados**. Es lo que no se pudo verificar antes |
+| Una foto real | El mismo vino tiene una foto subida desde el panel: 200 `image/webp` `immutable`, y se ve recortada sobre el papel en la ficha |
+
+⚠️ **Y verificar destapó que la receta del gate del checkout era un falso
+negativo**: `curl /pedido | grep data-checkout-simulado` da **0 con el gate
+cerrado**, porque el atributo lo dibuja `ElResumen`, que sólo existe con ítems
+en el carrito. Corregida en el código, en [ADR 010](architecture/decisions/010-el-checkout.md)
+y en la fila del gate; la comprobación válida está en
+`bash scripts/tienda/preview.sh verificar`.
+
+⚠️ **El techo de lecturas es el riesgo de esta preview**: alguien que la martille
+las 24 h lleva la cuota **compartida con el panel** al ~98 % (1.440
+reconstrucciones × ~34 lecturas). La apaga
+`firebase apphosting:backends:delete bouquet-tienda --project bouquet-vinos --force`.
+Vigilarla el día que se comparta la URL.
+
 ### EP-05: mover el stock, desplegado y verificado por bytes — falta que el dueño lo use (2026-09-23)
 
 **HU-05.1, HU-05.2 y HU-05.3**, **sin openspec, a pedido del dueño**: el
@@ -121,13 +165,14 @@ texto del CLI:**
 Una limitación del canario: EP-05 sólo agrega texto, así que **no había una
 cadena vieja que desapareciera**; discrimina por el lado de lo nuevo.
 
-⚠️ **Lo que NO se pudo verificar, y por qué:** llamar a `moverStock` como
-usuario real. Mintear un token de prueba lo frena el clasificador de permisos
-(el mismo bloqueo del 4.3 de EP-05/ADR 015), y crear una cuenta de prueba en
-el Auth de producción es invasivo. **Las 19 pruebas contra el emulador cubren
-la transacción; lo que no cubren es el Admin SDK contra el Firestore real ni
-el permiso de la cuenta de servicio.** Lo cierra que el dueño **reponga un
-vino de verdad y lo mire** —y nadie vio nada de EP-05 renderizado—.
+✅ **Lo que no se pudo verificar desde acá se verificó solo, por quien lo usó**:
+llamar a `moverStock` como usuario real (mintear un token lo frena el clasificador).
+A las 00:04 UTC del 2026-09-24 alguien repuso 32 en `vino-de-prueba` —`0 → 32`, con
+su marcador y el uid, **un solo movimiento**—, así que el Admin SDK contra el
+Firestore real y el permiso de la cuenta de servicio andan. Eso lo cerró el
+movimiento registrado, no una prueba mía. **Sigue faltando que el dueño lo mire y
+diga si le sirve**: lo que un movimiento registrado no dice es si la pantalla se
+entiende.
 
 ⚠️ **Dos cosas que este ADR deja para el futuro y no son de esta sesión:**
 `corregir` **pisa lo vendido y no despachado** —bloquea `crearOrden`— y, con el
@@ -301,44 +346,14 @@ vidriera (HU-03.7) **no están construidos**; las reglas que los habilitan sí.
 Y el campo de la descripción todavía no está en el formulario del panel: el
 dominio, el mapeo y los tests sí.
 
-### Cargar un vino: escrito, probado contra el emulador, sin desplegar (2026-09-18)
-
-**HU-03.2 · HU-03.3 · HU-03.4**, en el change
-[`panel-cargar-un-vino`](../../openspec/changes/panel-cargar-un-vino/proposal.md).
-El porqué está en [ADR 013](architecture/decisions/013-cargar-un-vino.md).
-**Toca `firestore.rules`**: el deploy es reglas → panel.
-
-**El id de un producto nuevo es su slug, y las reglas lo exigen.** La unicidad
-la da la base, sin `get()`: reemplaza la reserva `slugs/{slug}` que ADR 008
-había anotado. **`graduacion` entró** en décimas enteras, entre 50 y 250 — el
-piso atrapa un `14` pensado como 14 %.
-
-⚠️ **Se temía que las reglas evaluaran el estado intermedio de un batch, y se
-midió que no.** Corregir varietales va con `arrayUnion` y `arrayRemove` en dos
-`update` al mismo documento; reemplazar el único varietal pasa por una lista
-vacía si las reglas miraran el medio. **Ven el estado final**, en los dos
-órdenes. El control —quitar el último solo— se rechaza.
-
-⚠️ **La suite de reglas tenía una trampa que la regla nueva destapó.** Todas
-las altas creaban `productos/a` con slug `trumpeter-malbec`: con la regla, los
-`assertFails` habrían pasado **por el slug** y no por lo que cada caso dice
-probar. Ahora toda alta pasa por `alta()`, con el slug como id.
-
-⚠️ **HU-03.4 nombra "la descripción" y el modelo no la tiene** (hallazgo 14
-del [mapa del panel](features/panel/overview.md)). Pregunta para el dueño.
-
-| Qué | Cómo |
-|---|---|
-| Reglas | 38/38 en el emulador (eran 26). **Mutadas**: sin las tres condiciones nuevas fallan exactamente los 5 casos que las prueban |
-| El panel | `dart analyze` sin issues; `dart test` **146/146** (eran 78) |
-| La factory | Test contra los `hasAll`/`hasOnly` **leídos de `firestore.rules`**, no contra una lista copiada |
-| Tres copias | `auditar_varietales.mjs` compara lista, orden y rango en `contratos`, reglas y panel. Cuatro controles negativos, cada uno sale con 1 |
-| Hooks | Los 4 del panel sobre 33 archivos con ruta absoluta: 0 bloqueos. El canario —color literal, dos widgets, import de `data/`— lo bloquean los tres que tienen que bloquearlo |
-| Presupuesto | Abrir el formulario, **0**; alta, **2**; corrección, **1**. 200 altas: 0,8 % de un día |
-
-⚠️ **NADIE VIO EL FORMULARIO RENDERIZADO.** El panel no compila en esta
-máquina: lo compila CI. Y aun publicado, la única cuenta con permiso es la del
-dueño.
+> ⚠️ **"Cargar un vino: escrito, probado contra el emulador" (2026-09-18) se movió a
+> [`changelog/_log.md`](changelog/_log.md#cargar-un-vino-escrito-probado-contra-el-emulador-sin-desplegar-2026-09-18)
+> el 2026-09-23**, al desplegarse la preview de la vidriera y llegar el dashboard a
+> 6 entradas. El porqué está en [ADR 013](architecture/decisions/013-cargar-un-vino.md).
+> Lo que sigue vigente y no vive en otro lado: **las reglas se probaron contra el
+> emulador, no se supusieron** (`matches()` compara la cadena entera; `size()` cuenta
+> caracteres, no bytes), y la suite de reglas tenía una trampa que la regla nueva
+> destapó (todas las altas usaban el mismo id, y los `assertFails` pasaban por el slug).
 
 > ⚠️ **"El catálogo se ve y las bodegas se cargan" (2026-09-17) se movió a
 > [`changelog/_log.md`](changelog/_log.md#el-catálogo-se-ve-y-las-bodegas-se-cargan-2026-09-17)
@@ -370,7 +385,7 @@ dueño.
 | **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth, igual que los de reglas, que tampoco están en CI (hallazgo de `revisor-pagos`). Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
 | ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). **Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
-| ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `curl` en producción. Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
+| ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `bash scripts/tienda/preview.sh verificar` en lo desplegado (⚠️ **no** con `curl /pedido | grep`: da 0 con el gate cerrado, ver [ADR 010](architecture/decisions/010-el-checkout.md)). Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
 | ⚠️ **`cajasSugeridas/publicas` de stage quedó VIEJO, y se ve** | El documento sembrado todavía tiene `dos-y-dos` —dos packs de 2 + dos botellas—, que desde [ADR 009 §10](architecture/decisions/009-venta-por-caja.md) no es una caja: el código la descarta y el carril de `/vinos` sirve **3** tarjetas en vez de 4, con el motivo logueado en la build. `dos-de-cada` no existe hasta que corra `node scripts/seed/seed.mjs`. **Disparador:** antes de mirar el carril de stage, y antes del primer deploy. Desde 2026-09-15. | el dueño + `tienda` |
 | ⚠️ **El peso y las medidas de una caja de 2 NO están medidos** | El peso sale de `⌈n × 1,118 + 0,6⌉` —la botella la pesó el dueño; el 0,6 del embalaje está **calibrado** para reproducir los 8 kg de la caja de seis, no medido— y el ancho es una proporción de esa caja. Una caja de regalo puede ser más ancha y más chata. **Disparador:** cuando haya una en la mano, y antes de las tarifas reales. Desde 2026-09-15. | el dueño |
 | ⚠️ **El glosario quedó DESACTUALIZADO en `Zona` y `Envío`** | Dice que una dirección fuera de toda zona *"no puede comprar"* y que se le avisa antes del carrito, y que el MVP es *"sólo envío a domicilio"*. Con envío a todo el país **eso ya no es cierto**: nadie queda afuera, `Zona` pasa a ser *hasta dónde repartimos nosotros*, y el texto de [`voz.md §9.3`](design/voz.md) queda sin pantalla. No se editó en este cambio a propósito: tocar el glosario adentro de una tarea de feature esconde la decisión adentro del diff de otra cosa. **Disparador:** antes de `crearOrden`, que es quien va a guardar el `Envío`. Desde 2026-09-15. | `vault` |
@@ -443,12 +458,15 @@ Los que bloquean algo:
 | **El recorte de fondo de una foto de cámara**, con un modelo real — el clasificador por umbral se midió y se refutó (ADR 015 §2) | Que la previsualización resulte insuficiente, mirándola | 2026-09-22 |
 | **Los crudos huérfanos en Storage** si `procesarFoto` falla a mitad de camino: no son alcanzables y no rompen nada. Entre el 2026-09-22 y el 2026-09-23 se produjo uno en CADA intento de subida, mientras el preflight de la callable daba 403 — **RESUELTO el CORS el 2026-09-23** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)), vuelve a ser el caso raro original | Cuando pesen, y hay que barrer los que deje un fallo a mitad de camino | 2026-09-22 |
 | ⚠️ **El color del papel de la previsualización está copiado entre el panel (Dart, `Tokens.papelVentana`) y la vidriera (CSS, `--papel-ventana`)** — puede desincronizarse, sin nada automático que lo detecte | La próxima vez que alguien toque uno de los dos sistemas de diseño | 2026-09-22 |
-| **4.3 — probar `procesarFoto` en producción con un usuario real, bloqueado por el clasificador** (otorgar `iam.serviceAccountTokenCreator`, aunque temporal y reversible, es "Permission Grant") | Que el usuario autorice el rol temporal, o que el dueño suba una foto real (10.1) — lo que pase primero | 2026-09-22 |
+| **4.3 — probar `procesarFoto` en producción con un usuario real, bloqueado por el clasificador — pero el 2026-09-23 alguien subió una foto desde el panel a `vino-de-prueba` y se sirve (200 `image/webp`), así que la callable anda en producción; queda la parte de 10.1 de mirarla en la tienda con un vino de verdad** (otorgar `iam.serviceAccountTokenCreator`, aunque temporal y reversible, es "Permission Grant") | Que el usuario autorice el rol temporal, o que el dueño suba una foto real (10.1) — lo que pase primero | 2026-09-22 |
 | ⚠️ **`corregir` pisa lo vendido y todavía no despachado** ([ADR 016](architecture/decisions/016-mover-el-stock.md), hallazgo 1): con 2 botellas vendidas sin despachar, el panel muestra 8, el operador cuenta 10 en la estantería y `visto` coincide — quedan 10 y se venden 2 que no existen. Hoy no se puede disparar (no hay órdenes). **Bloquea `crearOrden`**: la hoja tiene que mostrar *"N vendidas sin despachar"* | **Disparador: bloquea el deploy de `crearOrden`.** | 2026-09-23 |
 | ⚠️ **Tramo 4 y `moverStock`**: cada movimiento va a disparar la purga de la vidriera, y si cambia el balde de un vino publicado son **232 lecturas** —no las ~20 de ARQUITECTURA §6.3—; con 200 vinos publicados, hasta el 93 % de la cuota. **Cargar el stock ANTES de publicar lo evita** ([ADR 016](architecture/decisions/016-mover-el-stock.md)) | Cuando se escriba el tramo 4 | 2026-09-23 |
 | **Los 19 casos del emulador de `moverStock` y los de reglas no corren en CI** (hallazgo 8; agrava el 7 de ADR 008): hoy se corren a mano y una de las dos suites protege la plata | La sesión de `crearOrden` | 2026-09-23 |
 | **HU-05.4 — ver los movimientos de un vino.** El dato ya se guarda en `productos/{id}/movimientos`; leerlo va con `orderBy('en').limit(20)`, nunca sin `limit`. `borrar.mjs` deja la subcolección huérfana | La primera diferencia de stock que nadie sepa explicar | 2026-09-23 |
 | **El tope de 5.000 unidades por vino** es una decisión mía, no del dueño ([ADR 016](architecture/decisions/016-mover-el-stock.md) §1) | Que el dueño lo confirme, o el primer vino real que se le acerque | 2026-09-23 |
+| **`/favicon.ico` da 404 en la vidriera** (único error de consola de la preview): la tienda no tiene favicon | Antes de publicar de verdad | 2026-09-23 |
+| ⚠️ **La cuenta de servicio de la preview tiene `firebase.sdkAdminServiceAgent`**, que incluye escritura y el CLI re-otorga en cada deploy ([ADR 017](architecture/decisions/017-preview-cerrada.md) §6). La vidriera sólo lee | **Antes de publicar de verdad**: una cuenta dedicada con `roles/datastore.viewer` | 2026-09-23 |
+| **Basic auth en la preview**, que cierra de verdad el hueco de que no hay puerta de edad | Si la URL se va a compartir fuera de la familia | 2026-09-23 |
 
 ---
 

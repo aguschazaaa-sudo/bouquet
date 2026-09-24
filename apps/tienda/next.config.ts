@@ -29,6 +29,20 @@ const nextConfig: NextConfig = {
    * slugs si cambia (ADR 008). */
   async headers() {
     return [
+      /* PREVIEW CERRADA (ADR 017). Se prende SOLO con `PREVIEW_CERRADA=1` en
+       * el `apphosting.yaml` de esta carpeta, y por eso vive acá y no fijo:
+       * el día que se publique la tienda de verdad, salir con `noindex` la
+       * dejaría afuera de Google sin un solo error. Se lee al BUILD --
+       * `headers()` se compila en el manifiesto de rutas --, así que la
+       * variable tiene que estar disponible en `BUILD`, no sólo en `RUNTIME`. */
+      ...(process.env.PREVIEW_CERRADA === '1'
+        ? [
+            {
+              source: '/:path*',
+              headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
+            },
+          ]
+        : []),
       { source: '/vinos', headers: [{ key: 'Cache-Tag', value: 'catalogo' }] },
       { source: '/vinos/:slug', headers: [{ key: 'Cache-Tag', value: 'catalogo, producto-:slug' }] },
       { source: '/carrito', headers: [{ key: 'Cache-Tag', value: 'catalogo' }] },

@@ -97,3 +97,6 @@ apps/tienda/out/
 apps/tienda/CLAUDE.md
 apps/tienda/AGENTS.md
 __pycache__/
+
+# --- copia autocontenida de la tienda para App Hosting (scripts/tienda) -------
+.deploy/

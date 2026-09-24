@@ -1,0 +1,24 @@
+# La preview cerrada de la vidriera (docs/vault/architecture/decisions/017-preview-cerrada.md).
+#
+# NO es la publicacion de la tienda: los gates de deploy siguen cerrados
+# (puerta de edad, contacto provisorio, el checkout que no cobra). Esto es un
+# lugar para MIRAR el catalogo real, sin dominio y sin indexar.
+
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  # Cero instancias en reposo: no se paga cuando nadie mira.
+  minInstances: 0
+  # Una sola, a proposito: es una preview. Con el maximo por defecto (100), un
+  # bot que encuentre la URL levanta cien instancias y paga el dueno.
+  maxInstances: 1
+  concurrency: 80
+
+env:
+  # Prende el `X-Robots-Tag: noindex` de next.config.ts. BUILD y RUNTIME: los
+  # headers se compilan al hacer el build.
+  - variable: PREVIEW_CERRADA
+    value: '1'
+    availability:
+      - BUILD
+      - RUNTIME

@@ -191,8 +191,17 @@ con `curl` y no puede grepear un `.ts`:
 
 ```
 grep -rn "EL_CHECKOUT_NO_COBRA" apps/tienda/src
-curl -s https://<host>/pedido | grep -o data-checkout-simulado | wc -l
+bash scripts/tienda/preview.sh verificar      # lo desplegado, en los chunks de JS
 ```
+
+⚠️ **Corrección del 2026-09-23:** la receta original,
+`curl -s https://<host>/pedido | grep -o data-checkout-simulado | wc -l`, **da
+0 con el gate cerrado**. El atributo lo dibuja `ElResumen`, que sólo se
+renderiza con ítems en el carrito, y `curl` no tiene carrito. Se midió sobre la
+preview de [ADR 017](017-preview-cerrada.md): 0 en el HTML de `/pedido` y 1 en
+los chunks de JavaScript que ese HTML referencia, con un atributo inventado en
+0 como control negativo. Un verde de esa receta no probaba nada, y un cero se
+leía como que el checkout cobraba.
 
 CLAUDE.md lo dice sin rodeos: *un "Pagar" que llegue antes que su webhook es una
 venta que se cobra y no se registra.*

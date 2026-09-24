@@ -9,6 +9,54 @@
 
 ---
 
+## Salió el 2026-09-23 (más tarde), al desplegarse la preview de la vidriera
+
+Novena entrada. Sale la de "Cargar un vino" (2026-09-18): con la de la preview
+([ADR 017](../architecture/decisions/017-preview-cerrada.md)) sumada al dashboard,
+era la más vieja de las cinco. El porqué sigue en
+[ADR 013](../architecture/decisions/013-cargar-un-vino.md).
+
+### Cargar un vino: escrito, probado contra el emulador, sin desplegar (2026-09-18)
+
+**HU-03.2 · HU-03.3 · HU-03.4**, en el change
+[`panel-cargar-un-vino`](../../../openspec/changes/panel-cargar-un-vino/proposal.md).
+El porqué está en [ADR 013](../architecture/decisions/013-cargar-un-vino.md).
+**Toca `firestore.rules`**: el deploy es reglas → panel.
+
+**El id de un producto nuevo es su slug, y las reglas lo exigen.** La unicidad
+la da la base, sin `get()`: reemplaza la reserva `slugs/{slug}` que ADR 008
+había anotado. **`graduacion` entró** en décimas enteras, entre 50 y 250 — el
+piso atrapa un `14` pensado como 14 %.
+
+⚠️ **Se temía que las reglas evaluaran el estado intermedio de un batch, y se
+midió que no.** Corregir varietales va con `arrayUnion` y `arrayRemove` en dos
+`update` al mismo documento; reemplazar el único varietal pasa por una lista
+vacía si las reglas miraran el medio. **Ven el estado final**, en los dos
+órdenes. El control —quitar el último solo— se rechaza.
+
+⚠️ **La suite de reglas tenía una trampa que la regla nueva destapó.** Todas
+las altas creaban `productos/a` con slug `trumpeter-malbec`: con la regla, los
+`assertFails` habrían pasado **por el slug** y no por lo que cada caso dice
+probar. Ahora toda alta pasa por `alta()`, con el slug como id.
+
+⚠️ **HU-03.4 nombra "la descripción" y el modelo no la tiene** (hallazgo 14
+del [mapa del panel](../features/panel/overview.md)). Pregunta para el dueño.
+
+| Qué | Cómo |
+|---|---|
+| Reglas | 38/38 en el emulador (eran 26). **Mutadas**: sin las tres condiciones nuevas fallan exactamente los 5 casos que las prueban |
+| El panel | `dart analyze` sin issues; `dart test` **146/146** (eran 78) |
+| La factory | Test contra los `hasAll`/`hasOnly` **leídos de `firestore.rules`**, no contra una lista copiada |
+| Tres copias | `auditar_varietales.mjs` compara lista, orden y rango en `contratos`, reglas y panel. Cuatro controles negativos, cada uno sale con 1 |
+| Hooks | Los 4 del panel sobre 33 archivos con ruta absoluta: 0 bloqueos. El canario —color literal, dos widgets, import de `data/`— lo bloquean los tres que tienen que bloquearlo |
+| Presupuesto | Abrir el formulario, **0**; alta, **2**; corrección, **1**. 200 altas: 0,8 % de un día |
+
+⚠️ **NADIE VIO EL FORMULARIO RENDERIZADO.** El panel no compila en esta
+máquina: lo compila CI. Y aun publicado, la única cuenta con permiso es la del
+dueño.
+
+---
+
 ## Salió el 2026-09-23, al escribirse EP-05
 
 Octava entrada. Sale la de "El catálogo se ve y las bodegas se cargan"

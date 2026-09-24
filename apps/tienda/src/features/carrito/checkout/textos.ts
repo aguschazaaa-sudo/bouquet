@@ -87,9 +87,16 @@ export const TEXTOS = {
  *
  * Se apaga el día que existan las tres cosas, no antes. Y como
  * `auditor-produccion` audita con `curl` y no puede grepear un `.ts`, la
- * constante VIAJA AL HTML como `data-checkout-simulado`:
+ * constante VIAJA AL CLIENTE como `data-checkout-simulado`:
  *
  *     grep -rn "EL_CHECKOUT_NO_COBRA" apps/tienda/src          # el repo
- *     curl -s https://<host>/pedido | grep -o data-checkout-simulado | wc -l
+ *     bash scripts/tienda/preview.sh verificar                 # lo desplegado
+ *
+ * ⚠️ NO ALCANZA con `curl <host>/pedido | grep data-checkout-simulado`: ese
+ * atributo lo dibuja `ElResumen`, que sólo existe con ítems en el carrito, y
+ * `curl` no tiene carrito. **Da 0 con el gate CERRADO** (medido el 2026-09-23
+ * sobre la preview): un falso negativo que se lee como "el checkout cobra".
+ * Hay que buscarlo en los chunks de JavaScript que sirve `/pedido`, que es lo
+ * que hace `preview.sh`, con un atributo inventado como control negativo.
  */
 export const EL_CHECKOUT_NO_COBRA = true;
