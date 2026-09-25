@@ -1346,6 +1346,68 @@
       }
     ]
   },
+  "despacho": {
+    "correos": [
+      "andreani",
+      "correo_argentino",
+      "oca",
+      "en_mano",
+      "otro"
+    ],
+    "largoDelSeguimiento": 60,
+    "motivosDeFalla": [
+      "sin_mayor",
+      "nadie",
+      "direccion",
+      "rechazo",
+      "otro"
+    ],
+    "motivosDeCancelacion": [
+      "mal_cargado",
+      "cliente",
+      "falta_vino",
+      "otro"
+    ],
+    "motivosSinReponer": [
+      "no_existe",
+      "otra_presentacion",
+      "compuesto",
+      "producto_roto"
+    ],
+    "soloLoEscribeElServidor": [
+      "cancelada"
+    ],
+    "laEscribeElPanel": {
+      "sin_preparar": [
+        "preparando"
+      ],
+      "preparando": [
+        "despachada"
+      ],
+      "despachada": [
+        "entregada",
+        "fallida"
+      ],
+      "entregada": [],
+      "fallida": [
+        "despachada"
+      ],
+      "cancelada": []
+    },
+    "sePuedeDespachar": {
+      "vidriera": [
+        "pagada"
+      ],
+      "whatsapp": [
+        "pendiente",
+        "en_proceso",
+        "pagada",
+        "rechazada",
+        "reembolsada",
+        "por_fuera"
+      ]
+    }
+  },
   "publico": {
     "estados": [
       "recibida",

@@ -9,6 +9,80 @@
 
 ---
 
+## Salió el 2026-09-25, al construirse EP-07
+
+Sale la de "EP-05: mover el stock" (2026-09-23): con la de EP-07 sumada al dashboard,
+era la más vieja de las cinco. El porqué sigue en
+[ADR 016](../architecture/decisions/016-mover-el-stock.md).
+
+### EP-05: mover el stock, desplegado y verificado por bytes — falta que el dueño lo use (2026-09-23)
+
+**HU-05.1, HU-05.2 y HU-05.3**, **sin openspec, a pedido del dueño**: el
+[ADR 016](../architecture/decisions/016-mover-el-stock.md) y
+[`EP-05`](../features/panel/EP-05-stock.md) son la especificación. Con esto el
+hito 1 queda **escrito entero** salvo HU-04.2 y HU-05.4, las dos con
+disparador. **Workflow D**: `revisor-pagos` corrió sobre el backend **antes**
+de commitear.
+
+**`moverStock`, segunda Cloud Function y primera que escribe plata.** El panel
+no escribe `stock` (las reglas lo congelan, ADR 008): pide `reponer` (suma) o
+`corregir` (fija un valor, con `visto` = el stock que el operador tenía
+en pantalla, rechazado si ya no es ése — el `precioUnitarioVisto` del stock).
+Idempotente por un marcador `productos/{id}/movimientos/{idMovimiento}`, en la
+misma transacción que el cambio. Tope de 5.000 unidades: **decisión mía, el
+dueño la puede cambiar**.
+
+**El revisor encontró un bug mío que ninguna prueba veía**: las hojas del panel
+generaban un `idMovimiento` nuevo al cambiar la cantidad, también tras un
+error ambiguo — repone 6, timeout con la transacción ya commiteada, cambia a
+12, queda 28 en vez de 22. **Corregido: un id por hoja, nunca se regenera.**
+Ocho hallazgos, tres corregidos y el resto anotados con su disparador, en el
+ADR.
+
+| Qué | Cómo |
+|---|---|
+| El contrato | `contratos` 205 tests; el JSON fresco; 16 fixtures **calculadas** por el TypeScript, que el panel verifica |
+| La transacción | 19 casos contra el emulador de Firestore, con concurrencia real. **Mutada**: sin la rama del marcador y sin la baranda de `visto`, fallan 7 casos, exactamente los que tocan idempotencia y `visto` |
+| Las reglas | 57 casos (+3). **Mutando** `movimientos` a `esAdmin()` falla exactamente el que lo prueba |
+| El panel | `dart test` **245/245**; `dart analyze lib test`: **No issues found**. **Mutado** en tres puntos (validez de `Corregir`, el filtro, la traducción de un código): los tres se detectan |
+| Sin huérfanos | 33 símbolos grepeados, cada uno con quien lo abra; control negativo con uno inventado. **Encontró `estaVacia` huérfana y se sacó** |
+| Hooks | Los 4 del panel × 25 archivos con ruta absoluta: 0 bloqueos; el canario con `Colors.red` bloquea |
+| Presupuesto | **3 lecturas** por movimiento; 100 al día = 0,6 % de la cuota. HU-05.3: **cero** |
+
+**Desplegado en el orden fijo, y verificado con la API cruda, no con el
+texto del CLI:**
+
+| Paso | Cómo se verificó |
+|---|---|
+| Reglas | El CLI dijo "released"; la API de Rules dice ruleset `0c73d24a`, **idéntico byte a byte al archivo local**, con `movimientos` en 1 (control positivo) y una colección inventada en 0 |
+| `moverStock` | `--only functions:moverStock`, para no tocar `procesarFoto`. API de Cloud Functions: **`ACTIVE`**, GEN_2, callable, nodejs24. **`allUsers` figura como invoker sin ayuda del dueño** —esta vez el CLI sí lo puso—. Los tres controles, sobre **las dos** funciones: preflight **204** con `access-control-allow-*`, `POST` anónimo **401 JSON `UNAUTHENTICATED`** (el código corre) y una función inventada **404**. `procesarFoto` quedó intacta (su fecha de actualización sigue siendo la del 22) |
+| El panel | CI `alcance=panel` (corrida `35932577780`: análisis, build, `suite_dart` **197 → 244**) y `alcance=tests` (`35935139170`: `suite_ts` **185 → 205, +20 exactos**). Preview → canal → **canario** (seis cadenas nuevas en 0 en live y ≥1 en el canal, más un control positivo y uno inventado) → `promover` → los 4 hashes iguales, `noindex`. Live sirve `aff14bb` |
+| Que la app arranca | Chrome headless por CDP sobre live: redirige a `/entrar`, Flutter montado, **0 errores de consola**, la pantalla de entrada se lee y un texto inventado no aparece |
+
+Una limitación del canario: EP-05 sólo agrega texto, así que **no había una
+cadena vieja que desapareciera**; discrimina por el lado de lo nuevo.
+
+✅ **Lo que no se pudo verificar desde acá se verificó solo, por quien lo usó**:
+llamar a `moverStock` como usuario real (mintear un token lo frena el clasificador).
+A las 00:04 UTC del 2026-09-24 alguien repuso 32 en `vino-de-prueba` —`0 → 32`, con
+su marcador y el uid, **un solo movimiento**—, así que el Admin SDK contra el
+Firestore real y el permiso de la cuenta de servicio andan. Eso lo cerró el
+movimiento registrado, no una prueba mía. **Sigue faltando que el dueño lo mire y
+diga si le sirve**: lo que un movimiento registrado no dice es si la pantalla se
+entiende.
+
+⚠️ **Dos cosas que este ADR deja para el futuro y no son de esta sesión:**
+`corregir` **pisa lo vendido y no despachado** —bloquea `crearOrden`— y, con el
+tramo 4, **cada movimiento va a disparar una purga** (hasta el 93 % de la cuota
+si se carga stock después de publicar). Los dos, con cuentas, en el ADR.
+
+**Y v0.29.0 se desplegó hoy** (2026-09-23), lo que este dashboard decía "sin
+desplegar": los tres defectos de EP-04 que encontró el dueño. Publicado con los
+bytes que compiló CI (corrida `35921864306`): 4 hashes iguales entre canal y
+live, control negativo, `noindex`, y un canario discriminante —dos cadenas
+nuevas en 0 antes y 1 después, una vieja en 1 antes y 0 después—. **Sigue sin
+mirarlo nadie renderizado.**
+
 ## Salió el 2026-09-24 (al cerrar la sesión), al construirse los pedidos de WhatsApp
 
 Sale la de "EP-04: las fotos del panel" (2026-09-22): con la de los pedidos sumada al

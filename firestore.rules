@@ -367,26 +367,90 @@ service cloud.firestore {
       // `contadores/ordenes`.  Nadie las crea desde un cliente.
       allow create: if false;
 
-      // El panel mueve la ENTREGA a mano y anota; nada mas (`editaSolo`).  Y lo
-      // que escribe tiene que tener sentido: `affectedKeys()` incluye las claves
-      // BORRADAS, asi que `deleteField()` sobre `estadoEntrega` pasaba el
-      // `hasOnly` y la orden desaparecia de toda bandeja, porque
-      // `where('estadoEntrega', '==', X)` no la trae -- la trampa de `publicado`
-      // (hallazgo 4 de `revisor-pagos`).  Leer un campo que no existe hace
-      // fallar la regla, que es lo que se quiere.
+      // El panel mueve la ENTREGA a mano y anota; nada mas.  Y lo que escribe
+      // tiene que tener sentido: `affectedKeys()` incluye las claves BORRADAS,
+      // asi que `deleteField()` sobre `estadoEntrega` pasaba el `hasOnly` y la
+      // orden desaparecia de toda bandeja, porque `where('estadoEntrega', '==',
+      // X)` no la trae -- la trampa de `publicado` (hallazgo 4 de
+      // `revisor-pagos`).  Leer un campo que no existe hace fallar la regla, que
+      // es lo que se quiere.
       //
-      // La TRANSICION valida (que no se pueda pasar de `cancelada` a
-      // `sin_preparar`) sigue siendo del espejo de Dart y de EP-07, no de esta
-      // regla: es la deuda documentada en el overview del panel, hallazgo 3.
+      // Desde EP-07 (ADR 019) la regla valida la TRANSICION, no solo el valor:
+      // antes un panel con un error podia pasar una orden de `entregada` a
+      // `sin_preparar` y esto lo aceptaba (hallazgo 3 del mapa del panel).  Cuesta
+      // CERO lecturas: el estado de antes es `resource.data`, que ya esta.
       allow update: if esAdmin()
-        && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn'])
         && request.resource.data.estadoEntrega in
              ['sin_preparar', 'preparando', 'despachada', 'entregada', 'fallida', 'cancelada']
         && (!('notasOperador' in request.resource.data)
             || (request.resource.data.notasOperador is string
                 && request.resource.data.notasOperador.size() <= 1000))
         && (!('actualizadaEn' in request.resource.data)
-            || request.resource.data.actualizadaEn is timestamp);
+            || request.resource.data.actualizadaEn is timestamp)
+        && (anota() || pasoDeEntrega());
+
+      // El MISMO estado: se anota y nada mas.  Por eso un segundo "despachar"
+      // sobre una orden que otra persona ya despacho -con la pantalla vieja- se
+      // rechaza: pisaria su seguimiento.
+      function anota() {
+        return request.resource.data.estadoEntrega == resource.data.estadoEntrega
+          && editaSolo(['notasOperador', 'actualizadaEn']);
+      }
+
+      // LA TABLA DE ADR 002, menos `cancelada`.  Es la TERCERA copia de la tabla
+      // (contratos y Dart son las otras) y no se sincroniza sola: la suite de
+      // reglas lee `despacho.laEscribeElPanel` del JSON generado y prueba los 36
+      // pares contra esto.  Si alguien cambia la tabla en `contratos` y no aca, el
+      // test falla.
+      //
+      // ⚠️ `cancelada` NO ESTA, a proposito: cancelar DEVUELVE el stock, y eso lo
+      // hace solo `cancelarOrden` (Admin SDK, no pasa por aca) en la misma
+      // transaccion que el estado.  Si un cliente pudiera escribirla, un panel con
+      // un error cancelaria sin reponer y el vino quedaria vendido para siempre.
+      //
+      // Cada paso dice ademas que campos lleva, y ningun otro.
+      function pasoDeEntrega() {
+        let antes = resource.data.estadoEntrega;
+        let despues = request.resource.data.estadoEntrega;
+        return (antes == 'sin_preparar' && despues == 'preparando'
+                  && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn']))
+          // Despachar, y volver a despachar tras una entrega fallida.  Un pedido de
+          // la VIDRIERA impago no sale: si Mercado Pago no aprobo, no hay venta.
+          // Uno de WHATSAPP sale sin mirar el pago, porque se cobra por fuera
+          // (`sePuedeDespachar` de contratos).
+          || (antes in ['preparando', 'fallida'] && despues == 'despachada'
+                  && editaSolo(['estadoEntrega', 'despacho', 'notasOperador', 'actualizadaEn'])
+                  && despachoValido(request.resource.data.despacho)
+                  && (resource.data.origen == 'whatsapp' || resource.data.estadoPago == 'pagada'))
+          || (antes == 'despachada' && despues == 'entregada'
+                  && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn']))
+          || (antes == 'despachada' && despues == 'fallida'
+                  && editaSolo(['estadoEntrega', 'entregaFallida', 'notasOperador', 'actualizadaEn'])
+                  && fallaValida(request.resource.data.entregaFallida));
+      }
+
+      // Copia de `CORREOS` y `LARGO_DEL_SEGUIMIENTO` (contratos/src/despacho.ts).
+      // El seguimiento es opcional: una entrega en mano no tiene.  `en` es la hora
+      // del SERVIDOR: un cliente no puede fechar un despacho para atras.
+      function despachoValido(d) {
+        return d is map
+          && d.keys().hasOnly(['correo', 'seguimiento', 'en'])
+          && d.keys().hasAll(['correo', 'seguimiento', 'en'])
+          && d.correo in ['andreani', 'correo_argentino', 'oca', 'en_mano', 'otro']
+          && (d.seguimiento == null
+              || (d.seguimiento is string && d.seguimiento.size() >= 1 && d.seguimiento.size() <= 60))
+          && d.en == request.time;
+      }
+
+      // Copia de `MOTIVOS_DE_FALLA`.  El motivo es obligatorio: `sin_mayor` es un
+      // caso operativo real (ARQUITECTURA §9.5).
+      function fallaValida(f) {
+        return f is map
+          && f.keys().hasOnly(['motivo', 'en'])
+          && f.keys().hasAll(['motivo', 'en'])
+          && f.motivo in ['sin_mayor', 'nadie', 'direccion', 'rechazo', 'otro']
+          && f.en == request.time;
+      }
 
       // Una orden no se borra: se cancela.  Cancelar es un par de estados
       // (ADR 002), no un DELETE -- y el historico de una venta no se tira.

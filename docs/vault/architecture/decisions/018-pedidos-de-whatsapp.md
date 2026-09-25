@@ -308,16 +308,16 @@ El techo es el promedio.
 | **El tope de 30 líneas y el de `cantidad ≤ 5000`** son decisión mía | Un pedido real que los toque |
 | **Un precio arreglado por chat no se guarda** (§6) | El primer pedido cuyo precio no fue el de lista |
 | **`crearOrden` de la vidriera** comparte el núcleo, pero no existe | La sesión del cobro. Sigue bloqueada por los 9 hallazgos de ADR 008 |
-| **Cajas y peso en el detalle** (§7) | HU-07.2 |
+| **Cajas y peso en el detalle** (§7) | ~~HU-07.2~~ **No entró en HU-07.2** (ADR 019, *Lo que deja abierto*): Envíopack contratado, o que el dueño lo pida |
 | **La APK vieja no conoce `por_fuera`** (§3) | El día que se reparta una APK (H5) |
-| ⚠️ **Sin `cancelar`**: un pedido mal cargado o duplicado **no sale de la bandeja**, y su stock ya bajó (§10). Puede costar vino | **HU-07.6, lo primero que sigue.** Mientras tanto se repone con `moverStock` y se avisa a quien prepara |
+| ~~⚠️ **Sin `cancelar`**: un pedido mal cargado o duplicado **no sale de la bandeja**, y su stock ya bajó (§10).~~ **Resuelto el 2026-09-25** por `cancelarOrden` ([ADR 019 §5](019-preparar-despachar-y-cancelar.md)) | ~~HU-07.6~~ |
 | **`productoIds[]` en la Orden**, para contar las vendidas sin despachar exactas (§9) | Más de 50 pedidos sin despachar, o un conteo que el aviso no explique |
-| **La regla `update` de `ordenes` no valida la TRANSICIÓN** (`cancelada → sin_preparar` pasa) | EP-07: es el hallazgo 3 del [mapa](../../features/panel/overview.md). Hoy sólo se cerró que `estadoEntrega` no se pueda borrar ni inventar |
-| ⚠️ **Sin EP-07 los pedidos no salen de `sin_preparar`**: el panel los carga y los ve, pero no los puede avanzar. La bandeja se llena, el aviso de §9 no es fiable y el tope de 50 se cumple en una semana | **EP-07 (despachar y cancelar), lo que sigue** |
+| ~~**La regla `update` de `ordenes` no valida la TRANSICIÓN**~~ **Resuelto el 2026-09-25** ([ADR 019 §2](019-preparar-despachar-y-cancelar.md)) | ~~EP-07~~ |
+| ~~⚠️ **Sin EP-07 los pedidos no salen de `sin_preparar`**~~ **Resuelto el 2026-09-25** ([ADR 019](019-preparar-despachar-y-cancelar.md)): se preparan, despachan, entregan y cancelan | ~~EP-07~~ |
 | **Cada venta escribe `productos.stock`**: cuando exista el tramo 4 (`revalidarVidriera`), una venta que cambie el balde de un vino publicado costará **232 lecturas** ([`_index.md`](../../_index.md)), no las ~20 de ARQUITECTURA §6.3 | Cuando se escriba el tramo 4 |
 | **La preview cerrada de la vidriera** ya consume la cuota entera si la martillan | Antes de compartir la URL fuera de la familia |
 | **`crearOrden` de la vidriera** también necesita el aviso de §9 y su propio parser (`PedidoDeCompra` sigue sin validador) | La sesión del cobro |
-| **Los casos del emulador de esta callable no corren en CI**, igual que los de `moverStock` (ADR 016, hallazgo 8) | La sesión de `crearOrden` |
+| ~~**Los casos del emulador de esta callable no corren en CI**~~ **Resuelto el 2026-09-25**: job `suite_emulador` ([ADR 019 §8](019-preparar-despachar-y-cancelar.md)) | ~~La sesión de `crearOrden`~~ |
 
 ## Lo que encontró `revisor-pagos` (2026-09-24)
 

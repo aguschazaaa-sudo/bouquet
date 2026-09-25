@@ -102,6 +102,12 @@ String textoDelFalloDePedidos(FalloDePedidos f, {String? nombre}) {
     ErrorDePedido.datosInvalidos =>
       'Hay un dato del pedido que no se aceptó. Revisá el nombre, el teléfono '
           'y la dirección.',
+    // Los de EP-07 son de mover o cancelar un pedido que ya existe: cargar no
+    // los produce. Si alguno llegara, no se inventa una explicacion.
+    ErrorDePedido.cambioElPedido ||
+    ErrorDePedido.yaSalio ||
+    ErrorDePedido.pedidoInexistente ||
+    ErrorDePedido.pedidoRoto ||
     ErrorDePedido.desconocido =>
       'No pudimos cargar el pedido. Probá de nuevo en un rato.',
   };

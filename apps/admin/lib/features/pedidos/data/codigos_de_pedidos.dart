@@ -63,6 +63,54 @@ FalloDePedidos falloDesdeLaCallable(String codigo, Object? detalles) {
   }
 }
 
+/// Traduce un rechazo de `cancelarOrden` (HU-07.6). Otra callable, otros
+/// codigos: un `not-found` aca es el PEDIDO, no un vino.
+FalloDePedidos falloDeCancelar(String codigo, Object? detalles) {
+  switch (codigo) {
+    case 'unauthenticated' || 'permission-denied':
+      return FalloDePedidos(ErrorDePedido.sinPermiso, codigo: codigo);
+    case 'not-found':
+      // Solo con el `codigo` que manda `cancelar.ts` es el PEDIDO. Un `not-found`
+      // pelado es la callable que no existe -un panel publicado antes que la
+      // funcion-, y decir "este pedido ya no existe" seria falso (hallazgo de
+      // `revisor-pagos`, ADR 019).
+      final esElPedido = detalles is Map && detalles['codigo'] == 'no-existe';
+      return FalloDePedidos(
+        esElPedido
+            ? ErrorDePedido.pedidoInexistente
+            : ErrorDePedido.desconocido,
+        codigo: codigo,
+      );
+    case 'invalid-argument':
+      return FalloDePedidos(ErrorDePedido.datosInvalidos, codigo: codigo);
+    case 'failed-precondition':
+      final error = switch (detalles is Map ? detalles['codigo'] : null) {
+        'ya-salio' => ErrorDePedido.yaSalio,
+        'orden-rota' => ErrorDePedido.pedidoRoto,
+        _ => ErrorDePedido.desconocido,
+      };
+      return FalloDePedidos(error, codigo: codigo);
+    default:
+      return FalloDePedidos(
+        esDeRed(codigo) ? ErrorDePedido.sinConexion : ErrorDePedido.desconocido,
+        codigo: codigo,
+      );
+  }
+}
+
+/// Traduce el error de una ESCRITURA directa en la Orden (EP-07). Las reglas
+/// contestan `permission-denied` tanto a una cuenta sin permiso como a un paso
+/// que ya no vale desde el estado de ahora; el panel solo ofrece pasos validos
+/// desde lo que muestra, asi que lo probable es lo segundo, y la pantalla
+/// vuelve a leer el pedido en los dos casos.
+FalloDePedidos falloDeEscritura(String codigo) =>
+    FalloDePedidos(switch (codigo) {
+      'permission-denied' => ErrorDePedido.cambioElPedido,
+      'not-found' => ErrorDePedido.pedidoInexistente,
+      _ when esDeRed(codigo) => ErrorDePedido.sinConexion,
+      _ => ErrorDePedido.desconocido,
+    }, codigo: codigo);
+
 String? _productoId(Object? detalles) {
   if (detalles is! Map) return null;
   final id = detalles['productoId'];

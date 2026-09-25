@@ -25,6 +25,14 @@ String queSeHizo(MovimientoDeStock m, {required int botellas}) {
     final numero = venta.numero == null ? '' : ' (pedido ${venta.numero})';
     return 'Se vendió ${_unidades(venta.cantidad, botellas)}$numero';
   }
+  final devolucion = m.devolucion;
+  if (devolucion != null) {
+    final numero = devolucion.numero == null
+        ? ''
+        : ' (pedido ${devolucion.numero}, cancelado)';
+    return 'Volvió al stock: ${_unidades(devolucion.cantidad, botellas)}'
+        '$numero';
+  }
   final operacion = m.operacion;
   return switch (operacion) {
     Reponer(:final cantidad) => 'Cargó ${_unidades(cantidad, botellas)}',

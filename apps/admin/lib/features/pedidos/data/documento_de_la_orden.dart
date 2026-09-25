@@ -4,10 +4,12 @@
 /// `cloud_firestore` arrastra Flutter. La hora llega ya convertida.
 library;
 
+import '../../../core/contratos/despacho.dart';
 import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/contratos/estado_pago.dart';
 import '../../../core/contratos/pedido.dart';
 import '../../catalogo/data/campos.dart';
+import '../domain/despacho_de_orden.dart';
 import '../domain/orden.dart';
 
 /// `null` si el documento **no se puede leer como una Orden**: falta lo que la
@@ -21,8 +23,17 @@ import '../domain/orden.dart';
 ///
 /// Lo que se perdona: el contacto y la entrega. Sus textos vienen `''` si faltan
 /// y la pantalla los muestra como se pueda, porque con el numero y los items
-/// alcanza para reconocer el pedido.
-Orden? ordenDesde(String id, Map<String, Object?> datos, {DateTime? creadaEn}) {
+/// alcanza para reconocer el pedido. Y lo de EP-07 -`despacho`, `entregaFallida`,
+/// `cancelacion`-: uno raro queda en `null` y el pedido se ve igual.
+///
+/// [horaDe] convierte un `Timestamp` anidado (`despacho.en`) sin que este
+/// archivo conozca Firebase: la pasa el repositorio.
+Orden? ordenDesde(
+  String id,
+  Map<String, Object?> datos, {
+  DateTime? creadaEn,
+  DateTime? Function(Object?) horaDe = _sinHora,
+}) {
   final numero = enteroDe(datos['numero']);
   final total = enteroDe(datos['total']);
   final origen = Origen.desde(datos['origen']);
@@ -69,7 +80,72 @@ Orden? ordenDesde(String id, Map<String, Object?> datos, {DateTime? creadaEn}) {
     ),
     creadaEn: creadaEn,
     notasOperador: textoOpcionalDe(datos['notasOperador']),
+    despacho: _despacho(datos['despacho'], horaDe),
+    entregaFallida: _entregaFallida(datos['entregaFallida'], horaDe),
+    cancelacion: _cancelacion(datos['cancelacion'], horaDe),
   );
+}
+
+DateTime? _sinHora(Object? _) => null;
+
+DespachoDeOrden? _despacho(Object? valor, DateTime? Function(Object?) hora) {
+  if (valor is! Map) return null;
+  final correo = Correo.desde(valor['correo']);
+  if (correo == null) return null;
+  return DespachoDeOrden(
+    correo: correo,
+    seguimiento: textoOpcionalDe(valor['seguimiento']),
+    en: hora(valor['en']),
+  );
+}
+
+EntregaFallida? _entregaFallida(
+  Object? valor,
+  DateTime? Function(Object?) hora,
+) {
+  if (valor is! Map) return null;
+  final motivo = MotivoDeFalla.desde(valor['motivo']);
+  if (motivo == null) return null;
+  return EntregaFallida(motivo: motivo, en: hora(valor['en']));
+}
+
+/// Una cancelacion se lee aunque traiga un motivo desconocido: lo que importa
+/// que se vea es `sinReponer`, lo que una persona tiene que resolver.
+CancelacionDeOrden? _cancelacion(
+  Object? valor,
+  DateTime? Function(Object?) hora,
+) {
+  if (valor is! Map) return null;
+  return CancelacionDeOrden(
+    motivo: MotivoDeCancelacion.desde(valor['motivo']),
+    en: hora(valor['en']),
+    sinReponer: lineasSinReponerDesde(valor['sinReponer']),
+  );
+}
+
+/// Las lineas que no volvieron al stock, de la Orden o de la respuesta de
+/// `cancelarOrden` (la misma forma). Una linea sin id o sin cantidad no se
+/// inventa: se saltea.
+///
+/// La cantidad se lee con [_unidades] y no con `enteroDe`: en la web la respuesta
+/// de una callable puede traer un entero como `double`, y `enteroDe` lo daria por
+/// ausente -- la linea que una persona tiene que resolver desapareceria.
+List<LineaSinReponer> lineasSinReponerDesde(Object? valor) {
+  if (valor is! List) return const [];
+  return [
+    for (final crudo in valor)
+      if (crudo is Map)
+        if ((crudo['productoId'], _unidades(crudo['cantidad'])) case (
+          final String productoId,
+          final int cantidad,
+        ))
+          LineaSinReponer(
+            productoId: productoId,
+            nombre: textoOpcionalDe(crudo['nombre']) ?? productoId,
+            cantidad: cantidad,
+            motivo: MotivoSinReponer.desde(crudo['motivo']),
+          ),
+  ];
 }
 
 EstadoPago? _estadoPago(Object? valor) {
@@ -120,3 +196,8 @@ List<ItemDeOrden>? _items(Object? valor) {
   }
   return items;
 }
+
+int? _unidades(Object? valor) =>
+    valor is num && valor.isFinite && valor == valor.truncateToDouble()
+    ? valor.toInt()
+    : null;

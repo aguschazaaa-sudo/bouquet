@@ -40,6 +40,23 @@ enum ErrorDePedido {
   /// otra seria un pedido duplicado (ADR 018, hallazgos 3 y 5 de `revisor-pagos`).
   yaEstaHecho,
 
+  /// EP-07: las reglas no dejaron mover el pedido. El panel solo ofrece los
+  /// pasos que la tabla permite DESDE EL ESTADO QUE MUESTRA, asi que esto casi
+  /// siempre es otra persona que lo movio mientras se miraba. La pantalla lo
+  /// vuelve a leer.
+  cambioElPedido,
+
+  /// HU-07.6: el pedido ya salio y no se cancela (el envio ya costo). Si no
+  /// llega, es una entrega fallida.
+  yaSalio,
+
+  /// EP-07: el pedido que se quiso mover o cancelar no existe.
+  pedidoInexistente,
+
+  /// HU-07.6: el pedido tiene un dato roto y el servidor no adivina que se
+  /// vendio.
+  pedidoRoto,
+
   /// El servidor rechazo la forma del pedido. El formulario valida antes de
   /// mandar, asi que llegar aca es un desajuste entre panel y servidor.
   datosInvalidos,
@@ -47,7 +64,8 @@ enum ErrorDePedido {
   desconocido,
 }
 
-/// Lo que lanza [RepositorioDePedidos.cargar] cuando falla.
+/// Lo que lanzan [RepositorioDePedidos.cargar], `avanzar` y `cancelar` cuando
+/// fallan.
 ///
 /// Existe por HU-04.4, igual que `FalloDeStock`: un error asincrono que se
 /// pierde deja un boton que "no hace nada" y nadie lo reporta.

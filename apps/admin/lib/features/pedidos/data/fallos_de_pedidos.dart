@@ -10,13 +10,20 @@ import 'codigos_de_pedidos.dart';
 /// Firebase; `domain/` solo ve el enum. Este archivo solo SACA el codigo y los
 /// detalles: la traduccion, que es lo que tiene logica, esta en
 /// `codigos_de_pedidos.dart` y se prueba. Mismo reparto que `fallos_de_stock.dart`.
-FalloDePedidos comoFalloDePedidos(Object error) {
+///
+/// [deLaCallable] es la traduccion de la callable que se llamo: `crearOrdenDelPanel`
+/// y `cancelarOrden` usan los mismos codigos de `HttpsError` para cosas distintas.
+FalloDePedidos comoFalloDePedidos(
+  Object error, {
+  FalloDePedidos Function(String codigo, Object? detalles) deLaCallable =
+      falloDesdeLaCallable,
+}) {
   if (error is FalloDePedidos) return error;
 
   // `FirebaseFunctionsException` **extiende** `FirebaseException`: se mira
   // primero.
   if (error is FirebaseFunctionsException) {
-    return falloDesdeLaCallable(error.code, error.details);
+    return deLaCallable(error.code, error.details);
   }
   if (error is FirebaseException) {
     // El SDK a veces deja pasar un `FirebaseException` pelado (red caida).
@@ -27,5 +34,12 @@ FalloDePedidos comoFalloDePedidos(Object error) {
       codigo: error.code,
     );
   }
+  return FalloDePedidos(ErrorDePedido.desconocido, codigo: error.toString());
+}
+
+/// Traduce el error de una escritura directa de Firestore (EP-07).
+FalloDePedidos comoFalloDeEscritura(Object error) {
+  if (error is FalloDePedidos) return error;
+  if (error is FirebaseException) return falloDeEscritura(error.code);
   return FalloDePedidos(ErrorDePedido.desconocido, codigo: error.toString());
 }

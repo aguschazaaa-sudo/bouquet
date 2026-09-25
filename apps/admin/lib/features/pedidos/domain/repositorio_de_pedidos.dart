@@ -1,5 +1,8 @@
+import '../../../core/contratos/despacho.dart';
 import '../../../core/contratos/estado_entrega.dart';
+import 'despacho_de_orden.dart';
 import 'orden.dart';
+import 'paso_de_entrega.dart';
 import 'pedido_a_cargar.dart';
 
 /// Cuantos pedidos trae la bandeja por vez (HU-06.1). Es el `limit` de la
@@ -25,6 +28,24 @@ class ResultadoDeCarga {
   /// `true` si este `idPedido` ya era una Orden y no se toco nada: un reintento
   /// que el servidor reconocio. Para el operador es un exito igual.
   final bool repetido;
+}
+
+/// Lo que devolvio `cancelarOrden` (HU-07.6).
+class ResultadoDeCancelacion {
+  const ResultadoDeCancelacion({
+    required this.numero,
+    required this.repetido,
+    this.sinReponer = const [],
+  });
+
+  final int numero;
+
+  /// `true` si ya estaba cancelado: un reintento. Para el operador es un exito.
+  final bool repetido;
+
+  /// Lo que NO volvio al stock. Si no esta vacio, la pantalla lo dice: lo tiene
+  /// que resolver una persona.
+  final List<LineaSinReponer> sinReponer;
 }
 
 /// Una pagina de la bandeja.
@@ -72,13 +93,16 @@ class PedidoIncompleto extends DetalleDePedido {
 }
 
 /// Lo que el panel sabe hacer con los pedidos: cargar uno de WhatsApp, listar los
-/// que hay por estado de entrega y abrir uno (HU-10.1, HU-06.1, HU-06.2).
+/// que hay por estado de entrega, abrir uno (HU-10.1, HU-06.1, HU-06.2) y
+/// moverlo por el eje de entrega (EP-07).
 ///
 /// **El panel no crea una Orden**: las reglas lo niegan. Nacen por la callable
 /// `crearOrdenDelPanel`, que descuenta el stock y numera en una transaccion
-/// (ADR 018 §1). Tampoco despacha ni cancela: son EP-07.
+/// (ADR 018 §1). Y **no la cancela escribiendo**: cancelar devuelve stock, y lo
+/// hace la callable `cancelarOrden` (ADR 019).
 ///
-/// [cargar] lanza `FalloDePedidos`, nunca otra cosa y nunca en silencio (HU-04.4).
+/// [cargar], [avanzar] y [cancelar] lanzan `FalloDePedidos`, nunca otra cosa y
+/// nunca en silencio (HU-04.4).
 /// Los que leen dejan subir el error para que la pantalla lo dibuje como un
 /// fallo y no como "no hay pedidos".
 abstract interface class RepositorioDePedidos {
@@ -92,4 +116,16 @@ abstract interface class RepositorioDePedidos {
 
   /// Un pedido por id: una lectura.
   Future<DetalleDePedido> detalle(String id);
+
+  /// Escribe [paso] en el pedido [id]: **una escritura, cero lecturas**. Las
+  /// reglas lo validan contra el estado de ahora: si otra persona lo movio
+  /// mientras se miraba, se rechaza (`ErrorDePedido.cambioElPedido`).
+  Future<void> avanzar(String id, PasoDeEntrega paso);
+
+  /// Cancela [id] y devuelve su stock, por la callable `cancelarOrden`.
+  /// Reintentar es seguro: un pedido ya cancelado es su propio marcador.
+  Future<ResultadoDeCancelacion> cancelar(
+    String id,
+    MotivoDeCancelacion motivo,
+  );
 }

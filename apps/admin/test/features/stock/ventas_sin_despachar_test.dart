@@ -119,10 +119,11 @@ void main() {
       expect(t, contains('descontadas'));
       expect(t, contains('Si siguen en la estantería'));
       expect(t, contains('restale esas 2'));
-      // Hasta EP-07 el panel no marca despachos: un pedido cuyas botellas ya
-      // salieron sigue figurando abierto. Decir "restale" a secas hace restar de
-      // mas en ese caso.
+      // Un pedido cuyas botellas salieron y nadie marco sigue figurando abierto:
+      // decir "restale" a secas hace restar de mas. Desde EP-07 la segunda salida
+      // dice que hacer: marcarlo.
       expect(t, contains('si ya salieron'));
+      expect(t, contains('marcá el pedido como despachado'));
       expect(t, isNot(contains('muchos pedidos')));
     });
 
@@ -230,6 +231,48 @@ void main() {
         expect(queSeHizo(m, botellas: 1), 'Movimiento de stock');
       },
     );
+
+    test('lo que devolvio una cancelacion se dice como tal, no como venta', () {
+      final m = movimientoDesde(
+        'cancelacion-x',
+        {
+          'operacion': {
+            'tipo': 'cancelacion',
+            'cantidad': 2,
+            'idPedido': 'pedido-de-prueba-0001',
+            'numero': 7,
+          },
+          'antes': 8,
+          'despues': 10,
+          'por': 'operador',
+        },
+        en: null,
+        miUid: null,
+      );
+      expect(m.venta, isNull);
+      expect(m.devolucion?.cantidad, 2);
+      expect(
+        queSeHizo(m, botellas: 1),
+        'Volvió al stock: 2 botellas (pedido 7, cancelado)',
+      );
+      expect(
+        queSeHizo(m, botellas: 6),
+        'Volvió al stock: 2 cajas de 6 (pedido 7, cancelado)',
+      );
+      expect(deCuantoACuanto(m, botellas: 1), 'de 8 a 10 botellas');
+      // Control: una venta del mismo pedido NO es una devolucion.
+      final venta = movimientoDesde(
+        'venta-x',
+        {
+          'operacion': {'tipo': 'venta', 'cantidad': 2, 'numero': 7},
+          'antes': 10,
+          'despues': 8,
+        },
+        en: null,
+        miUid: null,
+      );
+      expect(venta.devolucion, isNull);
+    });
 
     test('lo que NO es una venta sigue igual: una reposicion no la toca', () {
       final m = movimientoDesde(

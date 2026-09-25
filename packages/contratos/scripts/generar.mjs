@@ -56,6 +56,16 @@ import {
   aplicarOperacion,
   parsearPedidoDeMovimiento,
 } from '../src/stock.ts';
+import {
+  CORREOS,
+  LARGO_DEL_SEGUIMIENTO,
+  MOTIVOS_DE_CANCELACION,
+  MOTIVOS_DE_FALLA,
+  MOTIVOS_SIN_REPONER,
+  SOLO_LO_ESCRIBE_EL_SERVIDOR,
+  laEscribeElPanel,
+  sePuedeDespachar,
+} from '../src/despacho.ts';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 export const DESTINO = join(AQUI, '..', 'generated', 'contratos.json');
@@ -210,6 +220,25 @@ export function construirContrato() {
         entrada,
         e164: normalizarTelefonoAR(entrada),
       })),
+    },
+    // Mover la entrega (EP-07, ADR 019).  Lo leen DOS consumidores: el espejo de
+    // Dart y la suite de reglas (`scripts/reglas/ordenes.test.mjs`), que no
+    // puede importar TypeScript desde el emulador y saca de aca que esperar.  Las
+    // dos tablas van CALCULADAS: `laEscribeElPanel` sobre los 36 pares y
+    // `sePuedeDespachar` sobre cada origen y pago.
+    despacho: {
+      correos: [...CORREOS],
+      largoDelSeguimiento: LARGO_DEL_SEGUIMIENTO,
+      motivosDeFalla: [...MOTIVOS_DE_FALLA],
+      motivosDeCancelacion: [...MOTIVOS_DE_CANCELACION],
+      motivosSinReponer: [...MOTIVOS_SIN_REPONER],
+      soloLoEscribeElServidor: [...SOLO_LO_ESCRIBE_EL_SERVIDOR],
+      laEscribeElPanel: Object.fromEntries(
+        ESTADOS_ENTREGA.map((a) => [a, ESTADOS_ENTREGA.filter((d) => laEscribeElPanel(a, d))]),
+      ),
+      sePuedeDespachar: Object.fromEntries(
+        ORIGENES.map((o) => [o, ESTADOS_PAGO.filter((p) => sePuedeDespachar(o, p))]),
+      ),
     },
     publico: {
       estados: [...ESTADOS_PUBLICOS],

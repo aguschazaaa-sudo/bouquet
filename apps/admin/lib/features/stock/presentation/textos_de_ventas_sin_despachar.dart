@@ -9,17 +9,19 @@ const textoNoSePudoVerLoVendido =
     'No pudimos ver si hay pedidos sin despachar. Si los hay, esas botellas ya '
     'están descontadas del stock: si siguen en la estantería, contalas aparte.';
 
-/// Lo que hay en pedidos que todavia no figuran como despachados, con lo que hacer
-/// al contar.
+/// Lo que hay en pedidos que todavia no se marcaron como despachados, con lo que
+/// hacer al contar.
 ///
-/// **Es condicional a proposito**: el panel todavia no puede marcar un pedido como
-/// despachado (EP-07), asi que un pedido cuyas botellas ya salieron sigue figurando
-/// abierto. Decir *"restale esas"* a secas haria restar de mas en ese caso. Solo el
-/// operador sabe si siguen en la estanteria: se le da el dato y las dos salidas.
+/// Desde EP-07 el panel marca los despachos, asi que el numero es el de los
+/// pedidos que de verdad no salieron -- **si** la familia los marca. Sigue siendo
+/// condicional por eso: un pedido que salio y nadie marco figura abierto, y decir
+/// *"restale esas"* a secas haria restar de mas. La segunda salida ahora dice que
+/// hacer: marcarlo (ADR 018 §9, ADR 019).
 ///
-///   `Hay 2 botellas en pedidos que todavía no figuran como despachados. Ya están
-///   descontadas del stock. Si siguen en la estantería, restale esas 2 a lo que
-///   cuentes; si ya salieron, contá lo que hay.`
+///   `Hay 2 botellas en pedidos que todavía no se marcaron como despachados. Ya
+///   están descontadas del stock. Si siguen en la estantería, restale esas 2 a lo
+///   que cuentes; si ya salieron, marcá el pedido como despachado y contá lo que
+///   hay.`
 String textoDeVentasSinDespachar(
   VentasSinDespachar v, {
   required int botellas,
@@ -35,7 +37,8 @@ String textoDeVentasSinDespachar(
   final piso = v.completo
       ? ''
       : ' Hay muchos pedidos sin despachar: puede haber más de las que contamos.';
-  return 'Hay $n en pedidos que todavía no figuran como despachados. Ya están '
-      'descontadas del stock. Si siguen en la estantería, restale $esas a lo '
-      'que cuentes; si ya salieron, contá lo que hay.$piso';
+  return 'Hay $n en pedidos que todavía no se marcaron como despachados. Ya '
+      'están descontadas del stock. Si siguen en la estantería, restale $esas a '
+      'lo que cuentes; si ya salieron, marcá el pedido como despachado y contá '
+      'lo que hay.$piso';
 }

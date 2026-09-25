@@ -14,6 +14,7 @@ class MovimientoDeStock {
     required this.operacion,
     required this.esMio,
     this.venta,
+    this.devolucion,
   });
 
   final String id;
@@ -36,18 +37,24 @@ class MovimientoDeStock {
   /// PIDE a `moverStock`, y una venta no se pide desde una hoja.
   final VentaDePedido? venta;
 
+  /// Si el movimiento es lo que **volvio** al cancelar un pedido
+  /// (`cancelarOrden`, ADR 019): la otra cara de [venta].
+  final VentaDePedido? devolucion;
+
   /// Lo hizo quien está mirando. El movimiento guarda el uid y nada más:
   /// **no hay forma de decir el nombre de otra persona**, así que la pantalla
   /// distingue *vos* de *otra persona*.
   final bool esMio;
 }
 
-/// Lo que una venta le saco al stock de un vino: cuantas unidades y de que
-/// pedido (ADR 018 §8). Es el `operacion` de un movimiento `venta-<idPedido>`.
+/// Lo que una venta le saco al stock de un vino, o lo que le devolvio su
+/// cancelacion: cuantas unidades y de que pedido. Es el `operacion` de un
+/// movimiento `venta-<idPedido>` (ADR 018 §8) o `cancelacion-<idPedido>`
+/// (ADR 019).
 class VentaDePedido {
   const VentaDePedido({required this.cantidad, required this.numero});
 
-  /// Unidades de venta que se vendieron.
+  /// Unidades de venta que se vendieron, o que volvieron.
   final int cantidad;
 
   /// El numero del pedido, el que dice el comprador. `null` si el movimiento no

@@ -254,7 +254,9 @@ comprar**, y se le dice antes de que cargue el carrito, no en el checkout.
 
 ### Despacho
 El acto de que la Orden salga. Es lo que mueve `estadoEntrega` de `preparando` a
-`despachada`.
+`despachada` (y de `fallida` a `despachada`, al volver a salir). Queda en el campo
+`despacho`: el correo y, si hay, el número de seguimiento
+([ADR 019](../architecture/decisions/019-preparar-despachar-y-cancelar.md)).
 
 ### Entrega fallida
 `estadoEntrega = 'fallida'` **con motivo obligatorio**. Uno de los motivos es

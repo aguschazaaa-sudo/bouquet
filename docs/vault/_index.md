@@ -61,7 +61,8 @@ dicho, y las cuentas las da un script.
 —publicados y no—, se buscan escribiendo, y las bodegas se cargan, se corrigen
 y se borran con una baranda que no deja despublicar sin querer. Son **EP-02
 entera y HU-03.1**. ~~Pedidos sigue vacío y lo dice: es el hito 2.~~ **Desde el 2026-09-24 se cargan y se ven
-pedidos de WhatsApp**, primer tramo del hito 2 (primera entrada de abajo).
+pedidos de WhatsApp**, primer tramo del hito 2; **desde el 2026-09-25 se avanzan y se
+cancelan** (EP-07, primera entrada de abajo).
 
 ~~**Cargar un vino está escrito desde el 2026-09-18 y todavía NO desplegado**~~
 **Desplegado el 2026-09-21**: HU-03.2 a HU-03.4, reglas (`0310466f`) y panel
@@ -74,6 +75,32 @@ el deploy del panel y que alguien cargue y publique un vino real.
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### EP-07: los pedidos se preparan, se despachan y se cancelan devolviendo el stock (2026-09-25)
+
+**Escrito; sin desplegar ni verificar** (ver abajo). Sin openspec, a pedido del dueño:
+[ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md) es la
+especificación. **HU-07.1, 07.2, 07.4, 07.5 y 07.6**, el segundo tramo del hito 2:
+cierra lo que ADR 018 dejó como *"lo primero que sigue"* — un pedido ya sale de
+`sin_preparar`, y **uno mal cargado se cancela y su stock vuelve**.
+
+**Dos caminos.** Preparar, despachar (correo + seguimiento opcional), entregar y la
+entrega fallida (con motivo) los escribe el panel **directo**, y **las reglas validan
+la transición** contra el estado de ahora, con cero lecturas: era el hallazgo 3 del
+mapa. **Cancelar es `cancelarOrden`, la cuarta Cloud Function**: devuelve el stock con
+el snapshot de `botellas` en la misma transacción que marca la Orden, que es su propio
+marcador. **Ningún cliente puede escribir `cancelada`**, aunque la tabla la permita.
+
+**Tres decisiones mías, en el ADR:** cancelar **nunca se traba por una línea** (un vino
+borrado o recreado en otra presentación queda en `sinReponer`, escrito en la Orden y en
+rojo en el detalle); **no aplica el tope** de stock al devolver; y las listas de
+correos y motivos. La confirmación de *entregado* **es la declaración legal**: *"Sí, lo
+recibió un mayor de 18"*.
+
+**La tabla de transiciones vive ahora en tres lugares** (contratos, Dart, reglas), y la
+tercera copia la sincroniza un test: la suite de reglas lee los pares del JSON generado.
+Y **las suites de emulador pasan a CI** (job `suite_emulador`): hasta hoy las que prueban
+plata se corrían sólo a mano, y esta máquina no tiene RAM para levantar el emulador.
 
 ### Pedidos de WhatsApp: se cargan y se ven, pero todavía no se pueden avanzar (2026-09-24)
 
@@ -233,74 +260,13 @@ reconstrucciones × ~34 lecturas). La apaga
 `firebase apphosting:backends:delete bouquet-tienda --project bouquet-vinos --force`.
 Vigilarla el día que se comparta la URL.
 
-### EP-05: mover el stock, desplegado y verificado por bytes — falta que el dueño lo use (2026-09-23)
-
-**HU-05.1, HU-05.2 y HU-05.3**, **sin openspec, a pedido del dueño**: el
-[ADR 016](architecture/decisions/016-mover-el-stock.md) y
-[`EP-05`](features/panel/EP-05-stock.md) son la especificación. Con esto el
-hito 1 queda **escrito entero** salvo HU-04.2 y HU-05.4, las dos con
-disparador. **Workflow D**: `revisor-pagos` corrió sobre el backend **antes**
-de commitear.
-
-**`moverStock`, segunda Cloud Function y primera que escribe plata.** El panel
-no escribe `stock` (las reglas lo congelan, ADR 008): pide `reponer` (suma) o
-`corregir` (fija un valor, con `visto` = el stock que el operador tenía
-en pantalla, rechazado si ya no es ése — el `precioUnitarioVisto` del stock).
-Idempotente por un marcador `productos/{id}/movimientos/{idMovimiento}`, en la
-misma transacción que el cambio. Tope de 5.000 unidades: **decisión mía, el
-dueño la puede cambiar**.
-
-**El revisor encontró un bug mío que ninguna prueba veía**: las hojas del panel
-generaban un `idMovimiento` nuevo al cambiar la cantidad, también tras un
-error ambiguo — repone 6, timeout con la transacción ya commiteada, cambia a
-12, queda 28 en vez de 22. **Corregido: un id por hoja, nunca se regenera.**
-Ocho hallazgos, tres corregidos y el resto anotados con su disparador, en el
-ADR.
-
-| Qué | Cómo |
-|---|---|
-| El contrato | `contratos` 205 tests; el JSON fresco; 16 fixtures **calculadas** por el TypeScript, que el panel verifica |
-| La transacción | 19 casos contra el emulador de Firestore, con concurrencia real. **Mutada**: sin la rama del marcador y sin la baranda de `visto`, fallan 7 casos, exactamente los que tocan idempotencia y `visto` |
-| Las reglas | 57 casos (+3). **Mutando** `movimientos` a `esAdmin()` falla exactamente el que lo prueba |
-| El panel | `dart test` **245/245**; `dart analyze lib test`: **No issues found**. **Mutado** en tres puntos (validez de `Corregir`, el filtro, la traducción de un código): los tres se detectan |
-| Sin huérfanos | 33 símbolos grepeados, cada uno con quien lo abra; control negativo con uno inventado. **Encontró `estaVacia` huérfana y se sacó** |
-| Hooks | Los 4 del panel × 25 archivos con ruta absoluta: 0 bloqueos; el canario con `Colors.red` bloquea |
-| Presupuesto | **3 lecturas** por movimiento; 100 al día = 0,6 % de la cuota. HU-05.3: **cero** |
-
-**Desplegado en el orden fijo, y verificado con la API cruda, no con el
-texto del CLI:**
-
-| Paso | Cómo se verificó |
-|---|---|
-| Reglas | El CLI dijo "released"; la API de Rules dice ruleset `0c73d24a`, **idéntico byte a byte al archivo local**, con `movimientos` en 1 (control positivo) y una colección inventada en 0 |
-| `moverStock` | `--only functions:moverStock`, para no tocar `procesarFoto`. API de Cloud Functions: **`ACTIVE`**, GEN_2, callable, nodejs24. **`allUsers` figura como invoker sin ayuda del dueño** —esta vez el CLI sí lo puso—. Los tres controles, sobre **las dos** funciones: preflight **204** con `access-control-allow-*`, `POST` anónimo **401 JSON `UNAUTHENTICATED`** (el código corre) y una función inventada **404**. `procesarFoto` quedó intacta (su fecha de actualización sigue siendo la del 22) |
-| El panel | CI `alcance=panel` (corrida `35932577780`: análisis, build, `suite_dart` **197 → 244**) y `alcance=tests` (`35935139170`: `suite_ts` **185 → 205, +20 exactos**). Preview → canal → **canario** (seis cadenas nuevas en 0 en live y ≥1 en el canal, más un control positivo y uno inventado) → `promover` → los 4 hashes iguales, `noindex`. Live sirve `aff14bb` |
-| Que la app arranca | Chrome headless por CDP sobre live: redirige a `/entrar`, Flutter montado, **0 errores de consola**, la pantalla de entrada se lee y un texto inventado no aparece |
-
-Una limitación del canario: EP-05 sólo agrega texto, así que **no había una
-cadena vieja que desapareciera**; discrimina por el lado de lo nuevo.
-
-✅ **Lo que no se pudo verificar desde acá se verificó solo, por quien lo usó**:
-llamar a `moverStock` como usuario real (mintear un token lo frena el clasificador).
-A las 00:04 UTC del 2026-09-24 alguien repuso 32 en `vino-de-prueba` —`0 → 32`, con
-su marcador y el uid, **un solo movimiento**—, así que el Admin SDK contra el
-Firestore real y el permiso de la cuenta de servicio andan. Eso lo cerró el
-movimiento registrado, no una prueba mía. **Sigue faltando que el dueño lo mire y
-diga si le sirve**: lo que un movimiento registrado no dice es si la pantalla se
-entiende.
-
-⚠️ **Dos cosas que este ADR deja para el futuro y no son de esta sesión:**
-`corregir` **pisa lo vendido y no despachado** —bloquea `crearOrden`— y, con el
-tramo 4, **cada movimiento va a disparar una purga** (hasta el 93 % de la cuota
-si se carga stock después de publicar). Los dos, con cuentas, en el ADR.
-
-**Y v0.29.0 se desplegó hoy** (2026-09-23), lo que este dashboard decía "sin
-desplegar": los tres defectos de EP-04 que encontró el dueño. Publicado con los
-bytes que compiló CI (corrida `35921864306`): 4 hashes iguales entre canal y
-live, control negativo, `noindex`, y un canario discriminante —dos cadenas
-nuevas en 0 antes y 1 después, una vieja en 1 antes y 0 después—. **Sigue sin
-mirarlo nadie renderizado.**
-
+> ⚠️ **"EP-05: mover el stock, desplegado y verificado por bytes — falta que el dueño lo use (2026-09-23)" se movió a
+> [`changelog/_log.md`](changelog/_log.md#ep-05-mover-el-stock-desplegado-y-verificado-por-bytes-falta-que-el-dueño-lo-use-2026-09-23)
+> el 2026-09-25**, al construirse EP-07 y llegar el dashboard a 6 entradas. El porqué
+> de cada decisión sigue en [ADR 016](architecture/decisions/016-mover-el-stock.md). Lo
+> que sigue vigente y no vive en otro lado: **`moverStock` se verificó en producción por
+> uso real** (`0 → 32` en `vino-de-prueba`, un solo movimiento) y **sigue faltando que
+> el dueño mire la pantalla y diga si le sirve**.
 
 > ⚠️ **"EP-04: las fotos del panel, desplegadas — y el dueño encontró que la callable no se puede llamar (2026-09-22)" se movió a
 > [`changelog/_log.md`](changelog/_log.md#ep-04-las-fotos-del-panel-desplegadas-y-el-dueño-encontró-que-la-callable-no-se-puede-llamar-2026-09-22)
@@ -365,7 +331,7 @@ mirarlo nadie renderizado.**
 | ~~**Entrar con Google no está verificado en live por una persona**~~ **VERIFICADO el 2026-09-17: lo hizo el dueño** | Entró con Google en live, se le creó la cuenta —`providers: google.com`, mail verificado, sin claims— y cayó en `/sin-acceso`, que es exactamente lo que el diseño dice que pase. ⚠️ **Queda un hueco chico:** eso fue **antes** de acotar la API key, así que el flujo de Google **con la restricción puesta** no está probado. Lo que sí está probado con la restricción es una llamada real a Auth desde el navegador en live y en el canal. `firebaseapp.com` está en la lista justo porque por ahí pasa el handler de Google, pero eso es un razonamiento, no una medición. **Disparador:** la próxima vez que alguien entre con Google —basta con que el dueño salga y vuelva a entrar—. Desde 2026-09-17. | el dueño |
 | ~~**La API key web del panel no está restringida**~~ **RESUELTO el 2026-09-17**, y lo corrió el dueño porque el clasificador del modo auto frena tocar la key (*"Modify Shared Resources"*) | La key es pública por diseño —viaja adentro de `main.dart.js`, así que guardarla como secret no cambia nada: el navegador la necesita en claro—, pero estaba sin acotar: `browserKeyRestrictions` **vacío** y 27 servicios habilitados, `identitytoolkit` entre ellos. Ahora acepta tres hosts: el panel, `firebaseapp.com` —por donde pasa el handler de Google— y el canal `panel`. **Verificado con las dos mitades, y el antes medido:** un `POST` a `accounts:signInWithPassword` con `Referer` inventado daba **400 `INVALID_LOGIN_CREDENTIALS`** (la atendía) y ahora da **403 blocked**, mientras los tres hosts permitidos siguen dando 400, o sea que llegan. Y de punta a punta con un navegador real pidiendo el correo de contraseña desde live y desde el canal: los dos contestan el aviso, sin nada de bloqueo en consola. ⚠️ **La trampa que sólo apareció con el tercer control: un comodín en medio de una etiqueta (`bouquet-vinos--*.web.app`) la API lo ACEPTA y no matchea nada** — se guarda sin protestar y el canal seguía dando 403. Va el host literal. **Ojo con lo que esto NO es:** el `Referer` lo falsifica cualquiera con `curl -H`, así que corta abuso casual y robo de cuota, no a alguien decidido; contra el registro anticipado lo que protege es la negativa del script (ADR 011), y apagar el alta pública está descartado ahí mismo. **Deja una obligación:** un canal con otro nombre no va a poder entrar hasta que su host esté en la lista — anotado en `publicar.sh`. | el dueño |
 | **Ningún change de openspec se archivó nunca** | `openspec/specs/` está **vacío** y hay **4** changes en `openspec/changes/` (`panel-entrar`, `cajas-de-seis`, `catalogo-y-carrito`, `seccion-el-oficio`), todos implementados. Sin línea base publicada, un change nuevo no tiene contra qué diferenciarse. `opsx` trae `openspec-bulk-archive-change` justo para esto, pero las skills de terceros no se commitean (`bash scripts/skills_restaurar.sh`). Archivar sólo uno inventaría una línea base que los otros tres no tienen, así que van los cuatro juntos. **Disparador:** la próxima sesión que empiece con las skills restauradas. Desde 2026-09-17. | el usuario |
-| **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth, igual que los de reglas, que tampoco están en CI (hallazgo de `revisor-pagos`). Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
+| **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth. ~~Igual que los de reglas, que tampoco están en CI~~: **los de reglas y los de las transacciones sí corren en CI desde el 2026-09-25** (job `suite_emulador`, [ADR 019 §8](architecture/decisions/019-preparar-despachar-y-cancelar.md)); éste quedó afuera porque pide el emulador de Auth. Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
 | ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). **Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `bash scripts/tienda/preview.sh verificar` en lo desplegado (⚠️ **no** con `curl /pedido | grep`: da 0 con el gate cerrado, ver [ADR 010](architecture/decisions/010-el-checkout.md)). Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |

@@ -1,16 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
+import '../../../core/contratos/despacho.dart';
 import '../../../core/contratos/estado_entrega.dart';
 import '../domain/fallo_de_pedidos.dart';
 import '../domain/orden.dart';
+import '../domain/paso_de_entrega.dart';
 import '../domain/pedido_a_cargar.dart';
 import '../domain/repositorio_de_pedidos.dart';
+import 'cambios_de_entrega.dart';
+import 'codigos_de_pedidos.dart';
 import 'documento_de_la_orden.dart';
 import 'fallos_de_pedidos.dart';
 
-/// Los pedidos, contra la callable `crearOrdenDelPanel` y la coleccion `ordenes`
-/// (HU-10.1, HU-06.1, HU-06.2; ADR 018).
+/// Los pedidos, contra las callables `crearOrdenDelPanel` y `cancelarOrden` y la
+/// coleccion `ordenes` (HU-10.1, HU-06.1, HU-06.2, ADR 018; EP-07, ADR 019).
 class RepositorioDePedidosFirebase implements RepositorioDePedidos {
   RepositorioDePedidosFirebase(this._db, this._functions);
 
@@ -84,7 +88,12 @@ class RepositorioDePedidosFirebase implements RepositorioDePedidos {
     final ordenes = <Orden>[];
     var incompletos = 0;
     for (final d in instantanea.docs) {
-      final orden = ordenDesde(d.id, d.data(), creadaEn: _hora(d.data()));
+      final orden = ordenDesde(
+        d.id,
+        d.data(),
+        creadaEn: _hora(d.data()),
+        horaDe: _horaDe,
+      );
       if (orden == null) {
         incompletos += 1;
       } else {
@@ -108,13 +117,69 @@ class RepositorioDePedidosFirebase implements RepositorioDePedidos {
     final d = await _db.collection('ordenes').doc(id).get();
     if (!d.exists) return const PedidoInexistente();
     final datos = d.data() ?? const <String, Object?>{};
-    final orden = ordenDesde(d.id, datos, creadaEn: _hora(datos));
+    final orden = ordenDesde(
+      d.id,
+      datos,
+      creadaEn: _hora(datos),
+      horaDe: _horaDe,
+    );
     return orden == null ? const PedidoIncompleto() : PedidoEncontrado(orden);
+  }
+
+  /// `update`, no `set`: si la Orden no existe, falla en vez de crear una. Y
+  /// **no lee antes**: las reglas miran el estado de ahora (`resource.data`) y
+  /// rechazan un paso que ya no vale. Cero lecturas.
+  @override
+  Future<void> avanzar(String id, PasoDeEntrega paso) async {
+    try {
+      await _db
+          .collection('ordenes')
+          .doc(id)
+          .update(
+            cambiosDe(paso, horaDelServidor: FieldValue.serverTimestamp()),
+          );
+    } catch (e) {
+      throw comoFalloDeEscritura(e);
+    }
+  }
+
+  @override
+  Future<ResultadoDeCancelacion> cancelar(
+    String id,
+    MotivoDeCancelacion motivo,
+  ) async {
+    final HttpsCallableResult<Object?> resultado;
+    try {
+      resultado = await _functions.httpsCallable('cancelarOrden').call<Object?>(
+        {'ordenId': id, 'motivo': motivo.clave},
+      );
+    } catch (e) {
+      throw comoFalloDePedidos(e, deLaCallable: falloDeCancelar);
+    }
+    final datos = resultado.data;
+    if (datos is Map) {
+      final numero = datos['numero'];
+      final repetido = datos['repetido'];
+      if (numero is num && repetido is bool) {
+        return ResultadoDeCancelacion(
+          numero: numero.toInt(),
+          repetido: repetido,
+          sinReponer: lineasSinReponerDesde(datos['sinReponer']),
+        );
+      }
+    }
+    // El pedido PUDO haberse cancelado: la pantalla lo vuelve a leer.
+    throw const FalloDePedidos(
+      ErrorDePedido.desconocido,
+      codigo: 'respuesta-inesperada',
+    );
   }
 
   /// `is`, no `as`: una `creadaEn` que no sea Timestamp (un script, un futuro
   /// escritor con un bug) no puede esconder la lista entera.
-  DateTime? _hora(Map<String, Object?> datos) => switch (datos['creadaEn']) {
+  DateTime? _hora(Map<String, Object?> datos) => _horaDe(datos['creadaEn']);
+
+  static DateTime? _horaDe(Object? valor) => switch (valor) {
     final Timestamp t => t.toDate(),
     _ => null,
   };

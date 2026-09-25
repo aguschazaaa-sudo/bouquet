@@ -2,6 +2,7 @@ import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/contratos/estado_pago.dart';
 import '../../../core/contratos/estado_publico.dart';
 import '../../../core/contratos/pedido.dart';
+import 'despacho_de_orden.dart';
 
 /// Una linea de la Orden: un **snapshot**, no el producto de hoy. El precio del
 /// vino cambia; el que se anoto, no (ARQUITECTURA §5.2).
@@ -87,6 +88,9 @@ class Orden {
     required this.entrega,
     this.creadaEn,
     this.notasOperador,
+    this.despacho,
+    this.entregaFallida,
+    this.cancelacion,
   });
 
   /// El id del documento. **Nunca se le muestra a nadie**: lo que se dice es el
@@ -111,6 +115,15 @@ class Orden {
   final DateTime? creadaEn;
 
   final String? notasOperador;
+
+  /// Por donde salio (EP-07). `null` hasta que se despacha.
+  final DespachoDeOrden? despacho;
+
+  /// Por que fallo la ultima entrega. **Queda** aunque se vuelva a despachar.
+  final EntregaFallida? entregaFallida;
+
+  /// Por que se cancelo y que no volvio al stock. Solo en una cancelada.
+  final CancelacionDeOrden? cancelacion;
 
   EstadoPublico get estadoPublico =>
       proyectarEstadoPublico(estadoPago, estadoEntrega);

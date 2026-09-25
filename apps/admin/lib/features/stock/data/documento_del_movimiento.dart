@@ -24,7 +24,8 @@ MovimientoDeStock movimientoDesde(
     despues: _entero(datos['despues']),
     operacion: _operacion(datos['operacion']),
     esMio: miUid != null && por == miUid,
-    venta: _venta(datos['operacion']),
+    venta: _dePedido(datos['operacion'], 'venta'),
+    devolucion: _dePedido(datos['operacion'], 'cancelacion'),
   );
 }
 
@@ -50,11 +51,12 @@ OperacionDeStock? _operacion(Object? valor) {
   }
 }
 
-/// Una venta de `crearOrdenDelPanel`: `{ tipo: 'venta', cantidad, idPedido,
-/// numero }`. `null` si no lo es, o si le falta la cantidad: sin ella no hay
-/// nada que decir, y el movimiento se muestra como uno sin detalle.
-VentaDePedido? _venta(Object? valor) {
-  if (valor is! Map || valor['tipo'] != 'venta') return null;
+/// Una venta de `crearOrdenDelPanel` (`tipo: 'venta'`) o lo que devolvio
+/// `cancelarOrden` (`tipo: 'cancelacion'`): `{ tipo, cantidad, idPedido, numero }`.
+/// `null` si no es de ese [tipo], o si le falta la cantidad: sin ella no hay nada
+/// que decir, y el movimiento se muestra como uno sin detalle.
+VentaDePedido? _dePedido(Object? valor, String tipo) {
+  if (valor is! Map || valor['tipo'] != tipo) return null;
   final cantidad = _entero(valor['cantidad']);
   if (cantidad == null) return null;
   return VentaDePedido(cantidad: cantidad, numero: _entero(valor['numero']));

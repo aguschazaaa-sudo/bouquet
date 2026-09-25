@@ -23,3 +23,5 @@
 export { procesarFoto } from './foto/procesar_foto.ts';
 export { moverStock } from './stock/mover_stock.ts';
 export { crearOrdenDelPanel } from './pedidos/crear_orden_del_panel.ts';
+// La cuarta, y la unica que DEVUELVE stock (HU-07.6, ADR 019).
+export { cancelarOrden } from './pedidos/cancelar_orden.ts';

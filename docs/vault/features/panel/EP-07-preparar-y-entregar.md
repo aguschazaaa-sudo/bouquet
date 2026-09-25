@@ -3,6 +3,14 @@
 > Hito 2 · Workflow A, salvo **HU-07.6**, que va por **D** ·
 > [volver al mapa](overview.md)
 
+> **HU-07.1, 07.2, 07.4, 07.5 y 07.6 construidas el 2026-09-25**, sin openspec
+> ([ADR 019](../../architecture/decisions/019-preparar-despachar-y-cancelar.md) es
+> la especificación). Lo que acá figuraba **abierto se decidió**: las reglas SÍ
+> validan la transición, con un test que lee la tabla del JSON (§2); preparar es
+> un botón propio (§4); el seguimiento es opcional (§4). **Siguen sin
+> construirse HU-07.3** (falta el número de la tienda y `/pedido/<numero>`) **y
+> HU-07.7** (las reglas ya aceptan las notas; falta la pantalla).
+
 **Objetivo:** que cada pedido avance por el eje de entrega sin saltearse un
 paso, y que el comprador sepa cuándo salió.
 
@@ -17,10 +25,10 @@ sin_preparar ─▶ preparando ─▶ despachada ─▶ entregada
                                  fallida
 ```
 
-⚠️ **Las reglas no validan la transición.** Sólo miran qué campos cambian
-(`editaSolo`). La tabla está en el espejo de Dart, `transicionEntregaValida`:
-si el panel tiene un error, las reglas dejan mover una orden de `entregada` a
-`sin_preparar`.
+~~⚠️ **Las reglas no validan la transición.**~~ **Desde el 2026-09-25 sí**
+([ADR 019 §2](../../architecture/decisions/019-preparar-despachar-y-cancelar.md)):
+la tabla, menos `cancelada`, con los campos de cada paso. **`cancelada` no la
+escribe ningún cliente**: la escribe `cancelarOrden`, que devuelve el stock.
 
 ---
 

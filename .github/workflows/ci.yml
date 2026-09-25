@@ -180,6 +180,49 @@ jobs:
           echo "tests ejecutados: ${N:-0}"
           [ "${N:-0}" -ge 64 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 64"; exit 1; }
 
+  # ==========================================================================
+  # SUITES CONTRA EL EMULADOR DE FIRESTORE - reglas y transacciones.
+  #
+  # Hasta el 2026-09-25 se corrian SOLO a mano, y eran las que prueban plata:
+  # las reglas de `ordenes` y `productos`, y las transacciones de `moverStock`,
+  # `crearOrdenDelPanel` y `cancelarOrden` con concurrencia real (hallazgo 7 de
+  # ADR 008, ADR 018). La maquina de desarrollo no tiene RAM para levantar el
+  # emulador (Java) al lado del editor, asi que sin este job el Workflow D se
+  # verificaba por razonamiento.
+  #
+  # EN SERIE (`--test-concurrency=1`): todas limpian el MISMO emulador, y en
+  # paralelo fallaron 8 casos ajenos (medido el 2026-09-24, ADR 018).
+  #
+  # Quedan AFUERA, con motivo: `procesar_foto.emulador.mjs` (necesita el
+  # emulador de Functions, cuyo discovery no completa) y `acceso.test.mjs`
+  # (emulador de Auth; su propio pendiente en el vault).
+  # ==========================================================================
+  suite_emulador:
+    needs: [contexto, tipos]
+    if: needs.contexto.outputs.hay_reglas == 'true' && contains(fromJSON('["tests","completo"]'), needs.contexto.outputs.alcance)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '24', cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '21' }
+      - run: npm ci
+      - run: npm i -g firebase-tools
+      - name: Suites, en serie, y la CUENTA de tests
+        # Mismo criterio que suite_ts: "paso" no distingue un verde de un archivo
+        # que no se ejecuto. El piso se sube a mano al agregar casos.
+        run: |
+          set -o pipefail
+          firebase emulators:exec --only firestore --project demo-bouquet \
+            "node --test --test-concurrency=1 scripts/reglas/ordenes.test.mjs scripts/reglas/productos.test.mjs functions/test/stock/mover.emulador.mjs functions/test/pedidos/crear.emulador.mjs functions/test/pedidos/cancelar.emulador.mjs" \
+            2>&1 | tee /tmp/emulador.txt
+          N=$(grep -oE 'tests [0-9]+' /tmp/emulador.txt | tail -1 | grep -oE '[0-9]+')
+          F=$(grep -oE 'fail [0-9]+' /tmp/emulador.txt | tail -1 | grep -oE '[0-9]+')
+          echo "tests ejecutados: ${N:-0} - fallidos: ${F:-?}"
+          [ "${F:-1}" = "0" ] || { echo "::error::fallaron ${F:-?} casos"; exit 1; }
+          [ "${N:-0}" -ge 158 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 158"; exit 1; }
+
   suite_dart:
     needs: contexto
     if: needs.contexto.outputs.hay_flutter == 'true' && needs.contexto.outputs.alcance != 'rapido'
@@ -268,7 +311,7 @@ jobs:
   # suite verde.
   # ==========================================================================
   veredicto:
-    needs: [contexto, guardas, tipos, suite_ts, suite_dart, build_panel]
+    needs: [contexto, guardas, tipos, suite_ts, suite_emulador, suite_dart, build_panel]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -278,7 +321,7 @@ jobs:
             echo "::error::las guardas no pasaron (${{ needs.guardas.result }})"; exit 1; }
       - name: Ningun job puede haber fallado ni quedado cancelado
         run: |
-          for r in "${{ needs.tipos.result }}" "${{ needs.suite_ts.result }}" "${{ needs.suite_dart.result }}" "${{ needs.build_panel.result }}"; do
+          for r in "${{ needs.tipos.result }}" "${{ needs.suite_ts.result }}" "${{ needs.suite_emulador.result }}" "${{ needs.suite_dart.result }}" "${{ needs.build_panel.result }}"; do
             case "$r" in
               success|skipped) ;;
               *) echo "::error::un job termino en '$r' (cancelled cuenta como rojo)"; exit 1 ;;
@@ -304,6 +347,7 @@ jobs:
             echo "- documentacion: enlaces y anclas"
             [ "${{ needs.tipos.result }}" = "success" ] && echo "- TypeScript: tipos y frescura del contrato"
             [ "${{ needs.suite_ts.result }}" = "success" ] && echo "- TypeScript: suite"
+            [ "${{ needs.suite_emulador.result }}" = "success" ] && echo "- Emulador de Firestore: reglas y transacciones de stock y ordenes"
             [ "${{ needs.suite_dart.result }}" = "success" ] && echo "- Dart: suite"
             [ "${{ needs.build_panel.result }}" = "success" ] && echo "- Panel: analisis y build web (artifact \`panel-web\`)"
             echo

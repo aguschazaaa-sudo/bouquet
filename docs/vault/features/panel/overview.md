@@ -11,7 +11,10 @@
   016 es su especificación). **Hito 2, primer tramo (2026-09-24, change
   `pedidos-de-whatsapp`, [ADR 018](../../architecture/decisions/018-pedidos-de-whatsapp.md)):
   HU-10.1, HU-06.1 y HU-06.2** — el estado no se tilda acá, se calcula con el
-  `grep` de abajo
+  `grep` de abajo. **Hito 2, segundo tramo (2026-09-25, sin openspec,
+  [ADR 019](../../architecture/decisions/019-preparar-despachar-y-cancelar.md)):
+  HU-07.1, 07.2, 07.4, 07.5 y 07.6** — preparar, despachar, entregar, la entrega
+  fallida y cancelar devolviendo el stock
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)
@@ -115,10 +118,11 @@ y los requerimientos de HU-10.1, 06.1 y 06.2 están en el change
 `pedidos-de-whatsapp`. **Siguen abiertos** el `Envío` cotizado, el correo y el
 seguimiento: son de EP-07 y de la vidriera.
 
-⚠️ **El hito 2 no está entregado con esto.** Se puede cargar un pedido y verlo, pero
-**no avanzarlo**: sin EP-07 los pedidos se acumulan en `sin_preparar`, la bandeja
-cuesta 25 lecturas por apertura y el aviso de stock de la hoja de corrección no es
-fiable (ADR 018 §9). **EP-07 es lo que sigue.**
+~~⚠️ **El hito 2 no está entregado con esto.** Se puede cargar un pedido y verlo, pero
+**no avanzarlo**.~~ **Desde el 2026-09-25 se avanza** (ADR 019): un pedido se
+prepara, se despacha, se entrega o falla, y **uno mal cargado se cancela y su stock
+vuelve**. Lo que queda del hito 2: HU-07.3 y 07.7, HU-06.3 a 06.5 y EP-08 (el cobro
+de la vidriera, que espera a `crearOrden`).
 
 ### Los habilitadores
 
@@ -153,13 +157,13 @@ No son historias —nadie los pide—, pero sin ellos ninguna llega a producció
    ([ADR 015](../../architecture/decisions/015-fotos-del-panel.md)) la deja
    afuera con disparador — el primer vino con dos fotos; el seed tiene una
    sola por producto —, no la resuelve
-3. **Las reglas no validan la transición de `estadoEntrega`.** Sólo miran qué
-   campos cambian (`editaSolo`). La tabla está en el espejo de Dart
-   (`transicionEntregaValida`), así que un panel con un error puede mover una
-   orden de `entregada` a `sin_preparar` y las reglas lo aceptan. → HU-07.1
-4. **Las reglas de `ordenes` no dejan escribir ni el seguimiento ni el motivo
-   de una entrega fallida.** Hoy sólo `estadoEntrega`, `notasOperador` y
-   `actualizadaEn`. → HU-07.2 · HU-07.5
+3. ~~**Las reglas no validan la transición de `estadoEntrega`.**~~ **Cerrado el
+   2026-09-25** en [ADR 019 §2](../../architecture/decisions/019-preparar-despachar-y-cancelar.md):
+   la tabla está en las reglas, y la suite la prueba contra el JSON generado en
+   los 36 pares. → HU-07.1
+4. ~~**Las reglas de `ordenes` no dejan escribir ni el seguimiento ni el motivo
+   de una entrega fallida.**~~ **Cerrado el 2026-09-25** (ADR 019 §3): `despacho`
+   y `entregaFallida`, cada uno sólo en su paso. → HU-07.2 · HU-07.5
 5. **Borrar una bodega esconde sus vinos en silencio.** Las reglas permiten el
    `delete`, y `armarCatalogo` deja afuera los productos de una bodega que no
    existe. → HU-02.4. **La baranda quedó en el panel, no en las reglas**, con
