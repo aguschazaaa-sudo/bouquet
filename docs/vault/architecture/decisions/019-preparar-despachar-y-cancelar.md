@@ -1,7 +1,10 @@
 # ADR 019 — Preparar, despachar, entregar y cancelar un pedido
 
 - **Fecha:** 2026-09-25
-- **Estado:** aceptada, **escrita y sin desplegar** (ver *Verificación*, al final)
+- **Estado:** aceptada y **desplegada el 2026-09-25** en el orden reglas →
+  `cancelarOrden` → panel (`f066c56`), verificada por bytes, por la API cruda y con
+  mutaciones en CI. **En producción hay 0 pedidos: nadie la usó todavía** (ver
+  *Verificación*, al final)
 - **Decide:** cómo avanza una Orden por el eje de entrega desde el panel: quién
   escribe cada paso, qué campos lleva, y cómo cancelar devuelve el stock
 - **Historias:** HU-07.1, HU-07.2, HU-07.4, HU-07.5 y HU-07.6
@@ -268,6 +271,34 @@ su escenario; nada se aplicó por venir del informe.
 | 3 | BAJO | **Un pedido `fallida` no se puede cancelar** (tabla de ADR 002): si el correo lo devuelve y el cliente ya no lo quiere, queda en *"Entrega fallida - reprogramar"* para siempre, y sus botellas vuelven a la estantería sin volver al stock | **No se tocó la tabla**: es una decisión de producto, y ADR 002 la tomó (*"el envío ya costó"*). Queda abierto con disparador, abajo. Mientras tanto: `moverStock` para devolver las botellas |
 | 4 | BAJO | El predeploy de `functions` arma el bundle desde el árbol de trabajo (hallazgo 13 de ADR 018) | Se despliega con todo commiteado y el árbol limpio |
 
-## Verificación
+## Verificación (2026-09-25)
 
-*(Se completa al verificar.)*
+**Desplegado en el orden fijo —reglas → `cancelarOrden` → panel— con autorización
+explícita del dueño** (el clasificador de permisos frenó el primer intento). Cada fila
+dice **cómo**; un job verde no prueba nada.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `alcance=tests`, corrida `36186653800` sobre `f066c56`. **Restadas contra la anterior**: `contratos` 235 → **245 (+10 exactos)**, `functions` 48 → **59 (+11)** (los 3 `skipped` ya estaban: fotos del seed fuera del checkout), Dart 393 → **420 (+27)**. **El emulador, por primera vez en CI: 158/158** (36 de `ordenes`, 60 de `productos`, 19 de `moverStock`, 27 de crear, 16 de cancelar) |
+| La primera corrida | `36184205692`: **157/158**. El que cayó era **mi verificación**, no la regla: `withSecurityRulesDisabled` no devuelve el valor del callback y la relectura daba `undefined` (el `assertSucceeds` había pasado). Corregido en `189f6d5` |
+| ⭐ Que las suites discriminen | **Cuatro mutaciones en una rama descartable** (corrida `36187167979`, la rama se borró): (1) un cliente puede escribir `cancelada` → caen la matriz y *"cancelar NO lo escribe ningún cliente"*; (2) sin la guarda de vidriera impaga → cae *"un pedido de la vidriera impago NO sale"*; (3) `cancelarOrden` sin la rama de idempotencia → caen *"un reintento…"* y *"dos cancelaciones a la vez"*; (4) reponer sin mirar la presentación → caen el caso del emulador y dos puros. **Ningún caso ajeno cayó** |
+| Compila | CI `alcance=panel`, corrida `36187231825`: `flutter analyze` **No issues found**, build web, 35 archivos |
+| Las reglas | El CLI dijo "released"; la API de Rules: ruleset `1abd60f0`, **idéntico byte a byte al archivo local (25.757 bytes)**, `function pasoDeEntrega` y `despachoValido` en 1 (control positivo) y un nombre inventado en 0 |
+| `cancelarOrden` | ⚠️ El primer deploy murió en *"User code failed to load… Timeout after 10000"*: con ~700 MB libres, cargar `firebase-admin` para descubrir las funciones tarda más de 10 s. **`FUNCTIONS_DISCOVERY_TIMEOUT=90`** lo destrabó. API de Cloud Functions: **`ACTIVE`**, GEN_2, nodejs24, **timeout 120** (la opción llegó); `allUsers` como `roles/run.invoker`; preflight **204** con `allow-origin`; `POST` anónimo **401 JSON** con el mensaje de `exigirAdmin` (el código corre); una función inventada **404**. Las otras tres, con su fecha de antes: intactas |
+| El panel | `publicar.sh preview` → canal → **canario discriminante** sobre `main.dart.js`, con cadenas **sin tildes** (dart2js escapa): `Empezar a prepararlo`, `Marcar como despachado`, `Lo llevamos nosotros` y `cancelarOrden` pasan de **0 en live a 1**; el texto viejo del aviso (`no figuran como despachados`) de **1 a 0**; control positivo (`Usar como principal`) 1/1 e inventado 0/0 → `promover` → los 4 hashes iguales en live, control negativo, `noindex`, commit publicado `f066c56` |
+| Que arranca | Chrome headless por CDP sobre live: `/pedidos` redirige a `/entrar`, Flutter montado, **0 errores de consola**; *"Entrar con Google"* se lee en la semántica, y dos negativos dan falso: uno inventado y *"Cancelar el pedido"*, que **está en el bundle** pero no en esa pantalla |
+| Sin huérfanos | Cada símbolo nuevo grepeado fuera de su archivo y de los tests. **Encontró 4 exports de TypeScript que nadie abría** (`Despacho`, `Correo`, `MotivoDeFalla`, `MotivoDeCancelacion`) y se sacaron. Controles: uno usado > 0, uno inventado = 0 |
+| Hooks | `probar_hooks.sh` 35/35; los 4 del panel sobre 26 archivos con ruta absoluta, 104 corridas, 0 bloqueos; los canarios (`Colors.red`, import de `data/`) **bloquean** |
+
+### Lo que NO se verificó
+
+- ⚠️ **En producción hay 0 pedidos** (medido por la API, con un control positivo sobre
+  `productos`). **Nada de EP-07 corrió contra datos reales**: ni un paso de las reglas
+  nuevas desde el panel, ni `cancelarOrden` con un usuario de verdad (mintear un token lo
+  frena el clasificador, igual que en ADR 018). Lo va a probar el primer pedido que cargue
+  el dueño. Las transiciones y la cancelación sí están probadas contra el emulador, en CI.
+- **Nadie miró el detalle renderizado**: ni los botones, ni las hojas, ni la sección de lo
+  que no volvió al stock. El arranque por CDP llega a `/entrar`, no más allá: no hay
+  credenciales en esta máquina, a propósito.
+- **Que el detalle relea después de cada cambio, y que un rechazo de las reglas relea**,
+  se razonó sobre el código; `flutter_riverpod` no carga bajo `dart test`.

@@ -78,7 +78,9 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### EP-07: los pedidos se preparan, se despachan y se cancelan devolviendo el stock (2026-09-25)
 
-**Escrito; sin desplegar ni verificar** (ver abajo). Sin openspec, a pedido del dueño:
+**Desplegado el 2026-09-25 —reglas, `cancelarOrden` y panel (`f066c56`)— y verificado
+por bytes, por API cruda y con cuatro mutaciones en CI. En producción hay 0 pedidos:
+nadie lo usó ni miró el detalle renderizado.** Sin openspec, a pedido del dueño:
 [ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md) es la
 especificación. **HU-07.1, 07.2, 07.4, 07.5 y 07.6**, el segundo tramo del hito 2:
 cierra lo que ADR 018 dejó como *"lo primero que sigue"* — un pedido ya sale de
@@ -101,6 +103,18 @@ recibió un mayor de 18"*.
 tercera copia la sincroniza un test: la suite de reglas lee los pares del JSON generado.
 Y **las suites de emulador pasan a CI** (job `suite_emulador`): hasta hoy las que prueban
 plata se corrían sólo a mano, y esta máquina no tiene RAM para levantar el emulador.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36186653800`, restadas contra la anterior: `contratos` **+10**, `functions` **+11**, Dart **+27**; emulador **158/158**, por primera vez en CI |
+| Que discriminen | **Cuatro mutaciones** en una rama descartable (cliente que cancela, sin la guarda de vidriera impaga, sin idempotencia, sin mirar la presentación): cada una tumbó sólo sus casos |
+| El deploy | Reglas: ruleset **idéntico byte a byte**. `cancelarOrden`: `ACTIVE`, timeout 120, `allUsers`, preflight 204, anónimo 401 JSON, inventada 404. Panel: canario discriminante (4 cadenas nuevas 0 → 1, una vieja 1 → 0) → promovido, 4 hashes iguales, `noindex`. Arranca en live con 0 errores de consola |
+
+⚠️ **Lo que sigue:** que el dueño cargue un pedido real y lo lleve hasta *entregado* (o lo
+cancele). Es lo único que prueba las reglas nuevas desde el panel y `cancelarOrden` con una
+cuenta de verdad. Y **una pregunta de producto abierta**: un pedido con la entrega fallida
+**no se puede cancelar** (tabla de ADR 002); si el correo lo devuelve y el cliente ya no lo
+quiere, queda sin salida ([ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md), hallazgo 3).
 
 ### Pedidos de WhatsApp: se cargan y se ven, pero todavía no se pueden avanzar (2026-09-24)
 
