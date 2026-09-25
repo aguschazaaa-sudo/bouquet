@@ -9,6 +9,93 @@
 
 ---
 
+## Salió el 2026-09-24 (al cerrar la sesión), al construirse los pedidos de WhatsApp
+
+Sale la de "EP-04: las fotos del panel" (2026-09-22): con la de los pedidos sumada al
+dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 015](../architecture/decisions/015-fotos-del-panel.md).
+
+### EP-04: las fotos del panel, desplegadas — y el dueño encontró que la callable no se puede llamar (2026-09-22)
+
+**HU-04.1, HU-04.3 y HU-04.4 construidas** (grupos 1-8 del change
+[`panel-fotos-de-un-vino`](../../../openspec/changes/panel-fotos-de-un-vino/proposal.md)),
+con el porqué en [ADR 015](../architecture/decisions/015-fotos-del-panel.md).
+HU-04.2 (reordenar fotos) queda afuera, con disparador — ver *Lo que está
+pendiente*.
+
+**El hallazgo central: el clasificador de packshot se midió y se REFUTÓ.**
+`trim()` y la luminosidad de borde separan el control negativo sintético
+(botella sobre una mesa) de la mayoría de los 19 packshots reales del seed,
+pero `nieto-senetiner-bonarda.png` —un packshot legítimo, ya en el catálogo—
+puntúa PEOR que el control negativo en las dos medidas. **Ningún umbral sobre
+el archivo distingue una foto de cámara de un packshot sin marcar como
+sospechosa una foto que ya está bien.** Por eso el panel no adivina: dibuja la
+foto exactamente como la va a dibujar la vidriera —papel + `multiply`— y deja
+que el operador mire.
+
+**`procesarFoto`, primera Cloud Function del proyecto, desplegada y
+`ACTIVE`**, verificado con la API cruda de Cloud Functions, no con el texto
+del CLI: el primer intento dio **exit 0** y `functions:list` mostraba la
+function, pero la API decía `"state": "FAILED"`, `CloudRunServiceNotFound` —
+`@bouquet/contratos` es un symlink de workspace que nunca se publicó a npm, y
+Cloud Build corre sin él. Resuelto empaquetando `contratos` DENTRO del bundle
+con `esbuild` y sacándolo de `package.json` del todo. **Cuarto intento:
+`ACTIVE`.**
+
+**El panel está escrito, con los 6 puntos de `cazador-de-puertas`
+confirmados** —control positivo y negativo cada uno—: `procesarFoto` la llama
+`repositorio_de_fotos_firebase.dart:73`, `SeccionDeFotos` cuelga de
+`enrutador.dart` → `PaginaDelVino` → `formulario_del_vino.dart:155`, y los dos
+providers nuevos tienen call site real.
+
+**Y el panel se desplegó y se verificó en vivo el mismo día.** CI
+`alcance=panel` (corrida `35780172218`) → `publicar.sh preview` → `promover`
+→ `verificar`: los 4 hashes byte a byte iguales entre el canal y
+`bouquet-vinos.web.app`, y un canario propio —tres strings nuevas de
+`textos_de_fotos.dart`, sin tildes— en **0** apariciones en el `main.dart.js`
+vivo antes de promover y **3** después. Quedan dos verificaciones que sólo
+puede hacer el dueño: **subir una foto real a un vino real y mirarla en la
+tienda** (10.1) y **decir si la previsualización le sirve** (10.2) — es la
+única pregunta que decide si alguna vez hace falta el recorte de fondo.
+
+| Qué | Cómo |
+|---|---|
+| El clasificador refutado | 19 packshots reales + 1 control negativo sintético, medidos con `trim()` y luminosidad de borde. El legítimo puntúa peor que el sintético en las dos medidas |
+| La tubería no diverge | `functions/test/foto/tuberia.test.ts`: mismo SHA-256 entre el seed (subproceso real) y `tuberia.ts`, con control negativo (mutar un número la rompe) |
+| La callable, en producción | API cruda de Cloud Functions: `state: ACTIVE`, v2, callable, us-central1, nodejs24, 256 MB — única entrada de la tabla |
+| El panel, sin huérfanos | `cazador-de-puertas`: 6 puntos, cada uno con control positivo (>0) y negativo (0 con un símbolo inventado) |
+| Presupuesto de lecturas | **Cero.** La callable no lee Firestore; `arrayUnion`/`arrayRemove` son ciegos |
+
+Sigue bloqueado, y documentado con su causa: **3.7** (probar contra el
+emulador local — el *discovery* de Functions no completa en esta máquina,
+aislado con medición: el mismo `lib/index.js` carga en 1,2 s como archivo
+real) y **4.3** (probar la callable en producción con un usuario real —
+mintear un token de prueba pide `iam.serviceAccountTokenCreator`, que el
+clasificador frena por "Permission Grant"). Los dos detallados en
+[ADR 015](../architecture/decisions/015-fotos-del-panel.md).
+
+**Y el 2026-09-22 el dueño lo usó, y salieron TRES defectos que ninguna
+verificación de esta sesión podía ver** — uno de ellos refuta al `ACTIVE` de la
+tabla de arriba: el preflight de `procesarFoto` da **403 sin un solo header de
+CORS**, así que el panel no la puede llamar y **la foto todavía no se puede
+subir**. Los otros dos son de uso: el formulario desperdicia la pantalla, y
+cargar un vino con su foto son **tres gestos** —guardar, volver a entrar y
+subir, publicar— cuando para el que lo usa es un solo acto. Los tres se
+asentaron primero sin repararlos, a propósito: el del CORS pedía un
+otorgamiento de permiso, y los otros dos eran decisiones de diseño, no parches
+adentro de la tarea que los encontró.
+
+**El 2026-09-23 el dueño pidió repararlos.** El del CORS se intentó por acá
+—dos veces, la segunda con autorización explícita— y las dos lo frenó el
+clasificador de permisos, que es un bloqueo de configuración y no algo que
+una autorización en el chat destrabe; **lo corrió el dueño a mano, y quedó
+RESUELTO y verificado con los mismos tres controles** (`curl`, en *Lo que
+quedó abierto*). Los otros dos están **escritos** (ADR 015 §5 y §6): el
+formulario usa dos columnas en escritorio, y cargar, subir la foto y publicar
+pasan a ser un solo gesto — **desplegados el 2026-09-23** (v0.29.0, ver la
+entrada de arriba), **sin que nadie los haya mirado renderizados todavía.**
+
+
 ## Salió el 2026-09-24 (más tarde), al construirse HU-05.4
 
 Sale la de "EP-03 queda cerrada" (2026-09-22): con la de los movimientos de stock sumada

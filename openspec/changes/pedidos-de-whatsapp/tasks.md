@@ -31,36 +31,36 @@
 ## 5. Revisión y deploy del backend
 
 - [x] 5.1 `revisor-pagos` sobre reglas + `functions` + `contratos`, **antes del commit**. Corregir lo ALTO y MEDIO; anotar el resto con su disparador
-- [ ] 5.2 Commit del backend (`commit`), `gh workflow run ci.yml -f alcance=tests` y leer la resta contra la corrida anterior
-- [ ] 5.3 Deploy de reglas; verificar con la API de Rules (idéntico byte a byte, control positivo y negativo)
-- [ ] 5.4 Deploy de `functions --only functions:crearOrdenDelPanel`; verificar con la API de Cloud Functions (`ACTIVE`, v2, callable) y los tres controles: preflight 204, `POST` anónimo 401 JSON, función inventada 404
-- [ ] 5.5 **Correr la consulta de la bandeja** contra producción y confirmar que los dos índices de `ordenes` existen y resuelven
+- [x] 5.2 Commit del backend (`commit`), `gh workflow run ci.yml -f alcance=tests` y leer la resta contra la corrida anterior
+- [x] 5.3 Deploy de reglas; verificar con la API de Rules (idéntico byte a byte, control positivo y negativo)
+- [x] 5.4 Deploy de `functions --only functions:crearOrdenDelPanel`; verificar con la API de Cloud Functions (`ACTIVE`, v2, callable) y los tres controles: preflight 204, `POST` anónimo 401 JSON, función inventada 404
+- [x] 5.5 **Correr la consulta de la bandeja** contra producción y confirmar que los dos índices de `ordenes` existen y resuelven. **Las seis consultas FALLABAN: el índice estaba declarado y nunca desplegado.** Se desplegó (los 3 quedaron `READY`) y las seis corren; el control negativo sigue fallando
 
 ## 6. El panel: dominio y datos
 
-- [ ] 6.1 `domain/`: `Orden`, `ItemDeOrden`, `PedidoACargar`, `LineaACargar`, `FalloDePedidos`, `RepositorioDePedidos`
-- [ ] 6.2 `data/documento_de_la_orden.dart`: mapeo Firestore → `Orden`, `null` en un documento roto
-- [ ] 6.3 `data/repositorio_de_pedidos_firebase.dart`: la callable, la bandeja (`limit(25)`, sin `snapshots()`), el detalle por id
-- [ ] 6.4 Tests de Dart puros: el mapeo con documentos rotos, la traducción de cada código de error, `LineaACargar` que no pasa el stock, un `idPedido` que no cambia
-- [ ] 6.5 `pedidos_providers.dart`
+- [x] 6.1 `domain/`: `Orden`, `ItemDeOrden`, `PedidoACargar`, `LineaACargar`, `FalloDePedidos`, `RepositorioDePedidos`
+- [x] 6.2 `data/documento_de_la_orden.dart`: mapeo Firestore → `Orden`, `null` en un documento roto
+- [x] 6.3 `data/repositorio_de_pedidos_firebase.dart`: la callable, la bandeja (`limit(25)`, sin `snapshots()`), el detalle por id
+- [x] 6.4 Tests de Dart puros: el mapeo con documentos rotos, la traducción de cada código de error, `LineaACargar` que no pasa el stock, un `idPedido` que no cambia
+- [x] 6.5 `pedidos_providers.dart`
 
 ## 7. El panel: presentación, de la hoja a la página
 
-- [ ] 7.1 `textos_de_pedidos.dart` (pasar por `voz` los que ve la familia)
-- [ ] 7.2 Bandeja: `fila_de_pedido`, `selector_de_estado`, `lista_de_pedidos`, `pantalla_de_pedidos` (reemplaza la vacía)
-- [ ] 7.3 Detalle: `seccion_de_items`, `seccion_de_contacto`, `pagina_del_pedido`
-- [ ] 7.4 Cargar: `renglon_de_linea`, `elegir_vinos`, `datos_de_entrega`, `pagina_de_cargar_pedido`
-- [ ] 7.5 Rutas en `rutas.dart` y `enrutador.dart`; el acceso «Cargar un pedido» desde la bandeja
-- [ ] 7.6 Los 4 hooks del panel sobre cada archivo nuevo con **ruta absoluta**; el canario con `Colors.red` bloquea; `dart format` y `dart analyze lib test` limpios
+- [x] 7.1 `textos_de_pedidos.dart` (pasar por `voz` los que ve la familia)
+- [x] 7.2 Bandeja: `fila_de_pedido`, `selector_de_estado`, `lista_de_pedidos`, `pantalla_de_pedidos` (reemplaza la vacía)
+- [x] 7.3 Detalle: `seccion_de_items`, `seccion_de_contacto`, `pagina_del_pedido`
+- [x] 7.4 Cargar: `renglon_de_linea`, `elegir_vinos`, `datos_de_entrega`, `pagina_de_cargar_pedido`
+- [x] 7.5 Rutas en `rutas.dart` y `enrutador.dart`; el acceso «Cargar un pedido» desde la bandeja
+- [x] 7.6 Los 4 hooks del panel sobre cada archivo nuevo con **ruta absoluta**; el canario con `Colors.red` bloquea; `dart format` y `dart analyze lib test` limpios
 
 ## 8. Cierre
 
-- [ ] 8.1 Borrar `textoOcultarMovimientos`
-- [ ] 8.2 `cazador-de-puertas`: cada símbolo nuevo con quien lo abra, control negativo con uno inventado
-- [ ] 8.3 `presupuesto-lecturas` sobre la bandeja y el detalle
-- [ ] 8.4 Vault: ADR 018 (sección *Verificación*), `_index.md` (tope 5), `EP-06`/`EP-10`, `overview.md`, `changelog`
-- [ ] 8.5 Commit, CI `alcance=panel`, `publicar.sh preview` → canario discriminante → `promover` → `verificar`
-- [ ] 8.6 Decir qué **no** se verificó: la carga real por un usuario, y que nadie lo miró renderizado
+- [x] 8.1 Borrar `textoOcultarMovimientos`
+- [x] 8.2 `cazador-de-puertas`: cada símbolo nuevo con quien lo abra, control negativo con uno inventado
+- [x] 8.3 `presupuesto-lecturas` sobre la bandeja y el detalle
+- [x] 8.4 Vault: ADR 018 (sección *Verificación*), `_index.md` (tope 5), `EP-06`/`EP-10`, `overview.md`, `changelog`
+- [x] 8.5 Commit, CI `alcance=panel`, `publicar.sh preview` → canario discriminante → `promover` → `verificar`
+- [x] 8.6 Decir qué **no** se verificó: la carga real por un usuario, y que nadie lo miró renderizado
 
 ## 9. Lo que encontró `revisor-pagos` (2026-09-24, ver ADR 018)
 
@@ -68,6 +68,6 @@
 - [x] 9.2 Núcleo: `sin-precio` y precio absurdo; la firma del pedido ENTERO (`firmaDelPedido`)
 - [x] 9.3 Transacción: `already-exists` con el número, un movimiento de venta por línea, `timeoutSeconds: 120`. Emulador 27/27, con **mutación** de la firma y del movimiento
 - [x] 9.4 Reglas: `estadoEntrega` uno de los seis y no borrable, notas ≤ 1000, `actualizadaEn` una hora. Suite 83/83 **en serie**, con mutación
-- [ ] 9.5 Stock: el aviso de *vendidas sin despachar* en la hoja de corrección (dominio, datos, presentación) y la venta en la hoja de movimientos
-- [ ] 9.6 Panel: `already-exists` con número manda a abrir el pedido; el selector marca *«no está en la tienda»*
-- [ ] 9.7 ADR 018: sección *Verificación* con lo que se corrió y lo que **no** se pudo verificar
+- [x] 9.5 Stock: el aviso de *vendidas sin despachar* en la hoja de corrección (dominio, datos, presentación) y la venta en la hoja de movimientos
+- [x] 9.6 Panel: `already-exists` con número manda a abrir el pedido; el selector marca *«no está en la tienda»*
+- [x] 9.7 ADR 018: sección *Verificación* con lo que se corrió y lo que **no** se pudo verificar

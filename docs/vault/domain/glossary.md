@@ -206,6 +206,27 @@ Los dos ejes independientes del ciclo de vida. Definidos en
 [ADR 002](../architecture/decisions/002-estados-de-orden.md). **No hay un campo
 `estado`**: el rótulo que se muestra sale de `proyectarEstadoPublico()`.
 
+### por_fuera
+Un valor del eje `estadoPago`: **el cobro que el sistema no sigue**. Es el de un
+pedido de WhatsApp, que se cobra por fuera y del que el panel no ve nada
+([ADR 018 §3](../architecture/decisions/018-pedidos-de-whatsapp.md)). **Es
+terminal y nace así**: nada sale de ahí ni llega ahí después, y por eso **no
+dispara `entroEnPagada`** ni cae en *entregada impaga*. No significa *«pagado»*:
+significa *«no lo miramos»*. El estado público que le corresponde al recién
+cargado es `por_preparar`.
+
+### Origen
+De dónde vino una Orden: `whatsapp` o `vidriera`. **Lo fija el servidor según qué
+callable se llamó**, nunca el pedido: decide una regla de plata —la caja de seis
+no aplica a WhatsApp— y si lo declarara quien llama, un comprador se la saltearía
+diciendo *«whatsapp»*. Determina el estado de pago con el que nace
+(`estadoDePagoInicial`).
+
+### Total de lista
+La suma de los precios **de lista** de los ítems de un pedido de WhatsApp. **No es
+lo que se cobró**: un precio arreglado por chat puede ser otro y el panel no lo
+guarda (ADR 018 §6). Ninguna pantalla lo llama *«cobrado»*.
+
 ### Precio
 **Entero, en centavos de ARS.** Nunca float, nunca string, nunca "con IVA" en un
 campo y "sin IVA" en otro sin decir cuál es cuál en el nombre.

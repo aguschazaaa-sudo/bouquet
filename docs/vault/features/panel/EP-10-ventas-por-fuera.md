@@ -2,6 +2,15 @@
 
 > Hito 2, **primero** · **Workflow D** · [volver al mapa](overview.md)
 
+> **HU-10.1 construida el 2026-09-24**, en el change
+> [`pedidos-de-whatsapp`](../../../../openspec/changes/pedidos-de-whatsapp/proposal.md):
+> la decisión, con sus alternativas y su presupuesto de lecturas, está en
+> [ADR 018](../../architecture/decisions/018-pedidos-de-whatsapp.md). **Lo que
+> quedaba «abierto» acá se decidió:** el pago de estos pedidos es un valor nuevo,
+> `por_fuera` (§3); el pedido guarda **el precio de lista**, no el arreglado por
+> chat (§6). Lo que **no** se puede todavía: cancelar ni despachar un pedido
+> (EP-07), y por eso un pedido mal cargado no sale de la bandeja (§10).
+
 **Por qué subió:** el dueño contestó que **sí hay ventas por WhatsApp**
 (2026-09-16). Esta épica pasó de *con disparador* al principio del hito 2.
 

@@ -1,9 +1,10 @@
 # ADR 018 — Los pedidos de WhatsApp: cargarlos, y verlos
 
 - **Fecha:** 2026-09-24
-- **Estado:** aceptada el 2026-09-24; **en construcción**. Lo que está escrito,
-  desplegado y verificado se anota al final, en *Verificación*, tarea por tarea,
-  y no en esta línea
+- **Estado:** aceptada y **desplegada el 2026-09-24**, en el orden reglas → índices
+  → `crearOrdenDelPanel` → panel. **Verificada por bytes y por API cruda; nadie
+  la usó todavía ni miró el panel renderizado** (ver *Verificación*, al final, y
+  sobre todo lo que NO se pudo verificar)
 - **Decide:** cómo nace una Orden que no pasó por la vidriera —qué guarda, qué
   estado de pago le calza, quién la puede crear— y cómo la ve el panel
 - **Historias:** HU-10.1 ([EP-10](../../features/panel/EP-10-ventas-por-fuera.md)),
@@ -351,3 +352,28 @@ las líneas, **no** dentro de `entrega`: ahí los ignora, sin que lleguen a la O
 el 5; **no aplican** el 3 ni el 6; **siguen abiertos para la vidriera** el 4 y el 5; el 7
 (las suites sin CI) **empeora**: ahora son tres suites manuales, y se corren **en
 serie**, porque comparten emulador (medido: en paralelo fallaron 8 casos ajenos).
+
+## Verificación (2026-09-24)
+
+Cada fila dice **cómo** se verificó; un job verde no prueba nada.
+
+| Qué | Cómo |
+|---|---|
+| El contrato | `contratos` **205 → 235 tests, +30 exactos** (CI `36066035601`, `suite_ts`); el JSON regenerado y `auditar_estados.mjs` en verde; 36 pares. **Mutado**: cambiar un par de la proyección rompe exactamente 1 caso |
+| Las reglas | 23 casos de `ordenes` + 60 de `productos` = **83/83, en serie**. **Mutadas** (sin tope en `list`; `estadoPago` escribible; `estadoEntrega` con default; notas sin tope): cada mutación rompe **exactamente** el caso que la prueba. Desplegadas: ruleset `e3ea5dc9` **idéntico byte a byte** al archivo local (22.162 bytes), con `limit <= 50` en 2 y una colección inventada en 0 |
+| ⚠️ **Los índices** | Estaban **declarados y nunca desplegados**: la API dio `FAILED_PRECONDITION` en las seis consultas de la bandeja. `firebase deploy --only firestore:indexes` → los 3 `READY` → **las seis corren**, y el control negativo (`orderBy total`, sin índice) **sigue fallando**, así que la prueba discrimina. Con 0 pedidos: prueba que la consulta resuelve, no el orden con datos |
+| La callable | Emulador de Firestore, **27 casos con concurrencia real** (números consecutivos, dos pedidos por el mismo stock, el mismo `idPedido` a la vez, la carrera contra `moverStock`). **Mutada** en cuatro puntos: sin la rama del marcador → 5 casos; sin la baranda de stock → 4; una firma que ignora la entrega → 3; sin el movimiento de venta → 3. En producción, con la API cruda: `ACTIVE`, GEN_2, nodejs24, **timeout 120 s** (la opción llegó); preflight **204** con `allow-origin`; `POST` anónimo **401 JSON `UNAUTHENTICATED`**; función inventada **404**; `moverStock` y `procesarFoto` intactas |
+| El panel | CI `alcance=panel` (corrida `36070069772`, commit `6efec1c`): `flutter analyze` **No issues found**, `suite_dart` **285 → 395**, build web. Los 4 hooks sobre **41 archivos con ruta absoluta**: 164 corridas, 0 bloqueos; los tres canarios (`Colors.red`, 211 líneas, import de `data/`) **bloquean** |
+| El deploy del panel | `publicar.sh preview` → canal → **canario discriminante**: `Sumar un vino`, `Cargar el pedido` y `Cobro por fuera` pasan de **0 en live a ≥ 1**; el texto viejo del placeholder de `/pedidos` (`van a aparecer los pedidos`) pasa de **1 a 0**; control positivo (`Usar como principal`) en 1 y uno inventado en 0 → `promover` → los 4 hashes iguales, control negativo, `noindex`, commit publicado `6efec1c` |
+| Sin huérfanos | Un script determinista deriva 312 símbolos de los archivos que cambiaron y cuenta quién los referencia **fuera de su archivo y fuera de los tests**, buscando cada uno **sólo en su lenguaje**. Controles: uno usado > 0, uno inventado = 0. **0 huérfanos míos**; 2 espejos de Dart sin uso (`estadoDePagoInicial`, `precioMaximo`) **se borraron**. Un primer intento de la auditoría dio un cero falso: dos símbolos existen con el mismo nombre en TypeScript y en Dart, y un uso en el otro lenguaje los daba por abiertos |
+| Lecturas | `presupuesto-lecturas` contra el código: ~1.200/día (2,4 %), ~4.300 con lo que ya gasta el panel (8,7 %). Corrigió tres cosas de este ADR y dos rutas (ver *Presupuesto* y §9) |
+
+### Lo que NO se verificó
+
+- ⚠️ **Nadie llamó a `crearOrdenDelPanel` como un usuario real.** Mintear un token lo frena el clasificador de permisos. Está probada contra el emulador con concurrencia y desde afuera con los tres controles, pero **el `Admin SDK` contra el Firestore real, con la cuenta de servicio y un claim de verdad, lo va a probar la primera persona que cargue un pedido** (como pasó con `moverStock`, que se verificó cuando alguien repuso stock).
+- ⚠️ **Nadie miró el panel renderizado**: ni el formulario, ni la bandeja, ni el detalle. Se sabe que compila, que pasa el análisis y que sus bytes son los que se publicaron; **no que se entienda**. No se hizo el arranque por CDP porque la máquina tenía ~700 MB libres y el servidor de análisis ya se había caído por memoria.
+- **El aviso de la hoja de corrección y su provider compartido** (`pedidosAbiertosProvider`, vivo 2 minutos) **no tienen test automático**: `flutter_riverpod` no carga bajo `dart test`. Lo que se prueba es la cuenta pura (`pedidosAbiertosDe`) y los textos; que dos hojas seguidas hagan **una** lectura se razonó, no se midió.
+- **Las rutas hermanas** (`/pedidos/nuevo`, `/pedidos/:id`) resuelven la duda del informe sobre las lecturas de más **por diseño**; no se contaron las lecturas de una apertura por URL directa.
+- **La bandeja con pedidos**: hay 0 en producción.
+- **Los textos que ve la familia** no pasaron por el dueño, y **no se le preguntó** si un pedido de WhatsApp puede ser de un vino que la tienda no muestra (se decidió que sí, §5).
+- **Sin EP-07 el aviso de §9 no es fiable**, y **un pedido mal cargado no se puede sacar** (§10). Son limitaciones de diseño, no de verificación, y son lo primero que hay que resolver.

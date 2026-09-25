@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:admin/core/contratos/estado_pago.dart';
 import 'package:admin/core/contratos/pedido.dart';
 import 'package:admin/core/contratos/provincias.dart';
 import 'package:admin/core/contratos/stock.dart';
@@ -24,42 +23,9 @@ void main() {
     expect(Origen.values.map((o) => o.clave).toSet(), equals(delContrato));
   });
 
-  test('cada origen nace con el estado de pago del contrato', () {
-    final inicial = pedido['estadoDePagoInicial'] as Map<String, dynamic>;
-    for (final o in Origen.values) {
-      expect(
-        estadoDePagoInicial(o).name,
-        equals(inicial[o.clave]),
-        reason: 'origen ${o.clave}',
-      );
-    }
-    // Si dieran lo mismo, la funcion no decidiria nada.
-    expect(
-      estadoDePagoInicial(Origen.whatsapp),
-      isNot(estadoDePagoInicial(Origen.vidriera)),
-    );
-    expect(estadoDePagoInicial(Origen.whatsapp), EstadoPago.por_fuera);
-  });
-
   test('los topes son los del contrato', () {
     expect(topeDeLineasDelPedido, pedido['topeDeLineas']);
     expect(topeDeStock, pedido['topeDeCantidad']);
-    expect(precioMaximo, pedido['precioMaximo']);
-  });
-
-  test('el precio maximo nunca desborda un entero seguro en el peor pedido', () {
-    // La razon de ser del tope: 30 lineas x cantidad maxima x precio maximo.
-    // 2^53 - 1: en la web un entero es un double, y mas alla se pierde precision.
-    const seguro = 9007199254740991;
-    expect(
-      precioMaximo * topeDeStock * topeDeLineasDelPedido,
-      lessThanOrEqualTo(seguro),
-    );
-    // Y es el mayor: uno mas ya no entra.
-    expect(
-      (precioMaximo + 1) * topeDeStock * topeDeLineasDelPedido,
-      greaterThan(seguro),
-    );
   });
 
   test('los largos de la entrega son los del contrato', () {

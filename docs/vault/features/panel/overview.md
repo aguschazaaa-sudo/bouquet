@@ -8,7 +8,9 @@
   principal* el 2026-09-24**, change `panel-foto-principal`) y EP-05 entera (2026-09-23 HU-05.1 ·
   HU-05.2 · HU-05.3; **HU-05.4 el 2026-09-24**, **sin openspec, a pedido del dueño**: el estado de esas
   cuatro NO se calcula con el `grep` de abajo porque no tienen change — el ADR
-  016 es su especificación)** — el estado no se tilda acá, se calcula con el
+  016 es su especificación). **Hito 2, primer tramo (2026-09-24, change
+  `pedidos-de-whatsapp`, [ADR 018](../../architecture/decisions/018-pedidos-de-whatsapp.md)):
+  HU-10.1, HU-06.1 y HU-06.2** — el estado no se tilda acá, se calcula con el
   `grep` de abajo
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
@@ -106,9 +108,17 @@ un acople que no se ve en la tabla: **la reposición de stock (HU-05.1) y
 la segunda en escribirse descubre que la primera no dejó lugar para su
 transacción.
 
-⚠️ **Los requerimientos del hito 2 se escriben junto con el spec de
-`crearOrden`, no antes.** El panel lee lo que esa función escribe, y la forma
-de la Orden todavía no está cerrada: el `Envío`, el correo, el seguimiento.
+⚠️ **Los requerimientos del hito 2 se escriben junto con la callable que crea la
+Orden, no antes.** El panel lee lo que esa función escribe. **La forma de la Orden
+se cerró el 2026-09-24 con `crearOrdenDelPanel`** ([ADR 018 §2](../../architecture/decisions/018-pedidos-de-whatsapp.md)),
+y los requerimientos de HU-10.1, 06.1 y 06.2 están en el change
+`pedidos-de-whatsapp`. **Siguen abiertos** el `Envío` cotizado, el correo y el
+seguimiento: son de EP-07 y de la vidriera.
+
+⚠️ **El hito 2 no está entregado con esto.** Se puede cargar un pedido y verlo, pero
+**no avanzarlo**: sin EP-07 los pedidos se acumulan en `sin_preparar`, la bandeja
+cuesta 25 lecturas por apertura y el aviso de stock de la hoja de corrección no es
+fiable (ADR 018 §9). **EP-07 es lo que sigue.**
 
 ### Los habilitadores
 

@@ -2,12 +2,21 @@
 
 > Hito 2 · Workflow A · [volver al mapa](overview.md)
 
+> **HU-06.1 y HU-06.2 construidas el 2026-09-24**, en el change
+> [`pedidos-de-whatsapp`](../../../../openspec/changes/pedidos-de-whatsapp/proposal.md)
+> ([ADR 018 §7](../../architecture/decisions/018-pedidos-de-whatsapp.md)): entraron
+> porque sin ellas cargar un pedido no se podía verificar en pantalla. **HU-06.3, 06.4
+> y 06.5 siguen sin construirse.** En 06.2 **queda afuera *cuántas cajas y cuánto
+> pesan***: pide espejar `bultosDelPedido` en Dart y hoy nada lo consume; lo trae
+> HU-07.2.
+
 **Objetivo:** que el operador sepa, al abrir el panel, qué hay que preparar
 hoy y qué está trabado.
 
-**Depende de:** `crearOrden`. Hasta que exista no hay una sola orden que
-mostrar, y la forma del `Envío` no está cerrada: **los requerimientos de esta
-épica se escriben junto con el spec de `crearOrden`**.
+**Depende de:** una Orden que mostrar. Desde el 2026-09-24 la escribe
+`crearOrdenDelPanel` ([ADR 018 §2](../../architecture/decisions/018-pedidos-de-whatsapp.md)
+fija su forma); la de la vidriera (`crearOrden`) escribirá **la misma**. La forma
+del `Envío` cotizado sigue sin cerrarse: `envio` es `null` en un pedido de WhatsApp.
 
 ---
 

@@ -60,7 +60,8 @@ dicho, y las cuentas las da un script.
 **Catálogo dejó de estar vacío el 2026-09-17**: se ven todos los vinos
 —publicados y no—, se buscan escribiendo, y las bodegas se cargan, se corrigen
 y se borran con una baranda que no deja despublicar sin querer. Son **EP-02
-entera y HU-03.1**. Pedidos sigue vacío y lo dice: es el hito 2.
+entera y HU-03.1**. ~~Pedidos sigue vacío y lo dice: es el hito 2.~~ **Desde el 2026-09-24 se cargan y se ven
+pedidos de WhatsApp**, primer tramo del hito 2 (primera entrada de abajo).
 
 ~~**Cargar un vino está escrito desde el 2026-09-18 y todavía NO desplegado**~~
 **Desplegado el 2026-09-21**: HU-03.2 a HU-03.4, reglas (`0310466f`) y panel
@@ -73,6 +74,50 @@ el deploy del panel y que alguien cargue y publique un vino real.
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### Pedidos de WhatsApp: se cargan y se ven, pero todavía no se pueden avanzar (2026-09-24)
+
+**Desplegado —reglas, índices, `crearOrdenDelPanel` y panel— y verificado por bytes y por
+API cruda (v0.36.3, commit `6efec1c`). Nadie lo usó y nadie miró el panel renderizado.**
+Change [`pedidos-de-whatsapp`](../../openspec/changes/pedidos-de-whatsapp/proposal.md), con la
+decisión y su presupuesto de lecturas en
+[ADR 018](architecture/decisions/018-pedidos-de-whatsapp.md). **HU-10.1, HU-06.1 y HU-06.2**:
+el primer tramo del hito 2. Cargar un pedido que llegó por WhatsApp descuenta el stock, le da
+un número y lo deja en una bandeja por estado de entrega, con su detalle.
+
+**`crearOrdenDelPanel` es la tercera Cloud Function y la primera que CREA una Orden.** Descuenta
+el stock, reserva el número y escribe la Orden en una transacción, donde **el documento es su
+propio marcador de idempotencia**. **El origen lo fija el servidor**, no el pedido. El pago de un
+pedido de WhatsApp es un valor nuevo, **`por_fuera`** (terminal, no dispara `entroEnPagada`, no
+cae en *entregada impaga*): la proyección pasó de 30 a 36 pares (**decisión mía**, ADR 018 §3).
+
+**`revisor-pagos` corrió antes del commit: 14 hallazgos, 1 ALTO.** El ALTO era el bloqueante que
+[ADR 016](architecture/decisions/016-mover-el-stock.md) había dejado escrito: contar el depósito y
+corregir **pisa lo vendido sin despachar**. Y dos que ninguna prueba mía veía: **un reintento con
+la dirección corregida devolvía «éxito» sin guardar el cambio**, y **la regla `update` dejaba a un
+admin borrar `estadoEntrega`**, con lo que la orden desaparecía de toda bandeja. Los 14, uno por
+uno, en el ADR.
+
+**Y verificar destapó tres cosas más, cada una con una prueba que la habría dejado pasar:**
+
+| Qué | Cómo se vio |
+|---|---|
+| ⚠️ **La bandeja estaba rota en producción**: los índices de `ordenes` estaban *declarados* y nunca *desplegados* | Correr las seis consultas contra la API: `FAILED_PRECONDITION` en todas. Con los índices desplegados corren, y el control negativo sigue fallando. **Un índice declarado no prueba nada** |
+| Las rutas `nuevo` y `:id` eran **hijas** de `/pedidos`, así que se apilaban sobre una bandeja que seguía viva | `presupuesto-lecturas`: abrir por URL directa la armaba abajo (25 lecturas de más) y volver tras cargar mostraba la lista vieja, sin el pedido nuevo. Ahora son hermanas |
+| **El aviso de la hoja de corrección mandaba a restar de más** | Al leer ese informe caí en que **el panel todavía no puede marcar un despacho**: un pedido cuyas botellas ya salieron sigue «abierto». El texto ahora da el dato y las dos salidas |
+
+⚠️ **Lo que este tramo NO resuelve, y es lo primero que sigue:**
+
+- **Sin EP-07 los pedidos no salen de `sin_preparar`.** Se cargan y se ven, pero no se pueden
+  despachar ni cancelar. La bandeja cuesta 25 lecturas por apertura desde el segundo día, el aviso de
+  stock no es fiable y **un pedido mal cargado o duplicado no se puede sacar**: puede costar vino.
+- **Nadie llamó a la callable como usuario real** (mintear un token lo frena el clasificador) **ni miró
+  el panel**: la máquina tenía ~700 MB libres y el servidor de análisis ya se había caído. La primera
+  carga real la va a probar el dueño.
+- **Con la preview de la vidriera martillada, la cuota no entra**, y ya no entraba: este cambio la pasa
+  por ~2 puntos. Lo que hay que recortar es la preview.
+
+Verificación completa —qué se corrió, cómo, y qué no— en la sección final del ADR.
 
 ### HU-05.4: los movimientos de stock se leen — y el hito 1 queda escrito entero (2026-09-24)
 
@@ -257,85 +302,17 @@ nuevas en 0 antes y 1 después, una vieja en 1 antes y 0 después—. **Sigue si
 mirarlo nadie renderizado.**
 
 
-### EP-04: las fotos del panel, desplegadas — y el dueño encontró que la callable no se puede llamar (2026-09-22)
-
-**HU-04.1, HU-04.3 y HU-04.4 construidas** (grupos 1-8 del change
-[`panel-fotos-de-un-vino`](../../openspec/changes/panel-fotos-de-un-vino/proposal.md)),
-con el porqué en [ADR 015](architecture/decisions/015-fotos-del-panel.md).
-HU-04.2 (reordenar fotos) queda afuera, con disparador — ver *Lo que está
-pendiente*.
-
-**El hallazgo central: el clasificador de packshot se midió y se REFUTÓ.**
-`trim()` y la luminosidad de borde separan el control negativo sintético
-(botella sobre una mesa) de la mayoría de los 19 packshots reales del seed,
-pero `nieto-senetiner-bonarda.png` —un packshot legítimo, ya en el catálogo—
-puntúa PEOR que el control negativo en las dos medidas. **Ningún umbral sobre
-el archivo distingue una foto de cámara de un packshot sin marcar como
-sospechosa una foto que ya está bien.** Por eso el panel no adivina: dibuja la
-foto exactamente como la va a dibujar la vidriera —papel + `multiply`— y deja
-que el operador mire.
-
-**`procesarFoto`, primera Cloud Function del proyecto, desplegada y
-`ACTIVE`**, verificado con la API cruda de Cloud Functions, no con el texto
-del CLI: el primer intento dio **exit 0** y `functions:list` mostraba la
-function, pero la API decía `"state": "FAILED"`, `CloudRunServiceNotFound` —
-`@bouquet/contratos` es un symlink de workspace que nunca se publicó a npm, y
-Cloud Build corre sin él. Resuelto empaquetando `contratos` DENTRO del bundle
-con `esbuild` y sacándolo de `package.json` del todo. **Cuarto intento:
-`ACTIVE`.**
-
-**El panel está escrito, con los 6 puntos de `cazador-de-puertas`
-confirmados** —control positivo y negativo cada uno—: `procesarFoto` la llama
-`repositorio_de_fotos_firebase.dart:73`, `SeccionDeFotos` cuelga de
-`enrutador.dart` → `PaginaDelVino` → `formulario_del_vino.dart:155`, y los dos
-providers nuevos tienen call site real.
-
-**Y el panel se desplegó y se verificó en vivo el mismo día.** CI
-`alcance=panel` (corrida `35780172218`) → `publicar.sh preview` → `promover`
-→ `verificar`: los 4 hashes byte a byte iguales entre el canal y
-`bouquet-vinos.web.app`, y un canario propio —tres strings nuevas de
-`textos_de_fotos.dart`, sin tildes— en **0** apariciones en el `main.dart.js`
-vivo antes de promover y **3** después. Quedan dos verificaciones que sólo
-puede hacer el dueño: **subir una foto real a un vino real y mirarla en la
-tienda** (10.1) y **decir si la previsualización le sirve** (10.2) — es la
-única pregunta que decide si alguna vez hace falta el recorte de fondo.
-
-| Qué | Cómo |
-|---|---|
-| El clasificador refutado | 19 packshots reales + 1 control negativo sintético, medidos con `trim()` y luminosidad de borde. El legítimo puntúa peor que el sintético en las dos medidas |
-| La tubería no diverge | `functions/test/foto/tuberia.test.ts`: mismo SHA-256 entre el seed (subproceso real) y `tuberia.ts`, con control negativo (mutar un número la rompe) |
-| La callable, en producción | API cruda de Cloud Functions: `state: ACTIVE`, v2, callable, us-central1, nodejs24, 256 MB — única entrada de la tabla |
-| El panel, sin huérfanos | `cazador-de-puertas`: 6 puntos, cada uno con control positivo (>0) y negativo (0 con un símbolo inventado) |
-| Presupuesto de lecturas | **Cero.** La callable no lee Firestore; `arrayUnion`/`arrayRemove` son ciegos |
-
-Sigue bloqueado, y documentado con su causa: **3.7** (probar contra el
-emulador local — el *discovery* de Functions no completa en esta máquina,
-aislado con medición: el mismo `lib/index.js` carga en 1,2 s como archivo
-real) y **4.3** (probar la callable en producción con un usuario real —
-mintear un token de prueba pide `iam.serviceAccountTokenCreator`, que el
-clasificador frena por "Permission Grant"). Los dos detallados en
-[ADR 015](architecture/decisions/015-fotos-del-panel.md).
-
-**Y el 2026-09-22 el dueño lo usó, y salieron TRES defectos que ninguna
-verificación de esta sesión podía ver** — uno de ellos refuta al `ACTIVE` de la
-tabla de arriba: el preflight de `procesarFoto` da **403 sin un solo header de
-CORS**, así que el panel no la puede llamar y **la foto todavía no se puede
-subir**. Los otros dos son de uso: el formulario desperdicia la pantalla, y
-cargar un vino con su foto son **tres gestos** —guardar, volver a entrar y
-subir, publicar— cuando para el que lo usa es un solo acto. Los tres se
-asentaron primero sin repararlos, a propósito: el del CORS pedía un
-otorgamiento de permiso, y los otros dos eran decisiones de diseño, no parches
-adentro de la tarea que los encontró.
-
-**El 2026-09-23 el dueño pidió repararlos.** El del CORS se intentó por acá
-—dos veces, la segunda con autorización explícita— y las dos lo frenó el
-clasificador de permisos, que es un bloqueo de configuración y no algo que
-una autorización en el chat destrabe; **lo corrió el dueño a mano, y quedó
-RESUELTO y verificado con los mismos tres controles** (`curl`, en *Lo que
-quedó abierto*). Los otros dos están **escritos** (ADR 015 §5 y §6): el
-formulario usa dos columnas en escritorio, y cargar, subir la foto y publicar
-pasan a ser un solo gesto — **desplegados el 2026-09-23** (v0.29.0, ver la
-entrada de arriba), **sin que nadie los haya mirado renderizados todavía.**
+> ⚠️ **"EP-04: las fotos del panel, desplegadas — y el dueño encontró que la callable no se puede llamar (2026-09-22)" se movió a
+> [`changelog/_log.md`](changelog/_log.md#ep-04-las-fotos-del-panel-desplegadas-y-el-dueño-encontró-que-la-callable-no-se-puede-llamar-2026-09-22)
+> el 2026-09-24**, al construirse los pedidos de WhatsApp y llegar el dashboard a 6
+> entradas. El porqué de cada decisión de EP-04 sigue en
+> [ADR 015](architecture/decisions/015-fotos-del-panel.md). Lo que sigue vigente y no
+> vive en otro lado: **el clasificador de packshot se midió y se REFUTÓ** (ningún
+> umbral sobre el archivo distingue una foto de cámara de un packshot legítimo), así
+> que el panel dibuja la foto como la va a dibujar la vidriera y deja que el operador
+> mire; y **el `ACTIVE` de la API de Cloud Functions no prueba que una callable sea
+> alcanzable desde el navegador**: faltaba `allUsers` como invoker y el preflight daba
+> 403 sin un solo header de CORS.
 
 > ⚠️ **"EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda" (2026-09-22) se movió a
 > [`changelog/_log.md`](changelog/_log.md#ep-03-queda-cerrada-publicar-cambiar-el-precio-y-verse-en-la-tienda-2026-09-22)
@@ -439,6 +416,7 @@ entrada de arriba), **sin que nadie los haya mirado renderizados todavía.**
 | 009 | La botella **suelta** se vende sólo de a 6 — lo que viene en su propia caja **viaja solo** y no cuenta (§10); una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
 | 010 | El **código postal** decide cómo viaja el pedido —nadie queda fuera de zona—; se cobra con **Mercado Pago Checkout Pro** y el comprobante **no va por mail** | [010](architecture/decisions/010-el-checkout.md) |
 | 011 | Al panel se entra con mail o Google; **las cuentas las crea un script, sin contraseña**, que se niega a habilitar una cuenta sin el mail verificado; el permiso viaja en el token, y se publica **lo que compiló CI** | [011](architecture/decisions/011-entrar-al-panel.md) |
+| 018 | Un pedido de WhatsApp se carga por **una callable del panel** que fija el origen; su cobro es **`por_fuera`** (terminal); el documento es su propio marcador; **cada venta deja su movimiento** | [018](architecture/decisions/018-pedidos-de-whatsapp.md) |
 
 ---
 
@@ -467,11 +445,16 @@ Los que bloquean algo:
 | **4.3 — probar `procesarFoto` en producción con un usuario real, bloqueado por el clasificador — pero el 2026-09-23 alguien subió una foto desde el panel a `vino-de-prueba` y se sirve (200 `image/webp`), así que la callable anda en producción; queda la parte de 10.1 de mirarla en la tienda con un vino de verdad** (otorgar `iam.serviceAccountTokenCreator`, aunque temporal y reversible, es "Permission Grant") | Que el usuario autorice el rol temporal, o que el dueño suba una foto real (10.1) — lo que pase primero | 2026-09-22 |
 | ⚠️ **`corregir` pisa lo vendido y todavía no despachado** ([ADR 016](architecture/decisions/016-mover-el-stock.md), hallazgo 1): con 2 botellas vendidas sin despachar, el panel muestra 8, el operador cuenta 10 en la estantería y `visto` coincide — quedan 10 y se venden 2 que no existen. Hoy no se puede disparar (no hay órdenes). **Bloquea `crearOrden`**: la hoja tiene que mostrar *"N vendidas sin despachar"* | **Disparador: bloquea el deploy de `crearOrden`.** | 2026-09-23 |
 | ⚠️ **Tramo 4 y `moverStock`**: cada movimiento va a disparar la purga de la vidriera, y si cambia el balde de un vino publicado son **232 lecturas** —no las ~20 de ARQUITECTURA §6.3—; con 200 vinos publicados, hasta el 93 % de la cuota. **Cargar el stock ANTES de publicar lo evita** ([ADR 016](architecture/decisions/016-mover-el-stock.md)) | Cuando se escriba el tramo 4 | 2026-09-23 |
-| **Los 19 casos del emulador de `moverStock` y los de reglas no corren en CI** (hallazgo 8; agrava el 7 de ADR 008): hoy se corren a mano y una de las dos suites protege la plata | La sesión de `crearOrden` | 2026-09-23 |
+| **Las suites de emulador y de reglas no corren en CI, y hoy son tres**: `moverStock` (19 casos), `crearOrdenDelPanel` (27) y las reglas de `productos` y `ordenes` (83) (hallazgo 8; agrava el 7 de ADR 008). Una de ellas protege plata. ⚠️ **Se corren EN SERIE**: comparten emulador y con dos en paralelo fallaron 8 casos ajenos. **Disparador:** la sesión de `crearOrden` de la vidriera. Desde 2026-09-23. | el usuario |
 | **El tope de 5.000 unidades por vino** es una decisión mía, no del dueño ([ADR 016](architecture/decisions/016-mover-el-stock.md) §1) | Que el dueño lo confirme, o el primer vino real que se le acerque | 2026-09-23 |
 | **`/favicon.ico` da 404 en la vidriera** (único error de consola de la preview): la tienda no tiene favicon | Antes de publicar de verdad | 2026-09-23 |
 | ⚠️ **La cuenta de servicio de la preview tiene `firebase.sdkAdminServiceAgent`**, que incluye escritura y el CLI re-otorga en cada deploy ([ADR 017](architecture/decisions/017-preview-cerrada.md) §6). La vidriera sólo lee | **Antes de publicar de verdad**: una cuenta dedicada con `roles/datastore.viewer` | 2026-09-23 |
 | **Basic auth en la preview**, que cierra de verdad el hueco de que no hay puerta de edad | Si la URL se va a compartir fuera de la familia | 2026-09-23 |
+| ⚠️ **EP-07: despachar y cancelar un pedido.** Sin ella los pedidos se acumulan en `sin_preparar` (ADR 018 §10): la bandeja cuesta 25 lecturas por apertura desde el segundo día, el aviso de stock de la hoja de corrección no es fiable, y un pedido mal cargado no sale. **Lo que sigue** | **Bloquea que el hito 2 sirva.** Empezar por HU-07.6 (cancelar, Workflow D) y HU-07.1/07.2 | 2026-09-24 |
+| **Nadie llamó a `crearOrdenDelPanel` como usuario real** ni miró el panel renderizado (ADR 018, *Lo que NO se verificó*) | La primera carga real del dueño; y que la mire con sus ojos, en escritorio y en el teléfono | 2026-09-24 |
+| **¿Un pedido de WhatsApp puede ser de un vino que la tienda no muestra?** Se decidió que sí (ADR 018 §5) y el selector lo marca *«no está en la tienda»*; contradice ADR 014, donde despublicar es sacar de la venta | Que el dueño lo confirme o lo cambie (es una línea) | 2026-09-24 |
+| **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
+| **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
 
 ---
 
