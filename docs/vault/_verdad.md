@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-24 - commit `43596c1` - huella del cuerpo `1d3c2ce80b05`
+> **Generado:** 2026-09-25 - commit `c7226c2` - huella del cuerpo `74e87a4d7d9c`
 
 ---
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.36.3
+### Scripts de la raiz - `bouquet` 0.36.4
 
 | Script | Comando |
 |---|---|
@@ -96,7 +96,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/app/destino_test.dart` | 26 |
 | `apps/admin/test/core/contratos/catalogo_publico_test.dart` | 8 |
 | `apps/admin/test/core/contratos/estados_orden_test.dart` | 14 |
-| `apps/admin/test/core/contratos/pedido_test.dart` | 7 |
+| `apps/admin/test/core/contratos/pedido_test.dart` | 5 |
 | `apps/admin/test/core/contratos/plata_test.dart` | 4 |
 | `apps/admin/test/core/contratos/stock_test.dart` | 9 |
 | `apps/admin/test/core/contratos/telefono_test.dart` | 4 |
@@ -143,7 +143,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `scripts/acceso/acceso.test.mjs` | 11 |
 | `scripts/reglas/ordenes.test.mjs` | 16 |
 | `scripts/reglas/productos.test.mjs` | 60 |
-| **total** | **764** |
+| **total** | **762** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -406,4 +406,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 141. Archivos de test: 50. Casos de test: 764.
+Archivos de codigo recorridos: 141. Archivos de test: 50. Casos de test: 762.
