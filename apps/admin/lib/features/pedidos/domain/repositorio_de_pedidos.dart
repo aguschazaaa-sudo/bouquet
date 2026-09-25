@@ -1,9 +1,9 @@
 import '../../../core/contratos/despacho.dart';
-import '../../../core/contratos/estado_entrega.dart';
 import 'despacho_de_orden.dart';
 import 'orden.dart';
 import 'paso_de_entrega.dart';
 import 'pedido_a_cargar.dart';
+import 'vista_de_bandeja.dart';
 
 /// Cuantos pedidos trae la bandeja por vez (HU-06.1). Es el `limit` de la
 /// consulta: las reglas piden hasta 50 y la cuota se mide con este numero
@@ -93,15 +93,16 @@ class PedidoIncompleto extends DetalleDePedido {
 }
 
 /// Lo que el panel sabe hacer con los pedidos: cargar uno de WhatsApp, listar los
-/// que hay por estado de entrega, abrir uno (HU-10.1, HU-06.1, HU-06.2) y
-/// moverlo por el eje de entrega (EP-07).
+/// que hay por estado de entrega o los que requieren accion, abrir uno, buscarlo
+/// por numero (HU-10.1, HU-06.1 a HU-06.4), moverlo por el eje de entrega (EP-07)
+/// y anotarlo (HU-07.7).
 ///
 /// **El panel no crea una Orden**: las reglas lo niegan. Nacen por la callable
 /// `crearOrdenDelPanel`, que descuenta el stock y numera en una transaccion
 /// (ADR 018 §1). Y **no la cancela escribiendo**: cancelar devuelve stock, y lo
 /// hace la callable `cancelarOrden` (ADR 019).
 ///
-/// [cargar], [avanzar] y [cancelar] lanzan `FalloDePedidos`, nunca otra cosa y
+/// [cargar], [avanzar], [cancelar] y [anotar] lanzan `FalloDePedidos`, nunca otra cosa y
 /// nunca en silencio (HU-04.4).
 /// Los que leen dejan subir el error para que la pantalla lo dibuje como un
 /// fallo y no como "no hay pedidos".
@@ -109,18 +110,30 @@ abstract interface class RepositorioDePedidos {
   /// [pedido] ya viene con su `idPedido`, que vale para TODOS los intentos.
   Future<ResultadoDeCarga> cargar(PedidoACargar pedido);
 
-  /// Una pagina de los pedidos en [estado], los mas nuevos primero. Sin
-  /// [despuesDe] es la primera. **Una lectura, no un stream**: la bandeja se
-  /// actualiza a pedido (ARQUITECTURA §6.3).
-  Future<PaginaDePedidos> bandeja(EstadoEntrega estado, {DateTime? despuesDe});
+  /// Una pagina de los pedidos de [vista], los mas nuevos primero. Sin
+  /// [despuesDe] es la primera. **Una consulta, no un stream**: la bandeja se
+  /// actualiza a pedido (ARQUITECTURA §6.3). Cuesta una lectura por pedido que
+  /// trae, y una si no trae ninguno.
+  Future<PaginaDePedidos> bandeja(VistaDeBandeja vista, {DateTime? despuesDe});
 
   /// Un pedido por id: una lectura.
   Future<DetalleDePedido> detalle(String id);
+
+  /// Un pedido por su [numero], el que dice el comprador (HU-06.4): **una
+  /// lectura**, se encuentre o no. Un numero que no existe es
+  /// [PedidoInexistente], no un error.
+  Future<DetalleDePedido> porNumero(int numero);
 
   /// Escribe [paso] en el pedido [id]: **una escritura, cero lecturas**. Las
   /// reglas lo validan contra el estado de ahora: si otra persona lo movio
   /// mientras se miraba, se rechaza (`ErrorDePedido.cambioElPedido`).
   Future<void> avanzar(String id, PasoDeEntrega paso);
+
+  /// Guarda [nota] como las notas internas de [id] (HU-07.7); `null` las borra.
+  /// **Una escritura, cero lecturas**, y no toca el estado: anotar nunca pisa un
+  /// paso que otra persona dio mientras se escribia. La nota de otra persona SI
+  /// se pisa: gana la ultima (ADR 020 §3).
+  Future<void> anotar(String id, String? nota);
 
   /// Cancela [id] y devuelve su stock, por la callable `cancelarOrden`.
   /// Reintentar es seguro: un pedido ya cancelado es su propio marcador.

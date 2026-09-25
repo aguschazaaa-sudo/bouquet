@@ -27,7 +27,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { and, collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, or, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -443,5 +443,101 @@ describe('los marcadores y el contador son del servidor', () => {
     await assertFails(getDoc(doc(admin, 'contadores', 'ordenes')));
     await assertFails(setDoc(doc(admin, 'contadores', 'ordenes'), { ultimo: 100 }));
     await assertFails(updateDoc(doc(admin, 'contadores', 'ordenes'), { ultimo: 100 }));
+  });
+});
+
+// ------------------------------------------- requieren accion, buscar, anotar
+//
+// ADR 020 (HU-06.3, HU-06.4, HU-07.7).  Las reglas no cambiaron: estos casos
+// prueban que dejan pasar las TRES consultas nuevas del panel con su forma
+// real, y que la de *"Requieren accion"* trae exactamente los pares que la
+// proyeccion marca.  Los pares salen del JSON generado, igual que el `Dart`
+// (`tramosQueRequierenAccion`) los saca de su espejo: si la tabla cambia en
+// `contratos`, esta suite sigue midiendo contra la tabla nueva.
+
+/** Los tramos, como los arma el panel: por estado de entrega, con los pagos
+ *  que requieren accion, o sin filtro de pago si son todos. */
+function tramosQueRequierenAccion() {
+  const { pago, entrega, publico } = CONTRATO;
+  const accion = new Set(publico.requierenAccion);
+  const tramos = [];
+  for (const e of entrega.estados) {
+    const pagos = pago.estados.filter((p) => accion.has(publico.proyeccion[`${p}|${e}`]));
+    if (pagos.length === 0) continue;
+    tramos.push({ entrega: e, pagos: pagos.length === pago.estados.length ? null : pagos });
+  }
+  return tramos;
+}
+
+function consultaDeAccion(db, n = 25) {
+  const filtros = tramosQueRequierenAccion().map((t) =>
+    t.pagos === null
+      ? where('estadoEntrega', '==', t.entrega)
+      : and(where('estadoEntrega', '==', t.entrega), where('estadoPago', 'in', t.pagos)),
+  );
+  return query(coleccion(db), or(...filtros), orderBy('creadaEn', 'desc'), limit(n));
+}
+
+describe('ADR 020: requieren accion, buscar por numero y anotar', () => {
+  test('la consulta de "Requieren accion" trae EXACTAMENTE los pares con accion, lo mas nuevo primero', async () => {
+    const { pago, entrega, publico } = CONTRATO;
+    const accion = new Set(publico.requierenAccion);
+    const esperados = [];
+    let i = 0;
+    // Una orden por cada uno de los 36 pares, cada una un minuto mas nueva.
+    for (const p of pago.estados) {
+      for (const e of entrega.estados) {
+        i += 1;
+        const par = `${p}|${e}`;
+        await sembrar(`ordenes/par-${String(i).padStart(2, '0')}`, orden({
+          numero: i,
+          estadoPago: p,
+          estadoEntrega: e,
+          creadaEn: new Date(Date.UTC(2026, 8, 25, 12, i)),
+        }));
+        if (accion.has(publico.proyeccion[par])) esperados.push(par);
+      }
+    }
+    // Control positivo: hay pares con y sin accion, no una lista vacia por error.
+    assert.ok(esperados.includes('por_fuera|sin_preparar'));
+    assert.ok(!esperados.includes('por_fuera|entregada'));
+    assert.ok(tramosQueRequierenAccion().reduce((a, t) => a + (t.pagos?.length ?? 1), 0) <= 30);
+
+    const snap = await assertSucceeds(getDocs(consultaDeAccion(admin, 50)));
+    const traidos = snap.docs.map((d) => `${d.get('estadoPago')}|${d.get('estadoEntrega')}`);
+    assert.deepEqual([...traidos].sort(), [...esperados].sort());
+    const numeros = snap.docs.map((d) => d.get('numero'));
+    assert.deepEqual(numeros, [...numeros].sort((a, b) => b - a), 'los mas nuevos primero');
+  });
+
+  test('"Requieren accion" tambien exige limite, y un comprador no la corre', async () => {
+    await sembrar(`ordenes/${ID}`, orden());
+    await assertSucceeds(getDocs(consultaDeAccion(admin, 25)));
+    await assertFails(getDocs(consultaDeAccion(admin, 51)));
+    await assertFails(getDocs(consultaDeAccion(comprador, 25)));
+  });
+
+  test('buscar por numero: una igualdad con limit(1)', async () => {
+    await sembrar(`ordenes/${ID}`, orden({ numero: 41 }));
+    const por = (db, n, lim = 1) => query(coleccion(db), where('numero', '==', n), limit(lim));
+    const snap = await assertSucceeds(getDocs(por(admin, 41)));
+    assert.equal(snap.size, 1, 'control positivo');
+    assert.equal(snap.docs[0].id, ID);
+    const nada = await assertSucceeds(getDocs(por(admin, 999)));
+    assert.equal(nada.size, 0, 'un numero inventado no trae nada');
+    await assertFails(getDocs(query(coleccion(admin), where('numero', '==', 41))));
+    await assertFails(getDocs(por(comprador, 41)));
+  });
+
+  test('anotar con la forma del panel: nota + hora del servidor, y borrarla', async () => {
+    for (const estado of ['sin_preparar', 'despachada', 'entregada', 'cancelada']) {
+      await sembrar(`ordenes/${ID}`, orden({ estadoEntrega: estado }));
+      await assertSucceeds(updateDoc(ordenDe(admin), { notasOperador: 'llamar antes', actualizadaEn: serverTimestamp() }));
+      await assertSucceeds(updateDoc(ordenDe(admin), { notasOperador: deleteField(), actualizadaEn: serverTimestamp() }));
+    }
+    const snap = await getDoc(ordenDe(admin));
+    assert.equal(snap.get('notasOperador'), undefined, 'la nota se borro');
+    // Control negativo: anotar no puede colar otro campo.
+    await assertFails(updateDoc(ordenDe(admin), { notasOperador: 'x', total: 1 }));
   });
 });

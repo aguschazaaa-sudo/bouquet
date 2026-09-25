@@ -76,6 +76,32 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### Tercer tramo del hito 2: lo que requiere acción primero, buscar por número y notas (2026-09-25)
+
+**Escrito y commiteado (v0.38.0, `04a149f`); NO desplegado.** Sin openspec, a pedido del
+dueño: [ADR 020](architecture/decisions/020-accion-busqueda-y-notas.md) es la
+especificación. **HU-06.3, HU-06.4 y HU-07.7.**
+
+- **La bandeja abre en *"Requieren acción"*** (HU-06.3): un `OR` de tramos que salen de la
+  proyección —no escritos a mano—: lo que hay que preparar, las entregas fallidas, las
+  entregadas sin cobrar de la vidriera y las canceladas con pago. **Pide un índice nuevo**
+  `(estadoEntrega, estadoPago, creadaEn)`: el deploy es **reglas (índices) → panel**. Un
+  panel publicado antes que el índice abre la bandeja en `FAILED_PRECONDITION`.
+- **Buscar por número** (HU-06.4): una lectura, y el detalle se abre sin releer.
+- **Notas internas** (HU-07.7): las reglas ya las aceptaban; ahora hay pantalla. Si dos
+  personas anotan a la vez, **gana la última** (decisión mía, en el ADR).
+
+| Qué | Cómo |
+|---|---|
+| Las reglas | Emulador local: **40/40** (+4). El caso nuevo siembra los **36 pares** y corre la consulta real: trae exactamente los que la proyección marca. **Mutado** (sin el tramo de `fallida`), cae ese caso y ningún otro |
+| Las suites en CI | Corrida `36192553512`: Dart 420 → **432 (+12)**, emulador 158 → **162 (+4)** |
+| Compila | Corrida `36192938783`: `flutter analyze` **No issues found**, build web con artifact `panel-web` |
+
+⚠️ **Lo que falta para entregarlo:** merge a `main` y deploy **índices → panel** (`firebase deploy --only firestore:indexes`, correr la consulta de *"Requieren acción"* contra la API hasta que no dé `FAILED_PRECONDITION`, y recién ahí `publicar.sh preview` → canario → `promover`). La sesión no tenía credenciales de Firebase.
+
+**Quedan del hito 2:** HU-06.5 (push: infra entera, y su caso fuerte es la vidriera),
+HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).
+
 ### EP-07: los pedidos se preparan, se despachan y se cancelan devolviendo el stock (2026-09-25)
 
 **Desplegado el 2026-09-25 —reglas, `cancelarOrden` y panel (`f066c56`)— y verificado
@@ -229,110 +255,6 @@ Falta que el dueño cargue su catálogo, y eso no lo hace ningún código.
 y no hay emulador en la suite del panel: lo que corre es `conPrincipal`, no
 `runTransaction`. La concurrencia (otra persona sube una foto en el medio) queda
 verificada por razonamiento sobre el contrato del SDK, **no por una prueba**.
-
-### La vidriera tiene una preview cerrada, y `moverStock` ya se usó de verdad (2026-09-23)
-
-**Desplegada y verificada**: <https://bouquet-tienda--bouquet-vinos.us-east4.hosted.app>,
-en App Hosting, región `us-east4`, sin dominio, con `noindex` y `maxInstances: 1`.
-El porqué está en [ADR 017](architecture/decisions/017-preview-cerrada.md). Sin
-openspec, a pedido del dueño.
-
-⚠️ **NO es la publicación de la tienda, y los gates de deploy siguen abiertos**:
-no hay puerta de edad (por eso no puede ser pública), el contacto es el WhatsApp
-del desarrollador, el checkout no cobra y el dominio y el tramo 4 no existen.
-**"Cerrada" no significa protegida con contraseña**: quien tenga la URL la ve.
-
-**Lo que costó, y no se repite** (ADR 017 §3): el buildpack de App Hosting toma
-como raíz de la aplicación el `rootDir` y busca **ahí** el lockfile, no más
-arriba, así que **un workspace de npm no se despliega**: el build muere a los 18
-segundos con `fah/missing-lock-file` aunque el lockfile viaje en el zip. Se
-resolvió **desplegando una copia autocontenida** (`scripts/tienda/preparar_despliegue.mjs`):
-la tienda como app común, `contratos` adentro, y el lockfile **sembrado con el de
-la raíz** para que lo que se despliega sea lo que se probó. La documentación de
-Firebase no lo dice; se leyó el código del buildpack.
-
-**Lo que salió de verificar** (con control negativo cada uno):
-
-| Qué | Cómo |
-|---|---|
-| El rollout | API cruda: `-003` `SUCCEEDED` con el 100 %, `-001` y `-002` `FAILED`. El CLI dijo "complete" |
-| `noindex` | En las cinco páginas, dos 404 y un asset |
-| El catálogo | Firestore: 21 publicados, **los 21 nombres están en `/vinos`**. Se ve, renderizado por Chrome real en escritorio y en teléfono (390 px), con 0 fotos rotas |
-| **`moverStock` en producción** | **Alguien repuso 32 en `vino-de-prueba` a las 00:04 UTC** (21:04 en Argentina): `0 → 32`, con su marcador y el uid de quien lo hizo, **un solo movimiento, sin duplicados**. Es lo que no se pudo verificar antes |
-| Una foto real | El mismo vino tiene una foto subida desde el panel: 200 `image/webp` `immutable`, y se ve recortada sobre el papel en la ficha |
-
-⚠️ **Y verificar destapó que la receta del gate del checkout era un falso
-negativo**: `curl /pedido | grep data-checkout-simulado` da **0 con el gate
-cerrado**, porque el atributo lo dibuja `ElResumen`, que sólo existe con ítems
-en el carrito. Corregida en el código, en [ADR 010](architecture/decisions/010-el-checkout.md)
-y en la fila del gate; la comprobación válida está en
-`bash scripts/tienda/preview.sh verificar`.
-
-⚠️ **El techo de lecturas es el riesgo de esta preview**: alguien que la martille
-las 24 h lleva la cuota **compartida con el panel** al ~98 % (1.440
-reconstrucciones × ~34 lecturas). La apaga
-`firebase apphosting:backends:delete bouquet-tienda --project bouquet-vinos --force`.
-Vigilarla el día que se comparta la URL.
-
-> ⚠️ **"EP-05: mover el stock, desplegado y verificado por bytes — falta que el dueño lo use (2026-09-23)" se movió a
-> [`changelog/_log.md`](changelog/_log.md#ep-05-mover-el-stock-desplegado-y-verificado-por-bytes-falta-que-el-dueño-lo-use-2026-09-23)
-> el 2026-09-25**, al construirse EP-07 y llegar el dashboard a 6 entradas. El porqué
-> de cada decisión sigue en [ADR 016](architecture/decisions/016-mover-el-stock.md). Lo
-> que sigue vigente y no vive en otro lado: **`moverStock` se verificó en producción por
-> uso real** (`0 → 32` en `vino-de-prueba`, un solo movimiento) y **sigue faltando que
-> el dueño mire la pantalla y diga si le sirve**.
-
-> ⚠️ **"EP-04: las fotos del panel, desplegadas — y el dueño encontró que la callable no se puede llamar (2026-09-22)" se movió a
-> [`changelog/_log.md`](changelog/_log.md#ep-04-las-fotos-del-panel-desplegadas-y-el-dueño-encontró-que-la-callable-no-se-puede-llamar-2026-09-22)
-> el 2026-09-24**, al construirse los pedidos de WhatsApp y llegar el dashboard a 6
-> entradas. El porqué de cada decisión de EP-04 sigue en
-> [ADR 015](architecture/decisions/015-fotos-del-panel.md). Lo que sigue vigente y no
-> vive en otro lado: **el clasificador de packshot se midió y se REFUTÓ** (ningún
-> umbral sobre el archivo distingue una foto de cámara de un packshot legítimo), así
-> que el panel dibuja la foto como la va a dibujar la vidriera y deja que el operador
-> mire; y **el `ACTIVE` de la API de Cloud Functions no prueba que una callable sea
-> alcanzable desde el navegador**: faltaba `allUsers` como invoker y el preflight daba
-> 403 sin un solo header de CORS.
-
-> ⚠️ **"EP-03 queda cerrada: publicar, cambiar el precio y verse en la tienda" (2026-09-22) se movió a
-> [`changelog/_log.md`](changelog/_log.md#ep-03-queda-cerrada-publicar-cambiar-el-precio-y-verse-en-la-tienda-2026-09-22)
-> el 2026-09-24**, al construirse HU-05.4 y llegar el dashboard a 6 entradas. El porqué está en
-> [ADR 014](architecture/decisions/014-publicar-un-vino.md). Lo que sigue vigente y no vive en otro
-> lado: **falta que alguien publique un vino REAL y lo mire en la tienda** (los 20 son `muestra: true`),
-> y eso bloquea archivar `panel-publicar-un-vino`.
-
-> ⚠️ **"El producto se endureció, y la ficha lleva descripción" (2026-09-21) se movió a
-> [`changelog/_log.md`](changelog/_log.md#el-producto-se-endureció-y-la-ficha-lleva-descripción-2026-09-21)
-> el 2026-09-24**, al construirse la foto principal y llegar el dashboard a 6 entradas. El
-> porqué está en [ADR 014](architecture/decisions/014-publicar-un-vino.md). Lo que sigue
-> vigente y no vive en otro lado: **las reglas se midieron contra el emulador** (`matches()`
-> compara la cadena entera, `size()` cuenta caracteres) y **en producción hay 0 vinos reales**:
-> los 20 del seed son `muestra: true`.
-
-> ⚠️ **"Cargar un vino: escrito, probado contra el emulador" (2026-09-18) se movió a
-> [`changelog/_log.md`](changelog/_log.md#cargar-un-vino-escrito-probado-contra-el-emulador-sin-desplegar-2026-09-18)
-> el 2026-09-23**, al desplegarse la preview de la vidriera y llegar el dashboard a
-> 6 entradas. El porqué está en [ADR 013](architecture/decisions/013-cargar-un-vino.md).
-> Lo que sigue vigente y no vive en otro lado: **las reglas se probaron contra el
-> emulador, no se supusieron** (`matches()` compara la cadena entera; `size()` cuenta
-> caracteres, no bytes), y la suite de reglas tenía una trampa que la regla nueva
-> destapó (todas las altas usaban el mismo id, y los `assertFails` pasaban por el slug).
-
-> ⚠️ **"El catálogo se ve y las bodegas se cargan" (2026-09-17) se movió a
-> [`changelog/_log.md`](changelog/_log.md#el-catálogo-se-ve-y-las-bodegas-se-cargan-2026-09-17)
-> el 2026-09-23**, al escribirse EP-05 y llegar el dashboard a 6 entradas. El
-> porqué de cada decisión de EP-02 sigue en
-> [ADR 012](architecture/decisions/012-el-catalogo-del-panel.md). Lo que sigue
-> vigente de ella y no vive en otro lado: **`dart analyze` SÍ corre en esta
-> máquina** (`flutter analyze` no), y **dart2js escapa los no-ASCII**, así que
-> un canario con tilde da CERO en `main.dart.js` aunque el deploy haya llegado.
-
-> ⚠️ **"El panel tiene puerta" (2026-09-16) se movió a
-> [`changelog/_log.md`](changelog/_log.md#el-panel-tiene-puerta-entrar-sin-acceso-y-la-estructura-2026-09-16)
-> el 2026-09-22**, al construirse EP-04 y llegar el dashboard a 6 entradas. El
-> porqué de cada decisión de EP-01 sigue en
-> [ADR 011](architecture/decisions/011-entrar-al-panel.md), incluido el NO
-> REVERTIR de §6.
 
 ### Lo que quedó abierto
 

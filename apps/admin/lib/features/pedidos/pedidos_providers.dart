@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../core/contratos/estado_entrega.dart';
 import '../../core/firebase/firebase_providers.dart';
 import 'data/repositorio_de_pedidos_firebase.dart';
 import 'domain/orden.dart';
 import 'domain/repositorio_de_pedidos.dart';
+import 'domain/vista_de_bandeja.dart';
 
 /// El unico archivo de la feature que conoce la implementacion.
 ///
@@ -47,16 +47,16 @@ class Bandeja {
   );
 }
 
-/// La bandeja de un estado de entrega (HU-06.1). **Una lectura por apertura**, y
-/// otra por cada *"Ver mas"* o *"Actualizar"*: nunca un stream abierto
-/// (ARQUITECTURA §6.3, ADR 018 §7).
+/// La bandeja de una vista: un estado de entrega (HU-06.1) o lo que requiere
+/// accion (HU-06.3). **Una consulta por apertura**, y otra por cada *"Ver mas"* o
+/// *"Actualizar"*: nunca un stream abierto (ARQUITECTURA §6.3, ADR 018 §7).
 ///
 /// `autoDispose`: al salir de la pantalla se suelta, y volver a entrar lee de
 /// nuevo, asi que un pedido cargado recien aparece.
 class BandejaDePedidos
-    extends AutoDisposeFamilyAsyncNotifier<Bandeja, EstadoEntrega> {
+    extends AutoDisposeFamilyAsyncNotifier<Bandeja, VistaDeBandeja> {
   @override
-  Future<Bandeja> build(EstadoEntrega arg) async {
+  Future<Bandeja> build(VistaDeBandeja arg) async {
     final pagina = await ref.read(repositorioDePedidosProvider).bandeja(arg);
     return Bandeja.desde(pagina);
   }
@@ -74,7 +74,7 @@ class BandejaDePedidos
 }
 
 final bandejaProvider = AsyncNotifierProvider.autoDispose
-    .family<BandejaDePedidos, Bandeja, EstadoEntrega>(BandejaDePedidos.new);
+    .family<BandejaDePedidos, Bandeja, VistaDeBandeja>(BandejaDePedidos.new);
 
 /// El detalle de un pedido por id (HU-06.2): **una lectura**. Solo se usa
 /// cuando la pantalla no recibio la Orden ya cargada de la bandeja.

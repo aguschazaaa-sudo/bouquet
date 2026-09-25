@@ -6,7 +6,9 @@ import 'package:admin/features/pedidos/domain/entrega_escrita.dart';
 import 'package:admin/features/pedidos/domain/fallo_de_pedidos.dart';
 import 'package:admin/features/pedidos/domain/hace_cuanto.dart';
 import 'package:admin/features/pedidos/domain/linea_a_cargar.dart';
+import 'package:admin/features/pedidos/domain/vista_de_bandeja.dart';
 import 'package:admin/features/pedidos/presentation/textos_de_carga.dart';
+import 'package:admin/features/pedidos/presentation/textos_de_notas.dart';
 import 'package:admin/features/pedidos/presentation/textos_de_pedidos.dart';
 import 'package:test/test.dart';
 
@@ -56,6 +58,30 @@ List<String> _todosLosTextos() => [
       FalloDePedidos(e, actual: 5, numero: 7, productoId: 'x'),
       nombre: 'Malbec',
     ),
+  // ADR 020: la ficha de lo que requiere accion, el buscador y las notas.
+  for (final v in VistaDeBandeja.todas) ...[
+    textoDeLaVista(v),
+    textoVistaVacia(v),
+  ],
+  textoBuscarPorNumero,
+  textoBuscar,
+  textoBuscando,
+  textoNoEsUnNumero,
+  textoNoHayPedido(7),
+  textoPedidoConNumeroIncompleto(7),
+  textoNoSePudoBuscar,
+  textoNotas,
+  textoNotasSoloFamilia,
+  textoSinNotas,
+  textoEscribirNota,
+  textoEditarNota,
+  textoGuardarNota,
+  textoEjemploDeNota,
+  textoTituloDeLaNota(7),
+  textoNotaLarga(1000),
+  textoNotaGuardada(7, borrada: false),
+  textoNotaGuardada(7, borrada: true),
+  for (final e in ErrorDePedido.values) textoDelFalloDeNota(FalloDePedidos(e)),
   // Los rotulos que ve el operador en la bandeja y el detalle.
   for (final r in rotulosEstadoPublico.values) r.operador,
 ];
