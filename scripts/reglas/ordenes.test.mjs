@@ -405,7 +405,12 @@ describe('EP-07: una entrega que fallo lleva su motivo, y se vuelve a despachar'
   test('volver a despachar: con un despacho nuevo, y la falla queda escrita', async () => {
     await sembrar(`ordenes/${ID}`, orden({ estadoEntrega: 'fallida', entregaFallida: { motivo: 'nadie', en: new Date() } }));
     await assertSucceeds(updateDoc(ordenDe(admin), paso('despachada')));
-    const o = await entorno.withSecurityRulesDisabled(async (ctx) => (await getDoc(doc(ctx.firestore(), 'ordenes', ID))).data());
+    // `withSecurityRulesDisabled` NO devuelve lo que devuelve el callback: se lee
+    // a una variable de afuera (medido en CI, corrida 36184205692).
+    let o;
+    await entorno.withSecurityRulesDisabled(async (ctx) => {
+      o = (await getDoc(doc(ctx.firestore(), 'ordenes', ID))).data();
+    });
     assert.equal(o.estadoEntrega, 'despachada');
     assert.equal(o.entregaFallida.motivo, 'nadie', 'el despacho nuevo no borra por que fallo el anterior');
   });
