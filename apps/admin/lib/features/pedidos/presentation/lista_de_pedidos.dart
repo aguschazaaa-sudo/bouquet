@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/presentation/aviso.dart';
 import '../../../core/presentation/lista_vacia.dart';
 import '../domain/orden.dart';
+import '../domain/vista_de_bandeja.dart';
 import '../pedidos_providers.dart';
 import 'fila_de_pedido.dart';
 import 'textos_de_pedidos.dart';
 
-/// Los pedidos ya cargados de un estado, con *"Ver mas"* si hay mas (HU-06.1).
+/// Los pedidos ya cargados de una vista, con *"Ver mas"* si hay mas (HU-06.1,
+/// HU-06.3).
 ///
-/// **Una bandeja vacia dice que esta vacia** ([textoBandejaVacia]); y si hay
+/// **Una bandeja vacia dice que esta vacia** ([textoVistaVacia]); y si hay
 /// documentos que no se pudieron leer como pedido, **dice cuantos**
 /// ([textoIncompletos]): un pedido que desaparece de la lista en silencio es
 /// un pedido que nadie prepara.
 class ListaDePedidos extends StatelessWidget {
   const ListaDePedidos({
     super.key,
-    required this.estado,
+    required this.vista,
     required this.bandeja,
     required this.ahora,
     required this.alAbrir,
@@ -26,7 +27,7 @@ class ListaDePedidos extends StatelessWidget {
     required this.cargandoMas,
   });
 
-  final EstadoEntrega estado;
+  final VistaDeBandeja vista;
   final Bandeja bandeja;
   final DateTime ahora;
   final ValueChanged<Orden> alAbrir;
@@ -41,7 +42,7 @@ class ListaDePedidos extends StatelessWidget {
     if (bandeja.estaVacia) {
       return ListaVacia(
         icono: Icons.receipt_long_outlined,
-        texto: textoBandejaVacia(estado),
+        texto: textoVistaVacia(vista),
       );
     }
     return ListView(

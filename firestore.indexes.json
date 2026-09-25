@@ -33,6 +33,16 @@
       ]
     },
     {
+      "//": "Panel: 'Requieren accion' (HU-06.3, ADR 020). Un OR de tramos 'estadoEntrega == X AND estadoPago in [...]' ordenado por fecha: cada tramo necesita los dos ejes y el orden en un solo indice. El tramo sin filtro de pago (fallida) usa el de la bandeja. No se confia en el merge de los dos indices de abajo: un indice que falta se ve como una bandeja rota en produccion (ADR 018).",
+      "collectionGroup": "ordenes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "estadoEntrega", "order": "ASCENDING" },
+        { "fieldPath": "estadoPago", "order": "ASCENDING" },
+        { "fieldPath": "creadaEn", "order": "DESCENDING" }
+      ]
+    },
+    {
       "//": "Panel: cobranzas. Filtra por el eje de PAGO y ordena por fecha. Son dos ejes independientes (ADR 002), por eso son dos indices y no uno: una orden pagada-y-no-despachada y una despachada-y-no-cobrada se buscan desde pantallas distintas.",
       "collectionGroup": "ordenes",
       "queryScope": "COLLECTION",

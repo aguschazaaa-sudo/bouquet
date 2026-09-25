@@ -3,24 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/rutas.dart';
-import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/presentation/cargando.dart';
 import '../../../core/presentation/fallo_con_reintento.dart';
+import '../domain/vista_de_bandeja.dart';
 import '../pedidos_providers.dart';
+import 'buscador_de_pedido.dart';
 import 'lista_de_pedidos.dart';
-import 'selector_de_estado.dart';
+import 'selector_de_vista.dart';
 import 'textos_de_pedidos.dart';
 
-/// `/pedidos` — los pedidos por lo que hay que hacer con ellos (HU-06.1), y la
-/// puerta a cargar uno de WhatsApp (HU-10.1).
+/// `/pedidos` — los pedidos por lo que hay que hacer con ellos (HU-06.1,
+/// HU-06.3), el buscador por numero (HU-06.4) y la puerta a cargar uno de
+/// WhatsApp (HU-10.1).
 ///
 /// **Una lectura por apertura, y otra por *"Actualizar"* o *"Ver mas"***: la
 /// bandeja no escucha cambios en vivo, y por eso el boton existe
 /// (ARQUITECTURA §6.3: el riesgo de cuota es un stream sin `limit`).
 ///
-/// El estado elegido vive aca y no en un provider global: al salir de la
-/// pantalla se olvida, y volver empieza en *"Por preparar"*, que es lo que
-/// pregunta quien entra (*"¿que tengo que despachar hoy?"*).
+/// La vista elegida vive aca y no en un provider global: al salir de la
+/// pantalla se olvida, y volver empieza en *"Requieren acción"* (HU-06.3), que
+/// es lo que pregunta quien entra: *"¿que espera algo de mi?"*. Antes empezaba
+/// en *"Por preparar"*, que deja afuera una entrega fallida.
 class PantallaDePedidos extends ConsumerStatefulWidget {
   const PantallaDePedidos({super.key});
 
@@ -29,7 +32,7 @@ class PantallaDePedidos extends ConsumerStatefulWidget {
 }
 
 class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
-  EstadoEntrega _estado = EstadoEntrega.sin_preparar;
+  VistaDeBandeja _vista = const RequierenAccion();
   bool _cargandoMas = false;
   bool _verMasFallo = false;
 
@@ -39,7 +42,7 @@ class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
       _verMasFallo = false;
     });
     try {
-      await ref.read(bandejaProvider(_estado).notifier).verMas();
+      await ref.read(bandejaProvider(_vista).notifier).verMas();
     } catch (_) {
       // Lo ya cargado se conserva; se avisa. Un error que se pierde es un
       // boton que "no hace nada" (HU-04.4).
@@ -51,7 +54,7 @@ class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
 
   @override
   Widget build(BuildContext context) {
-    final bandeja = ref.watch(bandejaProvider(_estado));
+    final bandeja = ref.watch(bandejaProvider(_vista));
 
     return Column(
       children: [
@@ -70,7 +73,7 @@ class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
                   ),
                   IconButton(
                     tooltip: textoActualizar,
-                    onPressed: () => ref.invalidate(bandejaProvider(_estado)),
+                    onPressed: () => ref.invalidate(bandejaProvider(_vista)),
                     icon: const Icon(Icons.refresh),
                   ),
                   const SizedBox(width: 4),
@@ -83,10 +86,12 @@ class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
                 ],
               ),
               const SizedBox(height: 12),
-              SelectorDeEstado(
-                elegido: _estado,
-                alElegir: (e) => setState(() {
-                  _estado = e;
+              const BuscadorDePedido(),
+              const SizedBox(height: 12),
+              SelectorDeVista(
+                elegida: _vista,
+                alElegir: (v) => setState(() {
+                  _vista = v;
                   _verMasFallo = false;
                 }),
               ),
@@ -99,10 +104,10 @@ class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
             // bandeja vacia manda a cargar de nuevo lo que ya existe.
             AsyncError() => FalloConReintento(
               texto: textoNoSePudieronLeerLosPedidos,
-              alReintentar: () => ref.invalidate(bandejaProvider(_estado)),
+              alReintentar: () => ref.invalidate(bandejaProvider(_vista)),
             ),
             AsyncData(:final value) => ListaDePedidos(
-              estado: _estado,
+              vista: _vista,
               bandeja: value,
               ahora: DateTime.now(),
               alAbrir: (orden) =>

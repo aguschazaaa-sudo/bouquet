@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/contratos/estado_publico.dart';
 import '../../../core/presentation/aviso.dart';
 import '../domain/fallo_de_pedidos.dart';
+import '../domain/nota_del_pedido.dart';
 import '../domain/orden.dart';
 import '../domain/paso_de_entrega.dart';
 import '../pedidos_providers.dart';
@@ -12,15 +13,19 @@ import 'dialogo_de_entrega.dart';
 import 'hoja_de_cancelacion.dart';
 import 'hoja_de_despacho.dart';
 import 'hoja_de_falla.dart';
+import 'hoja_de_nota.dart';
 import 'seccion_de_items.dart';
 import 'seccion_de_la_entrega.dart';
+import 'seccion_de_notas.dart';
 import 'seccion_de_quien_y_donde.dart';
 import 'textos_de_entrega.dart';
+import 'textos_de_notas.dart';
 import 'textos_de_pedidos.dart';
 
 /// El cuerpo del detalle de un pedido (HU-06.2) y lo que se le puede hacer
-/// (EP-07): el estado arriba —de la proyeccion, nunca de mirar los dos campos—,
-/// que sigue, lo que ya paso, que lleva y a quien.
+/// (EP-07) y sus notas (HU-07.7): el estado arriba —de la proyeccion, nunca de
+/// mirar los dos campos—, que sigue, lo que ya paso, las notas, que lleva y a
+/// quien.
 ///
 /// Cada cambio **se guarda y despues se vuelve a leer** ([alCambiar]): la
 /// pantalla muestra lo que tiene el servidor, no lo que el panel cree que
@@ -46,6 +51,7 @@ class DetalleDelPedido extends ConsumerStatefulWidget {
 class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
   bool _ocupado = false;
   FalloDePedidos? _fallo;
+  String Function(FalloDePedidos) _textoDelFallo = textoDelFalloDeEntrega;
 
   Orden get _orden => widget.orden;
 
@@ -80,6 +86,22 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
     }
   }
 
+  Future<void> _anotar() async {
+    final texto = await HojaDeNota.mostrar(
+      context,
+      numero: _orden.numero,
+      actual: _orden.notasOperador,
+    );
+    if (texto == null) return;
+    final nota = notaAGuardar(texto);
+    // Sin cambios no se escribe: una escritura que no cambia nada igual cuesta.
+    if (nota == _orden.notasOperador) return;
+    await _hacer(() async {
+      await ref.read(repositorioDePedidosProvider).anotar(_orden.id, nota);
+      return textoNotaGuardada(_orden.numero, borrada: nota == null);
+    }, textoDelFallo: textoDelFalloDeNota);
+  }
+
   Future<void> _avanzar(PasoDeEntrega paso) => _hacer(() async {
     await ref.read(repositorioDePedidosProvider).avanzar(_orden.id, paso);
     return textoPasoHecho(paso, _orden.numero);
@@ -87,7 +109,10 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
 
   /// ⚠️ `try/catch`, no `try/finally` (HU-04.4): un error que se pierde deja un
   /// boton que "no hace nada".
-  Future<void> _hacer(Future<String> Function() cambio) async {
+  Future<void> _hacer(
+    Future<String> Function() cambio, {
+    String Function(FalloDePedidos) textoDelFallo = textoDelFalloDeEntrega,
+  }) async {
     if (_ocupado || !mounted) return;
     setState(() {
       _ocupado = true;
@@ -107,11 +132,12 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
       setState(() {
         _ocupado = false;
         _fallo = hayQueReleer(f) ? null : f;
+        _textoDelFallo = textoDelFallo;
       });
       if (hayQueReleer(f)) {
         avisos.showSnackBar(
           SnackBar(
-            content: Text(textoDelFalloDeEntrega(f)),
+            content: Text(textoDelFallo(f)),
             duration: const Duration(seconds: 8),
           ),
         );
@@ -149,10 +175,12 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
         const SizedBox(height: 16),
         SeccionDeLaEntrega(orden: _orden, ahora: DateTime.now()),
         if (fallo != null) ...[
-          Aviso(tono: TonoDelAviso.error, texto: textoDelFalloDeEntrega(fallo)),
+          Aviso(tono: TonoDelAviso.error, texto: _textoDelFallo(fallo)),
           const SizedBox(height: 12),
         ],
         BotonesDelPedido(orden: _orden, ocupado: _ocupado, alElegir: _elegir),
+        const SizedBox(height: 24),
+        SeccionDeNotas(orden: _orden, ocupado: _ocupado, alEditar: _anotar),
         const SizedBox(height: 24),
         SeccionDeItems(orden: _orden),
         const SizedBox(height: 24),
