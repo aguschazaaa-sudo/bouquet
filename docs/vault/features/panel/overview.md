@@ -14,7 +14,10 @@
   `grep` de abajo. **Hito 2, segundo tramo (2026-09-25, sin openspec,
   [ADR 019](../../architecture/decisions/019-preparar-despachar-y-cancelar.md)):
   HU-07.1, 07.2, 07.4, 07.5 y 07.6** — preparar, despachar, entregar, la entrega
-  fallida y cancelar devolviendo el stock
+  fallida y cancelar devolviendo el stock. **Hito 2, tercer tramo (2026-09-25, sin
+  openspec, [ADR 020](../../architecture/decisions/020-accion-busqueda-y-notas.md)):
+  HU-06.3, 06.4 y 07.7** — lo que requiere acción primero, buscar por número y las
+  notas internas
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)
@@ -121,8 +124,9 @@ seguimiento: son de EP-07 y de la vidriera.
 ~~⚠️ **El hito 2 no está entregado con esto.** Se puede cargar un pedido y verlo, pero
 **no avanzarlo**.~~ **Desde el 2026-09-25 se avanza** (ADR 019): un pedido se
 prepara, se despacha, se entrega o falla, y **uno mal cargado se cancela y su stock
-vuelve**. Lo que queda del hito 2: HU-07.3 y 07.7, HU-06.3 a 06.5 y EP-08 (el cobro
-de la vidriera, que espera a `crearOrden`).
+vuelve**. ~~Lo que queda del hito 2: HU-07.3 y 07.7, HU-06.3 a 06.5 y EP-08~~ **Desde el
+2026-09-25 (ADR 020) quedan HU-06.5, HU-07.3 y EP-08** (el cobro de la vidriera, que
+espera a `crearOrden`).
 
 ### Los habilitadores
 

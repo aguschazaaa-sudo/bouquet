@@ -5,8 +5,10 @@
 > **HU-06.1 y HU-06.2 construidas el 2026-09-24**, en el change
 > [`pedidos-de-whatsapp`](../../../../openspec/changes/pedidos-de-whatsapp/proposal.md)
 > ([ADR 018 §7](../../architecture/decisions/018-pedidos-de-whatsapp.md)): entraron
-> porque sin ellas cargar un pedido no se podía verificar en pantalla. **HU-06.3, 06.4
-> y 06.5 siguen sin construirse.** En 06.2 **queda afuera *cuántas cajas y cuánto
+> porque sin ellas cargar un pedido no se podía verificar en pantalla. **HU-06.3 y
+> HU-06.4 construidas el 2026-09-25**, sin openspec ([ADR 020](../../architecture/decisions/020-accion-busqueda-y-notas.md) es la especificación): la
+> bandeja abre en *"Requieren acción"* y un pedido se busca por número. **HU-06.5 sigue
+> sin construirse** (el aviso push: APK, FCM y un trigger; su caso fuerte es la vidriera). En 06.2 **queda afuera *cuántas cajas y cuánto
 > pesan***: pide espejar `bultosDelPedido` en Dart y hoy nada lo consume; lo trae
 > HU-07.2.
 
@@ -62,9 +64,10 @@ mí, **para** no olvidarme ninguno.
 - ⚠️ **Un pedido de WhatsApp no puede caer en *entregada impaga*.** Su cobro va
   por fuera y el panel no lo sigue: si cae ahí, queda marcado para siempre.
   Se resuelve en HU-10.1.
-- **Abierto:** ese estado combina los dos ejes, y no hay índice sobre una
-  proyección. Se filtra en memoria sobre lo cargado o con una consulta por eje;
-  se decide con el presupuesto en la mano.
+- ~~**Abierto:** ese estado combina los dos ejes, y no hay índice sobre una
+  proyección.~~ **Decidido** ([ADR 020](../../architecture/decisions/020-accion-busqueda-y-notas.md) §1): una ficha más, la primera y la que abre, con
+  un `OR` de tramos sacados de la proyección y un índice compuesto
+  `(estadoEntrega, estadoPago, creadaEn)`.
 
 ## HU-06.4 — Encontrar un pedido por su número
 

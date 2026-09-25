@@ -7,9 +7,10 @@
 > ([ADR 019](../../architecture/decisions/019-preparar-despachar-y-cancelar.md) es
 > la especificación). Lo que acá figuraba **abierto se decidió**: las reglas SÍ
 > validan la transición, con un test que lee la tabla del JSON (§2); preparar es
-> un botón propio (§4); el seguimiento es opcional (§4). **Siguen sin
-> construirse HU-07.3** (falta el número de la tienda y `/pedido/<numero>`) **y
-> HU-07.7** (las reglas ya aceptan las notas; falta la pantalla).
+> un botón propio (§4); el seguimiento es opcional (§4). **HU-07.7
+> construida el 2026-09-25** ([ADR 020](../../architecture/decisions/020-accion-busqueda-y-notas.md) §3: una escritura, sin tocar el estado; si dos
+> anotan a la vez gana la última). **Sigue sin construirse HU-07.3** (falta el número
+> de la tienda y `/pedido/<numero>`).
 
 **Objetivo:** que cada pedido avance por el eje de entrega sin saltearse un
 paso, y que el comprador sepa cuándo salió.
