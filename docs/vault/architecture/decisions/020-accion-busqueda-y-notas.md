@@ -139,6 +139,26 @@ que recortar es la preview (ADR 017), no esto.
 | **Buscar por nombre o teléfono del cliente** — no hay índice ni forma barata (sería un `>=` por prefijo sobre un campo anidado) | Que el dueño lo pida |
 | HU-06.5, HU-07.3 y EP-08 | Los de la tabla de *Contexto* |
 
-## Verificación
+## Verificación (2026-09-25)
 
-_Se completa con CI y el deploy._
+Cada fila dice **cómo**; un job verde no prueba nada.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `alcance=tests`, corrida `36192553512` sobre `04a149f`, **restadas contra la de ADR 019**: Dart 420 → **432 (+12 exactos)**; emulador 158 → **162 (+4)**. `guardas` cayó ahí por `_verdad.md` sin regenerar (823 → 839 casos), corregido en `8dde89e` |
+| ⭐ Que la consulta discrimine | El caso nuevo de `ordenes.test.mjs` siembra **los 36 pares** y corre el `OR` real: trae exactamente los que la proyección marca (control positivo `por_fuera|sin_preparar`, negativo `por_fuera|entregada`), en orden. **Mutado** —sin el tramo de `fallida`— cae ese caso y ningún otro (39/40, local) |
+| Las reglas no cambiaron | `firestore.rules` fuera del diff. Los casos nuevos prueban que dejan pasar las tres consultas con su forma real, con `limit` 51 y un comprador rechazados |
+| Sin huérfanos | `cazador-de-puertas`: cada símbolo nuevo con call site fuera de su archivo; cadena `enrutador → PantallaDePedidos → BuscadorDePedido · SelectorDeVista` y `→ PaginaDelPedido → DetalleDelPedido → SeccionDeNotas → HojaDeNota`. Controles: uno usado > 0, uno inventado = 0 |
+| Hooks | `probar_hooks.sh` 35/35; los 6 del panel sobre los 20 archivos Dart tocados: 0 bloqueos |
+| Compila | CI `alcance=panel`, corrida `36192938783` sobre `8dde89e`: el paso *Análisis estático* dice **No issues found**, build web de **35 archivos**, `main.dart.js` `687d027a…`, artifact `panel-web` (id `10888882706`). La lista de jobs, no el color: `suite_emulador` y `suite_ts` **skipped** en esa corrida a propósito (corrieron en la `36192553512`) |
+
+### Lo que NO se verificó
+
+- ⚠️ **NO está desplegado.** El contenedor de la sesión no tiene credenciales de
+  Firebase, y el cambio vive en la rama `claude/gracious-wright-5f3ahe`, no en
+  `main`. **El orden es índices → panel**: el índice nuevo tiene que estar
+  **construido** (correr la consulta, no mirar `READY`) antes de publicar el panel,
+  o *"Requieren acción"* —la ficha con la que abre— da `FAILED_PRECONDITION`.
+- `flutter analyze` local lo frenó el clasificador (CLAUDE.md lo prohíbe): el
+  análisis es el de CI.
+- **Nadie lo miró renderizado**, y en producción hay 0 pedidos.

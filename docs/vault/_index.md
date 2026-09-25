@@ -94,7 +94,10 @@ especificación. **HU-06.3, HU-06.4 y HU-07.7.**
 | Qué | Cómo |
 |---|---|
 | Las reglas | Emulador local: **40/40** (+4). El caso nuevo siembra los **36 pares** y corre la consulta real: trae exactamente los que la proyección marca. **Mutado** (sin el tramo de `fallida`), cae ese caso y ningún otro |
-| El panel | `dart test` de `pedidos/`: **127** (+12) |
+| Las suites en CI | Corrida `36192553512`: Dart 420 → **432 (+12)**, emulador 158 → **162 (+4)** |
+| Compila | Corrida `36192938783`: `flutter analyze` **No issues found**, build web con artifact `panel-web` |
+
+⚠️ **Lo que falta para entregarlo:** merge a `main` y deploy **índices → panel** (`firebase deploy --only firestore:indexes`, correr la consulta de *"Requieren acción"* contra la API hasta que no dé `FAILED_PRECONDITION`, y recién ahí `publicar.sh preview` → canario → `promover`). La sesión no tenía credenciales de Firebase.
 
 **Quedan del hito 2:** HU-06.5 (push: infra entera, y su caso fuerte es la vidriera),
 HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).
