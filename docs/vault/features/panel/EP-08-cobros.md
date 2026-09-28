@@ -5,11 +5,11 @@
 > **antes** que la pantalla ·
 > [volver al mapa](overview.md)
 
-> **HU-08.1 y HU-08.3 escritas el 2026-09-28 y probadas en CI con un pedido falso;
-> NO desplegadas** ([ADR 022](../../architecture/decisions/022-cobro-de-la-vidriera.md)):
-> faltan las credenciales de Mercado Pago, y sin ellas las dos functions no se
-> despliegan. Del lado del cobro que **recibe**: el aviso, la re-consulta y lo que
-> ve el panel. `crearOrden` y la preferencia (el lado que **crea**) siguen sin
+> **HU-08.1 y HU-08.3 construidas el 2026-09-28, probadas en CI con un pedido falso y
+> desplegadas con credenciales FALSAS** ([ADR 022](../../architecture/decisions/022-cobro-de-la-vidriera.md)):
+> funcionan hasta la consulta a Mercado Pago, que falla sin escribir nada hasta que el
+> dueño pase las claves reales. Del lado del cobro que **recibe**: el aviso, la
+> re-consulta y lo que ve el panel. `crearOrden` y la preferencia (el lado que **crea**) siguen sin
 > escribirse. **HU-08.4 sigue abierta**, pero un reembolso hecho **en** Mercado Pago
 > ya entra solo como `reembolsada` (ADR 022 §2).
 

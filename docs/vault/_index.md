@@ -76,10 +76,12 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
-### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — probado con un pedido falso, NO desplegado (2026-09-28)
+### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — desplegado con credenciales FALSAS (2026-09-28)
 
-**Escrito y probado en CI; NO desplegado: no hay credenciales de Mercado Pago** (Secret
-Manager de `bouquet-vinos` estaba vacío). Sin openspec, a pedido del dueño:
+**Desplegado el 2026-09-28 —functions (v0.40.1, `66442a9`) y panel (`1238d5e`)— con los
+secretos de Mercado Pago en valores FALSOS**, a pedido del usuario: el dueño todavía no pasó los
+de su cuenta. Verificado por respuesta y por bytes; **la conversación con Mercado Pago sigue sin
+probarse**. Sin openspec, a pedido del dueño:
 [ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md) es la especificación.
 **HU-08.1 y HU-08.3**: el webhook `avisoDeMercadoPago` (firma con el validador del SDK oficial →
 consulta → transacción con marcador), la callable `revisarPago` sobre el **mismo** núcleo, y en
@@ -102,11 +104,15 @@ las alertas y *"Volver a consultar a Mercado Pago"*.
 | Que discriminen | CI `36473359581`, **cuatro mutaciones** en una rama descartable (marcador por pago, sin monto, sin idempotencia, sin firma): cada una tumbó sólo sus casos — 9 en el emulador, 4 unitarios —, y los otros 175 del emulador siguieron verdes |
 | Presupuesto | ~130 lecturas al día con 20 ventas, **0,26 %**; el panel, 0 (todo viaja en el documento de la Orden) |
 
-⚠️ **Lo que sigue:** las credenciales **de prueba** de Mercado Pago (access token y secreto de
-firma) → secretos → deploy **functions → panel** → una compra en sandbox con los mismos
-controles. ⚠️ **Mientras falten los secretos, un `firebase deploy --only functions` a secas
-probablemente falle** (no medido): nombrar las functions. Y después, `crearOrden` con la
-preferencia: sin ella no existe un pedido de la vidriera, y nada de esto se ve.
+| El deploy | **El primer intento falló sin subir nada**: el SDK (CommonJS) adentro del bundle ESM no carga. Quedó externo, y CI ahora carga el bundle y cuenta las 6 functions (`36477703196`). Functions: sólo las dos nuevas; aviso sin firma **401**, firmado con el secreto falso **200**, con otro **401**, un pago **500** con `MPAuthenticationError` en el log (llegó a Mercado Pago, no escribió nada); `revisarPago` preflight **204**, anónimo **401 JSON**; inventada **404**. Panel: canario discriminante (3 cadenas 0 → 1, `COMMIT` `fde0b38` → `1238d5e`) → live con los 4 hashes iguales, `noindex` |
+
+⚠️ **Los secretos son FALSOS** (`valor=falso` en Secret Manager): con ellos el webhook contesta
+500 a todo pago y *"Volver a consultar"* dice *"Mercado Pago no contestó"* — sin escribir nada.
+**Lo que sigue:** las claves de la cuenta del dueño (de prueba primero) →
+`firebase functions:secrets:set` de las dos → **redesplegar `avisoDeMercadoPago` y
+`revisarPago`** (no toman solas la versión nueva) → registrar la URL del webhook en Mercado
+Pago → una compra en sandbox. Y después, `crearOrden` con la preferencia: sin ella no existe un
+pedido de la vidriera, y nada de esto se ve. **Nadie lo miró renderizado.**
 
 ### Cuarto tramo del hito 2: el aviso de que salió, por WhatsApp — y el tercero, desplegado (2026-09-28)
 
@@ -358,8 +364,7 @@ Los que bloquean algo:
 | **¿Un pedido de WhatsApp puede ser de un vino que la tienda no muestra?** Se decidió que sí (ADR 018 §5) y el selector lo marca *«no está en la tienda»*; contradice ADR 014, donde despublicar es sacar de la venta | Que el dueño lo confirme o lo cambie (es una línea) | 2026-09-24 |
 | **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
 | **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
-| ⚠️ **HU-08.1 y 08.3 viajan de POLIZÓN en el panel** ([ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md)): commiteadas, y el botón llama a `revisarPago`, que **no está desplegada**. El próximo deploy del panel, por el motivo que sea, las publica. **Hoy son inalcanzables**: `SeccionDelPago` sólo se dibuja en un pedido de la vidriera, y no existe ninguno hasta `crearOrden` (0 órdenes en producción). Antes de publicar el panel, confirmar que siga habiendo 0 pedidos de la vidriera | El próximo deploy del panel | 2026-09-28 |
-| ⚠️ **Los secretos de Mercado Pago no existen** y `avisoDeMercadoPago` / `revisarPago` los declaran: un `firebase deploy --only functions` a secas **probablemente falle entero** (no medido). Nombrar las functions hasta que existan | El próximo deploy de functions | 2026-09-28 |
+| ⚠️ **Los secretos de Mercado Pago son FALSOS** ([ADR 022 §7](architecture/decisions/022-cobro-de-la-vidriera.md)): `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_SECRETO_DE_FIRMA`, etiqueta `valor=falso`. Reemplazarlos con `firebase functions:secrets:set` y **redesplegar `avisoDeMercadoPago` y `revisarPago`**; después, registrar la URL del webhook en Mercado Pago | El dueño pasa las claves | 2026-09-28 |
 
 ---
 

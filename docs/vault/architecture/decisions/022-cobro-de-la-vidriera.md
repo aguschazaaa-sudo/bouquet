@@ -1,8 +1,9 @@
 # ADR 022 — El cobro de la vidriera, del lado que recibe: el aviso, la re-consulta y el pedido falso
 
 - **Fecha:** 2026-09-28
-- **Estado:** aceptada; **escrita y probada en CI con un pedido falso, NO desplegada**:
-  faltan las credenciales de Mercado Pago (ver *Lo que falta*)
+- **Estado:** aceptada; **desplegada el 2026-09-28 con credenciales FALSAS** (functions en
+  v0.40.1 `66442a9`, panel `1238d5e`), verificada por respuesta y por bytes. **La conversación
+  con Mercado Pago sigue sin probarse**: faltan las claves reales (ver *Lo que falta*)
 - **Decide:** cómo entra a una Orden lo que dice Mercado Pago de un pago —el aviso
   (webhook) y la re-consulta a mano—, con qué marcador, y qué ve el panel
 - **Historias:** HU-08.1 y HU-08.3 ([EP-08](../../features/panel/EP-08-cobros.md)).
@@ -167,12 +168,18 @@ comparte la cuenta, reintentar no la crea; si fue una carrera, `revisarPago` la 
 ### 7. Los secretos, y la trampa que dejan en el deploy de functions
 
 `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_SECRETO_DE_FIRMA`, en Secret Manager
-(`functions/src/pagos/secretos.ts`). **Hoy no existen.** Las dos functions se exportan igual
-en `index.ts`: son su call site real, y el panel llama a `revisarPago` por nombre.
+(`functions/src/pagos/secretos.ts`).
 
-⚠️ **Mientras falten, un `firebase deploy --only functions` a secas debería fallar** (el CLI
-valida los secretos de lo que despliega; **no medido**). Hasta que existan, un deploy de
-functions **nombra** las que despliega: `--only functions:cancelarOrden,...`.
+⚠️ **Desde el 2026-09-28 existen con valores FALSOS**, a pedido del usuario, para poder
+desplegar antes de que el dueño gestione los de su cuenta: aleatorios, con prefijo `FALSO-` y
+la etiqueta `valor=falso, reemplazar=con-el-del-cliente`. **No abren ningún camino a escribir
+una Orden**: con el token falso toda consulta a Mercado Pago da 401, así que el aviso contesta
+500 sin tocar nada —y aunque alguien adivinara el secreto de firma, que es aleatorio, la verdad
+sale de la consulta (regla 1 de ADR 003)—. `revisarPago` dice *"Mercado Pago no contestó"*.
+
+**Para poner los reales:** `firebase functions:secrets:set MERCADOPAGO_ACCESS_TOKEN` y
+`MERCADOPAGO_SECRETO_DE_FIRMA`, y **volver a desplegar `avisoDeMercadoPago` y `revisarPago`**:
+una function desplegada queda atada a la versión del secreto con la que se desplegó.
 
 ### 7 bis. El panel: *"El cobro"* en el detalle de un pedido de la vidriera
 
@@ -235,14 +242,12 @@ vuelve a leer sus dos documentos; con el tope de 10 intentos, el peor caso de un
 
 | Qué | Disparador |
 |---|---|
-| **Las credenciales de prueba** (access token y secreto de firma) en Secret Manager, y registrar la URL del webhook en Mercado Pago | El dueño las pasa |
-| **Verificar contra el sandbox**: una compra de prueba que llegue por aviso, `revisarPago` sobre ella, y los mismos controles de §8 con la API real | Las credenciales |
+| **Reemplazar los secretos FALSOS** por los de la cuenta del dueño (de prueba primero), **redesplegar las dos functions**, y registrar en Mercado Pago la URL del webhook: `https://us-central1-bouquet-vinos.cloudfunctions.net/avisoDeMercadoPago` | El dueño pasa las claves |
+| **Verificar contra el sandbox**: una compra de prueba que llegue por aviso, `revisarPago` sobre ella, y los mismos controles de §8 con la API real | Las claves reales |
 | **`crearOrden` de la vidriera y `crearPreferencia`**, con los nueve hallazgos de [ADR 008](008-catalogo-stock-y-carrito.md) y `external_reference = ordenId` | La sesión de `crearOrden` |
-| **Deploy**: reglas (sin cambios) → functions (con los secretos) → panel | Las credenciales |
 | **El trigger `entroEnPagada`** | Su primer efecto: el aviso push de HU-06.5 |
 | **Devolver la plata desde el panel** (HU-08.4). Hoy un reembolso hecho **en** Mercado Pago entra solo —total como `reembolsada`, parcial como *"Devuelto"*— y un segundo cobro se ve como alerta | HU-08.4 |
 | **Cambiar la traducción de un estado** (§2) no reevalúa los hechos ya marcados: sus marcadores dicen *"ya procesado"*. Si pasa, se revisan con un script | El primer cambio de traducción |
-| ⚠️ **El deploy de functions a secas** mientras falten los secretos (§7): **no medido** si falla entero | El próximo deploy de functions, antes de las credenciales |
 | **El link de HU-07.3** a `/pedido/<numero>` | `crearOrden` |
 
 ## Revisión de plata (Workflow D, antes del commit)
@@ -253,7 +258,7 @@ vuelve a leer sus dos documentos; con el tope de 10 intentos, el peor caso de un
 |---|---|---|
 | ALTO 1 | Un reembolso **parcial** deja `approved`: el marcador lo tomaba por repetido y bloqueaba reevaluarlo para siempre | Lo devuelto entra a la llave y a `pago.reembolsado` (§3); prueba de emulador propia |
 | ALTO 2 | Dos pagos distintos aprobados por el total: el segundo pisaba al primero, sin alarma. Al comprador le cobraron dos veces | Guarda `pago-duplicado` (§4) y `alertaDePago` (§4 bis); prueba de emulador propia |
-| MEDIO 3 | Los secretos que no existen bloquearían un deploy de functions a secas | Escrito en §7, en `secretos.ts`, en `index.ts` y en el `_index.md`, con disparador. **No medido** |
+| MEDIO 3 | Los secretos que no existen bloquearían un deploy de functions a secas | **Resuelto el mismo día**: los secretos existen con valores falsos (§7) |
 | MEDIO 4 | Un contracargo sólo dejaba un log | Deja `alertaDePago` (§4 bis). Que un cambio de traducción no reevalúe lo marcado queda en *Lo que falta* |
 | BAJO 5 | El botón de HU-08.3 no estaba enganchado todavía | Lo estaba escribiendo el agente de presentación; la cadena está en §7 bis |
 
@@ -268,12 +273,25 @@ Nada de esto corrió en esta máquina (7,9 GB): todo en CI, en ramas descartable
 | Que las pruebas discriminen | CI `36473359581`: **cuatro mutaciones** en una rama descartable —el marcador por pago de ADR 003, sin comparar el monto, sin mirar el marcador, sin verificar la firma—. Cada una tumbó **sólo** sus casos: 9 en el emulador (3 + 1 + 4 + 1) y 4 unitarios (2 + 1 + 1); los otros 175 del emulador siguieron verdes |
 | Sin huérfanos | 20 símbolos nuevos, cada uno en ≥ 2 archivos (el que lo define y el que lo usa); control inventado: 0. Cadena del panel en §7 bis |
 
+### El deploy (2026-09-28, con credenciales FALSAS)
+
+**El primer intento falló en el análisis, sin subir nada**: esbuild metía el SDK de Mercado Pago
+(CommonJS) adentro del bundle ESM y su `require("crypto")` no carga ahí (*"Dynamic require of
+crypto is not supported"*). Los tests no lo veían porque importan el TypeScript directo. Quedó
+**externo**, como `firebase-admin`, y **CI ahora construye el bundle, lo importa y cuenta las 6
+functions** (v0.40.1, corrida `36477703196`): ese error es el control negativo del paso nuevo.
+
+| Qué | Cómo |
+|---|---|
+| Los secretos | Creados con `gcloud secrets create`, versión 1, etiqueta `valor=falso`. El guardado coincide con el generado (hash comparado, sin imprimir el valor) |
+| Las functions | Sólo las dos nuevas (`--only functions:…`): las otras cuatro con su `updateTime` de antes. `avisoDeMercadoPago`: GET **405** (`solo POST`, nuestro código y no IAM), sin firma **401**; firmado con el secreto falso y otro tema **200** `ignorado: merchant_order` (control positivo de que el secreto se lee), firmado con otro secreto **401** (negativo); firmado un pago **500**, y el log dice **`MPAuthenticationError 401`**: la consulta llegó a Mercado Pago con el token falso y no se escribió nada. `revisarPago`: preflight **204** con `Access-Control-Allow-Origin` del panel, anónimo **401 JSON** `UNAUTHENTICATED`. Una function inventada: **404** |
+| El panel | Build `36476500980` → canal → canario discriminante (*"Volver a consultar a Mercado Pago"*, *"Para conciliar"*, `revisarPago`: 0 → 1; *"Por preparar"* 1 → 1; inventada 0 → 0; `COMMIT` `fde0b38` → `1238d5e`) → `promover` → live con los **4 hashes iguales** al canal, `noindex` |
+
 ### Lo que NO se verificó
 
 - **La conversación con Mercado Pago**: que la API real conteste con la forma que la cuenta en
-  memoria imita, y que firme como dice su documentación. Es lo primero con las credenciales.
-- **Nadie lo miró renderizado**: el panel no se desplegó (su function no existe en producción).
-- **El deploy de functions a secas sin los secretos** (§7): razonado, no medido.
+  memoria imita, y que firme como dice su documentación. Es lo primero con las claves reales.
+- **Nadie lo miró renderizado**, y en producción no hay un pedido de la vidriera que lo muestre.
 - **Los cuatro controles de ADR 003 contra el sandbox**: están probados contra el emulador, no
   contra Mercado Pago.
 
