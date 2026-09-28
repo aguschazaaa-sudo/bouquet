@@ -184,6 +184,20 @@ jobs:
           echo "tests ejecutados: contratos ${N:-0} - functions ${NF:-0}"
           [ "${N:-0}" -ge 268 ] || { echo "::error::corrieron ${N:-0} tests de contratos y el piso es 268"; exit 1; }
           [ "${NF:-0}" -ge 76 ] || { echo "::error::corrieron ${NF:-0} tests de functions y el piso es 76"; exit 1; }
+      - name: El bundle de functions CARGA, como lo carga el deploy
+        # Los tests importan el TypeScript directo; el deploy carga el BUNDLE de
+        # esbuild. El 2026-09-28 el SDK de Mercado Pago (CommonJS) metido adentro
+        # del bundle ESM rompia con "Dynamic require of crypto" y nadie lo vio
+        # hasta el deploy (ADR 022). Esto construye y carga igual que el CLI, y
+        # cuenta las functions exportadas: una que desaparece tambien es rojo.
+        run: |
+          npm --prefix functions run construir
+          node --input-type=module -e "
+            const m = await import('./functions/lib/index.js');
+            const n = Object.keys(m).sort();
+            console.log('functions en el bundle: ' + n.length + ' - ' + n.join(', '));
+            if (n.length !== 6) { console.error('::error::se esperaban 6 functions'); process.exit(1); }
+          "
 
   # ==========================================================================
   # SUITES CONTRA EL EMULADOR DE FIRESTORE - reglas y transacciones.
