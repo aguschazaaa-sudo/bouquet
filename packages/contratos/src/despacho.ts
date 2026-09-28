@@ -117,6 +117,14 @@ export interface PedidoDeCancelacion {
 const ID_DE_ORDEN = /^[A-Za-z0-9_-]{16,64}$/;
 const RESERVADO = /^__.*__$/;
 
+/**
+ * Si `x` puede ser el id de una Orden.  Lo usan tambien los pedidos de cobro
+ * (`pago.ts`): dos copias del mismo validador se desincronizan (LECCIONES 6.4).
+ */
+export function esIdDeOrden(x: unknown): x is string {
+  return typeof x === 'string' && ID_DE_ORDEN.test(x) && !RESERVADO.test(x);
+}
+
 function esObjeto(x: unknown): x is Record<string, unknown> {
   return typeof x === 'object' && x !== null && !Array.isArray(x);
 }
@@ -126,7 +134,7 @@ export function parsearPedidoDeCancelacion(entrada: unknown): Validacion<PedidoD
   if (!esObjeto(entrada) || !Object.keys(entrada).every((k) => k === 'ordenId' || k === 'motivo')) {
     return { ok: false, motivo: 'el pedido no tiene la forma {ordenId, motivo}' };
   }
-  if (typeof entrada.ordenId !== 'string' || !ID_DE_ORDEN.test(entrada.ordenId) || RESERVADO.test(entrada.ordenId)) {
+  if (!esIdDeOrden(entrada.ordenId)) {
     return { ok: false, motivo: 'ordenId invalido' };
   }
   if (typeof entrada.motivo !== 'string' || !(MOTIVOS_DE_CANCELACION as readonly string[]).includes(entrada.motivo)) {

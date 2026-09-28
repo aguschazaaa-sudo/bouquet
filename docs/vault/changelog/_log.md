@@ -9,6 +9,47 @@
 
 ---
 
+## Salió el 2026-09-28, al construirse el cobro de la vidriera (ADR 022)
+
+Sale la de "HU-05.4" (2026-09-24): con la de ADR 022 sumada al dashboard, era la
+más vieja de las cinco. El porqué sigue en
+[ADR 016 §6](../architecture/decisions/016-mover-el-stock.md).
+
+### HU-05.4: los movimientos de stock se leen — y el hito 1 queda escrito entero (2026-09-24)
+
+**Escrita; el deploy y su verificación van abajo.** Sin openspec, a pedido del dueño:
+[ADR 016 §6](../architecture/decisions/016-mover-el-stock.md) es la especificación. Un botón
+*"Ver los últimos movimientos"* en la sección de stock abre una hoja con los últimos 20:
+qué se hizo, de cuánto a cuánto (con la unidad), quién y cuándo. **Con esto las 24 historias
+del hito 1 están escritas.** Ninguna está cerrada: falta lo que sólo puede hacer el dueño.
+
+**Toca `firestore.rules`**: el deploy es reglas → panel. `read` de `movimientos` pasa de
+cerrado a `get` de admin y `list` de admin **con `limit` ≤ 50**; `write` sigue cerrado.
+Se construyó **antes de su disparador**, para cerrar el hito.
+
+**Workflow D: `revisor-pagos` corrió ANTES de commitear**: ningún ALTO ni MEDIO, cinco BAJO.
+Corregidos cuatro: el parser podía **ocultar la lista entera** con un solo documento roto
+(`NaN`, o un `en` que no fuera Timestamp) y la pantalla habría culpado a la conexión; el
+*"de 8 a 10"* de un vino de caja no decía que son **cajas** (60 botellas, no 10); dos pruebas
+que faltaban (la consulta real `orderBy('en').limit(20)` y que un `collectionGroup` siga
+rechazado); y una línea del ADR que decía *"nada lee movimientos"*. El quinto sigue abierto,
+con su porqué: `seed.mjs` reescribe `stock` y `borrar.mjs` deja huérfana la subcolección, así
+que sólo en los vinos de muestra la historia puede no explicar el número.
+
+| Qué | Cómo |
+|---|---|
+| Las reglas | Emulador: **60 casos** (+3). Un `get` y un `list` con `limit` pasan (control positivo); sin `limit`, con 51, un comprador, un anónimo y un `collectionGroup` rechazan. **Mutando** la exigencia de `limit`, fallan exactamente los 2 casos que la prueban |
+| El panel | `dart test` de `stock/`: **45 casos**; `dart analyze lib test`: **No issues found**. Incluye el movimiento REAL de producción (`reponer 32`, `0 → 32`) |
+| Sin huérfanos | 9 símbolos grepeados con call site fuera de su archivo; control negativo: 0. Ruta: `enrutador` → `PaginaDelVino` → `SeccionDelStock` → `HojaDeMovimientos` |
+| Presupuesto | **≤ 20 lecturas por apertura de la hoja, 0 con la hoja cerrada**; 20 aperturas al día = 400, el **0,8 %** de la cuota |
+
+**Dice `Vos` u `Otra persona`, no un nombre**: el movimiento guarda un uid. Mostrar nombres
+tocaría `moverStock`; queda con disparador en el ADR.
+
+**Sin probar:** la lectura de Firestore real desde el panel (`RepositorioDeMovimientosFirestore`
+no tiene prueba propia; el parser y los textos sí).
+
+
 ## Salió el 2026-09-28, al construirse HU-07.3
 
 Sale la de "La foto principal" (2026-09-24): con la de ADR 021 sumada al dashboard,

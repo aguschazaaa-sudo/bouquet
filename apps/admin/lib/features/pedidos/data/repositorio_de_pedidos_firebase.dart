@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../core/contratos/despacho.dart';
+import '../../../core/contratos/estado_pago.dart';
 import '../domain/fallo_de_pedidos.dart';
 import '../domain/lo_que_requiere_accion.dart';
 import '../domain/orden.dart';
@@ -233,6 +234,52 @@ class RepositorioDePedidosFirebase implements RepositorioDePedidos {
       ErrorDePedido.desconocido,
       codigo: 'respuesta-inesperada',
     );
+  }
+
+  /// La callable ya hizo la consulta y, si aplicaba, escribio `ordenes/{id}`
+  /// (`pago` y `estadoPago`) en su propia transaccion: **cero lecturas
+  /// nuevas de este lado**. La pantalla arma su vista con lo que devuelve
+  /// esto, sin releer el documento.
+  @override
+  Future<ResultadoDeRevision> revisarPago(String id) async {
+    final HttpsCallableResult<Object?> resultado;
+    try {
+      resultado = await _functions.httpsCallable('revisarPago').call<Object?>({
+        'ordenId': id,
+      });
+    } catch (e) {
+      throw comoFalloDePedidos(e, deLaCallable: falloDeRevision);
+    }
+    return _leerRevision(resultado.data);
+  }
+
+  /// Lo que devuelve la callable: `{ estadoPago, cambio, encontrados }`. Una
+  /// respuesta con otra forma es un [FalloDePedidos] `desconocido`, nunca una
+  /// excepcion de cast: la consulta a Mercado Pago PUDO haber ocurrido igual.
+  ResultadoDeRevision _leerRevision(Object? datos) {
+    if (datos is Map) {
+      final estadoPago = _estadoPagoDe(datos['estadoPago']);
+      final cambio = datos['cambio'];
+      final encontrados = datos['encontrados'];
+      if (estadoPago != null && cambio is bool && encontrados is num) {
+        return ResultadoDeRevision(
+          estadoPago: estadoPago,
+          cambio: cambio,
+          encontrados: encontrados.toInt(),
+        );
+      }
+    }
+    throw const FalloDePedidos(
+      ErrorDePedido.desconocido,
+      codigo: 'respuesta-inesperada',
+    );
+  }
+
+  static EstadoPago? _estadoPagoDe(Object? valor) {
+    for (final e in EstadoPago.values) {
+      if (e.name == valor) return e;
+    }
+    return null;
   }
 
   /// `is`, no `as`: una `creadaEn` que no sea Timestamp (un script, un futuro

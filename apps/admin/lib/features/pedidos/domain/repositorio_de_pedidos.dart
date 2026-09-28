@@ -1,4 +1,5 @@
 import '../../../core/contratos/despacho.dart';
+import '../../../core/contratos/estado_pago.dart';
 import 'despacho_de_orden.dart';
 import 'orden.dart';
 import 'paso_de_entrega.dart';
@@ -46,6 +47,26 @@ class ResultadoDeCancelacion {
   /// Lo que NO volvio al stock. Si no esta vacio, la pantalla lo dice: lo tiene
   /// que resolver una persona.
   final List<LineaSinReponer> sinReponer;
+}
+
+/// Lo que devolvio `revisarPago` (HU-08.3): el resultado de volver a
+/// preguntarle a Mercado Pago por esta Orden.
+class ResultadoDeRevision {
+  const ResultadoDeRevision({
+    required this.estadoPago,
+    required this.cambio,
+    required this.encontrados,
+  });
+
+  /// El estado de pago DESPUES de revisar. Puede ser el mismo que antes.
+  final EstadoPago estadoPago;
+
+  /// `true` si la revision movio [estadoPago].
+  final bool cambio;
+
+  /// Cuantos pagos tiene el proveedor para esta Orden. `0`: el comprador no
+  /// llego a pagar (no hay nada que conciliar, no es un error).
+  final int encontrados;
 }
 
 /// Una pagina de la bandeja.
@@ -102,8 +123,8 @@ class PedidoIncompleto extends DetalleDePedido {
 /// (ADR 018 §1). Y **no la cancela escribiendo**: cancelar devuelve stock, y lo
 /// hace la callable `cancelarOrden` (ADR 019).
 ///
-/// [cargar], [avanzar], [cancelar] y [anotar] lanzan `FalloDePedidos`, nunca otra cosa y
-/// nunca en silencio (HU-04.4).
+/// [cargar], [avanzar], [cancelar], [anotar] y [revisarPago] lanzan
+/// `FalloDePedidos`, nunca otra cosa y nunca en silencio (HU-04.4).
 /// Los que leen dejan subir el error para que la pantalla lo dibuje como un
 /// fallo y no como "no hay pedidos".
 abstract interface class RepositorioDePedidos {
@@ -141,4 +162,13 @@ abstract interface class RepositorioDePedidos {
     String id,
     MotivoDeCancelacion motivo,
   );
+
+  /// Vuelve a preguntarle a Mercado Pago por el pedido [id] (HU-08.3): el
+  /// boton "Volver a consultar" del detalle. Solo tiene sentido si
+  /// `Orden.sePuedeRevisarElPago`; el servidor lo rechaza igual si no
+  /// (`ErrorDePedido.pagoPorFuera`), asi que la pantalla no necesita mirarlo
+  /// dos veces. Reintentar es seguro: cada hecho que Mercado Pago cuenta
+  /// tiene su propio marcador en el servidor (`ErrorDePedido.proveedorCaido`
+  /// cuando el proveedor no contesta es exactamente esa invitacion).
+  Future<ResultadoDeRevision> revisarPago(String id);
 }

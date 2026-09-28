@@ -61,11 +61,21 @@ enum ErrorDePedido {
   /// mandar, asi que llegar aca es un desajuste entre panel y servidor.
   datosInvalidos,
 
+  /// HU-08.3: el pedido que se quiso revisar es de WhatsApp. La pantalla no
+  /// deberia ofrecer "Volver a consultar" sobre uno asi (`sePuedeRevisarElPago`
+  /// en `Orden`); llegar aca es ese chequeo desajustado con el servidor, o un
+  /// dato que cambio de origen mientras se miraba.
+  pagoPorFuera,
+
+  /// HU-08.3: Mercado Pago no contesto la consulta. **No se escribio nada**:
+  /// reintentar es seguro.
+  proveedorCaido,
+
   desconocido,
 }
 
-/// Lo que lanzan [RepositorioDePedidos.cargar], `avanzar` y `cancelar` cuando
-/// fallan.
+/// Lo que lanzan [RepositorioDePedidos.cargar], `avanzar`, `cancelar` y
+/// `revisarPago` cuando fallan.
 ///
 /// Existe por HU-04.4, igual que `FalloDeStock`: un error asincrono que se
 /// pierde deja un boton que "no hace nada" y nadie lo reporta.

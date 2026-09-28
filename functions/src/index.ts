@@ -25,3 +25,9 @@ export { moverStock } from './stock/mover_stock.ts';
 export { crearOrdenDelPanel } from './pedidos/crear_orden_del_panel.ts';
 // La cuarta, y la unica que DEVUELVE stock (HU-07.6, ADR 019).
 export { cancelarOrden } from './pedidos/cancelar_orden.ts';
+// El cobro de la vidriera, del lado que recibe (HU-08.1, HU-08.3, ADR 022): el
+// webhook y la re-consulta, sobre el mismo nucleo.  ⚠️ Piden los secretos de
+// Mercado Pago, que HOY NO EXISTEN: ver `pagos/secretos.ts` antes de desplegar
+// functions.
+export { avisoDeMercadoPago } from './pagos/aviso_de_mercado_pago.ts';
+export { revisarPago } from './pagos/revisar_pago.ts';

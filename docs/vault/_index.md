@@ -76,6 +76,38 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — probado con un pedido falso, NO desplegado (2026-09-28)
+
+**Escrito y probado en CI; NO desplegado: no hay credenciales de Mercado Pago** (Secret
+Manager de `bouquet-vinos` estaba vacío). Sin openspec, a pedido del dueño:
+[ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md) es la especificación.
+**HU-08.1 y HU-08.3**: el webhook `avisoDeMercadoPago` (firma con el validador del SDK oficial →
+consulta → transacción con marcador), la callable `revisarPago` sobre el **mismo** núcleo, y en
+el detalle de un pedido de la vidriera *"El cobro"*: la operación para conciliar, lo devuelto,
+las alertas y *"Volver a consultar a Mercado Pago"*.
+
+- **El pedido falso**: `functions/test/pagos/pago.emulador.mjs`. Lo único falso es la API de
+  pagos de Mercado Pago (una cuenta en memoria); la firma se arma con la **plantilla de la
+  documentación**, no con el SDK. No se creó ningún pedido falso en producción.
+- **Corrige ADR 003**: el marcador `pago-{paymentId}` **perdía una venta** (un pago en proceso
+  y después aprobado, con el mismo id). Es por hecho: `pago-{proveedor}-{id}-{estadoCrudo}`.
+- **`revisor-pagos`, antes del commit: 2 ALTOS**, los dos corregidos con su prueba: un
+  **reembolso parcial** quedaba invisible para siempre, y un **segundo cobro** pisaba al primero
+  sin alarma. Lo que movió plata y no se aplicó ahora deja `alertaDePago` en la Orden, visible
+  en el panel.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36475268911` (`completo`, todo junto) restada contra `36466563334`: contratos 245 → **268 (+23)**, functions 56 → **73 pasados (+17)**, emulador 162 → **187 (+25)**, Dart 450 → **488 (+38 = 21 + 17, los `test(` de los dos archivos nuevos)**, `flutter analyze` **No issues found**, 622 enlaces |
+| Que discriminen | CI `36473359581`, **cuatro mutaciones** en una rama descartable (marcador por pago, sin monto, sin idempotencia, sin firma): cada una tumbó sólo sus casos — 9 en el emulador, 4 unitarios —, y los otros 175 del emulador siguieron verdes |
+| Presupuesto | ~130 lecturas al día con 20 ventas, **0,26 %**; el panel, 0 (todo viaja en el documento de la Orden) |
+
+⚠️ **Lo que sigue:** las credenciales **de prueba** de Mercado Pago (access token y secreto de
+firma) → secretos → deploy **functions → panel** → una compra en sandbox con los mismos
+controles. ⚠️ **Mientras falten los secretos, un `firebase deploy --only functions` a secas
+probablemente falle** (no medido): nombrar las functions. Y después, `crearOrden` con la
+preferencia: sin ella no existe un pedido de la vidriera, y nada de esto se ve.
+
 ### Cuarto tramo del hito 2: el aviso de que salió, por WhatsApp — y el tercero, desplegado (2026-09-28)
 
 **Desplegado y verificado por bytes el 2026-09-28 (v0.39.0, `fde0b38`); nadie lo miró
@@ -224,40 +256,6 @@ uno, en el ADR.
 
 Verificación completa —qué se corrió, cómo, y qué no— en la sección final del ADR.
 
-### HU-05.4: los movimientos de stock se leen — y el hito 1 queda escrito entero (2026-09-24)
-
-**Escrita; el deploy y su verificación van abajo.** Sin openspec, a pedido del dueño:
-[ADR 016 §6](architecture/decisions/016-mover-el-stock.md) es la especificación. Un botón
-*"Ver los últimos movimientos"* en la sección de stock abre una hoja con los últimos 20:
-qué se hizo, de cuánto a cuánto (con la unidad), quién y cuándo. **Con esto las 24 historias
-del hito 1 están escritas.** Ninguna está cerrada: falta lo que sólo puede hacer el dueño.
-
-**Toca `firestore.rules`**: el deploy es reglas → panel. `read` de `movimientos` pasa de
-cerrado a `get` de admin y `list` de admin **con `limit` ≤ 50**; `write` sigue cerrado.
-Se construyó **antes de su disparador**, para cerrar el hito.
-
-**Workflow D: `revisor-pagos` corrió ANTES de commitear**: ningún ALTO ni MEDIO, cinco BAJO.
-Corregidos cuatro: el parser podía **ocultar la lista entera** con un solo documento roto
-(`NaN`, o un `en` que no fuera Timestamp) y la pantalla habría culpado a la conexión; el
-*"de 8 a 10"* de un vino de caja no decía que son **cajas** (60 botellas, no 10); dos pruebas
-que faltaban (la consulta real `orderBy('en').limit(20)` y que un `collectionGroup` siga
-rechazado); y una línea del ADR que decía *"nada lee movimientos"*. El quinto sigue abierto,
-con su porqué: `seed.mjs` reescribe `stock` y `borrar.mjs` deja huérfana la subcolección, así
-que sólo en los vinos de muestra la historia puede no explicar el número.
-
-| Qué | Cómo |
-|---|---|
-| Las reglas | Emulador: **60 casos** (+3). Un `get` y un `list` con `limit` pasan (control positivo); sin `limit`, con 51, un comprador, un anónimo y un `collectionGroup` rechazan. **Mutando** la exigencia de `limit`, fallan exactamente los 2 casos que la prueban |
-| El panel | `dart test` de `stock/`: **45 casos**; `dart analyze lib test`: **No issues found**. Incluye el movimiento REAL de producción (`reponer 32`, `0 → 32`) |
-| Sin huérfanos | 9 símbolos grepeados con call site fuera de su archivo; control negativo: 0. Ruta: `enrutador` → `PaginaDelVino` → `SeccionDelStock` → `HojaDeMovimientos` |
-| Presupuesto | **≤ 20 lecturas por apertura de la hoja, 0 con la hoja cerrada**; 20 aperturas al día = 400, el **0,8 %** de la cuota |
-
-**Dice `Vos` u `Otra persona`, no un nombre**: el movimiento guarda un uid. Mostrar nombres
-tocaría `moverStock`; queda con disparador en el ADR.
-
-**Sin probar:** la lectura de Firestore real desde el panel (`RepositorioDeMovimientosFirestore`
-no tiene prueba propia; el parser y los textos sí).
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -321,6 +319,7 @@ no tiene prueba propia; el parser y los textos sí).
 | 010 | El **código postal** decide cómo viaja el pedido —nadie queda fuera de zona—; se cobra con **Mercado Pago Checkout Pro** y el comprobante **no va por mail** | [010](architecture/decisions/010-el-checkout.md) |
 | 011 | Al panel se entra con mail o Google; **las cuentas las crea un script, sin contraseña**, que se niega a habilitar una cuenta sin el mail verificado; el permiso viaja en el token, y se publica **lo que compiló CI** | [011](architecture/decisions/011-entrar-al-panel.md) |
 | 018 | Un pedido de WhatsApp se carga por **una callable del panel** que fija el origen; su cobro es **`por_fuera`** (terminal); el documento es su propio marcador; **cada venta deja su movimiento** | [018](architecture/decisions/018-pedidos-de-whatsapp.md) |
+| 022 | Lo que dice Mercado Pago entra por **un solo núcleo** (aviso y re-consulta); el marcador es **por hecho** —corrige ADR 003—; lo que movió plata y no se aplicó deja **`alertaDePago`** | [022](architecture/decisions/022-cobro-de-la-vidriera.md) |
 
 ---
 
@@ -359,6 +358,8 @@ Los que bloquean algo:
 | **¿Un pedido de WhatsApp puede ser de un vino que la tienda no muestra?** Se decidió que sí (ADR 018 §5) y el selector lo marca *«no está en la tienda»*; contradice ADR 014, donde despublicar es sacar de la venta | Que el dueño lo confirme o lo cambie (es una línea) | 2026-09-24 |
 | **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
 | **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
+| ⚠️ **HU-08.1 y 08.3 viajan de POLIZÓN en el panel** ([ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md)): commiteadas, y el botón llama a `revisarPago`, que **no está desplegada**. El próximo deploy del panel, por el motivo que sea, las publica. **Hoy son inalcanzables**: `SeccionDelPago` sólo se dibuja en un pedido de la vidriera, y no existe ninguno hasta `crearOrden` (0 órdenes en producción). Antes de publicar el panel, confirmar que siga habiendo 0 pedidos de la vidriera | El próximo deploy del panel | 2026-09-28 |
+| ⚠️ **Los secretos de Mercado Pago no existen** y `avisoDeMercadoPago` / `revisarPago` los declaran: un `firebase deploy --only functions` a secas **probablemente falle entero** (no medido). Nombrar las functions hasta que existan | El próximo deploy de functions | 2026-09-28 |
 
 ---
 

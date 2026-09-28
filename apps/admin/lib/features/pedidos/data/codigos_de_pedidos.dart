@@ -98,6 +98,55 @@ FalloDePedidos falloDeCancelar(String codigo, Object? detalles) {
   }
 }
 
+/// Traduce el par `(code, details)` de un `HttpsError` de `revisarPago`
+/// (HU-08.3). Otra callable, otros codigos: un `not-found` aca tambien es el
+/// PEDIDO (mismo trato que en [falloDeCancelar]), pero `failed-precondition`
+/// y `unavailable` traen casos que ninguna otra callable tiene.
+FalloDePedidos falloDeRevision(String codigo, Object? detalles) {
+  switch (codigo) {
+    case 'unauthenticated' || 'permission-denied':
+      return FalloDePedidos(ErrorDePedido.sinPermiso, codigo: codigo);
+    case 'not-found':
+      // `revisarPago` siempre manda `codigo: 'no-existe'` en este caso; un
+      // `not-found` pelado es, otra vez, la callable que no existe.
+      final esElPedido = detalles is Map && detalles['codigo'] == 'no-existe';
+      return FalloDePedidos(
+        esElPedido
+            ? ErrorDePedido.pedidoInexistente
+            : ErrorDePedido.desconocido,
+        codigo: codigo,
+      );
+    case 'invalid-argument':
+      return FalloDePedidos(ErrorDePedido.datosInvalidos, codigo: codigo);
+    case 'failed-precondition':
+      final error = switch (detalles is Map ? detalles['codigo'] : null) {
+        'por-fuera' => ErrorDePedido.pagoPorFuera,
+        // El pedido tiene un dato roto y el servidor no puede decir si se
+        // cobro: mismo caso que `orden-rota` en `cancelarOrden`.
+        'orden-rota' => ErrorDePedido.pedidoRoto,
+        _ => ErrorDePedido.desconocido,
+      };
+      return FalloDePedidos(error, codigo: codigo);
+    case 'unavailable':
+      // Mercado Pago no contesto (`codigo: 'proveedor-caido'`): no es que a
+      // ESTE panel no le llegue la red, es que el proveedor no responde. Un
+      // `unavailable` sin ese detalle SI es la red de este panel.
+      final esElProveedor =
+          detalles is Map && detalles['codigo'] == 'proveedor-caido';
+      return FalloDePedidos(
+        esElProveedor
+            ? ErrorDePedido.proveedorCaido
+            : ErrorDePedido.sinConexion,
+        codigo: codigo,
+      );
+    default:
+      return FalloDePedidos(
+        esDeRed(codigo) ? ErrorDePedido.sinConexion : ErrorDePedido.desconocido,
+        codigo: codigo,
+      );
+  }
+}
+
 /// Traduce el error de una ESCRITURA directa en la Orden (EP-07). Las reglas
 /// contestan `permission-denied` tanto a una cuenta sin permiso como a un paso
 /// que ya no vale desde el estado de ahora; el panel solo ofrece pasos validos

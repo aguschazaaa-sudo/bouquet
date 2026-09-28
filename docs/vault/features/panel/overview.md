@@ -20,7 +20,10 @@
   notas internas. **Hito 2, cuarto tramo (2026-09-28, sin openspec,
   [ADR 021](../../architecture/decisions/021-aviso-de-despacho.md)): HU-07.3,
   recortada** — el aviso de que salió, por WhatsApp y con un toque, sin el link al
-  comprobante
+  comprobante. **Hito 2, quinto tramo (2026-09-28, sin openspec,
+  [ADR 022](../../architecture/decisions/022-cobro-de-la-vidriera.md)): HU-08.1 y
+  HU-08.3, escritas y probadas en CI con un pedido falso, NO desplegadas** — faltan
+  las credenciales de Mercado Pago
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)
@@ -132,7 +135,9 @@ vuelve**. ~~Lo que queda del hito 2: HU-07.3 y 07.7, HU-06.3 a 06.5 y EP-08~~ ~~
 quedan HU-06.5, EP-08** (el cobro de la vidriera, que espera a `crearOrden`) **y el link
 de HU-07.3** al comprobante. **Lo que queda del hito 2 es todo de la vidriera**: el
 pedido que llega pagado por Mercado Pago, su aviso push y su cobro. Lo de WhatsApp está
-construido entero.
+construido entero. **Desde el 2026-09-28 (ADR 022)** el lado del cobro que recibe
+—HU-08.1 y 08.3— está escrito y probado con un pedido falso; se despliega cuando
+lleguen las credenciales de Mercado Pago.
 
 ### Los habilitadores
 

@@ -19,6 +19,7 @@ import 'seccion_de_items.dart';
 import 'seccion_de_la_entrega.dart';
 import 'seccion_de_notas.dart';
 import 'seccion_de_quien_y_donde.dart';
+import 'seccion_del_pago.dart';
 import 'textos_de_entrega.dart';
 import 'textos_de_notas.dart';
 import 'textos_de_pedidos.dart';
@@ -152,6 +153,7 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
     final tema = Theme.of(context);
     final rotulo = rotulosEstadoPublico[_orden.estadoPublico]!.operador;
     final fallo = _fallo;
+    final ahora = DateTime.now();
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
@@ -174,7 +176,8 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
           const Aviso(texto: textoElCobroVaPorFuera),
         ],
         const SizedBox(height: 16),
-        SeccionDeLaEntrega(orden: _orden, ahora: DateTime.now()),
+        SeccionDelPago(orden: _orden, ahora: ahora, alCambiar: widget.alCambiar),
+        SeccionDeLaEntrega(orden: _orden, ahora: ahora),
         BotonDeAviso(orden: _orden),
         if (fallo != null) ...[
           Aviso(tono: TonoDelAviso.error, texto: _textoDelFallo(fallo)),

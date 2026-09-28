@@ -21,3 +21,4 @@ export * from './foto.ts';
 export * from './stock.ts';
 export * from './pedido.ts';
 export * from './despacho.ts';
+export * from './pago.ts';

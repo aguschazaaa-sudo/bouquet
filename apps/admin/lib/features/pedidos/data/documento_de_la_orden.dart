@@ -9,8 +9,10 @@ import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/contratos/estado_pago.dart';
 import '../../../core/contratos/pedido.dart';
 import '../../catalogo/data/campos.dart';
+import '../domain/alerta_de_pago.dart';
 import '../domain/despacho_de_orden.dart';
 import '../domain/orden.dart';
+import '../domain/pago_de_la_orden.dart';
 
 /// `null` si el documento **no se puede leer como una Orden**: falta lo que la
 /// define (`numero`, los dos estados, el origen, los `items`, el total) o trae un
@@ -83,6 +85,8 @@ Orden? ordenDesde(
     despacho: _despacho(datos['despacho'], horaDe),
     entregaFallida: _entregaFallida(datos['entregaFallida'], horaDe),
     cancelacion: _cancelacion(datos['cancelacion'], horaDe),
+    pago: _pago(datos['pago'], horaDe),
+    alertaDePago: _alerta(datos['alertaDePago'], horaDe),
   );
 }
 
@@ -120,6 +124,62 @@ CancelacionDeOrden? _cancelacion(
     motivo: MotivoDeCancelacion.desde(valor['motivo']),
     en: hora(valor['en']),
     sinReponer: lineasSinReponerDesde(valor['sinReponer']),
+  );
+}
+
+/// `pago` se lee entero o no se lee: `proveedor`, `operacionId`,
+/// `estadoDelProveedor` y `monto` los escribe siempre el servidor juntos
+/// (`pagoDeOrden` en `packages/contratos/src/pago.ts`), asi que si falta uno
+/// el mapa esta roto y se descarta entero -- mismo trato que `despacho` sin
+/// `correo`. `detalle` y `consultadoEn` si se perdonan: son los unicos
+/// campos que pueden faltar en un documento sano.
+PagoDeLaOrden? _pago(Object? valor, DateTime? Function(Object?) hora) {
+  if (valor is! Map) return null;
+  final proveedor = textoOpcionalDe(valor['proveedor']);
+  final operacionId = textoOpcionalDe(valor['operacionId']);
+  final estadoDelProveedor = textoOpcionalDe(valor['estadoDelProveedor']);
+  final monto = enteroDe(valor['monto']);
+  if (proveedor == null ||
+      operacionId == null ||
+      estadoDelProveedor == null ||
+      monto == null) {
+    return null;
+  }
+  return PagoDeLaOrden(
+    proveedor: proveedor,
+    operacionId: operacionId,
+    estadoDelProveedor: estadoDelProveedor,
+    detalle: textoOpcionalDe(valor['detalle']),
+    monto: monto,
+    // Ausente es 0: lo devuelto se suma al contrato despues que el resto.
+    reembolsado: enteroDe(valor['reembolsado']) ?? 0,
+    consultadoEn: hora(valor['consultadoEn']),
+  );
+}
+
+/// `alertaDePago` se lee entera o no se lee, como `pago`. Un motivo que no se
+/// conoce NO la esconde: se muestra con el texto generico ([MotivoDeAlerta.otro]),
+/// porque es plata que la Orden no refleja.
+AlertaDePago? _alerta(Object? valor, DateTime? Function(Object?) hora) {
+  if (valor is! Map) return null;
+  final operacionId = textoOpcionalDe(valor['operacionId']);
+  final estadoDelProveedor = textoOpcionalDe(valor['estadoDelProveedor']);
+  final monto = enteroDe(valor['monto']);
+  if (operacionId == null || estadoDelProveedor == null || monto == null) {
+    return null;
+  }
+  return AlertaDePago(
+    motivo: switch (valor['motivo']) {
+      'pago-duplicado' => MotivoDeAlerta.pagoDuplicado,
+      'monto-distinto' => MotivoDeAlerta.montoDistinto,
+      'transicion-invalida' => MotivoDeAlerta.transicionInvalida,
+      'estado-sin-traduccion' => MotivoDeAlerta.estadoSinTraduccion,
+      _ => MotivoDeAlerta.otro,
+    },
+    operacionId: operacionId,
+    estadoDelProveedor: estadoDelProveedor,
+    monto: monto,
+    en: hora(valor['en']),
   );
 }
 
