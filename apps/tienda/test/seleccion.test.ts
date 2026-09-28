@@ -90,3 +90,40 @@ test('las uvas las escribe quien llama, y sin foto queda la silueta con su forma
   assert.equal(chardonnay?.foto, null);
   assert.equal(chardonnay?.forma, 'borgonona');
 });
+
+// ------------------------------------------------ la que eligió el dueño (ADR 023)
+
+test('si el dueño eligió, van los suyos, en su orden, y la regla no completa', () => {
+  const catalogo = [
+    vino('mas-vendido', { puesto: 1 }),
+    vino('blanco', { color: 'blanco', puesto: 2 }),
+    vino('elegido-b', { puesto: 9 }),
+    vino('elegido-a', { puesto: 8 }),
+  ];
+  const elegidos = elegirSeleccion(catalogo, uvas, ['elegido-b', 'elegido-a']).map((v) => v.slug);
+  assert.deepEqual(elegidos, ['elegido-b', 'elegido-a']);
+  // Control: sin elección, la regla trae al más vendido y al blanco.
+  assert.ok(slugs(catalogo).includes('mas-vendido'));
+  assert.ok(slugs(catalogo).includes('blanco'));
+});
+
+test('un elegido agotado, en caja o despublicado se saltea, y quedan los otros', () => {
+  const catalogo = [vino('ok'), vino('agotado', { balde: 'agotado' }), vino('caja', { botellas: 2 })];
+  const elegidos = elegirSeleccion(catalogo, uvas, ['agotado', 'despublicado', 'caja', 'ok']);
+  assert.deepEqual(
+    elegidos.map((v) => v.slug),
+    ['ok'],
+  );
+});
+
+test('si de lo elegido no queda ninguno, o eligió la lista vacía, vuelve la regla', () => {
+  const catalogo = [vino('a', { puesto: 1 }), vino('b', { balde: 'agotado' })];
+  assert.deepEqual(
+    elegirSeleccion(catalogo, uvas, ['b']).map((v) => v.slug),
+    ['a'],
+  );
+  assert.deepEqual(
+    elegirSeleccion(catalogo, uvas, []).map((v) => v.slug),
+    ['a'],
+  );
+});

@@ -1,4 +1,5 @@
 import '../../../../core/contratos/catalogo_publico.dart';
+import '../../../../core/presentation/cuando_se_ve.dart';
 import '../../domain/borrador_de_vino.dart';
 import '../../domain/fallo_de_catalogo.dart';
 import '../textos_del_catalogo.dart';
@@ -97,7 +98,20 @@ const textoNoSeBorra =
     'No se borra: se saca de la tienda y conserva su id, su dirección y su '
     'historia.';
 
-/// HU-03.5, "Después de confirmar": el número es el de ADR 008, corregido
-/// por `revisor-pagos` de 8 a 13 minutos.
-const textoAvisoDeAtrasoDePrecio =
-    'La tienda puede tardar hasta unos 13 minutos en mostrarlo.';
+/// HU-03.5, "Después de confirmar" (HU-09.4): mismo plazo que el resto del
+/// catálogo -- ver `core/presentation/cuando_se_ve.dart`, la fuente única.
+const textoPrecioGuardado = 'Precio cambiado. $textoTardaEnLaTienda';
+
+/// HU-03.6, "Publicar" (HU-09.4): sin esto, publicar no decía nada y
+/// quedaba igual que un guardado que no hizo efecto.
+const textoVinoPublicado = 'Vino publicado. $textoTardaEnLaTienda';
+
+/// HU-03.6, "Sacar de la tienda": el mismo aviso -sacarlo tampoco es
+/// instantáneo-, con el "Deshacer" que ya tenía intacto
+/// (`InterruptorDeTienda._ofrecerDeshacer`).
+const textoVinoSacado = 'Vino sacado de la tienda. $textoTardaEnLaTienda';
+
+/// HU-03.4 corrigiendo un vino YA publicado (HU-09.4): el mismo aviso, para
+/// el otro costado del guardado -acá se pisa la ficha entera, no sólo el
+/// precio-. Un alta nueva no aplica: nace sin publicar.
+const textoCorreccionGuardada = 'Cambios guardados. $textoTardaEnLaTienda';

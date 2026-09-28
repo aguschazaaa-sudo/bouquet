@@ -24,6 +24,12 @@ que la home diga la verdad cuando dice *"los elegimos de a uno"*.
   pantalla lo tiene que decir (HU-09.4).
 - **Ojo:** la tarjeta dibuja una botella: un vino que viene en caja no puede
   estar en la selección.
+- **Construida el 2026-09-28** ([ADR 023](../../architecture/decisions/023-la-portada-la-elige-el-duenio.md)):
+  un documento `seleccion/publica` con hasta 6 ids **en el orden del dueño**,
+  que el panel escribe directo desde la sección **Vidriera**. Si eligió, la
+  portada muestra **sólo los suyos** —la regla no completa—; si nunca eligió o
+  no queda ninguno dibujable, la regla provisoria. El panel marca en rojo el
+  elegido que la portada va a saltear, y por qué.
 
 ## HU-09.2 — Armar una caja sugerida
 
@@ -70,3 +76,8 @@ guardé, **para** no pensar que no se guardó.
   del tramo 4 miente al revés.
 - **Alcance:** aplica a precio (HU-03.5), publicar (HU-03.6) y fotos (EP-04),
   no sólo a esta épica.
+- **Construida el 2026-09-28** ([ADR 023 §6](../../architecture/decisions/023-la-portada-la-elige-el-duenio.md)):
+  los dos plazos viven en **un** archivo,
+  `apps/admin/lib/core/presentation/cuando_se_ve.dart`, y salen después de
+  guardar el precio, publicar o sacar, la ficha, las fotos y la portada. El
+  día del tramo 4 se cambia ahí.

@@ -73,7 +73,15 @@ class _InterruptorDeTiendaState extends ConsumerState<InterruptorDeTienda> {
       }
       if (!mounted) return;
       setState(() => _procesando = false);
-      if (!nuevoValor) _ofrecerDeshacer();
+      // HU-09.4: publicar y sacar tardan lo mismo en verse -sacar además
+      // ofrece "Deshacer", publicar no tiene de qué volverse atrás acá.
+      if (nuevoValor) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text(textoVinoPublicado)));
+      } else {
+        _ofrecerDeshacer();
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -88,7 +96,7 @@ class _InterruptorDeTiendaState extends ConsumerState<InterruptorDeTienda> {
   void _ofrecerDeshacer() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Vino sacado de la tienda.'),
+        content: const Text(textoVinoSacado),
         action: SnackBarAction(
           label: 'Deshacer',
           onPressed: () => _cambiar(true),

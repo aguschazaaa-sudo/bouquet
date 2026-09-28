@@ -101,7 +101,16 @@ class _FormularioDelVinoState extends ConsumerState<FormularioDelVino> {
       } else {
         await repositorio.corregir(widget.original!.id, revision.cambios!);
       }
-      if (mounted) widget.alTerminar();
+      if (!mounted) return;
+      // Capturado ANTES de `alTerminar` (HU-09.4): esa llamada navega afuera
+      // de esta pagina con `context.go`, no con un `pop` -- mismo patron que
+      // `avisos` en `detalle_del_pedido.dart`.
+      final avisos = ScaffoldMessenger.of(context);
+      final avisarTienda = alta == null && widget.original!.publicado;
+      widget.alTerminar();
+      if (avisarTienda) {
+        avisos.showSnackBar(const SnackBar(content: Text(textoCorreccionGuardada)));
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -142,6 +151,8 @@ class _FormularioDelVinoState extends ConsumerState<FormularioDelVino> {
       key: widget.claveDeFotos,
       productoId: widget.original?.id ?? _slugParaFotos(revision),
       imagenes: widget.original?.imagenes ?? const [],
+      // `false` en un alta: nace sin publicar (HU-09.4).
+      publicado: widget.original?.publicado ?? false,
       guardado: widget.original != null,
       alCambiarImagenesLocales: widget.original != null
           ? null

@@ -76,6 +76,29 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### Hito 3, primer tramo: la portada la elige el dueño, y el panel dice cuándo se ve (2026-09-28)
+
+**Escrito y verde en CI; el deploy y su verificación van abajo.** Sin openspec, a pedido
+del dueño: [ADR 023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) es la
+especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 entero es esa
+épica; el segundo tramo son las cajas sugeridas, HU-09.2 y 09.3).
+
+- **Sección nueva en el panel: Vidriera.** *"La portada"*: hasta 6 vinos en el orden del
+  dueño, agregar / subir / bajar / sacar, **cada gesto se guarda en el acto**. El que la
+  portada va a saltear —no está en la tienda, viene en caja, sin stock— sale en rojo con
+  el porqué; si la portada va a usar la regla, lo dice arriba.
+- **`seleccion/publica`**, un documento que el panel escribe directo: las reglas cierran
+  la forma (hasta 6 ids sin repetir, sólo `productoIds`, no se borra). La portada lee
+  **una vez por build**: con elección, **sólo los del dueño** —la regla no completa—; sin
+  elección, o sin ninguno dibujable, la regla provisoria de ADR 008 §7.
+- **HU-09.4:** `apps/admin/lib/core/presentation/cuando_se_ve.dart` tiene los dos plazos
+  —**~13 min** el catálogo, **la próxima publicación de la tienda** la portada— y el
+  aviso sale tras guardar precio, publicar o sacar, la ficha, las fotos y la portada.
+  Publicar, la ficha y las fotos no decían nada.
+- **CI encontró un acople que no se veía:** `documento_del_vino_test.dart` lee el PRIMER
+  `hasOnly` sobre `d` de `firestore.rules`, y la función nueva quedó antes que
+  `productoValido`. Se renombró su parámetro, con el porqué escrito al lado.
+
 ### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — desplegado con credenciales FALSAS (2026-09-28)
 
 **Desplegado el 2026-09-28 —functions (v0.40.1, `66442a9`) y panel (`1238d5e`)— con los
@@ -218,50 +241,6 @@ cuenta de verdad. Y **una pregunta de producto abierta**: un pedido con la entre
 **no se puede cancelar** (tabla de ADR 002); si el correo lo devuelve y el cliente ya no lo
 quiere, queda sin salida ([ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md), hallazgo 3).
 
-### Pedidos de WhatsApp: se cargan y se ven, pero todavía no se pueden avanzar (2026-09-24)
-
-**Desplegado —reglas, índices, `crearOrdenDelPanel` y panel— y verificado por bytes y por
-API cruda (v0.36.3, commit `6efec1c`). Nadie lo usó y nadie miró el panel renderizado.**
-Change [`pedidos-de-whatsapp`](../../openspec/changes/pedidos-de-whatsapp/proposal.md), con la
-decisión y su presupuesto de lecturas en
-[ADR 018](architecture/decisions/018-pedidos-de-whatsapp.md). **HU-10.1, HU-06.1 y HU-06.2**:
-el primer tramo del hito 2. Cargar un pedido que llegó por WhatsApp descuenta el stock, le da
-un número y lo deja en una bandeja por estado de entrega, con su detalle.
-
-**`crearOrdenDelPanel` es la tercera Cloud Function y la primera que CREA una Orden.** Descuenta
-el stock, reserva el número y escribe la Orden en una transacción, donde **el documento es su
-propio marcador de idempotencia**. **El origen lo fija el servidor**, no el pedido. El pago de un
-pedido de WhatsApp es un valor nuevo, **`por_fuera`** (terminal, no dispara `entroEnPagada`, no
-cae en *entregada impaga*): la proyección pasó de 30 a 36 pares (**decisión mía**, ADR 018 §3).
-
-**`revisor-pagos` corrió antes del commit: 14 hallazgos, 1 ALTO.** El ALTO era el bloqueante que
-[ADR 016](architecture/decisions/016-mover-el-stock.md) había dejado escrito: contar el depósito y
-corregir **pisa lo vendido sin despachar**. Y dos que ninguna prueba mía veía: **un reintento con
-la dirección corregida devolvía «éxito» sin guardar el cambio**, y **la regla `update` dejaba a un
-admin borrar `estadoEntrega`**, con lo que la orden desaparecía de toda bandeja. Los 14, uno por
-uno, en el ADR.
-
-**Y verificar destapó tres cosas más, cada una con una prueba que la habría dejado pasar:**
-
-| Qué | Cómo se vio |
-|---|---|
-| ⚠️ **La bandeja estaba rota en producción**: los índices de `ordenes` estaban *declarados* y nunca *desplegados* | Correr las seis consultas contra la API: `FAILED_PRECONDITION` en todas. Con los índices desplegados corren, y el control negativo sigue fallando. **Un índice declarado no prueba nada** |
-| Las rutas `nuevo` y `:id` eran **hijas** de `/pedidos`, así que se apilaban sobre una bandeja que seguía viva | `presupuesto-lecturas`: abrir por URL directa la armaba abajo (25 lecturas de más) y volver tras cargar mostraba la lista vieja, sin el pedido nuevo. Ahora son hermanas |
-| **El aviso de la hoja de corrección mandaba a restar de más** | Al leer ese informe caí en que **el panel todavía no puede marcar un despacho**: un pedido cuyas botellas ya salieron sigue «abierto». El texto ahora da el dato y las dos salidas |
-
-⚠️ **Lo que este tramo NO resuelve, y es lo primero que sigue:**
-
-- **Sin EP-07 los pedidos no salen de `sin_preparar`.** Se cargan y se ven, pero no se pueden
-  despachar ni cancelar. La bandeja cuesta 25 lecturas por apertura desde el segundo día, el aviso de
-  stock no es fiable y **un pedido mal cargado o duplicado no se puede sacar**: puede costar vino.
-- **Nadie llamó a la callable como usuario real** (mintear un token lo frena el clasificador) **ni miró
-  el panel**: la máquina tenía ~700 MB libres y el servidor de análisis ya se había caído. La primera
-  carga real la va a probar el dueño.
-- **Con la preview de la vidriera martillada, la cuota no entra**, y ya no entraba: este cambio la pasa
-  por ~2 puntos. Lo que hay que recortar es la preview.
-
-Verificación completa —qué se corrió, cómo, y qué no— en la sección final del ADR.
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -296,7 +275,7 @@ Verificación completa —qué se corrió, cómo, y qué no— en la sección fi
 | ⚠️ **`frontera-features.sh` no ve los imports RELATIVOS entre features** | Su regla 2 grepea sólo `from '@/features/`. El **mismo** import escrito `from '../landing/seleccion'` **pasa**, medido con los dos controles uno al lado del otro. ADR 006 regla 3 queda a medias: la mide un hook que se esquiva con una ruta relativa. No se tocó en este cambio para no meter una modificación de enforcement adentro de una tarea de feature. **Disparador:** antes de la próxima feature nueva de la vidriera, o el día que alguien escriba un import relativo entre features. Desde 2026-09-09. | el usuario |
 | ⚠️ **`call-site-guard` cuenta los sourcemaps del build como call sites** | Grepea `apps/ packages/ functions/ scripts/` enteros, y ahí adentro están `node_modules` y `.next`. Los `*.js.map` **embeben el fuente**, así que un símbolo que no abre nadie aparece "usado" en cuanto corrió un `next build`: dio verde con dos exports huérfanos que un grep acotado a `src/` sí encontró. Es la misma familia que `generar_verdad.mjs` contando comentarios. Y es O(símbolos × repo): sobre un archivo con 8 exports tarda **más de dos minutos**, así que como PostToolUse frena la escritura. **Disparador:** la próxima vez que el hook tarde o que un huérfano pase. Desde 2026-09-09. | el usuario |
 | ⚠️ **La home NO tiene puerta de edad, y es la única pieza legal obligatoria** | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
-| **La selección de la home la elige una regla, no el dueño** | `elegirSeleccion` toma seis por ventas, sin agotados ni cajas y con los tres colores. La escena dice "los elegimos de a uno", y eso pide un dato que el modelo no tiene: que el dueño marque cuáles, con su campo en contratos, reglas y panel. **Disparador:** cuando el dueño cargue su catálogo real. Desde 2026-09-11. | el dueño + `contratos` |
+| ~~**La selección de la home la elige una regla, no el dueño**~~ **Resuelto el 2026-09-28** ([ADR 023](architecture/decisions/023-la-portada-la-elige-el-duenio.md)): la elige desde el panel, en *Vidriera*. Lo que queda es que la elija, con el catálogo real | `elegirSeleccion` toma seis por ventas, sin agotados ni cajas y con los tres colores. La escena dice "los elegimos de a uno", y eso pide un dato que el modelo no tiene: que el dueño marque cuáles, con su campo en contratos, reglas y panel. **Disparador:** cuando el dueño cargue su catálogo real. Desde 2026-09-11. | el dueño + `contratos` |
 | ~~**Las SEIS tarjetas de la home apuntan a fichas que no existen**~~ **Resuelto el 2026-09-11:** salen del catálogo y sus seis fichas dan 200 (ADR 008 §7). | ~~`/vinos` no existe y la home lo apunta dos veces~~ — **resuelto el 2026-09-09**: `/vinos` existe y los dos CTA duros dan 200. Pero contando los `href` del HTML servido aparecieron **seis más**: `/vinos/muestra-01` … `-06`, las tarjetas de `EscenaSeleccion`, todas **404**. El vault decía "dos" y eran **ocho**. No se arreglan con un placeholder: son la ficha, paso 5 de ARQUITECTURA §12, y hacer que `/vinos/<cualquier-cosa>` devuelva 200 es peor que un 404. **Actualizado el 2026-09-11:** `/vinos/[slug]` ya existe, y un slug que no está da 404, que es lo correcto; lo que falta es que las tarjetas apunten a slugs reales. Y sus datos son inventados mientras `LA_SELECCION_ES_DE_MUESTRA` siga en `true`. **Disparador: bloquea el deploy.** Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **Los 8 assets están commiteados y no tienen `LICENCIAS.md`** | `ambiente`, `botella`, `cava-h/v`, `mesa-h/v`, `rack-h/v`. La única tabla de licencias verificada que existió es la de los **17 assets de `home-parallax-b`**, y **no cubre a éstos**. De esta misma tanda salió la foto con marca de agua `Unsplash+` tileada, que se descubrió **abriendo el PNG**, no leyendo metadatos. `scripts/assets/traer_landing.py` es la herramienta. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
 | **391 KB de `woff2` en la primera pantalla, y son de esta composición** | `parallax.md §8` fija **450 KB** para la primera pantalla en móvil: es el único presupuesto que paga el comprador, y arranca con el **87 % gastado antes de la primera imagen**. Salen de `layout.tsx` (Fraunces con `SOFT`+`WONK`+`opsz`, Newsreader roman e itálica con `opsz`). ⚠️ **Medido el 2026-09-08: el arreglo conocido NO sirve acá.** La composición 6 los bajó a **138 KB** sacando `SOFT` y `opsz`, y ésta usa las dos cosas (`font-variation-settings: 'SOFT' 22` en `sistema.css`, itálica de Newsreader en 4 lugares): sacarlos **cambia el dibujo de la página que se eligió mirando**. La palanca es del dueño. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
@@ -353,6 +332,7 @@ Los que bloquean algo:
 | ⚠️ **El color del papel de la previsualización está copiado entre el panel (Dart, `Tokens.papelVentana`) y la vidriera (CSS, `--papel-ventana`)** — puede desincronizarse, sin nada automático que lo detecte | La próxima vez que alguien toque uno de los dos sistemas de diseño | 2026-09-22 |
 | **4.3 — probar `procesarFoto` en producción con un usuario real, bloqueado por el clasificador — pero el 2026-09-23 alguien subió una foto desde el panel a `vino-de-prueba` y se sirve (200 `image/webp`), así que la callable anda en producción; queda la parte de 10.1 de mirarla en la tienda con un vino de verdad** (otorgar `iam.serviceAccountTokenCreator`, aunque temporal y reversible, es "Permission Grant") | Que el usuario autorice el rol temporal, o que el dueño suba una foto real (10.1) — lo que pase primero | 2026-09-22 |
 | ⚠️ **`corregir` pisa lo vendido y todavía no despachado** ([ADR 016](architecture/decisions/016-mover-el-stock.md), hallazgo 1): con 2 botellas vendidas sin despachar, el panel muestra 8, el operador cuenta 10 en la estantería y `visto` coincide — quedan 10 y se venden 2 que no existen. Hoy no se puede disparar (no hay órdenes). **Bloquea `crearOrden`**: la hoja tiene que mostrar *"N vendidas sin despachar"* | **Disparador: bloquea el deploy de `crearOrden`.** | 2026-09-23 |
+| ⚠️ **Tramo 4 y los plazos que dice el panel**: `apps/admin/lib/core/presentation/cuando_se_ve.dart` promete *"hasta unos 13 minutos"* para el catálogo y *"la próxima vez que se publique la tienda"* para la portada. Con la purga por tag los dos mienten al revés ([ADR 023 §6](architecture/decisions/023-la-portada-la-elige-el-duenio.md)) | Cuando se escriba el tramo 4 | 2026-09-28 |
 | ⚠️ **Tramo 4 y `moverStock`**: cada movimiento va a disparar la purga de la vidriera, y si cambia el balde de un vino publicado son **232 lecturas** —no las ~20 de ARQUITECTURA §6.3—; con 200 vinos publicados, hasta el 93 % de la cuota. **Cargar el stock ANTES de publicar lo evita** ([ADR 016](architecture/decisions/016-mover-el-stock.md)) | Cuando se escriba el tramo 4 | 2026-09-23 |
 | **Las suites de emulador y de reglas no corren en CI, y hoy son tres**: `moverStock` (19 casos), `crearOrdenDelPanel` (27) y las reglas de `productos` y `ordenes` (83) (hallazgo 8; agrava el 7 de ADR 008). Una de ellas protege plata. ⚠️ **Se corren EN SERIE**: comparten emulador y con dos en paralelo fallaron 8 casos ajenos. **Disparador:** la sesión de `crearOrden` de la vidriera. Desde 2026-09-23. | el usuario |
 | **El tope de 5.000 unidades por vino** es una decisión mía, no del dueño ([ADR 016](architecture/decisions/016-mover-el-stock.md) §1) | Que el dueño lo confirme, o el primer vino real que se le acerque | 2026-09-23 |

@@ -6,7 +6,7 @@ import { EscenaCustodia } from '@/features/landing/EscenaCustodia';
 import { EscenaMesa } from '@/features/landing/EscenaMesa';
 import { PieDeLanding } from '@/features/landing/PieDeLanding';
 import { elegirSeleccion } from '@/features/landing/seleccion';
-import { leerCatalogoSinCache } from '@/server/catalogo';
+import { leerCatalogoSinCache, leerSeleccionSinCache } from '@/server/catalogo';
 
 /* La home.
  *
@@ -27,8 +27,10 @@ import { leerCatalogoSinCache } from '@/server/catalogo';
  *
  * Cero lecturas de Firestore por visitante. La página es HTML estático: los
  * seis vinos de la selección se leen UNA vez, al armar el build, y cambian con
- * el próximo deploy, no con el catálogo (ADR 008 §7). Así no entra al circuito
- * de purga por tag de ADR 005 ni toca el presupuesto de 50.000 lecturas/día.
+ * el próximo deploy, no con el catálogo (ADR 008 §7). Los elige el dueño desde
+ * el panel (ADR 023), y el panel le dice que se ven con el próximo deploy.
+ * Así no entra al circuito de purga por tag de ADR 005 ni toca el presupuesto
+ * de 50.000 lecturas/día.
  * Por eso lee con `leerCatalogoSinCache` y NO con `obtenerCatalogo`: la caché
  * de 60 s la convertiría en ISR sin avisar. apps/tienda/test/revalidacion.test.ts
  * lo vigila.
@@ -38,8 +40,11 @@ import { leerCatalogoSinCache } from '@/server/catalogo';
  */
 
 export default async function Home() {
-  const { productos, deMuestra } = await leerCatalogoSinCache();
-  const vinos = elegirSeleccion(productos, describirUvas);
+  const [{ productos, deMuestra }, elegidos] = await Promise.all([
+    leerCatalogoSinCache(),
+    leerSeleccionSinCache(),
+  ]);
+  const vinos = elegirSeleccion(productos, describirUvas, elegidos);
 
   return (
     <>

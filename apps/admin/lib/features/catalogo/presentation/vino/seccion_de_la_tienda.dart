@@ -82,7 +82,7 @@ class SeccionDeLaTienda extends StatelessWidget {
     if (guardo == true && context.mounted) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text(textoAvisoDeAtrasoDePrecio)));
+      ).showSnackBar(const SnackBar(content: Text(textoPrecioGuardado)));
     }
   }
 }

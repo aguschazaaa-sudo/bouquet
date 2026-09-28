@@ -1408,6 +1408,10 @@
       ]
     }
   },
+  "vidriera": {
+    "lugaresDeLaSeleccion": 6,
+    "botellasPorCaja": 6
+  },
   "publico": {
     "estados": [
       "recibida",

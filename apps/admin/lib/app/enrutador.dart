@@ -16,6 +16,7 @@ import '../features/pedidos/domain/orden.dart';
 import '../features/pedidos/presentation/pagina_de_cargar_pedido.dart';
 import '../features/pedidos/presentation/pagina_del_pedido.dart';
 import '../features/pedidos/presentation/pantalla_de_pedidos.dart';
+import '../features/vidriera/presentation/pantalla_de_la_vidriera.dart';
 import 'destino.dart';
 import 'rutas.dart';
 
@@ -77,6 +78,11 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
             path: Rutas.pedidos,
             pageBuilder: (_, _) =>
                 const NoTransitionPage(child: PantallaDePedidos()),
+          ),
+          GoRoute(
+            path: Rutas.vidriera,
+            pageBuilder: (_, _) =>
+                const NoTransitionPage(child: PantallaDeLaVidriera()),
           ),
           // HERMANAS de `/pedidos` y no hijas, a proposito: una ruta hija se apila
           // ENCIMA de la pantalla de su padre, que sigue viva y leyendo abajo. Con

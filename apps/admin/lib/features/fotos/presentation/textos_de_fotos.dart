@@ -1,3 +1,4 @@
+import '../../../core/presentation/cuando_se_ve.dart';
 import '../domain/fallo_de_fotos.dart';
 import '../domain/formato_de_foto.dart' show topeDeBytes;
 import '../domain/foto_del_vino.dart' show topeDeFotos;
@@ -87,3 +88,11 @@ String textoDelFalloDeFotos(ErrorDeFotos error) => switch (error) {
 /// Spec panel-vino, "El aviso de sin foto que ya existe lleva a la
 /// solución".
 const textoIrACargarFoto = 'Ir a cargar una foto';
+
+/// HU-09.4: después de subir, elegir principal o quitar una foto de un vino
+/// que YA está publicado -uno que todavía no se publicó no se ve en la
+/// tienda, así que ahí este aviso sería ruido (`avisarTrasFoto` es quien
+/// filtra ese caso).
+/// "Listo" y no "Foto guardada": vale igual para subir, elegir la principal y
+/// QUITAR, donde nada se guardo.
+const textoFotoActualizada = 'Listo. $textoTardaEnLaTienda';

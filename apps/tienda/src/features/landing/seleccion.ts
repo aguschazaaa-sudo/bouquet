@@ -1,4 +1,12 @@
-import { COLORES, type Color, type ProductoPublicado, type Varietal } from '@bouquet/contratos';
+import {
+  COLORES,
+  LUGARES_DE_LA_SELECCION,
+  puedeIrEnLaSeleccion,
+  resolverSeleccion,
+  type Color,
+  type ProductoPublicado,
+  type Varietal,
+} from '@bouquet/contratos';
 
 import type { FormaDeBotella } from './BotellaSvg';
 
@@ -17,8 +25,6 @@ import type { FormaDeBotella } from './BotellaSvg';
  * de estática de la landing ya es falsa y nadie se enteró —
  * apps/tienda/test/seleccion.test.ts lo mide.
  */
-
-const LUGARES = 6;
 
 export type VinoDeLaSeleccion = {
   readonly slug: string;
@@ -52,13 +58,17 @@ function aVino(p: ProductoPublicado, uvas: string): VinoDeLaSeleccion {
 }
 
 /**
- * Los seis de la home. Ninguno agotado ni en caja —la tarjeta dibuja UNA
- * botella—, los tres colores si el catálogo los tiene, y el resto por puesto de
- * venta con desempate por id: dos builds sobre los mismos datos dan la misma
- * home.
+ * Los vinos de la home.
  *
- * ⚠️ Es una regla provisoria. La escena dice "los elegimos de a uno", y eso
- * pide un dato que el modelo todavía no tiene: que el dueño marque cuáles.
+ * **Si el dueño eligió (HU-09.1, ADR 023), van los suyos**, en su orden, y
+ * sólo los suyos: completar con la regla volvería a poner en la portada vinos
+ * que nadie eligió, que es justo lo que "los elegimos de a uno" no puede
+ * decir. Un elegido que hoy no se puede dibujar —despublicado, agotado, en
+ * caja— se saltea, y la portada muestra los que quedan.
+ *
+ * **Si no eligió** (`elegidos` es `null`), o de lo que eligió no queda ninguno
+ * dibujable, vale la regla provisoria de ADR 008 §7: una portada vacía no le
+ * sirve a nadie.
  *
  * `describirUvas` llega de afuera porque es texto del catálogo, y la landing no
  * importa otra feature (ADR 006 regla 3): se la pasa `app/`.
@@ -66,9 +76,24 @@ function aVino(p: ProductoPublicado, uvas: string): VinoDeLaSeleccion {
 export function elegirSeleccion(
   productos: readonly ProductoPublicado[],
   describirUvas: (p: Pick<ProductoPublicado, 'varietales' | 'esCorte'>) => string,
+  elegidos: readonly string[] | null = null,
 ): VinoDeLaSeleccion[] {
+  const delDuenio = elegidos === null ? [] : resolverSeleccion(elegidos, productos);
+  const vinos = delDuenio.length > 0 ? delDuenio : porLaRegla(productos);
+  return vinos.map((p) => aVino(p, describirUvas(p)));
+}
+
+/**
+ * La regla provisoria. Ninguno agotado ni en caja —la tarjeta dibuja UNA
+ * botella—, los tres colores si el catálogo los tiene, y el resto por puesto de
+ * venta con desempate por id: dos builds sobre los mismos datos dan la misma
+ * home.
+ *
+ * ⚠️ Es provisoria: vale mientras el dueño no elija desde el panel.
+ */
+function porLaRegla(productos: readonly ProductoPublicado[]): ProductoPublicado[] {
   const candidatos = productos
-    .filter((p) => p.balde !== 'agotado' && p.botellas === 1)
+    .filter(puedeIrEnLaSeleccion)
     .sort((a, b) => (a.puesto ?? Infinity) - (b.puesto ?? Infinity) || a.id.localeCompare(b.id));
 
   const elegidos = new Set<ProductoPublicado>();
@@ -77,9 +102,9 @@ export function elegirSeleccion(
     if (primero) elegidos.add(primero);
   }
   for (const p of candidatos) {
-    if (elegidos.size >= LUGARES) break;
+    if (elegidos.size >= LUGARES_DE_LA_SELECCION) break;
     elegidos.add(p);
   }
 
-  return candidatos.filter((p) => elegidos.has(p)).map((p) => aVino(p, describirUvas(p)));
+  return candidatos.filter((p) => elegidos.has(p));
 }

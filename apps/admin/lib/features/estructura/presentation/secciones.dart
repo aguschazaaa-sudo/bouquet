@@ -20,9 +20,9 @@ class Seccion {
       ubicacion == ruta || ubicacion.startsWith('$ruta/');
 }
 
-/// Las secciones del panel, en orden (HU-01.5). La vidriera curada (EP-09)
-/// se suma aca el dia que tenga ruta: una ruta sin entrada en esta lista es
-/// una pagina huerfana.
+/// Las secciones del panel, en orden (HU-01.5). Una ruta sin entrada en esta
+/// lista es una pagina huerfana. Vidriera (EP-09) va ultima: se usa de vez en
+/// cuando, y Catalogo y Pedidos todos los dias.
 const secciones = [
   Seccion(
     titulo: 'Catálogo',
@@ -35,5 +35,11 @@ const secciones = [
     ruta: Rutas.pedidos,
     icono: Icons.receipt_long_outlined,
     iconoActivo: Icons.receipt_long,
+  ),
+  Seccion(
+    titulo: 'Vidriera',
+    ruta: Rutas.vidriera,
+    icono: Icons.storefront_outlined,
+    iconoActivo: Icons.storefront,
   ),
 ];

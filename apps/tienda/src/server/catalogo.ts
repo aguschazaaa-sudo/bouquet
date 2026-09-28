@@ -4,6 +4,7 @@ import {
   armarCatalogo,
   resolverCajasSugeridas,
   validarCajasSugeridas,
+  validarSeleccion,
   type CajaSugeridaResuelta,
   type Catalogo,
   type DocumentoCrudo,
@@ -125,3 +126,22 @@ export const obtenerVidriera = unstable_cache(leerVidrieraSinCache, ['catalogo']
 
 /** Las rutas que no dibujan carril piden sólo la proyección. Misma entrada de caché. */
 export const obtenerCatalogo = async (): Promise<Catalogo> => (await obtenerVidriera()).catalogo;
+
+/**
+ * Los vinos que el dueño eligió para la portada (HU-09.1, ADR 023), o `null`
+ * si nunca eligió: entonces la portada usa la regla provisoria.
+ *
+ * Sin caché, como `leerCatalogoSinCache`, y por el mismo motivo: la llama SÓLO
+ * la home, que se hornea en el build. Es UNA lectura por deploy, cero por
+ * visita — y por eso un cambio de la selección se ve con el próximo deploy de
+ * la tienda, no al guardar (HU-09.4 lo dice en el panel).
+ *
+ * Una ruta que no dibuja la portada no la llama: pagaría por un documento que
+ * no renderiza. apps/tienda/test/revalidacion.test.ts lo vigila.
+ */
+export async function leerSeleccionSinCache(): Promise<readonly string[] | null> {
+  const crudo = await db().doc('seleccion/publica').get();
+  const { productoIds, descartes } = validarSeleccion(crudo.data());
+  for (const d of descartes) console.error(`[seleccion] descartado ${d.id}: ${d.motivo}`);
+  return productoIds;
+}

@@ -9,6 +9,58 @@
 
 ---
 
+## Salió el 2026-09-28, al construirse la portada del dueño (ADR 023)
+
+Sale la de "Pedidos de WhatsApp" (2026-09-24): con la del hito 3 sumada al dashboard,
+era la más vieja de las cinco. El porqué sigue en
+[ADR 018](../architecture/decisions/018-pedidos-de-whatsapp.md).
+
+### Pedidos de WhatsApp: se cargan y se ven, pero todavía no se pueden avanzar (2026-09-24)
+
+**Desplegado —reglas, índices, `crearOrdenDelPanel` y panel— y verificado por bytes y por
+API cruda (v0.36.3, commit `6efec1c`). Nadie lo usó y nadie miró el panel renderizado.**
+Change [`pedidos-de-whatsapp`](../../../openspec/changes/pedidos-de-whatsapp/proposal.md), con la
+decisión y su presupuesto de lecturas en
+[ADR 018](../architecture/decisions/018-pedidos-de-whatsapp.md). **HU-10.1, HU-06.1 y HU-06.2**:
+el primer tramo del hito 2. Cargar un pedido que llegó por WhatsApp descuenta el stock, le da
+un número y lo deja en una bandeja por estado de entrega, con su detalle.
+
+**`crearOrdenDelPanel` es la tercera Cloud Function y la primera que CREA una Orden.** Descuenta
+el stock, reserva el número y escribe la Orden en una transacción, donde **el documento es su
+propio marcador de idempotencia**. **El origen lo fija el servidor**, no el pedido. El pago de un
+pedido de WhatsApp es un valor nuevo, **`por_fuera`** (terminal, no dispara `entroEnPagada`, no
+cae en *entregada impaga*): la proyección pasó de 30 a 36 pares (**decisión mía**, ADR 018 §3).
+
+**`revisor-pagos` corrió antes del commit: 14 hallazgos, 1 ALTO.** El ALTO era el bloqueante que
+[ADR 016](../architecture/decisions/016-mover-el-stock.md) había dejado escrito: contar el depósito y
+corregir **pisa lo vendido sin despachar**. Y dos que ninguna prueba mía veía: **un reintento con
+la dirección corregida devolvía «éxito» sin guardar el cambio**, y **la regla `update` dejaba a un
+admin borrar `estadoEntrega`**, con lo que la orden desaparecía de toda bandeja. Los 14, uno por
+uno, en el ADR.
+
+**Y verificar destapó tres cosas más, cada una con una prueba que la habría dejado pasar:**
+
+| Qué | Cómo se vio |
+|---|---|
+| ⚠️ **La bandeja estaba rota en producción**: los índices de `ordenes` estaban *declarados* y nunca *desplegados* | Correr las seis consultas contra la API: `FAILED_PRECONDITION` en todas. Con los índices desplegados corren, y el control negativo sigue fallando. **Un índice declarado no prueba nada** |
+| Las rutas `nuevo` y `:id` eran **hijas** de `/pedidos`, así que se apilaban sobre una bandeja que seguía viva | `presupuesto-lecturas`: abrir por URL directa la armaba abajo (25 lecturas de más) y volver tras cargar mostraba la lista vieja, sin el pedido nuevo. Ahora son hermanas |
+| **El aviso de la hoja de corrección mandaba a restar de más** | Al leer ese informe caí en que **el panel todavía no puede marcar un despacho**: un pedido cuyas botellas ya salieron sigue «abierto». El texto ahora da el dato y las dos salidas |
+
+⚠️ **Lo que este tramo NO resuelve, y es lo primero que sigue:**
+
+- **Sin EP-07 los pedidos no salen de `sin_preparar`.** Se cargan y se ven, pero no se pueden
+  despachar ni cancelar. La bandeja cuesta 25 lecturas por apertura desde el segundo día, el aviso de
+  stock no es fiable y **un pedido mal cargado o duplicado no se puede sacar**: puede costar vino.
+- **Nadie llamó a la callable como usuario real** (mintear un token lo frena el clasificador) **ni miró
+  el panel**: la máquina tenía ~700 MB libres y el servidor de análisis ya se había caído. La primera
+  carga real la va a probar el dueño.
+- **Con la preview de la vidriera martillada, la cuota no entra**, y ya no entraba: este cambio la pasa
+  por ~2 puntos. Lo que hay que recortar es la preview.
+
+Verificación completa —qué se corrió, cómo, y qué no— en la sección final del ADR.
+
+---
+
 ## Salió el 2026-09-28, al construirse el cobro de la vidriera (ADR 022)
 
 Sale la de "HU-05.4" (2026-09-24): con la de ADR 022 sumada al dashboard, era la

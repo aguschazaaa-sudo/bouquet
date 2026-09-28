@@ -10,6 +10,10 @@ abstract final class Rutas {
   static const catalogo = '/catalogo';
   static const pedidos = '/pedidos';
 
+  /// Lo que la tienda elige mostrar (EP-09): la portada y, despues, las cajas
+  /// sugeridas. Una seccion, con su entrada en la navegacion.
+  static const vidriera = '/vidriera';
+
   /// Hija de Catalogo, y NO una seccion: no va en `secciones.dart`. Se llega
   /// desde Catalogo, y `Seccion.estaActiva` sigue marcando Catalogo mientras
   /// se esta aca, que es lo correcto — no se salio de ahi.

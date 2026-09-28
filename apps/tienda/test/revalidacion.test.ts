@@ -76,3 +76,22 @@ test('expireTime deja el stale-while-revalidate en 300 s', () => {
   // specs/vidriera-catalogo: s-maxage=60, stale-while-revalidate=300.
   assert.equal(numero('next.config.ts', /expireTime: (\d+)/) - datos(), 300);
 });
+
+test('la selección del dueño la lee SÓLO la home, sin caché y una sola vez', () => {
+  // ADR 023: un documento más por build, cero por visita. Si /vinos lo leyera
+  // pagaría por algo que no dibuja; si entrara en `unstable_cache`, la home
+  // pasaría a ISR (ADR 008 §7).
+  const fuente = leer('src/server/catalogo.ts');
+  const funcion = fuente.indexOf('async function leerSeleccionSinCache');
+  const lectura = fuente.indexOf('seleccion/publica');
+
+  // Control positivo: la función existe y la lectura está adentro de ella.
+  assert.ok(funcion > 0, 'no encontré leerSeleccionSinCache');
+  assert.ok(lectura > funcion, 'la lectura de seleccion/publica quedó fuera de leerSeleccionSinCache');
+  assert.equal(fuente.split("doc('seleccion/publica')").length - 1, 1);
+
+  assert.match(leer('src/app/page.tsx'), /leerSeleccionSinCache\(\)/);
+  for (const ruta of ['src/app/vinos/page.tsx', 'src/app/vinos/[slug]/page.tsx', 'src/app/carrito/page.tsx']) {
+    assert.doesNotMatch(leer(ruta), /leerSeleccionSinCache/, ruta);
+  }
+});

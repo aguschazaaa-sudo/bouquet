@@ -66,6 +66,8 @@ import {
   laEscribeElPanel,
   sePuedeDespachar,
 } from '../src/despacho.ts';
+import { BOTELLAS_POR_CAJA } from '../src/carrito.ts';
+import { LUGARES_DE_LA_SELECCION } from '../src/seleccion.ts';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 export const DESTINO = join(AQUI, '..', 'generated', 'contratos.json');
@@ -239,6 +241,14 @@ export function construirContrato() {
       sePuedeDespachar: Object.fromEntries(
         ORIGENES.map((o) => [o, ESTADOS_PAGO.filter((p) => sePuedeDespachar(o, p))]),
       ),
+    },
+    // La vidriera curada (EP-09, ADR 023).  El panel no deja elegir mas de
+    // `lugaresDeLaSeleccion` vinos para la portada, ni guardar una caja que no
+    // tenga `botellasPorCaja` lugares: los dos numeros viajan de aca, no se
+    // escriben dos veces.
+    vidriera: {
+      lugaresDeLaSeleccion: LUGARES_DE_LA_SELECCION,
+      botellasPorCaja: BOTELLAS_POR_CAJA,
     },
     publico: {
       estados: [...ESTADOS_PUBLICOS],

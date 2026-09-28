@@ -51,6 +51,35 @@ service cloud.firestore {
       return s is string && s.matches('[a-z0-9]+(-[a-z0-9]+)*');
     }
 
+    // El id de un producto: `esProductoId` de contratos (carrito.ts).  No es
+    // `esSlug`: los de muestra se llaman `muestra-<slug>`, y los anteriores a
+    // ADR 013 pueden no ser un slug.
+    function esIdDeProducto(x) {
+      return x is string && x.matches('[A-Za-z0-9_-]{1,128}');
+    }
+
+    // La seleccion de la portada (ADR 023): hasta 6 ids, sin repetir.  Las
+    // reglas no iteran, asi que cada posicion se mira por indice: son seis a
+    // proposito, las mismas que el tope.
+    //
+    // El parametro se llama `sel` y NO `d` a proposito: el test de Dart
+    // `documento_del_vino_test.dart` toma la PRIMERA lista de `hasOnly` sobre
+    // una variable `d` de este archivo como las claves de un producto, y esta
+    // funcion queda antes que `productoValido`.  Con `d` lo rompio (CI
+    // 36494126137).
+    function seleccionValida(sel) {
+      return sel.keys().hasOnly(['productoIds'])
+        && sel.productoIds is list
+        && sel.productoIds.size() <= 6
+        && sel.productoIds.toSet().size() == sel.productoIds.size()
+        && (sel.productoIds.size() < 1 || esIdDeProducto(sel.productoIds[0]))
+        && (sel.productoIds.size() < 2 || esIdDeProducto(sel.productoIds[1]))
+        && (sel.productoIds.size() < 3 || esIdDeProducto(sel.productoIds[2]))
+        && (sel.productoIds.size() < 4 || esIdDeProducto(sel.productoIds[3]))
+        && (sel.productoIds.size() < 5 || esIdDeProducto(sel.productoIds[4]))
+        && (sel.productoIds.size() < 6 || esIdDeProducto(sel.productoIds[5]));
+    }
+
     // ------------------------------------------------------------ productos
     //
     // §5.2 y ADR 008 - las trampas que se cierran ACA:
@@ -336,6 +365,34 @@ service cloud.firestore {
     match /cajasSugeridas/{documento} {
       allow read: if esAdmin();
       allow write: if false;
+    }
+
+    // ------------------------------------------------------------ seleccion
+    //
+    // `seleccion/publica`: los vinos que el duenio elige para la portada
+    // (HU-09.1, ADR 023).  UN documento con una lista ORDENADA de ids, que el
+    // panel reescribe entero: guardar dos veces da lo mismo.
+    //
+    // A DIFERENCIA DE `cajasSugeridas`, LA ESCRIBE EL PANEL DIRECTO.  Lo unico
+    // que importa de la seleccion y que costaria un `get()` -que cada vino sea
+    // una botella suelta con stock- NO es una regla de plata: la portada
+    // saltea el que no sirve (`resolverSeleccion`, en contratos) y el panel no
+    // lo ofrece.  Un vino mal elegido deja un lugar vacio en la portada, no un
+    // carrito que no cierra.  Aca se cierra la forma, que es gratis.
+    //
+    // El tope de 6 es `LUGARES_DE_LA_SELECCION` de contratos: las reglas no
+    // importan TypeScript, y la suite lo compara contra el JSON generado.
+    //
+    // Borrarlo esta cerrado: sacar todo es escribir la lista vacia, que la
+    // portada lee como "el duenio no eligio ninguno" igual que sin documento.
+    //
+    // La vidriera lo lee con el Admin SDK, al armar el build: no pasa por aca.
+    match /seleccion/{documento} {
+      allow read: if esAdmin();
+      allow create, update: if esAdmin()
+        && documento == 'publica'
+        && seleccionValida(request.resource.data);
+      allow delete: if false;
     }
 
     // -------------------------------------------------------------- ordenes

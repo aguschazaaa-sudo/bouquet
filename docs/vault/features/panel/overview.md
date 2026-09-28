@@ -23,7 +23,10 @@
   comprobante. **Hito 2, quinto tramo (2026-09-28, sin openspec,
   [ADR 022](../../architecture/decisions/022-cobro-de-la-vidriera.md)): HU-08.1 y
   HU-08.3, probadas en CI con un pedido falso y desplegadas con credenciales
-  FALSAS** — faltan las claves reales de Mercado Pago
+  FALSAS** — faltan las claves reales de Mercado Pago. **Hito 3, primer tramo
+  (2026-09-28, sin openspec, [ADR 023](../../architecture/decisions/023-la-portada-la-elige-el-duenio.md)):
+  HU-09.1 y HU-09.4** — la portada la elige el dueño desde la sección
+  *Vidriera*, y el panel dice cuándo se ve cada cambio
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)

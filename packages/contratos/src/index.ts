@@ -15,6 +15,7 @@ export * from './dinero.ts';
 export * from './producto.ts';
 export * from './carrito.ts';
 export * from './cajas.ts';
+export * from './seleccion.ts';
 export * from './envio.ts';
 export * from './texto.ts';
 export * from './foto.ts';

@@ -6,17 +6,17 @@ import '../domain/fallo_de_fotos.dart';
 import '../domain/foto_del_vino.dart';
 import '../domain/foto_principal.dart';
 import '../fotos_providers.dart';
+import 'aviso_tras_foto.dart';
 import 'boton_de_agregar_foto.dart';
+import 'fallos_de_fotos.dart';
 import 'renglon_de_foto.dart';
 import 'textos_de_fotos.dart';
 
 /// La sección de fotos de la página del vino (HU-04.1, HU-04.3): las que ya
-/// tiene, más la forma de sumar otra.
-///
-/// Guarda, sólo para esta sesión, lo que devolvió `procesarFoto` de cada
-/// foto recién subida: el documento no persiste `ancho`/`alto`/
-/// `porcentajeRecortado` (`domain/foto_del_vino.dart`), así que una foto de
-/// antes de abrir esta página no tiene aviso posible.
+/// tiene, más la forma de sumar otra. Guarda, sólo para esta sesión, lo que
+/// devolvió `procesarFoto` de cada foto recién subida: el documento no
+/// persiste `ancho`/`alto`/`porcentajeRecortado` (`domain/foto_del_vino.dart`),
+/// así que una foto de antes de abrir esta página no tiene aviso posible.
 ///
 /// `productoId == null` es "el nombre todavía no da una dirección" -- ni
 /// Storage ni `procesarFoto` tienen dónde escribir sin ella. **Ya no** exige
@@ -30,6 +30,7 @@ class SeccionDeFotos extends ConsumerStatefulWidget {
     super.key,
     required this.productoId,
     required this.imagenes,
+    required this.publicado,
     this.guardado = true,
     this.alCambiarImagenesLocales,
   });
@@ -37,6 +38,9 @@ class SeccionDeFotos extends ConsumerStatefulWidget {
   /// El id del documento en una corrección, o el slug que va a tener -todavía
   /// sin guardar- en un alta.
   final String? productoId;
+
+  /// `producto.publicado`. Ver `avisarTrasFoto` (HU-09.4).
+  final bool publicado;
 
   /// Las fotos YA PERSISTIDAS en `productos/{productoId}.imagenes`. Vacía
   /// siempre en un alta: ahí no hay nada persistido todavía.
@@ -73,6 +77,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
     if (!widget.guardado) {
       widget.alCambiarImagenesLocales?.call(List.of(_agregadasLocalmente));
     }
+    avisarTrasFoto(context, widget.publicado);
   }
 
   Future<void> _quitar(String productoId, String url) async {
@@ -89,6 +94,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
       await ref
           .read(repositorioDeFotosProvider)
           .quitar(productoId: productoId, url: url);
+      if (mounted) avisarTrasFoto(context, widget.publicado);
     } on FalloDeFotos catch (e) {
       if (mounted) {
         setState(
@@ -120,6 +126,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
       await ref
           .read(repositorioDeFotosProvider)
           .hacerPrincipal(productoId: productoId, url: url);
+      if (mounted) avisarTrasFoto(context, widget.publicado);
     } on FalloDeFotos catch (e) {
       if (mounted) {
         setState(
@@ -176,11 +183,7 @@ class _SeccionDeFotosState extends ConsumerState<SeccionDeFotos> {
               cambiandoPrincipal: _cambiandoPrincipal,
             ),
           if (imagenes.isNotEmpty) const SizedBox(height: 8),
-          for (final (nombre, texto) in _fallos)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Aviso(texto: '$nombre: $texto', tono: TonoDelAviso.error),
-            ),
+          FallosDeFotos(fallos: _fallos),
           BotonDeAgregarFoto(
             productoId: productoId,
             cuantasTiene: imagenes.length,
