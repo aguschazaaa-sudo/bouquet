@@ -9,6 +9,50 @@
 
 ---
 
+## Salió el 2026-09-28, al construirse HU-07.3
+
+Sale la de "La foto principal" (2026-09-24): con la de ADR 021 sumada al dashboard,
+era la más vieja de las cinco. El porqué sigue en
+[ADR 015](../architecture/decisions/015-fotos-del-panel.md).
+
+### La foto principal: HU-04.2 recortada, y el estado del hito 1 medido (2026-09-24)
+
+**Desplegada y verificada por bytes el 2026-09-24 (v0.32.0, commit `1ab7bb0`); nadie la
+miró renderizada.** Change
+[`panel-foto-principal`](../../../openspec/changes/panel-foto-principal/proposal.md),
+con el porqué en [ADR 015 §7](../architecture/decisions/015-fotos-del-panel.md). Cada
+foto que no es la primera tiene **"Usar como principal"**, un toque y sin
+confirmación. **Se elige la principal y NO se ordenan las demás**: la vidriera lee
+sólo `imagenes[0]` (`VentanaDeBotella.tsx:30`, `seleccion.ts:49`).
+
+⚠️ **Se construyó ANTES de su disparador, a propósito.** El disparador era *"el primer
+vino con dos fotos"* y se midió que no pasó: **0 de 22 productos**. Se tomó igual
+porque, hoy, cambiar la principal obliga a sacar la foto y volver a subirla.
+
+**El hito 1, medido en producción el 2026-09-24** (no leído de este archivo):
+24 de 24 historias escritas (HU-04.2 recortada; HU-05.4 se escribió después, ver arriba). **0 cerradas**: ningún
+change se archivó. **0 vinos reales**: de 22 productos, 20 son `muestra: true`, uno es
+`vino-de-prueba` (32 de stock, 1 foto, publicado) y otro `ve`, una prueba del dueño.
+Falta que el dueño cargue su catálogo, y eso no lo hace ningún código.
+
+| Qué | Cómo |
+|---|---|
+| La regla | `conPrincipal`, pura: 10 casos con `dart test`. **Mutada** con `.reversed`: falla 1 y se revirtió. Es una mutación **débil**: sólo la agarra el caso de tres fotos |
+| Compila | `dart analyze lib test`: **No issues found** |
+| Sin huérfanos | 10 símbolos grepeados, cada uno con call site fuera de su archivo; control negativo con uno inventado: 0. Ruta: `enrutador` → `PaginaDelVino` → `FormularioDelVino` → `SeccionDeFotos` |
+| Hooks | `probar_hooks.sh` 35/35 |
+| Presupuesto | 1 lectura por cambio + 1 por sesión abierta: ~150/día, **0,3 %** |
+| CI | `alcance=panel`, corrida `36043832300`: `suite_dart` **244 → 254, +10 exactos** (`suite_ts` `skipped`: no se tocó lógica de `functions`) |
+| El deploy | Canal → **canario discriminante** (`Usar como principal`: live 0 → 1; `permiso para subir fotos`: 1 → 0; control positivo en 1; inventado en 0) → `promover` → los 4 hashes iguales, `noindex`, `commit publicado: 1ab7bb0` |
+| Que arranca | Chrome por CDP sobre live: `/entrar`, Flutter montado, **0 errores de consola**, texto leído con control positivo y negativo |
+
+**Sin probar, y ahora ya en producción:** la transacción contra Firestore. Los tests del panel son de dominio puro
+y no hay emulador en la suite del panel: lo que corre es `conPrincipal`, no
+`runTransaction`. La concurrencia (otra persona sube una foto en el medio) queda
+verificada por razonamiento sobre el contrato del SDK, **no por una prueba**.
+
+---
+
 ## Salió el 2026-09-25, al construirse el tercer tramo del hito 2
 
 Sale la de "La vidriera tiene una preview cerrada" (2026-09-23): con la de ADR 020 sumada

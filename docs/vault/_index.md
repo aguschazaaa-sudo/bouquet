@@ -76,9 +76,46 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### Cuarto tramo del hito 2: el aviso de que salió, por WhatsApp — y el tercero, desplegado (2026-09-28)
+
+**Desplegado y verificado por bytes el 2026-09-28 (v0.39.0, `fde0b38`); nadie lo miró
+renderizado.** Sin openspec, a pedido del dueño:
+[ADR 021](architecture/decisions/021-aviso-de-despacho.md) es la especificación. **HU-07.3,
+recortada**: en un pedido despachado, *"Avisarle por WhatsApp que salió"* abre el chat del
+comprador con el texto escrito —correo y seguimiento, curado por `voz`— y la persona aprieta
+enviar. **Sin el link a `/pedido/<numero>`**, que no existe: lo suma `crearOrden`.
+
+- **El número de la tienda no bloqueaba el código**: decide a quién se le prende el botón.
+  La marca es el claim **`avisaPorWhatsApp`**, cero lecturas, y la pone
+  `node scripts/acceso/acceso.mjs avisa <mail>` (se niega sin el rol). **Hoy nadie la tiene**:
+  el botón no lo ve nadie hasta que el dueño diga quién.
+- Un teléfono que no es E.164 **no arma el enlace** (abriría el chat de otra persona).
+- **`acceso.test.mjs` entra a CI** (paso propio con el emulador de Auth): hasta hoy no lo
+  corría nadie, y este cambio le suma un claim.
+
+**Y con el mismo deploy sale el tercer tramo** (ADR 020, entrada de abajo).
+⚠️ **Lo que ADR 020 temía no pasaba**: la consulta de *"Requieren acción"* **corrió en
+producción ANTES del índice nuevo** —HTTP 200—, porque Firestore la resuelve mezclando los dos
+índices que ya había; el control negativo (ordenar por `actualizadaEn`) sí daba
+`FAILED_PRECONDITION`. El índice se desplegó igual: está declarado, y declarado y desplegado
+tienen que coincidir.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36466563334` sobre `ba62c5e`, restadas contra ADR 020: Dart 432 → **450 (+18 exactos)**; `acceso.test.mjs` **17/17, por primera vez en CI**; emulador de Firestore 162 → 162 (reglas sin tocar) |
+| El índice | `CICAgJiUsZIK` `READY`; la consulta real: 200 antes y después; el negativo: `FAILED_PRECONDITION` antes y después |
+| Sin huérfanos | 13 símbolos con call site; control inventado: 0. Cadena `enrutador → PaginaDelPedido → DetalleDelPedido → BotonDeAviso` |
+| Presupuesto | **0 lecturas, 0 escrituras** |
+| El deploy | Build `36467004226` (*No issues found*) → canal → **canario discriminante** (6 cadenas nuevas 0 → 1, *"Por preparar"* 1 → 1, inventada 0 → 0, `COMMIT` `f066c56` → `fde0b38`) → `promover` → live con los 4 hashes iguales, `noindex` |
+
+⚠️ **Lo que sigue:** que el dueño diga quién avisa, y que esa persona despache un pedido real
+y mande el aviso. **Nadie lo miró renderizado.** Del hito 2 quedan HU-06.5 y EP-08, **todo
+de la vidriera**: lo de WhatsApp está construido entero.
+
 ### Tercer tramo del hito 2: lo que requiere acción primero, buscar por número y notas (2026-09-25)
 
-**Escrito y commiteado (v0.38.0, `04a149f`); NO desplegado.** Sin openspec, a pedido del
+~~**Escrito y commiteado (v0.38.0, `04a149f`); NO desplegado.**~~ **Desplegado el
+2026-09-28 junto con HU-07.3** (entrada de arriba). Sin openspec, a pedido del
 dueño: [ADR 020](architecture/decisions/020-accion-busqueda-y-notas.md) es la
 especificación. **HU-06.3, HU-06.4 y HU-07.7.**
 
@@ -97,10 +134,11 @@ especificación. **HU-06.3, HU-06.4 y HU-07.7.**
 | Las suites en CI | Corrida `36192553512`: Dart 420 → **432 (+12)**, emulador 158 → **162 (+4)** |
 | Compila | Corrida `36192938783`: `flutter analyze` **No issues found**, build web con artifact `panel-web` |
 
-⚠️ **Lo que falta para entregarlo:** merge a `main` y deploy **índices → panel** (`firebase deploy --only firestore:indexes`, correr la consulta de *"Requieren acción"* contra la API hasta que no dé `FAILED_PRECONDITION`, y recién ahí `publicar.sh preview` → canario → `promover`). La sesión no tenía credenciales de Firebase.
+~~⚠️ **Lo que falta para entregarlo:** merge a `main` y deploy **índices → panel** (`firebase deploy --only firestore:indexes`, correr la consulta de *"Requieren acción"* contra la API hasta que no dé `FAILED_PRECONDITION`, y recién ahí `publicar.sh preview` → canario → `promover`). La sesión no tenía credenciales de Firebase.~~ **Hecho el 2026-09-28** (entrada de arriba).
 
-**Quedan del hito 2:** HU-06.5 (push: infra entera, y su caso fuerte es la vidriera),
-HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).
+~~**Quedan del hito 2:** HU-06.5 (push: infra entera, y su caso fuerte es la vidriera),
+HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).~~ HU-07.3 se
+construyó el 2026-09-28 (entrada de arriba).
 
 ### EP-07: los pedidos se preparan, se despachan y se cancelan devolviendo el stock (2026-09-25)
 
@@ -220,42 +258,6 @@ tocaría `moverStock`; queda con disparador en el ADR.
 **Sin probar:** la lectura de Firestore real desde el panel (`RepositorioDeMovimientosFirestore`
 no tiene prueba propia; el parser y los textos sí).
 
-### La foto principal: HU-04.2 recortada, y el estado del hito 1 medido (2026-09-24)
-
-**Desplegada y verificada por bytes el 2026-09-24 (v0.32.0, commit `1ab7bb0`); nadie la
-miró renderizada.** Change
-[`panel-foto-principal`](../../openspec/changes/panel-foto-principal/proposal.md),
-con el porqué en [ADR 015 §7](architecture/decisions/015-fotos-del-panel.md). Cada
-foto que no es la primera tiene **"Usar como principal"**, un toque y sin
-confirmación. **Se elige la principal y NO se ordenan las demás**: la vidriera lee
-sólo `imagenes[0]` (`VentanaDeBotella.tsx:30`, `seleccion.ts:49`).
-
-⚠️ **Se construyó ANTES de su disparador, a propósito.** El disparador era *"el primer
-vino con dos fotos"* y se midió que no pasó: **0 de 22 productos**. Se tomó igual
-porque, hoy, cambiar la principal obliga a sacar la foto y volver a subirla.
-
-**El hito 1, medido en producción el 2026-09-24** (no leído de este archivo):
-24 de 24 historias escritas (HU-04.2 recortada; HU-05.4 se escribió después, ver arriba). **0 cerradas**: ningún
-change se archivó. **0 vinos reales**: de 22 productos, 20 son `muestra: true`, uno es
-`vino-de-prueba` (32 de stock, 1 foto, publicado) y otro `ve`, una prueba del dueño.
-Falta que el dueño cargue su catálogo, y eso no lo hace ningún código.
-
-| Qué | Cómo |
-|---|---|
-| La regla | `conPrincipal`, pura: 10 casos con `dart test`. **Mutada** con `.reversed`: falla 1 y se revirtió. Es una mutación **débil**: sólo la agarra el caso de tres fotos |
-| Compila | `dart analyze lib test`: **No issues found** |
-| Sin huérfanos | 10 símbolos grepeados, cada uno con call site fuera de su archivo; control negativo con uno inventado: 0. Ruta: `enrutador` → `PaginaDelVino` → `FormularioDelVino` → `SeccionDeFotos` |
-| Hooks | `probar_hooks.sh` 35/35 |
-| Presupuesto | 1 lectura por cambio + 1 por sesión abierta: ~150/día, **0,3 %** |
-| CI | `alcance=panel`, corrida `36043832300`: `suite_dart` **244 → 254, +10 exactos** (`suite_ts` `skipped`: no se tocó lógica de `functions`) |
-| El deploy | Canal → **canario discriminante** (`Usar como principal`: live 0 → 1; `permiso para subir fotos`: 1 → 0; control positivo en 1; inventado en 0) → `promover` → los 4 hashes iguales, `noindex`, `commit publicado: 1ab7bb0` |
-| Que arranca | Chrome por CDP sobre live: `/entrar`, Flutter montado, **0 errores de consola**, texto leído con control positivo y negativo |
-
-**Sin probar, y ahora ya en producción:** la transacción contra Firestore. Los tests del panel son de dominio puro
-y no hay emulador en la suite del panel: lo que corre es `conPrincipal`, no
-`runTransaction`. La concurrencia (otra persona sube una foto en el medio) queda
-verificada por razonamiento sobre el contrato del SDK, **no por una prueba**.
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -268,7 +270,7 @@ verificada por razonamiento sobre el contrato del SDK, **no por una prueba**.
 | ~~**La API key web del panel no está restringida**~~ **RESUELTO el 2026-09-17**, y lo corrió el dueño porque el clasificador del modo auto frena tocar la key (*"Modify Shared Resources"*) | La key es pública por diseño —viaja adentro de `main.dart.js`, así que guardarla como secret no cambia nada: el navegador la necesita en claro—, pero estaba sin acotar: `browserKeyRestrictions` **vacío** y 27 servicios habilitados, `identitytoolkit` entre ellos. Ahora acepta tres hosts: el panel, `firebaseapp.com` —por donde pasa el handler de Google— y el canal `panel`. **Verificado con las dos mitades, y el antes medido:** un `POST` a `accounts:signInWithPassword` con `Referer` inventado daba **400 `INVALID_LOGIN_CREDENTIALS`** (la atendía) y ahora da **403 blocked**, mientras los tres hosts permitidos siguen dando 400, o sea que llegan. Y de punta a punta con un navegador real pidiendo el correo de contraseña desde live y desde el canal: los dos contestan el aviso, sin nada de bloqueo en consola. ⚠️ **La trampa que sólo apareció con el tercer control: un comodín en medio de una etiqueta (`bouquet-vinos--*.web.app`) la API lo ACEPTA y no matchea nada** — se guarda sin protestar y el canal seguía dando 403. Va el host literal. **Ojo con lo que esto NO es:** el `Referer` lo falsifica cualquiera con `curl -H`, así que corta abuso casual y robo de cuota, no a alguien decidido; contra el registro anticipado lo que protege es la negativa del script (ADR 011), y apagar el alta pública está descartado ahí mismo. **Deja una obligación:** un canal con otro nombre no va a poder entrar hasta que su host esté en la lista — anotado en `publicar.sh`. | el dueño |
 | **Ningún change de openspec se archivó nunca** | `openspec/specs/` está **vacío** y hay **4** changes en `openspec/changes/` (`panel-entrar`, `cajas-de-seis`, `catalogo-y-carrito`, `seccion-el-oficio`), todos implementados. Sin línea base publicada, un change nuevo no tiene contra qué diferenciarse. `opsx` trae `openspec-bulk-archive-change` justo para esto, pero las skills de terceros no se commitean (`bash scripts/skills_restaurar.sh`). Archivar sólo uno inventaría una línea base que los otros tres no tienen, así que van los cuatro juntos. **Disparador:** la próxima sesión que empiece con las skills restauradas. Desde 2026-09-17. | el usuario |
 | **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth. ~~Igual que los de reglas, que tampoco están en CI~~: **los de reglas y los de las transacciones sí corren en CI desde el 2026-09-25** (job `suite_emulador`, [ADR 019 §8](architecture/decisions/019-preparar-despachar-y-cancelar.md)); éste quedó afuera porque pide el emulador de Auth. Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
-| ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). **Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3. Desde 2026-09-16. | el dueño |
+| ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). ~~**Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3.~~ **HU-07.3 ya no lo espera** (2026-09-28, [ADR 021](architecture/decisions/021-aviso-de-despacho.md)): el número no entra al código, decide a quién se le da la marca `avisaPorWhatsApp`. **Sigue bloqueando `/oficio`.** **Disparador:** cuando el dueño lo pase. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `bash scripts/tienda/preview.sh verificar` en lo desplegado (⚠️ **no** con `curl /pedido | grep`: da 0 con el gate cerrado, ver [ADR 010](architecture/decisions/010-el-checkout.md)). Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
 | ⚠️ **`cajasSugeridas/publicas` de stage quedó VIEJO, y se ve** | El documento sembrado todavía tiene `dos-y-dos` —dos packs de 2 + dos botellas—, que desde [ADR 009 §10](architecture/decisions/009-venta-por-caja.md) no es una caja: el código la descarta y el carril de `/vinos` sirve **3** tarjetas en vez de 4, con el motivo logueado en la build. `dos-de-cada` no existe hasta que corra `node scripts/seed/seed.mjs`. **Disparador:** antes de mirar el carril de stage, y antes del primer deploy. Desde 2026-09-15. | el dueño + `tienda` |

@@ -1,7 +1,8 @@
 # ADR 020 — Lo que requiere acción, buscar un pedido por número y las notas internas
 
 - **Fecha:** 2026-09-25
-- **Estado:** aceptada; **escrita y NO desplegada** (ver *Verificación*, al final)
+- **Estado:** aceptada; ~~**escrita y NO desplegada**~~ **desplegada el 2026-09-28**, junto
+  con [ADR 021](021-aviso-de-despacho.md) (ver *Verificación*, al final)
 - **Decide:** cómo la bandeja muestra primero lo que espera algo del operador, cómo
   se encuentra un pedido por su número y cómo se anota
 - **Historias:** HU-06.3, HU-06.4 ([EP-06](../../features/panel/EP-06-ver-pedidos.md))
@@ -152,9 +153,18 @@ Cada fila dice **cómo**; un job verde no prueba nada.
 | Hooks | `probar_hooks.sh` 35/35; los 6 del panel sobre los 20 archivos Dart tocados: 0 bloqueos |
 | Compila | CI `alcance=panel`, corrida `36192938783` sobre `8dde89e`: el paso *Análisis estático* dice **No issues found**, build web de **35 archivos**, `main.dart.js` `687d027a…`, artifact `panel-web` (id `10888882706`). La lista de jobs, no el color: `suite_emulador` y `suite_ts` **skipped** en esa corrida a propósito (corrieron en la `36192553512`) |
 
+### El deploy (2026-09-28)
+
+| Qué | Cómo |
+|---|---|
+| ⭐ **La consulta, ANTES del índice** | Corrida por REST contra producción con la forma exacta del repositorio (`OR` de los cuatro tramos, `orderBy creadaEn desc`, `limit 25`): **HTTP 200**. Firestore la resuelve **mezclando** `(estadoEntrega, creadaEn)` y `(estadoPago, creadaEn)`. El control negativo —la misma, ordenada por `actualizadaEn`— da `FAILED_PRECONDITION`, así que el script distingue. **El riesgo de §1 no existía en producción**; no se sabía hasta correrla |
+| El índice | `firebase deploy --only firestore:indexes`: `CICAgJiUsZIK` `(estadoEntrega, estadoPago, creadaEn)` `READY`, y con él la consulta sigue en 200 y el negativo en `FAILED_PRECONDITION`. Se desplegó igual: declarado y desplegado tienen que coincidir |
+| ⚠️ Lo que el 200 no prueba | En producción hay **0 pedidos**: la consulta devuelve vacío, así que prueba que **corre**, no qué trae. Lo que trae lo prueba el caso de los 36 pares en el emulador |
+| El panel | Ver [ADR 021](021-aviso-de-despacho.md#verificación-2026-09-28): salió en el mismo build |
+
 ### Lo que NO se verificó
 
-- ⚠️ **NO está desplegado.** El contenedor de la sesión no tiene credenciales de
+- ~~⚠️ **NO está desplegado.**~~ **Desplegado el 2026-09-28** (arriba). El contenedor de la sesión no tenía credenciales de
   Firebase, y el cambio vive en la rama `claude/gracious-wright-5f3ahe`, no en
   `main`. **El orden es índices → panel**: el índice nuevo tiene que estar
   **construido** (correr la consulta, no mirar `READY`) antes de publicar el panel,

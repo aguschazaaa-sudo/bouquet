@@ -9,8 +9,12 @@
 > validan la transición, con un test que lee la tabla del JSON (§2); preparar es
 > un botón propio (§4); el seguimiento es opcional (§4). **HU-07.7
 > construida el 2026-09-25** ([ADR 020](../../architecture/decisions/020-accion-busqueda-y-notas.md) §3: una escritura, sin tocar el estado; si dos
-> anotan a la vez gana la última). **Sigue sin construirse HU-07.3** (falta el número
-> de la tienda y `/pedido/<numero>`).
+> anotan a la vez gana la última). ~~**Sigue sin construirse HU-07.3** (falta el número
+> de la tienda y `/pedido/<numero>`).~~ **HU-07.3 construida el 2026-09-28, recortada**
+> ([ADR 021](../../architecture/decisions/021-aviso-de-despacho.md)): el aviso lleva el
+> correo y el seguimiento, **sin el link** a `/pedido/<numero>`, que llega con
+> `crearOrden`. El número de la tienda no bloqueaba el código: decide a quién se le
+> prende el botón, y eso lo hace el script.
 
 **Objetivo:** que cada pedido avance por el eje de entrega sin saltearse un
 paso, y que el comprador sepa cuándo salió.
@@ -95,9 +99,11 @@ despacho con el link a su pedido, **para** que no tenga que preguntar.
 - **Falta un dato:** **el número de la tienda todavía no existe**; lo va a
   pasar el dueño. Es el mismo que falta en `/oficio` (quinto gate, en
   [`_index.md`](../../_index.md)).
-- **Abierto:** dónde vive la marca. Un claim al lado de `rol`, que pone el
+- ~~**Abierto:** dónde vive la marca. Un claim al lado de `rol`, que pone el
   mismo script de acceso (HU-01.3) y cuesta **cero lecturas**, o un documento
-  por persona, que cuesta **una por sesión** y se puede cambiar desde el panel.
+  por persona, que cuesta **una por sesión** y se puede cambiar desde el panel.~~
+  **Decidido** ([ADR 021 §3](../../architecture/decisions/021-aviso-de-despacho.md)):
+  el claim `avisaPorWhatsApp`, con `acceso.mjs avisa <mail>` y `no-avisa <mail>`.
   Y un borde: la marca es de la persona, pero el WhatsApp es del teléfono;
   alguien habilitado que usa el panel en la compu avisa desde el WhatsApp Web
   que tenga abierto.
