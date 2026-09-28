@@ -49,6 +49,9 @@ dependencies:
   image_picker: ^1.2.3
   firebase_storage: ^12.4.10
   cloud_functions: ^5.6.2
+  # El aviso de despacho (HU-07.3) abre un enlace `wa.me`: en la web, una
+  # pestana; en Android, la app de WhatsApp. Es el paquete oficial de Flutter.
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   # package:test y no solo flutter_test: el test del espejo del enum es Dart

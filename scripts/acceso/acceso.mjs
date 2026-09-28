@@ -6,7 +6,15 @@
 //   node scripts/acceso/acceso.mjs dar <mail>
 //   node scripts/acceso/acceso.mjs quitar <mail>
 //   node scripts/acceso/acceso.mjs listar
+//   node scripts/acceso/acceso.mjs avisa <mail>      HU-07.3, ver abajo
+//   node scripts/acceso/acceso.mjs no-avisa <mail>
 //   ... --emulador      contra el emulador de Auth (proyecto demo-bouquet)
+//
+// `avisa` marca a quien le manda al comprador el aviso de que su pedido salio
+// (claim `avisaPorWhatsApp: true`). No es un permiso sobre los datos: el aviso
+// sale del WhatsApp del telefono que toca el boton, y la marca dice quien tiene
+// el de la tienda, para que el comprador no reciba mensajes de numeros
+// distintos (EP-07). Solo a quien ya tiene el rol.
 //
 // Credenciales: `gcloud auth application-default login`, igual que el seed.
 //
@@ -33,6 +41,8 @@ import { pathToFileURL } from 'node:url';
 export const PROYECTO = 'bouquet-vinos';
 export const PROYECTO_EMULADOR = 'demo-bouquet';
 export const ROL = 'admin';
+/** El mismo string que lee el panel (`claimDelAviso`, `sesion.dart`). */
+export const CLAIM_DEL_AVISO = 'avisaPorWhatsApp';
 
 export class AccesoNegado extends Error {}
 
@@ -120,25 +130,58 @@ export async function quitarAcceso(auth, mail) {
   return { mail: email, uid: usuario.uid, teniaAcceso: _rol === ROL };
 }
 
-/** Los mails con `rol: admin`, recorriendo todas las paginas. */
-export async function listarConAcceso(auth) {
+/**
+ * Marca a quien avisa por WhatsApp (HU-07.3). Se niega si la cuenta no tiene el
+ * rol: la marca sola no abre el panel, y ponerla le haria creer a quien corre
+ * el script que esa persona ya puede avisar. No revoca sesiones: no quita nada.
+ */
+export async function darAviso(auth, mail) {
+  const email = normalizarMail(mail);
+  const usuario = await buscar(auth, email);
+  if (usuario?.customClaims?.rol !== ROL) {
+    throw new AccesoNegado(`${email} no tiene acceso al panel. Primero: dar ${email}`);
+  }
+  await auth.setCustomUserClaims(usuario.uid, { ...usuario.customClaims, [CLAIM_DEL_AVISO]: true });
+  return { mail: email, uid: usuario.uid };
+}
+
+/** Saca la marca y deja todo lo demas, el rol incluido. */
+export async function quitarAviso(auth, mail) {
+  const email = normalizarMail(mail);
+  const usuario = await buscar(auth, email);
+  if (!usuario) throw new AccesoNegado(`${email} no tiene cuenta.`);
+
+  const { [CLAIM_DEL_AVISO]: marca, ...resto } = usuario.customClaims ?? {};
+  await auth.setCustomUserClaims(usuario.uid, Object.keys(resto).length ? resto : null);
+  return { mail: email, uid: usuario.uid, avisaba: marca === true };
+}
+
+/** Los mails cuyas cuentas cumplen `cumple(claims)`, recorriendo todas las paginas. */
+async function listarDonde(auth, cumple) {
   const mails = [];
   let pagina;
   do {
     const lote = await auth.listUsers(1000, pagina);
     for (const u of lote.users) {
-      if (u.customClaims?.rol === ROL) mails.push(u.email ?? `(sin mail) ${u.uid}`);
+      if (cumple(u.customClaims ?? {})) mails.push(u.email ?? `(sin mail) ${u.uid}`);
     }
     pagina = lote.pageToken;
   } while (pagina);
   return mails.sort();
 }
 
+/** Los mails con `rol: admin`. */
+export const listarConAcceso = (auth) => listarDonde(auth, (c) => c.rol === ROL);
+
+/** Los que tienen el rol Y la marca: los unicos a los que el panel les muestra el aviso. */
+export const listarQuienesAvisan = (auth) =>
+  listarDonde(auth, (c) => c.rol === ROL && c[CLAIM_DEL_AVISO] === true);
+
 async function principal(argv) {
   const emulador = argv.includes('--emulador');
   const [comando, mail] = argv.filter((a) => !a.startsWith('--'));
-  if (!['dar', 'quitar', 'listar'].includes(comando) || (comando !== 'listar' && !mail)) {
-    console.error('uso: node scripts/acceso/acceso.mjs dar|quitar <mail> | listar  [--emulador]');
+  if (!['dar', 'quitar', 'listar', 'avisa', 'no-avisa'].includes(comando) || (comando !== 'listar' && !mail)) {
+    console.error('uso: node scripts/acceso/acceso.mjs dar|quitar|avisa|no-avisa <mail> | listar  [--emulador]');
     return 2;
   }
 
@@ -166,10 +209,18 @@ async function principal(argv) {
       const r = await quitarAcceso(auth, mail);
       console.log(`ok  ${r.mail} ${r.teniaAcceso ? 'ya no tiene' : 'no tenia'} acceso; sesiones revocadas`);
       console.log('    un token ya emitido sigue valiendo para las reglas hasta una hora');
+    } else if (comando === 'avisa') {
+      const r = await darAviso(auth, mail);
+      console.log(`ok  ${r.mail} avisa por WhatsApp`);
+      console.log('    lo ve en el panel cuando su sesion se renueve: que salga y vuelva a entrar');
+    } else if (comando === 'no-avisa') {
+      const r = await quitarAviso(auth, mail);
+      console.log(`ok  ${r.mail} ${r.avisaba ? 'ya no avisa' : 'no avisaba'} por WhatsApp`);
     } else {
       const mails = await listarConAcceso(auth);
+      const avisan = new Set(await listarQuienesAvisan(auth));
       console.log(`${mails.length} con acceso`);
-      for (const m of mails) console.log(`  ${m}`);
+      for (const m of mails) console.log(`  ${m}${avisan.has(m) ? '  (avisa por WhatsApp)' : ''}`);
     }
     return 0;
   } catch (e) {

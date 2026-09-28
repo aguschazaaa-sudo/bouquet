@@ -193,9 +193,9 @@ jobs:
   # EN SERIE (`--test-concurrency=1`): todas limpian el MISMO emulador, y en
   # paralelo fallaron 8 casos ajenos (medido el 2026-09-24, ADR 018).
   #
-  # Quedan AFUERA, con motivo: `procesar_foto.emulador.mjs` (necesita el
-  # emulador de Functions, cuyo discovery no completa) y `acceso.test.mjs`
-  # (emulador de Auth; su propio pendiente en el vault).
+  # Queda AFUERA, con motivo: `procesar_foto.emulador.mjs` (necesita el
+  # emulador de Functions, cuyo discovery no completa). `acceso.test.mjs`
+  # (emulador de Auth) corre en su propio paso, abajo, desde el 2026-09-28.
   # ==========================================================================
   suite_emulador:
     needs: [contexto, tipos]
@@ -222,6 +222,21 @@ jobs:
           echo "tests ejecutados: ${N:-0} - fallidos: ${F:-?}"
           [ "${F:-1}" = "0" ] || { echo "::error::fallaron ${F:-?} casos"; exit 1; }
           [ "${N:-0}" -ge 158 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 158"; exit 1; }
+      - name: El script de accesos contra el emulador de Auth, y la CUENTA
+        # Entra el 2026-09-28 con HU-07.3: `acceso.mjs` pasa a escribir un
+        # segundo claim (`avisaPorWhatsApp`) y sin esto sus casos no los corria
+        # nadie. Aparte del de arriba: con `--only firestore,auth` la variable
+        # del emulador de Auth quedaria puesta para todas las suites.
+        run: |
+          set -o pipefail
+          firebase emulators:exec --only auth --project demo-bouquet \
+            "node --test scripts/acceso/acceso.test.mjs" \
+            2>&1 | tee /tmp/acceso.txt
+          N=$(grep -oE 'tests [0-9]+' /tmp/acceso.txt | tail -1 | grep -oE '[0-9]+')
+          F=$(grep -oE 'fail [0-9]+' /tmp/acceso.txt | tail -1 | grep -oE '[0-9]+')
+          echo "tests ejecutados: ${N:-0} - fallidos: ${F:-?}"
+          [ "${F:-1}" = "0" ] || { echo "::error::fallaron ${F:-?} casos"; exit 1; }
+          [ "${N:-0}" -ge 17 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 17"; exit 1; }
 
   suite_dart:
     needs: contexto

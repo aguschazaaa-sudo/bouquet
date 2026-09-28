@@ -37,13 +37,24 @@ final class Inaccesible extends Sesion {
 
 /// Entro alguien de la familia.
 final class Operador extends Sesion {
-  const Operador(this.mail);
+  const Operador(this.mail, {this.avisaPorWhatsapp = false});
   final String mail;
+
+  /// Si esta persona le avisa al comprador que su pedido salio (HU-07.3). **No
+  /// es un permiso sobre los datos** —el rol sigue siendo uno—: dice quien tiene
+  /// el WhatsApp desde el que la tienda escribe, para que el comprador no reciba
+  /// mensajes de numeros distintos.
+  final bool avisaPorWhatsapp;
 }
 
 /// El valor del claim `rol` que abre el panel. Es el mismo string que mira
 /// `esAdmin()` en `firestore.rules` y que escribe `scripts/acceso/acceso.mjs`.
 const rolDelPanel = 'admin';
+
+/// El claim que marca a quien avisa por WhatsApp. Lo escribe el mismo script
+/// (`acceso.mjs avisa <mail>`) y vale sólo si es exactamente `true`. En un
+/// claim y no en un documento: cero lecturas, y cambia tan poco como el rol.
+const claimDelAviso = 'avisaPorWhatsApp';
 
 /// La sesion de una cuenta que entro, a partir de los claims de su token.
 Sesion sesionDesde({
@@ -51,5 +62,6 @@ Sesion sesionDesde({
   required Map<String, dynamic>? claims,
 }) {
   final quien = mail ?? '';
-  return claims?['rol'] == rolDelPanel ? Operador(quien) : SinPermiso(quien);
+  if (claims?['rol'] != rolDelPanel) return SinPermiso(quien);
+  return Operador(quien, avisaPorWhatsapp: claims?[claimDelAviso] == true);
 }

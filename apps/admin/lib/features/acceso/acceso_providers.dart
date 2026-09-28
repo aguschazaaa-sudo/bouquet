@@ -20,3 +20,13 @@ final repositorioDeSesionProvider = Provider<RepositorioDeSesion>(
 final sesionProvider = StreamProvider<Sesion>(
   (ref) => ref.watch(repositorioDeSesionProvider).cambios(),
 );
+
+/// Si quien abrio el panel avisa por WhatsApp (HU-07.3). `false` mientras la
+/// sesion se resuelve: un boton que aparece y desaparece es peor que uno que
+/// tarda.
+final avisaPorWhatsappProvider = Provider<bool>(
+  (ref) => switch (ref.watch(sesionProvider).valueOrNull) {
+    Operador(:final avisaPorWhatsapp) => avisaPorWhatsapp,
+    _ => false,
+  },
+);

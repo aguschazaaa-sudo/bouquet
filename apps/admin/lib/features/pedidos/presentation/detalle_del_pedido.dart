@@ -8,6 +8,7 @@ import '../domain/nota_del_pedido.dart';
 import '../domain/orden.dart';
 import '../domain/paso_de_entrega.dart';
 import '../pedidos_providers.dart';
+import 'boton_de_aviso.dart';
 import 'botones_del_pedido.dart';
 import 'dialogo_de_entrega.dart';
 import 'hoja_de_cancelacion.dart';
@@ -23,9 +24,9 @@ import 'textos_de_notas.dart';
 import 'textos_de_pedidos.dart';
 
 /// El cuerpo del detalle de un pedido (HU-06.2) y lo que se le puede hacer
-/// (EP-07) y sus notas (HU-07.7): el estado arriba —de la proyeccion, nunca de
-/// mirar los dos campos—, que sigue, lo que ya paso, las notas, que lleva y a
-/// quien.
+/// (EP-07), el aviso de que salio (HU-07.3) y sus notas (HU-07.7): el estado
+/// arriba —de la proyeccion, nunca de mirar los dos campos—, que sigue, lo que
+/// ya paso, las notas, que lleva y a quien.
 ///
 /// Cada cambio **se guarda y despues se vuelve a leer** ([alCambiar]): la
 /// pantalla muestra lo que tiene el servidor, no lo que el panel cree que
@@ -174,6 +175,7 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
         ],
         const SizedBox(height: 16),
         SeccionDeLaEntrega(orden: _orden, ahora: DateTime.now()),
+        BotonDeAviso(orden: _orden),
         if (fallo != null) ...[
           Aviso(tono: TonoDelAviso.error, texto: _textoDelFallo(fallo)),
           const SizedBox(height: 12),

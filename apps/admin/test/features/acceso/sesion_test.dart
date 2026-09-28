@@ -49,6 +49,36 @@ void main() {
     test('el rol es el mismo string que miran las reglas', () {
       expect(rolDelPanel, 'admin');
     });
+
+    group('la marca de quien avisa por WhatsApp (HU-07.3)', () {
+      bool avisa(Map<String, dynamic> claims) =>
+          (sesionDesde(mail: 'x@gmail.com', claims: claims) as Operador)
+              .avisaPorWhatsapp;
+
+      test('con avisaPorWhatsApp: true, avisa (control positivo)', () {
+        expect(avisa({'rol': 'admin', 'avisaPorWhatsApp': true}), isTrue);
+      });
+
+      test('sin la marca, no avisa: el default de todos', () {
+        expect(avisa({'rol': 'admin'}), isFalse);
+      });
+
+      test('sólo vale exactamente true', () {
+        expect(avisa({'rol': 'admin', 'avisaPorWhatsApp': 'true'}), isFalse);
+        expect(avisa({'rol': 'admin', 'avisaPorWhatsApp': 1}), isFalse);
+      });
+
+      test('la marca sin el rol no abre el panel', () {
+        expect(
+          sesionDesde(mail: 'x@gmail.com', claims: {'avisaPorWhatsApp': true}),
+          isA<SinPermiso>(),
+        );
+      });
+
+      test('es el mismo string que escribe acceso.mjs', () {
+        expect(claimDelAviso, 'avisaPorWhatsApp');
+      });
+    });
   });
 
   group('errorDeEntradaPara', () {
