@@ -9,6 +9,52 @@
 
 ---
 
+## Salió el 2026-09-29, al sacar la marca de WhatsApp
+
+Sale la del quinto tramo del hito 2 (2026-09-28): con la de *pedidos sin burocracia* sumada
+al dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 022](../architecture/decisions/022-cobro-de-la-vidriera.md).
+
+### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — desplegado con credenciales FALSAS (2026-09-28)
+
+**Desplegado el 2026-09-28 —functions (v0.40.1, `66442a9`) y panel (`1238d5e`)— con los
+secretos de Mercado Pago en valores FALSOS**, a pedido del usuario: el dueño todavía no pasó los
+de su cuenta. Verificado por respuesta y por bytes; **la conversación con Mercado Pago sigue sin
+probarse**. Sin openspec, a pedido del dueño:
+[ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md) es la especificación.
+**HU-08.1 y HU-08.3**: el webhook `avisoDeMercadoPago` (firma con el validador del SDK oficial →
+consulta → transacción con marcador), la callable `revisarPago` sobre el **mismo** núcleo, y en
+el detalle de un pedido de la vidriera *"El cobro"*: la operación para conciliar, lo devuelto,
+las alertas y *"Volver a consultar a Mercado Pago"*.
+
+- **El pedido falso**: `functions/test/pagos/pago.emulador.mjs`. Lo único falso es la API de
+  pagos de Mercado Pago (una cuenta en memoria); la firma se arma con la **plantilla de la
+  documentación**, no con el SDK. No se creó ningún pedido falso en producción.
+- **Corrige ADR 003**: el marcador `pago-{paymentId}` **perdía una venta** (un pago en proceso
+  y después aprobado, con el mismo id). Es por hecho: `pago-{proveedor}-{id}-{estadoCrudo}`.
+- **`revisor-pagos`, antes del commit: 2 ALTOS**, los dos corregidos con su prueba: un
+  **reembolso parcial** quedaba invisible para siempre, y un **segundo cobro** pisaba al primero
+  sin alarma. Lo que movió plata y no se aplicó ahora deja `alertaDePago` en la Orden, visible
+  en el panel.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36475268911` (`completo`, todo junto) restada contra `36466563334`: contratos 245 → **268 (+23)**, functions 56 → **73 pasados (+17)**, emulador 162 → **187 (+25)**, Dart 450 → **488 (+38 = 21 + 17, los `test(` de los dos archivos nuevos)**, `flutter analyze` **No issues found**, 622 enlaces |
+| Que discriminen | CI `36473359581`, **cuatro mutaciones** en una rama descartable (marcador por pago, sin monto, sin idempotencia, sin firma): cada una tumbó sólo sus casos — 9 en el emulador, 4 unitarios —, y los otros 175 del emulador siguieron verdes |
+| Presupuesto | ~130 lecturas al día con 20 ventas, **0,26 %**; el panel, 0 (todo viaja en el documento de la Orden) |
+
+| El deploy | **El primer intento falló sin subir nada**: el SDK (CommonJS) adentro del bundle ESM no carga. Quedó externo, y CI ahora carga el bundle y cuenta las 6 functions (`36477703196`). Functions: sólo las dos nuevas; aviso sin firma **401**, firmado con el secreto falso **200**, con otro **401**, un pago **500** con `MPAuthenticationError` en el log (llegó a Mercado Pago, no escribió nada); `revisarPago` preflight **204**, anónimo **401 JSON**; inventada **404**. Panel: canario discriminante (3 cadenas 0 → 1, `COMMIT` `fde0b38` → `1238d5e`) → live con los 4 hashes iguales, `noindex` |
+
+⚠️ **Los secretos son FALSOS** (`valor=falso` en Secret Manager): con ellos el webhook contesta
+500 a todo pago y *"Volver a consultar"* dice *"Mercado Pago no contestó"* — sin escribir nada.
+**Lo que sigue:** las claves de la cuenta del dueño (de prueba primero) →
+`firebase functions:secrets:set` de las dos → **redesplegar `avisoDeMercadoPago` y
+`revisarPago`** (no toman solas la versión nueva) → registrar la URL del webhook en Mercado
+Pago → una compra en sandbox. Y después, `crearOrden` con la preferencia: sin ella no existe un
+pedido de la vidriera, y nada de esto se ve. **Nadie lo miró renderizado.**
+
+---
+
 ## Salió el 2026-09-29, al ordenar la vidriera arrastrando
 
 Sale la del cuarto tramo del hito 2 (2026-09-28): con la del panel a ancho de teléfono

@@ -255,7 +255,7 @@ mismo momento**, con su presupuesto de lecturas, que hoy no se puede calcular.
 | # | Pregunta | Respuesta | Qué cambió |
 |---|---|---|---|
 | 7 | ¿La regla de las seis botellas vale para una venta por WhatsApp? | **No aplica** | HU-10.1 no la exige, y el origen del pedido pasa a ser una regla de plata (hallazgo 12) |
-| 8 | ¿La tienda tiene un WhatsApp propio, o cada uno avisa desde el suyo? | *"Tenés razón"*: el botón de aviso **se activa o desactiva por persona**. **El número todavía no existe**; lo va a pasar el dueño | HU-07.3. Es el mismo número que falta en `/oficio` (quinto gate) |
+| 8 | ¿La tienda tiene un WhatsApp propio, o cada uno avisa desde el suyo? | *"Tenés razón"*: el botón de aviso **se activa o desactiva por persona**. **El número todavía no existe**; lo va a pasar el dueño. **Revisado el 2026-09-29**: nadie tenía la marca y el dueño no encontraba el botón; ahora **lo ve todo el que entra** ([ADR 021, *Revisión*](../../architecture/decisions/021-aviso-de-despacho.md)) | HU-07.3. Es el mismo número que falta en `/oficio` (quinto gate) |
 | 9 | ¿Cómo se cobran los pedidos de WhatsApp? | **Se gestionan por fuera: el pago no se ve en el panel** | **HU-10.2 se descarta**; HU-08.2 vuelve a esperar un disparador; `entroEnPagada` se estrena con el webhook; y aparece el hallazgo 13 |
 
 ---

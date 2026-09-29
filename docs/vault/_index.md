@@ -76,6 +76,36 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
+
+**Escrito; falta CI, publicarlo y que alguien lo mire.** Sin openspec, a pedido del dueño: la
+especificación es la *Revisión* de [ADR 021](architecture/decisions/021-aviso-de-despacho.md).
+El dueño no encontraba el botón: pedía una marca que **no tenía nadie** y aparecía sólo en un
+pedido despachado.
+
+- **Un solo botón, debajo del estado, en cualquier estado del pedido**: *"Escribirle por
+  WhatsApp"* abre el chat vacío; en uno despachado, *"Avisarle por WhatsApp que salió"* lo abre
+  con el aviso escrito.
+- **Lo ve todo el que entra**: la marca `avisaPorWhatsApp` salió del panel, de `acceso.mjs`
+  (`avisa`/`no-avisa`) y de sus tests; el piso de CI del script baja de 17 a 11.
+- Cero lecturas y cero escrituras; sólo el panel. **Arrastra la v0.45.0** (entrada de abajo),
+  que estaba sin publicar.
+
+**Segundo tramo, aprobado por el dueño en la misma conversación y sin escribir.** Es Workflow D:
+toca `crearOrdenDelPanel`, que descuenta stock, y la tabla de estados de las reglas.
+
+| | Hoy | Aprobado |
+|---|---|---|
+| Cargar un pedido | 10 campos, 7 obligatorios | **6**: nombre, teléfono, dirección (calle y número en uno) y localidad obligatorios; piso, depto o referencia en uno, opcional. **Salen el código postal, la provincia y el mail**. La vidriera no cambia |
+| La bandeja | 7 fichas | **3**: *Para hacer* (por despachar y no entregados), *En camino*, *Terminados* |
+| Nombres | hasta 3 por estado (*"En camino"* / *"Despachada"*) | **uno**, el mismo en la ficha, el detalle y el botón |
+| Pasos | preparar → despachar → llegó | ***Salió* → *Llegó***: sale "preparar" (arma una persona). Pide `sin_preparar → despachada` en la tabla y en las reglas |
+| Entrega fallida | no se cancela | **igual**: lo decidió el dueño, y cierra el abierto de [ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md) |
+
+**Disparador:** en cuanto el primer tramo esté verificado. Maqueta navegable con `/disenio` →
+`/opsx:propose` → `revisor-pagos` y `presupuesto-lecturas` → reglas → functions → panel. Desde
+2026-09-29.
+
 ### El panel a ancho de teléfono: un solo scroll, y la vidriera se ordena arrastrando (2026-09-29)
 
 **Commiteado (v0.45.0). Falta publicarlo y que alguien pruebe el arrastre.** Sin openspec,
@@ -206,44 +236,6 @@ clasificador. Hasta limpiarla, *Vidriera* la muestra como del dueño y la próxi
 publicación de la tienda la hornea. Se limpia sacando los seis en *Vidriera*, o
 eligiendo los reales.
 
-### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — desplegado con credenciales FALSAS (2026-09-28)
-
-**Desplegado el 2026-09-28 —functions (v0.40.1, `66442a9`) y panel (`1238d5e`)— con los
-secretos de Mercado Pago en valores FALSOS**, a pedido del usuario: el dueño todavía no pasó los
-de su cuenta. Verificado por respuesta y por bytes; **la conversación con Mercado Pago sigue sin
-probarse**. Sin openspec, a pedido del dueño:
-[ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md) es la especificación.
-**HU-08.1 y HU-08.3**: el webhook `avisoDeMercadoPago` (firma con el validador del SDK oficial →
-consulta → transacción con marcador), la callable `revisarPago` sobre el **mismo** núcleo, y en
-el detalle de un pedido de la vidriera *"El cobro"*: la operación para conciliar, lo devuelto,
-las alertas y *"Volver a consultar a Mercado Pago"*.
-
-- **El pedido falso**: `functions/test/pagos/pago.emulador.mjs`. Lo único falso es la API de
-  pagos de Mercado Pago (una cuenta en memoria); la firma se arma con la **plantilla de la
-  documentación**, no con el SDK. No se creó ningún pedido falso en producción.
-- **Corrige ADR 003**: el marcador `pago-{paymentId}` **perdía una venta** (un pago en proceso
-  y después aprobado, con el mismo id). Es por hecho: `pago-{proveedor}-{id}-{estadoCrudo}`.
-- **`revisor-pagos`, antes del commit: 2 ALTOS**, los dos corregidos con su prueba: un
-  **reembolso parcial** quedaba invisible para siempre, y un **segundo cobro** pisaba al primero
-  sin alarma. Lo que movió plata y no se aplicó ahora deja `alertaDePago` en la Orden, visible
-  en el panel.
-
-| Qué | Cómo |
-|---|---|
-| Las suites | CI `36475268911` (`completo`, todo junto) restada contra `36466563334`: contratos 245 → **268 (+23)**, functions 56 → **73 pasados (+17)**, emulador 162 → **187 (+25)**, Dart 450 → **488 (+38 = 21 + 17, los `test(` de los dos archivos nuevos)**, `flutter analyze` **No issues found**, 622 enlaces |
-| Que discriminen | CI `36473359581`, **cuatro mutaciones** en una rama descartable (marcador por pago, sin monto, sin idempotencia, sin firma): cada una tumbó sólo sus casos — 9 en el emulador, 4 unitarios —, y los otros 175 del emulador siguieron verdes |
-| Presupuesto | ~130 lecturas al día con 20 ventas, **0,26 %**; el panel, 0 (todo viaja en el documento de la Orden) |
-
-| El deploy | **El primer intento falló sin subir nada**: el SDK (CommonJS) adentro del bundle ESM no carga. Quedó externo, y CI ahora carga el bundle y cuenta las 6 functions (`36477703196`). Functions: sólo las dos nuevas; aviso sin firma **401**, firmado con el secreto falso **200**, con otro **401**, un pago **500** con `MPAuthenticationError` en el log (llegó a Mercado Pago, no escribió nada); `revisarPago` preflight **204**, anónimo **401 JSON**; inventada **404**. Panel: canario discriminante (3 cadenas 0 → 1, `COMMIT` `fde0b38` → `1238d5e`) → live con los 4 hashes iguales, `noindex` |
-
-⚠️ **Los secretos son FALSOS** (`valor=falso` en Secret Manager): con ellos el webhook contesta
-500 a todo pago y *"Volver a consultar"* dice *"Mercado Pago no contestó"* — sin escribir nada.
-**Lo que sigue:** las claves de la cuenta del dueño (de prueba primero) →
-`firebase functions:secrets:set` de las dos → **redesplegar `avisoDeMercadoPago` y
-`revisarPago`** (no toman solas la versión nueva) → registrar la URL del webhook en Mercado
-Pago → una compra en sandbox. Y después, `crearOrden` con la preferencia: sin ella no existe un
-pedido de la vidriera, y nada de esto se ve. **Nadie lo miró renderizado.**
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -255,8 +247,8 @@ pedido de la vidriera, y nada de esto se ve. **Nadie lo miró renderizado.**
 | ~~**Entrar con Google no está verificado en live por una persona**~~ **VERIFICADO el 2026-09-17: lo hizo el dueño** | Entró con Google en live, se le creó la cuenta —`providers: google.com`, mail verificado, sin claims— y cayó en `/sin-acceso`, que es exactamente lo que el diseño dice que pase. ⚠️ **Queda un hueco chico:** eso fue **antes** de acotar la API key, así que el flujo de Google **con la restricción puesta** no está probado. Lo que sí está probado con la restricción es una llamada real a Auth desde el navegador en live y en el canal. `firebaseapp.com` está en la lista justo porque por ahí pasa el handler de Google, pero eso es un razonamiento, no una medición. **Disparador:** la próxima vez que alguien entre con Google —basta con que el dueño salga y vuelva a entrar—. Desde 2026-09-17. | el dueño |
 | ~~**La API key web del panel no está restringida**~~ **RESUELTO el 2026-09-17**, y lo corrió el dueño porque el clasificador del modo auto frena tocar la key (*"Modify Shared Resources"*) | La key es pública por diseño —viaja adentro de `main.dart.js`, así que guardarla como secret no cambia nada: el navegador la necesita en claro—, pero estaba sin acotar: `browserKeyRestrictions` **vacío** y 27 servicios habilitados, `identitytoolkit` entre ellos. Ahora acepta tres hosts: el panel, `firebaseapp.com` —por donde pasa el handler de Google— y el canal `panel`. **Verificado con las dos mitades, y el antes medido:** un `POST` a `accounts:signInWithPassword` con `Referer` inventado daba **400 `INVALID_LOGIN_CREDENTIALS`** (la atendía) y ahora da **403 blocked**, mientras los tres hosts permitidos siguen dando 400, o sea que llegan. Y de punta a punta con un navegador real pidiendo el correo de contraseña desde live y desde el canal: los dos contestan el aviso, sin nada de bloqueo en consola. ⚠️ **La trampa que sólo apareció con el tercer control: un comodín en medio de una etiqueta (`bouquet-vinos--*.web.app`) la API lo ACEPTA y no matchea nada** — se guarda sin protestar y el canal seguía dando 403. Va el host literal. **Ojo con lo que esto NO es:** el `Referer` lo falsifica cualquiera con `curl -H`, así que corta abuso casual y robo de cuota, no a alguien decidido; contra el registro anticipado lo que protege es la negativa del script (ADR 011), y apagar el alta pública está descartado ahí mismo. **Deja una obligación:** un canal con otro nombre no va a poder entrar hasta que su host esté en la lista — anotado en `publicar.sh`. | el dueño |
 | **Ningún change de openspec se archivó nunca** | `openspec/specs/` está **vacío** y hay **4** changes en `openspec/changes/` (`panel-entrar`, `cajas-de-seis`, `catalogo-y-carrito`, `seccion-el-oficio`), todos implementados. Sin línea base publicada, un change nuevo no tiene contra qué diferenciarse. `opsx` trae `openspec-bulk-archive-change` justo para esto, pero las skills de terceros no se commitean (`bash scripts/skills_restaurar.sh`). Archivar sólo uno inventaría una línea base que los otros tres no tienen, así que van los cuatro juntos. **Disparador:** la próxima sesión que empiece con las skills restauradas. Desde 2026-09-17. | el usuario |
-| **Los tests del script de accesos no corren en CI** | Corren contra el emulador de Auth. ~~Igual que los de reglas, que tampoco están en CI~~: **los de reglas y los de las transacciones sí corren en CI desde el 2026-09-25** (job `suite_emulador`, [ADR 019 §8](architecture/decisions/019-preparar-despachar-y-cancelar.md)); éste quedó afuera porque pide el emulador de Auth. Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
-| ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). ~~**Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3.~~ **HU-07.3 ya no lo espera** (2026-09-28, [ADR 021](architecture/decisions/021-aviso-de-despacho.md)): el número no entra al código, decide a quién se le da la marca `avisaPorWhatsApp`. **Sigue bloqueando `/oficio`.** **Disparador:** cuando el dueño lo pase. Desde 2026-09-16. | el dueño |
+| ~~**Los tests del script de accesos no corren en CI**~~ **RESUELTO el 2026-09-28**: corren en CI desde [ADR 021](architecture/decisions/021-aviso-de-despacho.md), con piso de 11 desde el 2026-09-29 | Corren contra el emulador de Auth. ~~Igual que los de reglas, que tampoco están en CI~~: **los de reglas y los de las transacciones sí corren en CI desde el 2026-09-25** (job `suite_emulador`, [ADR 019 §8](architecture/decisions/019-preparar-despachar-y-cancelar.md)); éste quedó afuera porque pide el emulador de Auth. Hoy se corren a mano: `firebase emulators:exec --only auth --project demo-bouquet "node --test scripts/acceso/acceso.test.mjs"`. **Disparador:** el mismo que los de reglas, la sesión de `crearOrden`. Desde 2026-09-16. | el usuario |
+| ~~⚠️ **Seis preguntas del dueño cambian el backlog del panel**~~ **RESPONDIDAS el 2026-09-16, en dos rondas** | Queda **un dato**: el **número de WhatsApp de la tienda**, que el dueño todavía no tiene y va a pasar. El botón de aviso del panel se activa sólo para quien lo tenga (HU-07.3), y es el mismo número que bloquea `/oficio` (quinto gate, más abajo). El detalle, en [`features/panel/overview.md`](features/panel/overview.md). ~~**Disparador:** cuando el dueño lo pase, y antes de escribir los requerimientos de HU-07.3.~~ **HU-07.3 ya no lo espera** (2026-09-28, [ADR 021](architecture/decisions/021-aviso-de-despacho.md)): el número no entra al código, decide a quién se le da la marca `avisaPorWhatsApp`. **Desde el 2026-09-29 no hay marca**: el botón lo ve todo el que entra (ADR 021, *Revisión*). **Sigue bloqueando `/oficio`.** **Disparador:** cuando el dueño lo pase. Desde 2026-09-16. | el dueño |
 | ~~⚠️ **Las reglas nuevas NO están publicadas en `bouquet-vinos`**~~ **RESUELTO el 2026-09-14:** desplegadas con `firebase deploy --only firestore:rules,storage`. Verificado **con la API de Rules**, no con el mensaje del CLI: dos releases con la marca de tiempo del deploy, y el ruleset publicado contiene `cajasSugeridas` (control negativo: una colección inventada da 0). **Las fotos dan 200 `image/webp`.** ⚠️ Al medirlo, la API devolvió **403** por falta de quota project y mi primer script lo leyó como *"ningún release"* — el modo de falla exacto contra el que avisa `CLAUDE.md`. | el dueño |
 | ⚠️ **SEXTO GATE: `/pedido` está armado y NO COBRA** | `EL_CHECKOUT_NO_COBRA = true` en `features/carrito/checkout/textos.ts`, y viaja al HTML como `data-checkout-simulado`, así que se chequea con `grep` en el repo **y** con `bash scripts/tienda/preview.sh verificar` en lo desplegado (⚠️ **no** con `curl /pedido | grep`: da 0 con el gate cerrado, ver [ADR 010](architecture/decisions/010-el-checkout.md)). Se apaga **sólo** cuando existan las tres cosas: `crearOrden`, la preferencia de Mercado Pago y su webhook verificando firma. CLAUDE.md: *un "Pagar" que llegue antes que su webhook es una venta que se cobra y no se registra*. **Disparador: bloquea el deploy.** Desde 2026-09-15. | el dueño + `functions` |
 | ⚠️ **`cajasSugeridas/publicas` de stage quedó VIEJO, y se ve** | El documento sembrado todavía tiene `dos-y-dos` —dos packs de 2 + dos botellas—, que desde [ADR 009 §10](architecture/decisions/009-venta-por-caja.md) no es una caja: el código la descarta y el carril de `/vinos` sirve **3** tarjetas en vez de 4, con el motivo logueado en la build. `dos-de-cada` no existe hasta que corra `node scripts/seed/seed.mjs`. **Disparador:** antes de mirar el carril de stage, y antes del primer deploy. Desde 2026-09-15. | el dueño + `tienda` |

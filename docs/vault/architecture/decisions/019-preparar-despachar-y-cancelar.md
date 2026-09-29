@@ -250,7 +250,7 @@ recortar sigue siendo la preview (ADR 017), no este cambio.
 | **Las listas de correos y motivos** son mías (§4) | Que el dueño use otro correo o extrañe un motivo |
 | **Cancelar un pedido de la vidriera pagado** lo deja en *cancelada con pago*, que pide un reembolso que el panel no hace (HU-08.4) | La sesión del cobro |
 | **Una línea `sinReponer` se resuelve a mano** (con `moverStock`) | Si pasa más de una vez |
-| ⚠️ **Un pedido con la entrega fallida no se cancela** (hallazgo 3 de `revisor-pagos`): el paquete que vuelve y el cliente que ya no lo quiere no tienen salida, y el stock no se entera. Agregar `fallida → cancelada` es cambiar la tabla de ADR 002 y **lo decide el dueño** | El primer paquete que vuelve de un pedido que ya no se entrega |
+| ⚠️ **Un pedido con la entrega fallida no se cancela** (hallazgo 3 de `revisor-pagos`): el paquete que vuelve y el cliente que ya no lo quiere no tienen salida, y el stock no se entera. Agregar `fallida → cancelada` es cambiar la tabla de ADR 002 y **lo decide el dueño**. **Decidido el 2026-09-29: queda como está.** Se le preguntó con las dos salidas a la vista —cancelar con *"Volvió y no lo quiere"* y reponer, o dejarlo— y eligió dejarlo: el pedido queda entre los que piden hacer algo y las botellas se devuelven con `moverStock` | ~~El primer paquete que vuelve de un pedido que ya no se entrega~~ Cerrado. Se reabre si el dueño lo pide |
 | **Cuántas fichas de estado mira el operador por apertura** decide el número grande del presupuesto (2.250 con 3, 3.750 con 5) | Una semana de uso real |
 
 ## Lo que encontró `revisor-pagos` (2026-09-25)

@@ -50,22 +50,17 @@ void main() {
       expect(rolDelPanel, 'admin');
     });
 
-    group('la marca de quien avisa por WhatsApp (HU-07.3)', () {
-      bool avisa(Map<String, dynamic> claims) =>
-          (sesionDesde(mail: 'x@gmail.com', claims: claims) as Operador)
-              .avisaPorWhatsapp;
-
-      test('con avisaPorWhatsApp: true, avisa (control positivo)', () {
-        expect(avisa({'rol': 'admin', 'avisaPorWhatsApp': true}), isTrue);
-      });
-
-      test('sin la marca, no avisa: el default de todos', () {
-        expect(avisa({'rol': 'admin'}), isFalse);
-      });
-
-      test('sólo vale exactamente true', () {
-        expect(avisa({'rol': 'admin', 'avisaPorWhatsApp': 'true'}), isFalse);
-        expect(avisa({'rol': 'admin', 'avisaPorWhatsApp': 1}), isFalse);
+    // La marca `avisaPorWhatsApp` ya no se lee (ADR 021, *Revision*): el boton
+    // de WhatsApp lo ve todo el que entra. Una cuenta que la conserve no cambia.
+    group('la marca vieja de WhatsApp (HU-07.3)', () {
+      test('con la marca y el rol, entra como cualquiera', () {
+        expect(
+          sesionDesde(
+            mail: 'x@gmail.com',
+            claims: {'rol': 'admin', 'avisaPorWhatsApp': true},
+          ),
+          isA<Operador>(),
+        );
       });
 
       test('la marca sin el rol no abre el panel', () {
@@ -73,10 +68,6 @@ void main() {
           sesionDesde(mail: 'x@gmail.com', claims: {'avisaPorWhatsApp': true}),
           isA<SinPermiso>(),
         );
-      });
-
-      test('es el mismo string que escribe acceso.mjs', () {
-        expect(claimDelAviso, 'avisaPorWhatsApp');
       });
     });
   });

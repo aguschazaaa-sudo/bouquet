@@ -9,8 +9,8 @@ import 'package:admin/features/pedidos/domain/orden.dart';
 import 'package:admin/features/pedidos/presentation/textos_del_aviso.dart';
 import 'package:test/test.dart';
 
-/// HU-07.3: cuándo se ofrece el aviso, que el enlace `wa.me` lleve al chat
-/// correcto con el texto entero, y el texto que lee el comprador.
+/// HU-07.3: cuándo el chat se abre con el aviso, que el enlace `wa.me` lleve al
+/// chat correcto con el texto entero —o vacío—, y el texto que lee el comprador.
 
 Orden _orden({
   EstadoEntrega entrega = EstadoEntrega.despachada,
@@ -75,6 +75,16 @@ void main() {
     test('el espacio va como %20, nunca como +', () {
       final crudo = enlaceDeWhatsapp('+5493541234567', 'a b')!.toString();
       expect(crudo, 'https://wa.me/5493541234567?text=a%20b');
+    });
+
+    test('sin texto, el chat vacío: ni ?text= ni un texto vacío', () {
+      final u = enlaceDeWhatsapp('+5493541234567', null)!;
+      expect(u.toString(), 'https://wa.me/5493541234567');
+      expect(u.queryParameters, isEmpty);
+    });
+
+    test('sin texto, un teléfono que no es E.164 tampoco arma enlace', () {
+      expect(enlaceDeWhatsapp('03541 15-123456', null), isNull);
     });
 
     test('lo que sale del normalizador arma enlace (control positivo)', () {

@@ -93,9 +93,13 @@ despacho con el link a su pedido, **para** que no tenga que preguntar.
 - ⚠️ **El aviso sale del WhatsApp del teléfono que toca el botón.** Si cada
   uno de la familia avisa desde el suyo, el comprador recibe mensajes de
   números distintos.
-- **Decidido por el dueño:** el botón **se activa o desactiva por persona**,
+- ~~**Decidido por el dueño:** el botón **se activa o desactiva por persona**,
   para que avise sólo quien tiene el WhatsApp de la tienda. No es un permiso
-  sobre los datos —el rol sigue siendo uno—: dice quién tiene el teléfono.
+  sobre los datos —el rol sigue siendo uno—: dice quién tiene el teléfono.~~
+  **Revisado por el dueño el 2026-09-29**: no encontraba el botón. **Lo ve todo
+  el que entra, en cualquier estado del pedido**: *"Escribirle por WhatsApp"*, y
+  en uno despachado *"Avisarle por WhatsApp que salió"*
+  ([ADR 021, *Revisión*](../../architecture/decisions/021-aviso-de-despacho.md)).
 - **Falta un dato:** **el número de la tienda todavía no existe**; lo va a
   pasar el dueño. Es el mismo que falta en `/oficio` (quinto gate, en
   [`_index.md`](../../_index.md)).
@@ -104,6 +108,7 @@ despacho con el link a su pedido, **para** que no tenga que preguntar.
   por persona, que cuesta **una por sesión** y se puede cambiar desde el panel.~~
   **Decidido** ([ADR 021 §3](../../architecture/decisions/021-aviso-de-despacho.md)):
   el claim `avisaPorWhatsApp`, con `acceso.mjs avisa <mail>` y `no-avisa <mail>`.
+  **Sacado el 2026-09-29** con la revisión de arriba.
   Y un borde: la marca es de la persona, pero el WhatsApp es del teléfono;
   alguien habilitado que usa el panel en la compu avisa desde el WhatsApp Web
   que tenga abierto.

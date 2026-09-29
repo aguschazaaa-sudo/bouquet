@@ -1,7 +1,9 @@
 # ADR 021 — El aviso de que un pedido salió, por WhatsApp y con un toque
 
 - **Fecha:** 2026-09-28
-- **Estado:** aceptada; **desplegada y verificada por bytes el 2026-09-28** (v0.39.0, `fde0b38`). Nadie la miró renderizada: ver *Verificación*, al final
+- **Estado:** aceptada; **desplegada y verificada por bytes el 2026-09-28** (v0.39.0, `fde0b38`). Nadie la miró renderizada: ver *Verificación*, al final.
+  **Revisada el 2026-09-29 a pedido del dueño**: la marca por persona (§3) se sacó, y el
+  botón lo ve todo el que entra, en cualquier estado del pedido. Ver *Revisión*, al final
 - **Decide:** cómo se le avisa al comprador que su pedido salió, quién lo avisa y
   dónde vive esa marca
 - **Historia:** HU-07.3 ([EP-07](../../features/panel/EP-07-preparar-y-entregar.md)),
@@ -62,6 +64,9 @@ como `%23`, que sin escapar cortaría el texto ahí.
 
 ### 3. La marca es un claim, `avisaPorWhatsApp: true`, que pone el script
 
+> ⚠️ **Revocada el 2026-09-29** (*Revisión*, al final): el dueño no encontraba el botón,
+> porque la marca no la tenía nadie. Queda escrita porque explica el porqué de lo que se sacó.
+
 Lo que la épica dejó abierto: **un claim al lado de `rol`, o un documento por
 persona.** Va el claim:
 
@@ -119,8 +124,9 @@ invisible.
   cambia tan poco como el rol.
 - **Guardar `avisadoEn`** — escritura, contrato y regla nuevos para un dato que el chat
   ya tiene.
-- **Mostrar el botón a todos** — el comprador recibiría mensajes de números distintos,
-  que es lo que el dueño pidió evitar.
+- ~~**Mostrar el botón a todos** — el comprador recibiría mensajes de números distintos,
+  que es lo que el dueño pidió evitar.~~ **Es lo que se eligió el 2026-09-29**: el dueño
+  acepta ese costo (ver *Revisión*).
 
 ## Presupuesto de lecturas
 
@@ -138,10 +144,10 @@ Cuota: **50.000 lecturas/día y 20.000 escrituras/día**.
 
 | Qué | Disparador |
 |---|---|
-| **Quién avisa**: hoy nadie tiene la marca | Que el dueño diga quién (`node scripts/acceso/acceso.mjs avisa <mail>`) |
+| ~~**Quién avisa**: hoy nadie tiene la marca~~ **Cerrado el 2026-09-29**: todos (*Revisión*) | — |
 | **El link al comprobante** (`/pedido/<numero>`) | La sesión de `crearOrden`, cuando la ruta exista y haya pedidos de la vidriera |
 | **El nombre con el que firma la tienda** | [voz.md §12](../../design/voz.md): antes del primer aviso automático |
-| **Una pantalla para marcar a quién avisa** | La primera vez que alguien tenga que esperar al desarrollador (el mismo de HU-01.3) |
+| ~~**Una pantalla para marcar a quién avisa**~~ **Cerrado el 2026-09-29**: no hay marca | — |
 | **En la compu, el aviso sale del WhatsApp Web que esté abierto** | Que alguien avise desde un WhatsApp que no era |
 
 ## Verificación (2026-09-28)
@@ -169,3 +175,48 @@ Cada fila dice **cómo**; un job verde no prueba nada. Sale en el mismo build qu
   abriría la app, sin probar.
 - **Sin mutaciones**: no toca plata ni reglas. La marca y el enlace tienen control positivo y
   negativo en cada test.
+
+## Revisión (2026-09-29): el botón lo ve todo el que entra, en cualquier estado
+
+**Por qué.** El dueño, usando *Pedidos*: *"no encuentro el botón para mandar un mensaje vía
+WhatsApp al cliente"*. Tenía **dos cerrojos**: la marca, que **no la tenía nadie** (§3, y la
+tabla de abiertos lo decía), y el estado —sólo en un pedido despachado—. Y aunque la hubiera
+tenido, **no había forma de escribirle al cliente por otra cosa** que el aviso de que salió.
+Es la primera pieza de *pedidos sin burocracia*; las otras dos (la carga y los estados)
+quedaron aprobadas en la misma conversación y van por su cuenta (Workflow D, en `_index.md`).
+
+**Decisión del dueño: lo ve todo el que entra al panel.** Acepta el costo que §3 quería
+evitar —que el comprador reciba mensajes de números distintos—: en la práctica arma y
+despacha una sola persona.
+
+- **Un solo botón, en cualquier estado.** En un pedido despachado (`sePuedeAvisar`) dice
+  *"Avisarle por WhatsApp que salió"* y abre el chat con el aviso de §4, sin cambios; en
+  cualquier otro, *"Escribirle por WhatsApp"* y abre el chat **vacío** (`wa.me/<dígitos>`, sin
+  `?text=`). El teléfono que no es E.164 sigue sin armar el enlace (§2).
+- **Arriba del detalle, debajo del estado.** Al final de la página —donde estaba el
+  contacto— en un teléfono no se encontraba.
+- **La marca se saca entera**: `Operador.avisaPorWhatsapp`, `claimDelAviso`,
+  `avisaPorWhatsappProvider`, y en `acceso.mjs` los comandos `avisa`/`no-avisa`,
+  `darAviso`, `quitarAviso` y `listarQuienesAvisan`. **Una cuenta que conserve el claim no
+  cambia nada** (lo prueba `sesion_test.dart`). El paso del script en CI se queda —`dar` y
+  `quitar` escriben el claim que abre el panel— con el piso de **17 a 11**.
+
+### Qué se descartó
+
+- **Dejar la marca y dársela a todos** — configuración que alguien tiene que acordarse de dar
+  a cada cuenta nueva: el próximo de la familia que entre no vería el botón, que es este mismo
+  problema otra vez.
+- **Dos botones, *escribir* y *avisar*** — obligan a elegir entre dos parecidos, y el texto
+  igual se edita antes de enviar.
+- **Un saludo escrito en el chat general** (*"Hola, Marta. Te escribo por tu pedido #1184"*) —
+  sería texto nuevo que lee el comprador (pasa por `voz`), con un número de pedido que un
+  comprador de WhatsApp nunca recibió. Con el chat que ya tienen, vacío alcanza.
+
+### Lecturas de la revisión
+
+**0 lecturas y 0 escrituras**, igual que antes: abrir un enlace no lee nada, y el botón ya no
+mira el token. Sólo se publica el panel.
+
+### Cómo se verificó la revisión
+
+*Pendiente: se completa al publicar.*

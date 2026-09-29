@@ -9,22 +9,17 @@
 // script que se niega a todo pasaria todos los rechazos.
 
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { after, before, beforeEach, describe, test } from 'node:test';
 
 import {
   AccesoNegado,
-  CLAIM_DEL_AVISO,
   PROYECTO_EMULADOR,
   ROL,
   conectar,
   darAcceso,
-  darAviso,
   listarConAcceso,
-  listarQuienesAvisan,
   normalizarMail,
   quitarAcceso,
-  quitarAviso,
 } from './acceso.mjs';
 
 const HOST = process.env.FIREBASE_AUTH_EMULATOR_HOST;
@@ -74,10 +69,10 @@ describe('dar', () => {
 
   test('una cuenta verificada conserva sus otros claims', async () => {
     const u = await auth.createUser({ email: 'hijo@gmail.com', password: 'una-clave', emailVerified: true });
-    await auth.setCustomUserClaims(u.uid, { avisaPorWhatsApp: true });
+    await auth.setCustomUserClaims(u.uid, { otro: true });
     const r = await darAcceso(auth, 'hijo@gmail.com');
     assert.equal(r.creada, false);
-    assert.deepEqual((await auth.getUser(u.uid)).customClaims, { avisaPorWhatsApp: true, rol: ROL });
+    assert.deepEqual((await auth.getUser(u.uid)).customClaims, { otro: true, rol: ROL });
   });
 
   test('una cuenta registrada por un tercero NO se habilita', async () => {
@@ -103,14 +98,14 @@ describe('dar', () => {
 describe('quitar', () => {
   test('saca el rol, deja lo demas y revoca las sesiones', async () => {
     const { uid } = await darAcceso(auth, 'tio@gmail.com');
-    await auth.setCustomUserClaims(uid, { rol: ROL, avisaPorWhatsApp: true });
+    await auth.setCustomUserClaims(uid, { rol: ROL, otro: true });
     const antes = (await auth.getUser(uid)).tokensValidAfterTime;
     await new Promise((listo) => setTimeout(listo, 1100));
 
     const r = await quitarAcceso(auth, 'tio@gmail.com');
     const u = await auth.getUser(uid);
     assert.equal(r.teniaAcceso, true);
-    assert.deepEqual(u.customClaims, { avisaPorWhatsApp: true });
+    assert.deepEqual(u.customClaims, { otro: true });
     assert.notEqual(u.tokensValidAfterTime, antes, 'las sesiones no se revocaron');
   });
 
@@ -128,53 +123,6 @@ describe('listar', () => {
     const otro = await auth.createUser({ email: 'sin@gmail.com' });
     await auth.setCustomUserClaims(otro.uid, { rol: 'repartidor' });
     assert.deepEqual(await listarConAcceso(auth), ['a@gmail.com', 'b@gmail.com']);
-  });
-});
-
-describe('avisa (HU-07.3)', () => {
-  test('a quien tiene el rol le pone la marca y le deja el rol', async () => {
-    const { uid } = await darAcceso(auth, 'mama@gmail.com');
-    await darAviso(auth, ' Mama@Gmail.com ');
-    assert.deepEqual((await auth.getUser(uid)).customClaims, { rol: ROL, [CLAIM_DEL_AVISO]: true });
-  });
-
-  test('a quien no tiene el rol NO se la pone, y no toca nada', async () => {
-    const u = await auth.createUser({ email: 'vecino@gmail.com' });
-    await assert.rejects(darAviso(auth, 'vecino@gmail.com'), AccesoNegado);
-    assert.equal((await auth.getUser(u.uid)).customClaims, undefined);
-  });
-
-  test('un mail sin cuenta se informa, no se crea', async () => {
-    await assert.rejects(darAviso(auth, 'nadie@gmail.com'), AccesoNegado);
-    assert.equal((await auth.listUsers()).users.length, 0);
-  });
-
-  test('no-avisa saca solo la marca: el rol queda', async () => {
-    const { uid } = await darAcceso(auth, 'papa@gmail.com');
-    await darAviso(auth, 'papa@gmail.com');
-    const r = await quitarAviso(auth, 'papa@gmail.com');
-    assert.equal(r.avisaba, true);
-    assert.deepEqual((await auth.getUser(uid)).customClaims, { rol: ROL });
-  });
-
-  test('listar quienes avisan: solo con el rol Y la marca', async () => {
-    await darAcceso(auth, 'b@gmail.com');
-    await darAviso(auth, 'b@gmail.com');
-    await darAcceso(auth, 'a@gmail.com');
-    const sinRol = await auth.createUser({ email: 'c@gmail.com' });
-    await auth.setCustomUserClaims(sinRol.uid, { [CLAIM_DEL_AVISO]: true });
-    assert.deepEqual(await listarQuienesAvisan(auth), ['b@gmail.com']);
-    assert.deepEqual(await listarConAcceso(auth), ['a@gmail.com', 'b@gmail.com']);
-  });
-
-  test('es el mismo string que lee el panel: sale de sesion.dart, no de un literal', () => {
-    const dart = readFileSync(
-      new URL('../../apps/admin/lib/features/acceso/domain/sesion.dart', import.meta.url),
-      'utf8',
-    );
-    const enElPanel = dart.match(/const claimDelAviso = '([^']+)';/)?.[1];
-    assert.ok(enElPanel, 'no encontre claimDelAviso en sesion.dart');
-    assert.equal(CLAIM_DEL_AVISO, enElPanel);
   });
 });
 

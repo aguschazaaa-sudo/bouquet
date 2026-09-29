@@ -27,13 +27,17 @@ String textoDelAviso({
       'Si necesitás algo, escribinos por acá.';
 }
 
-// De acá para abajo, el panel: los lee quien avisa.
+// De acá para abajo, el panel: los lee quien escribe.
 
+/// En un pedido despachado: abre el chat con el aviso ya escrito.
 const textoBotonAvisar = 'Avisarle por WhatsApp que salió';
 
+/// En cualquier otro estado: abre el chat vacío.
+const textoBotonEscribir = 'Escribirle por WhatsApp';
+
 const textoTelefonoSinWhatsapp =
-    'El teléfono de este pedido no sirve para WhatsApp, así que el aviso no se '
-    'puede armar. Avisale a mano.';
+    'El teléfono de este pedido no sirve para WhatsApp, así que no podemos '
+    'abrir el chat. Buscalo a mano en tu WhatsApp.';
 
 const textoNoSeAbrioWhatsapp =
     'No se pudo abrir WhatsApp. Si el navegador bloqueó la ventana, permitila y '

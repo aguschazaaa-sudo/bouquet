@@ -243,10 +243,12 @@ jobs:
           [ "${F:-1}" = "0" ] || { echo "::error::fallaron ${F:-?} casos"; exit 1; }
           [ "${N:-0}" -ge 235 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 235"; exit 1; }
       - name: El script de accesos contra el emulador de Auth, y la CUENTA
-        # Entra el 2026-09-28 con HU-07.3: `acceso.mjs` pasa a escribir un
-        # segundo claim (`avisaPorWhatsApp`) y sin esto sus casos no los corria
-        # nadie. Aparte del de arriba: con `--only firestore,auth` la variable
-        # del emulador de Auth quedaria puesta para todas las suites.
+        # Entra el 2026-09-28 con HU-07.3, cuando `acceso.mjs` escribia un
+        # segundo claim (`avisaPorWhatsApp`). La marca se saco el 2026-09-29
+        # (ADR 021, *Revision*) y el piso bajo de 17 a 11, pero el paso queda:
+        # `dar` y `quitar` escriben el claim que abre el panel y sin esto no los
+        # corre nadie. Aparte del de arriba: con `--only firestore,auth` la
+        # variable del emulador de Auth quedaria puesta para todas las suites.
         run: |
           set -o pipefail
           firebase emulators:exec --only auth --project demo-bouquet \
@@ -256,7 +258,7 @@ jobs:
           F=$(grep -oE 'fail [0-9]+' /tmp/acceso.txt | tail -1 | grep -oE '[0-9]+')
           echo "tests ejecutados: ${N:-0} - fallidos: ${F:-?}"
           [ "${F:-1}" = "0" ] || { echo "::error::fallaron ${F:-?} casos"; exit 1; }
-          [ "${N:-0}" -ge 17 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 17"; exit 1; }
+          [ "${N:-0}" -ge 11 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 11"; exit 1; }
 
   suite_dart:
     needs: contexto
