@@ -1,7 +1,7 @@
 # ADR 023 — La portada la elige el dueño, y el panel dice cuándo se ve
 
 - **Fecha:** 2026-09-28
-- **Estado:** aceptada; **desplegada y verificada por bytes el 2026-09-28** (v0.41.0, `4c75317`). Falta la rama positiva en producción: ver *Verificación*, al final
+- **Estado:** aceptada; **desplegada y verificada en producción el 2026-09-28**, las dos ramas (v0.41.0, `4c75317`). Nadie la miró renderizada: ver *Verificación*, al final
 - **Decide:** dónde vive la selección de la portada, qué muestra la portada con
   ella, y cómo le dice el panel a quien guarda cuándo lo va a ver en la tienda
 - **Historias:** HU-09.1 y HU-09.4 ([EP-09](../../features/panel/EP-09-vidriera-curada.md)).
@@ -159,8 +159,16 @@ por bytes. Nadie lo miró renderizado.**
 | Panel | Canario discriminante en el canal (4 cadenas nuevas 0 → ≥1, una vieja 1 → 0, inventada 0 → 0) → live con los 4 hashes del artifact, `noindex` |
 | Tienda | Rollout `build-2026-09-28-001` `SUCCEEDED` al 100 %, gates cerrados. Sin documento (404), la portada muestra **los mismos 6** que la regla antes del deploy: la rama "nunca eligió" funciona en producción |
 
-⚠️ **Falta la rama positiva en producción.** El canario —una selección de prueba en
-`seleccion/publica` con un vino que aparece, dos que desaparecen, un agotado que se
-saltea y otro orden— lo frenó el clasificador de permisos al escribir en producción. Lo
-cubre CI; en producción queda para cuando el dueño elija desde *Vidriera* (o se autorice
-la escritura) y se vuelva a publicar la tienda.
+**La rama positiva, con autorización del usuario (2026-09-28):** una selección de prueba
+en `seleccion/publica` —santa-julia, el bonarda **agotado**, don-david, callia, trumpeter,
+alamos— y la preview publicada otra vez (rollout `build-2026-09-29-001`, 100 %, gates
+cerrados). La portada muestra **exactamente** santa-julia → don-david → callia →
+trumpeter → alamos: santa-julia **aparece** (antes no estaba), latitud-33 y crios-rose
+**desaparecen**, el bonarda agotado **se saltea**, y la regla **no completa** el sexto
+lugar. Control inventado: ausente. El gate de muestra sigue puesto.
+
+⚠️ **El documento de prueba quedó en producción**: borrarlo lo frenó el clasificador de
+permisos. Mientras exista, *Vidriera* lo muestra como si lo hubiera elegido el dueño, y
+la próxima publicación de la tienda lo vuelve a hornear. Se limpia desde el panel
+—sacar los seis en *Vidriera* guarda la lista vacía, que la portada lee como "no
+eligió"— o cuando el dueño elija los suyos.

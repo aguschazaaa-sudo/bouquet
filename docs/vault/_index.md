@@ -106,8 +106,7 @@ publicar la tienda después de elegir la portada: se hornea en el build.
 ### Hito 3, primer tramo: la portada la elige el dueño, y el panel dice cuándo se ve (2026-09-28)
 
 **Desplegado el 2026-09-28 —reglas, panel (v0.41.0, `4c75317`) y la preview de la
-tienda— y verificado por bytes. Falta el camino positivo en producción: que exista una
-selección y la portada la muestre. Nadie lo miró renderizado.** Sin openspec, a pedido
+tienda— y verificado en producción, las dos ramas. Nadie lo miró renderizado.** Sin openspec, a pedido
 del dueño: [ADR 023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) es la
 especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 entero es esa
 épica; el segundo tramo son las cajas sugeridas, HU-09.2 y 09.3).
@@ -135,10 +134,15 @@ especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 ente
 | Panel | Build `36499391552` → canal → canario discriminante (4 cadenas nuevas 0 → ≥1, `"Vino sacado de la tienda."` 1 → 0, inventada 0 → 0) → live con los 4 hashes iguales, `noindex` |
 | Tienda | Rollout `build-2026-09-28-001` `SUCCEEDED` con el 100 % del tráfico, 7 rutas con `noindex`, gates cerrados. **Control de regresión:** sin `seleccion/publica` (404), la portada muestra los mismos 6 que antes |
 
-⚠️ **El canario positivo quedó sin correr**: escribir una selección de prueba en
-`seleccion/publica` de producción lo frenó el clasificador de permisos, y queda para que
-el usuario lo autorice o lo haga el dueño desde *Vidriera*. Hasta entonces, que la portada
-**use** la selección está probado en CI, no en producción.
+**La rama positiva, con autorización del usuario:** una selección de prueba en
+`seleccion/publica` y la preview otra vez (rollout `build-2026-09-29-001`): la portada
+muestra **exactamente** los 5 esperados en el orden elegido —uno que aparece, dos que
+desaparecen, un agotado salteado, sin relleno de la regla—.
+
+⚠️ **La selección de prueba sigue en `seleccion/publica`**: borrarla lo frenó el
+clasificador. Hasta limpiarla, *Vidriera* la muestra como del dueño y la próxima
+publicación de la tienda la hornea. Se limpia sacando los seis en *Vidriera*, o
+eligiendo los reales.
 
 ### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — desplegado con credenciales FALSAS (2026-09-28)
 
