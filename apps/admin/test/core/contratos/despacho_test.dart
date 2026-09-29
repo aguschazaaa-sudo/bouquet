@@ -49,7 +49,7 @@ void main() {
 
   test('laEscribeElPanel coincide con el contrato en los 36 pares', () {
     final delContrato = despacho['laEscribeElPanel'] as Map<String, dynamic>;
-    var aceptados = 0;
+    final aceptados = <String>[];
     for (final antes in EstadoEntrega.values) {
       final esperados = Set<String>.from(delContrato[antes.name] as List);
       for (final despues in EstadoEntrega.values) {
@@ -59,11 +59,20 @@ void main() {
           esperados.contains(despues.name),
           reason: '${antes.name} -> ${despues.name}',
         );
-        if (propio) aceptados += 1;
+        if (propio) aceptados.add('${antes.name}>${despues.name}');
       }
     }
-    // Control: un contrato vacio daria todo `false` y pasaria igual.
-    expect(aceptados, 5);
+    // Control: un contrato vacio daria todo `false` y pasaria igual. La lista
+    // y no un conteo: un par de mas o de menos se nombra. `sin_preparar>
+    // despachada` entra con ADR 027.
+    expect(aceptados..sort(), [
+      'despachada>entregada',
+      'despachada>fallida',
+      'fallida>despachada',
+      'preparando>despachada',
+      'sin_preparar>despachada',
+      'sin_preparar>preparando',
+    ]);
   });
 
   test('sePuedeDespachar coincide con el contrato para cada origen y pago', () {
