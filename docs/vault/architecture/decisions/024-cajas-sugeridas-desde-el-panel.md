@@ -1,7 +1,7 @@
 # ADR 024 — Las cajas sugeridas se arman desde el panel, por una callable
 
 - **Fecha:** 2026-09-28
-- **Estado:** aceptada; escrita, **sin desplegar** (ver *Verificación*, al final)
+- **Estado:** aceptada; **desplegada y verificada por bytes el 2026-09-28** (v0.42.0, `dacfb58`). Nadie guardó una caja desde el panel todavía: ver *Verificación*, al final
 - **Decide:** cómo arma, cambia, ordena y saca el dueño las cajas sugeridas, y
   qué verifica el servidor antes de guardarlas
 - **Historias:** HU-09.2 y HU-09.3 ([EP-09](../../features/panel/EP-09-vidriera-curada.md)).
@@ -117,6 +117,20 @@ Con **10 guardados por semana**, ~20 lecturas al día: **0,04 % de la cuota**.
 | **Dos personas editando cajas a la vez**: gana la última, sobre la lista que la segunda veía al guardar (no al abrir) | Si pasa. Son seis cajas y una familia |
 | **Un `presentacion.botellas` roto** se reporta como *"el producto no existe"* | Si aparece un documento así: el formulario no lo deja escribir |
 
-## Verificación
+## Verificación (2026-09-28)
 
-*Pendiente: se completa con el deploy.*
+**Desplegada —`guardarCajasSugeridas` y el panel (v0.42.0, `dacfb58`)— y verificada por
+bytes. Nadie armó una caja desde el panel, ni la miró renderizada.**
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36502552119` restada contra `36494514104`: contratos 276 → **284 (+8)**, emulador 198 → **209 (+11, la suite nueva, que entra a CI)**, Dart 497 → **509 (+12)**; tienda y functions unitarios sin cambios (38, 76). `flutter analyze` sin issues. El bundle carga **7 functions**, con la nueva |
+| Lo que CI encontró | La primera corrida (`36502072153`) cayó en `tipos`: el test nuevo redeclaraba `SEIS`, que `cajas.test.ts` ya tenía igual. Se reusó |
+| La callable | `ACTIVE`; preflight con `Origin` del panel **204** con `access-control-allow-origin`; `POST` anónimo **401** con el JSON de `exigirAdmin` (corre el código, no lo frena IAM); una inventada **404**. Las otras 6 functions conservan su `updateTime`: el deploy fue sólo de ésta |
+| El deploy de functions | Falló una vez con `Timeout after 90000` cargando el código en la máquina (707 MB libres); con `FUNCTIONS_DISCOVERY_TIMEOUT=300`, al primer intento |
+| Panel | Build `36502963910` → canal → canario (4 cadenas nuevas 0 → 1, `COMMIT` `4c75317` → `dacfb58`, inventada 0 → 0) → live con los 4 hashes del artifact, `noindex` |
+| Quién lo abre | Cadena `secciones` → `enrutador` → `PantallaDeLaVidriera` → `SeccionDeCajasSugeridas` → `RenglonDeCaja` / `HojaDeLaCaja` → `LugarDeLaHoja` / `HojaParaElegirUnVino`; cada función del dominio y de `data/` con su llamada (grep directo; control inventado 0) |
+
+⚠️ **Lo que sigue:** que el dueño arme una caja real desde *Vidriera*. Es lo único que
+prueba la callable con una cuenta de verdad; el primer guardado reemplaza las cajas de
+muestra del seed.
