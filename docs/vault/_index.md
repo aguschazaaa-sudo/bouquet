@@ -78,7 +78,8 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
 
-**Escrito; falta CI, publicarlo y que alguien lo mire.** Sin openspec, a pedido del dueño: la
+**Desplegado y verificado por bytes el 2026-09-29** (v0.46.1, `df1304b`): CI restada, canario
+discriminante y los 4 hashes en live. **Falta que el dueño abra un pedido y lo vea.** Sin openspec, a pedido del dueño: la
 especificación es la *Revisión* de [ADR 021](architecture/decisions/021-aviso-de-despacho.md).
 El dueño no encontraba el botón: pedía una marca que **no tenía nadie** y aparecía sólo en un
 pedido despachado.
@@ -88,8 +89,8 @@ pedido despachado.
   con el aviso escrito.
 - **Lo ve todo el que entra**: la marca `avisaPorWhatsApp` salió del panel, de `acceso.mjs`
   (`avisa`/`no-avisa`) y de sus tests; el piso de CI del script baja de 17 a 11.
-- Cero lecturas y cero escrituras; sólo el panel. **Arrastra la v0.45.0** (entrada de abajo),
-  que estaba sin publicar.
+- Cero lecturas y cero escrituras; sólo el panel. **Arrastró la v0.45.0** (entrada de abajo),
+  que estaba sin publicar. Detalle de la verificación en ADR 021.
 
 **Segundo tramo, aprobado por el dueño en la misma conversación y sin escribir.** Es Workflow D:
 toca `crearOrdenDelPanel`, que descuenta stock, y la tabla de estados de las reglas.
@@ -108,7 +109,8 @@ toca `crearOrdenDelPanel`, que descuenta stock, y la tabla de estados de las reg
 
 ### El panel a ancho de teléfono: un solo scroll, y la vidriera se ordena arrastrando (2026-09-29)
 
-**Commiteado (v0.45.0). Falta publicarlo y que alguien pruebe el arrastre.** Sin openspec,
+**Publicado el 2026-09-29 en el mismo build que el botón de WhatsApp** (`df1304b`, entrada de
+arriba). **Falta que alguien pruebe el arrastre.** Sin openspec,
 a pedido del dueño, que mandó capturas del panel a 328 px. Las reglas quedaron en
 [ADR 011 §4](architecture/decisions/011-entrar-al-panel.md#4-la-dirección-visual-del-panel-la-mezcla-c)
 y [ADR 023 §5](architecture/decisions/023-la-portada-la-elige-el-duenio.md#5-cada-gesto-se-guarda-en-el-acto).

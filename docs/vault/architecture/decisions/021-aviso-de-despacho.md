@@ -217,6 +217,16 @@ despacha una sola persona.
 **0 lecturas y 0 escrituras**, igual que antes: abrir un enlace no lee nada, y el botón ya no
 mira el token. Sólo se publica el panel.
 
-### Cómo se verificó la revisión
+### Cómo se verificó la revisión (2026-09-29)
 
-*Pendiente: se completa al publicar.*
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `alcance=tests`, corrida `36638688670` sobre `f7cb95d`, **restadas** contra la de EP-11 (`36607938982`): Dart 534 → **533 (−1 exacto**: sesión −3, enlace +2**)**; `acceso.test.mjs` 17 → **11**, 0 fallidos; emulador 235 → 235 (reglas sin tocar); contratos 309 y functions 76, iguales. `guardas` cayó por un enlace de la entrada movida al changelog, corregido en `951fb43` |
+| Compila | CI `alcance=panel`, corrida `36639192917` sobre `df1304b`: *"No issues found!"*, build de 35 archivos, `main.dart.js` `87b9427d…` |
+| Sin huérfanos | `enrutador → PaginaDelPedido → DetalleDelPedido → BotonDeWhatsapp → enlaceDeWhatsapp / sePuedeAvisar`; ninguna referencia a `BotonDeAviso`, `avisaPorWhatsapp` ni `claimDelAviso` en `lib/` ni `test/`; control inventado 0 |
+| El canario | Contra live antes del deploy y sobre el canal: *"Escribirle por WhatsApp"* y *"Buscalo a mano en tu WhatsApp"* **0 → 1**; `avisaPorWhatsApp` y el texto viejo (*"puede armar. Avisale a mano"*) **1 → 0**; control positivo *"Avisarle por WhatsApp que sali"* 1 → 1; inventada 0 → 0. Todas ASCII: dart2js escapa las tildes |
+| El deploy | `publicar.sh preview` (35 hashes contra el artifact) → canario → `promover` → live con **los 4 hashes iguales al build**, control negativo, `noindex`, `commit publicado: df1304b`. **Arrastró la v0.45.0** (el panel a ancho de teléfono), sólo presentación |
+
+**Lo que NO se verificó:** que el botón **se vea arriba y abra el chat**. Pide entrar al
+panel, y en esta máquina no hay credenciales, a propósito. Lo prueba el dueño abriendo un
+pedido.
