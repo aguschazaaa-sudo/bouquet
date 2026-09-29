@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-29 - commit `c5cdb43` - huella del cuerpo `beb55932d4c5`
+> **Generado:** 2026-09-29 - commit `5373af3` - huella del cuerpo `768f3765e062`
 
 ---
 
@@ -192,8 +192,6 @@ Los 11 hooks apuntan a scripts que existen. Que existan no prueba que midan: eso
 - **allow**: -
 
 Se listan porque `SKILLS-AGENTES-MCP.md` 5 documenta el caso contrario: un `CLAUDE.md` que prohibia lo que el allowlist pre-aprobaba. **La configuracion le gana al documento, siempre.**
-
-Ademas hay `.claude/settings.local.json` (no versionado): allow 2, ask 0, deny 0.
 
 ## 5. Subagentes
 
