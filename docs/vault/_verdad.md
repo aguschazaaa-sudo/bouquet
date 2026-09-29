@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-29 - commit `b3f6846` - huella del cuerpo `1d697ae08b36`
+> **Generado:** 2026-09-29 - commit `a791bf2` - huella del cuerpo `09a1f71a6c6d`
 
 ---
 
@@ -40,7 +40,7 @@ Nace en: `pendiente`, `pagada`, `por_fuera`. Terminales: `reembolsada`, `por_fue
 
 | Estado | Nace ahi | Transiciona a |
 |---|---|---|
-| `sin_preparar` | SI | `preparando`, `cancelada` |
+| `sin_preparar` | SI | `preparando`, `despachada`, `cancelada` |
 | `preparando` |  | `despachada`, `cancelada` |
 | `despachada` |  | `entregada`, `fallida` |
 | `entregada` |  | **terminal** |
@@ -53,19 +53,19 @@ Nace en: `sin_preparar`. Terminales: `entregada`, `cancelada`.
 
 | Estado publico | Pares que lo producen | Requiere accion | Rotulo cliente | Rotulo operador |
 |---|---|---|---|---|
-| `recibida` | 1 |  | Pedido recibido | Recibida - falta cobrar |
+| `recibida` | 1 |  | Pedido recibido | Recibido - falta cobrar |
 | `confirmando` | 3 |  | Confirmando... | Pago en proceso |
 | `pago_rechazado` | 3 |  | No pudimos cobrar el pago | Pago rechazado |
-| `pagada` | 1 | SI | Pago acreditado | Pagada - falta preparar |
-| `por_preparar` | 1 | SI | Pedido recibido | Cobro por fuera - falta preparar |
-| `en_preparacion` | 3 |  | Preparando tu pedido | En preparacion |
-| `en_camino` | 3 |  | En camino | Despachada |
-| `entregada` | 2 |  | Entregado | Entregada |
-| `entregada_impaga` | 4 | SI | Entregado | ENTREGADA SIN COBRAR |
-| `no_entregada` | 6 | SI | No pudimos entregarlo | Entrega fallida - reprogramar |
-| `cancelada` | 4 |  | Pedido cancelado | Cancelada |
-| `cancelada_con_pago` | 1 | SI | Pedido cancelado | CANCELADA CON PAGO - devolver |
-| `reembolsada` | 4 |  | Pedido cancelado y reintegrado | Reembolsada |
+| `pagada` | 1 | SI | Pago acreditado | Pagado - para despachar |
+| `por_preparar` | 1 | SI | Pedido recibido | Para despachar |
+| `en_preparacion` | 3 |  | Preparando tu pedido | Para despachar |
+| `en_camino` | 3 |  | En camino | En camino |
+| `entregada` | 2 |  | Entregado | Entregado |
+| `entregada_impaga` | 4 | SI | Entregado | ENTREGADO SIN COBRAR |
+| `no_entregada` | 6 | SI | No pudimos entregarlo | No se pudo entregar |
+| `cancelada` | 4 |  | Pedido cancelado | Cancelado |
+| `cancelada_con_pago` | 1 | SI | Pedido cancelado | CANCELADO CON PAGO - devolver |
+| `reembolsada` | 4 |  | Pedido cancelado y reintegrado | Reembolsado |
 
 Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.47.1
+### Scripts de la raiz - `bouquet` 0.48.0
 
 | Script | Comando |
 |---|---|
@@ -110,16 +110,16 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/features/catalogo/en_la_tienda_test.dart` | 18 |
 | `apps/admin/test/features/catalogo/numeros_escritos_test.dart` | 10 |
 | `apps/admin/test/features/fotos/foto_principal_test.dart` | 10 |
-| `apps/admin/test/features/pedidos/accion_busqueda_y_notas_test.dart` | 12 |
+| `apps/admin/test/features/pedidos/accion_busqueda_y_notas_test.dart` | 13 |
 | `apps/admin/test/features/pedidos/aviso_de_despacho_test.dart` | 26 |
 | `apps/admin/test/features/pedidos/codigos_de_pedidos_test.dart` | 10 |
 | `apps/admin/test/features/pedidos/documento_de_la_orden_test.dart` | 11 |
 | `apps/admin/test/features/pedidos/eje_de_entrega_test.dart` | 22 |
-| `apps/admin/test/features/pedidos/entrega_escrita_test.dart` | 13 |
+| `apps/admin/test/features/pedidos/entrega_escrita_test.dart` | 11 |
 | `apps/admin/test/features/pedidos/pedido_a_cargar_test.dart` | 29 |
 | `apps/admin/test/features/pedidos/revision_de_pago_test.dart` | 21 |
 | `apps/admin/test/features/pedidos/textos_de_pago_test.dart` | 17 |
-| `apps/admin/test/features/pedidos/textos_y_fechas_test.dart` | 17 |
+| `apps/admin/test/features/pedidos/textos_y_fechas_test.dart` | 18 |
 | `apps/admin/test/features/resumen/resumen_test.dart` | 12 |
 | `apps/admin/test/features/stock/codigos_de_stock_test.dart` | 10 |
 | `apps/admin/test/features/stock/movimientos_test.dart` | 15 |
@@ -149,19 +149,19 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `packages/contratos/test/envio.test.ts` | 27 |
 | `packages/contratos/test/orden.test.ts` | 17 |
 | `packages/contratos/test/pago.test.ts` | 23 |
-| `packages/contratos/test/pedido.test.ts` | 21 |
+| `packages/contratos/test/pedido.test.ts` | 25 |
 | `packages/contratos/test/popularidad.test.ts` | 8 |
 | `packages/contratos/test/producto.test.ts` | 33 |
-| `packages/contratos/test/proyeccion.test.ts` | 11 |
+| `packages/contratos/test/proyeccion.test.ts` | 12 |
 | `packages/contratos/test/seleccion.test.ts` | 8 |
 | `packages/contratos/test/sin_cargo.test.ts` | 17 |
 | `packages/contratos/test/stock.test.ts` | 20 |
 | `packages/contratos/test/texto.test.ts` | 15 |
 | `scripts/acceso/acceso.test.mjs` | 11 |
-| `scripts/reglas/ordenes.test.mjs` | 38 |
+| `scripts/reglas/ordenes.test.mjs` | 40 |
 | `scripts/reglas/productos.test.mjs` | 62 |
 | `scripts/reglas/seleccion.test.mjs` | 11 |
-| **total** | **1055** |
+| **total** | **1062** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -379,8 +379,11 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `normalizarTelefonoAR` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/pedido.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `ENTRADAS_DE_TELEFONO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts` |
 | `DatosDeEntrega` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts` |
+| `DestinoDeOrden` | tipo | **SIN PUERTA - nadie** | - |
+| `DatosDeEntregaDelPanel` | tipo | **SIN PUERTA - nadie** | - |
 | `LARGOS_DE_ENTREGA` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts` |
-| `validarDatosDeEntrega` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts` |
+| `validarDatosDeEntrega` | funcion | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/pedido.test.ts` |
+| `validarEntregaDelPanel` | funcion | **SIN PUERTA - solo tests** | `packages/contratos/test/pedido.test.ts` |
 | `MotivoSinCotizacion` | tipo | **SIN PUERTA - nadie** | - |
 | `ResultadoDeCotizacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts` |
 | `normalizar` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
@@ -458,9 +461,9 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `cajaTipica` | funcion | abierto | `functions/src/config/fijar.ts`, `functions/test/config/fijar.emulador.mjs`, `packages/contratos/test/sin_cargo.test.ts` |
 | `motivoParaConfirmar` | funcion | abierto | `functions/src/config/fijar.ts`, `packages/contratos/test/sin_cargo.test.ts` |
 
-**217 simbolos exportados. 56 SIN PUERTA.**
+**220 simbolos exportados. 59 SIN PUERTA.**
 
-Sin puerta hoy: `transicionPagoValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `Balde`, `viajaSolo`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `CasoDeBalde`, `ClaseDeDescarte`, `CasoDeDescarte`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `botellasSueltas`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `SeleccionLeida`, `pesoDelBultoKg`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `MotivoSinCotizacion`, `ContactoDeOrden`, `EntregaDeOrden`, `MotivoSinReponer`, `Proveedor`, `MOTIVOS_SIN_APLICAR`, `Resolucion`, `PagoDeOrden`, `AlertaDePago`, `cuentaComoVenta`, `PopularidadContada`, `MINIMO_PARA_LA_MEDIANA`, `ConfigDeEnvios`, `saleSinCargo`, `PedidoDeSinCargo`, `PrecioPublicado`.
+Sin puerta hoy: `transicionPagoValida`, `entroEnReembolsada`, `entroEnDespachada`, `entroEnEntregada`, `entroEnCancelada`, `EstadoPublico`, `CERO`, `TIPOS_DE_PRODUCTO`, `TipoDeProducto`, `FichaVino`, `ProductoSimple`, `ProductoCompuesto`, `Balde`, `viajaSolo`, `proyectarProducto`, `Descarte`, `CatalogoArmado`, `CasoDeBalde`, `ClaseDeDescarte`, `CasoDeDescarte`, `VERSION_DEL_CARRITO`, `LineaDeCarrito`, `ProductoDelCarrito`, `esProductoId`, `Cambio`, `unidadesEnCarrito`, `ESTADOS_DE_LINEA`, `EstadoDeLinea`, `botellasSueltas`, `PedidoDeCompra`, `CajaSugerida`, `CajasArmadas`, `ESTADOS_DE_LUGAR`, `EstadoDeLugar`, `LugarDeCaja`, `CajasResueltas`, `SeleccionLeida`, `pesoDelBultoKg`, `MODALIDADES_DE_ENTREGA`, `ModalidadDeEntrega`, `DestinoDeOrden`, `DatosDeEntregaDelPanel`, `validarEntregaDelPanel`, `MotivoSinCotizacion`, `ContactoDeOrden`, `EntregaDeOrden`, `MotivoSinReponer`, `Proveedor`, `MOTIVOS_SIN_APLICAR`, `Resolucion`, `PagoDeOrden`, `AlertaDePago`, `cuentaComoVenta`, `PopularidadContada`, `MINIMO_PARA_LA_MEDIANA`, `ConfigDeEnvios`, `saleSinCargo`, `PedidoDeSinCargo`, `PrecioPublicado`.
 
 Que aparezcan aca **no es un bug**: `functions/` y `apps/` todavia no existen y este paquete se escribio primero a proposito. Lo que si es un bug es que esta lista no baje cuando esas carpetas aparezcan. **La lista es la deuda.**
 
@@ -483,4 +486,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 176. Archivos de test: 68. Casos de test: 1055.
+Archivos de codigo recorridos: 176. Archivos de test: 68. Casos de test: 1062.
