@@ -234,6 +234,13 @@ prearmado; se le mostró uno por estado y eligió ése sobre sólo el saludo. `m
 ⚠️ **Lo que marcó `voz`:** *"Te avisamos por acá cuando salga"* es una promesa que se cumple
 sólo si alguien aprieta el botón cuando el pedido sale. No lo manda el sistema.
 
+**Verificado el 2026-09-29 (v0.47.0, `b7c58e6`):** CI `alcance=panel` `36641917160`: Dart
+533 → **544 (+11 exactos**: −2 de `sePuedeAvisar`, +13 de los mensajes**)**, *"No issues
+found!"*; canario ASCII *"Anotamos tu pedido"*, *"Mandanos la direcci"* y *"no dimos con la
+direcci"* **0 → 1** en el canal y en live, control positivo 1 → 1, inventada 0 → 0;
+`promover` → live con los 4 hashes del build. **Falta que el dueño abra un pedido en cada
+estado** y lea el mensaje en su WhatsApp.
+
 ### Lecturas de la revisión
 
 **0 lecturas y 0 escrituras**, igual que antes: abrir un enlace no lee nada, y el botón ya no

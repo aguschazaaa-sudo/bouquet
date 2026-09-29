@@ -80,7 +80,7 @@ familia — el permiso lo da el script, no una pantalla.
 
 **Desplegado y verificado por bytes el 2026-09-29** (v0.46.1, `df1304b`): CI restada, canario
 discriminante y los 4 hashes en live. **El dueño lo vio en el Pedido 1** y pidió un mensaje
-prearmado por estado, que va en el cambio siguiente. Sin openspec, a pedido del dueño: la
+prearmado por estado: **desplegado y verificado por bytes el mismo día** (v0.47.0, `b7c58e6`). Sin openspec, a pedido del dueño: la
 especificación es la *Revisión* de [ADR 021](architecture/decisions/021-aviso-de-despacho.md).
 El dueño no encontraba el botón: pedía una marca que **no tenía nadie** y aparecía sólo en un
 pedido despachado.
