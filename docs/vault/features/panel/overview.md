@@ -29,7 +29,10 @@
   *Vidriera*, y el panel dice cuándo se ve cada cambio. **Hito 3, segundo
   tramo (2026-09-28, sin openspec, [ADR 024](../../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md)):
   HU-09.2 y HU-09.3** — las cajas sugeridas, por la callable
-  `guardarCajasSugeridas`. **Con esto EP-09 y el hito 3 quedan escritos enteros**
+  `guardarCajasSugeridas`. **Con esto EP-09 y el hito 3 quedan escritos enteros**.
+  **EP-11, primer tramo (2026-09-29, sin openspec, [ADR 025](../../architecture/decisions/025-el-tablero-del-panel.md)):
+  HU-11.2 y HU-11.3** — el panel se entra por *Resumen*, y la popularidad la mide
+  el job `calcularPopularidad`
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)

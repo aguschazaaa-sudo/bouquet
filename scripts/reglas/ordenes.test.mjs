@@ -27,7 +27,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing';
-import { and, collection, deleteDoc, deleteField, doc, getDoc, getDocs, limit, or, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
+import { and, collection, deleteDoc, deleteField, doc, getCountFromServer, getDoc, getDocs, limit, or, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from 'firebase/firestore';
 
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -539,5 +539,95 @@ describe('ADR 020: requieren accion, buscar por numero y anotar', () => {
     assert.equal(snap.get('notasOperador'), undefined, 'la nota se borro');
     // Control negativo: anotar no puede colar otro campo.
     await assertFails(updateDoc(ordenDe(admin), { notasOperador: 'x', total: 1 }));
+  });
+});
+
+// ----------------------------------------------------- el resumen del dia
+//
+// ADR 025 (HU-11.2).  Las reglas no cambiaron: estos casos prueban que un
+// CONTEO (`count()`) pasa por la misma regla que la lista -`list` con
+// `limit <= 50`- y que por eso el panel lo pide con `limit(50)`.  Un conteo
+// cuesta UNA lectura cada 1.000 documentos contados, no una por documento.
+//
+// Los pares de *"por preparar"* salen de la proyeccion, igual que los de
+// *"Requieren accion"*: los dos rotulos del operador que dicen "falta
+// preparar" (`pagada` y `por_preparar`).
+
+const POR_PREPARAR = ['pagada', 'por_preparar'];
+
+/** Los tramos de "por preparar", con la misma forma que `tramosQueRequierenAccion`. */
+function tramosPorPreparar() {
+  const { pago, entrega, publico } = CONTRATO;
+  const tramos = [];
+  for (const e of entrega.estados) {
+    const pagos = pago.estados.filter((p) => POR_PREPARAR.includes(publico.proyeccion[`${p}|${e}`]));
+    if (pagos.length > 0) tramos.push({ entrega: e, pagos });
+  }
+  return tramos;
+}
+
+function consultaPorPreparar(db, n) {
+  const filtros = tramosPorPreparar().map((t) =>
+    and(where('estadoEntrega', '==', t.entrega), where('estadoPago', 'in', t.pagos)),
+  );
+  const filtro = filtros.length === 1 ? filtros[0] : or(...filtros);
+  return n === undefined ? query(coleccion(db), filtro) : query(coleccion(db), filtro, limit(n));
+}
+
+function consultaEnProceso(db, n) {
+  const filtro = where('estadoPago', '==', 'en_proceso');
+  return n === undefined ? query(coleccion(db), filtro) : query(coleccion(db), filtro, limit(n));
+}
+
+describe('ADR 025: el resumen del dia cuenta con count() y limite', () => {
+  /** Una orden por cada uno de los 36 pares. */
+  async function sembrarLos36() {
+    let i = 0;
+    for (const p of CONTRATO.pago.estados) {
+      for (const e of CONTRATO.entrega.estados) {
+        i += 1;
+        await sembrar(`ordenes/par-${String(i).padStart(2, '0')}`, orden({ numero: i, estadoPago: p, estadoEntrega: e }));
+      }
+    }
+  }
+
+  test('"por preparar" cuenta EXACTAMENTE los pares que la proyeccion dice "falta preparar"', async () => {
+    await sembrarLos36();
+    // Control: los tramos no son una lista vacia por error, y no se colo
+    // nada que ya se preparo.
+    const pares = tramosPorPreparar().flatMap((t) => t.pagos.map((p) => `${p}|${t.entrega}`));
+    assert.deepEqual(pares.sort(), ['pagada|sin_preparar', 'por_fuera|sin_preparar']);
+
+    const conteo = await assertSucceeds(getCountFromServer(consultaPorPreparar(admin, 50)));
+    assert.equal(conteo.data().count, 2);
+  });
+
+  test('"pagos en proceso" cuenta los en_proceso, en cualquier entrega', async () => {
+    await sembrarLos36();
+    const conteo = await assertSucceeds(getCountFromServer(consultaEnProceso(admin, 50)));
+    assert.equal(conteo.data().count, CONTRATO.entrega.estados.length);
+  });
+
+  test('el conteo con limite corta en el limite: el panel dice "50 o mas"', async () => {
+    for (let i = 0; i < 3; i += 1) {
+      await sembrar(`ordenes/o${i}`, orden({ numero: i, estadoPago: 'por_fuera', estadoEntrega: 'sin_preparar' }));
+    }
+    const conteo = await assertSucceeds(getCountFromServer(consultaPorPreparar(admin, 2)));
+    assert.equal(conteo.data().count, 2);
+  });
+
+  test('un conteo SIN limite, o con mas de 50, se rechaza igual que la lista', async () => {
+    await sembrar(`ordenes/${ID}`, orden());
+    await assertFails(getCountFromServer(consultaPorPreparar(admin)));
+    await assertFails(getCountFromServer(consultaEnProceso(admin)));
+    await assertFails(getCountFromServer(consultaPorPreparar(admin, 51)));
+  });
+
+  test('un comprador y un anonimo no cuentan', async () => {
+    await sembrar(`ordenes/${ID}`, orden());
+    for (const db of [comprador, anonimo]) {
+      await assertFails(getCountFromServer(consultaPorPreparar(db, 50)));
+      await assertFails(getCountFromServer(consultaEnProceso(db, 50)));
+    }
   });
 });

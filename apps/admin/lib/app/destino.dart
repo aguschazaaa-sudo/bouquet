@@ -10,7 +10,8 @@ import 'rutas.dart';
 /// - Resolviendo → `/espera`, recordandolo igual: recargar en `/pedidos` no
 ///   tiene que tirarte a Catalogo.
 /// - Sin permiso o con el token ilegible → `/sin-acceso`, y nada mas.
-/// - Operador → sale de las paginas de la sesion hacia `desde` o Catalogo.
+/// - Operador → sale de las paginas de la sesion hacia `desde` o el Resumen
+///   (EP-11: *"al entrar"*).
 ///   Una ruta que no existe se deja pasar: la contesta la pagina no
 ///   encontrada.
 String? destinoPara(Sesion sesion, Uri uri) {
@@ -27,8 +28,8 @@ String? destinoPara(Sesion sesion, Uri uri) {
     case SinPermiso() || Inaccesible():
       return ruta == Rutas.sinAcceso ? null : Rutas.sinAcceso;
     case Operador():
-      if (ruta == '/') return Rutas.catalogo;
-      if (Rutas.deLaSesion.contains(ruta)) return desde ?? Rutas.catalogo;
+      if (ruta == '/') return Rutas.resumen;
+      if (Rutas.deLaSesion.contains(ruta)) return desde ?? Rutas.resumen;
       return null;
   }
 }

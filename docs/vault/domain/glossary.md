@@ -167,9 +167,13 @@ lo dice: el `+` se traba, y listo.
 ### Popularidad
 El puesto de cada vino por unidades vendidas en una ventana de tiempo. Es un
 documento que se **recalcula** entero, nunca un contador que suma, para que el
-job que la calcule —todavía no existe— pueda correr dos veces sin inflarla. Hoy
-la escribe sólo el seed, marcada `simulada: true`. La vidriera recibe el puesto
-y nunca las unidades, y sin métricas el orden por popularidad no se ofrece.
+job que la calcula pueda correr dos veces sin inflarla. Desde el 2026-09-29 la
+calcula `calcularPopularidad` cada madrugada, sobre **90 días** de ventas
+(`pagada` o `por_fuera`, sin cancelar), y la marca `simulada: false`; antes la
+escribía sólo el seed, con `simulada: true` ([ADR 025](../architecture/decisions/025-el-tablero-del-panel.md)).
+La vidriera recibe el puesto y nunca las unidades, y sin ventas el orden por
+popularidad no se ofrece. El panel no muestra un ranking que no diga
+`simulada: false`.
 
 ---
 

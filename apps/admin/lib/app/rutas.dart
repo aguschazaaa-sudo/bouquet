@@ -7,6 +7,10 @@ abstract final class Rutas {
   static const sinAcceso = '/sin-acceso';
   static const espera = '/espera';
 
+  /// Lo que hay que saber para arrancar el dia (EP-11, ADR 025). La primera
+  /// seccion, y a donde se entra: HU-11.2 dice *"al entrar"*.
+  static const resumen = '/resumen';
+
   static const catalogo = '/catalogo';
   static const pedidos = '/pedidos';
 

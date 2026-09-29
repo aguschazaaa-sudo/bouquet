@@ -21,9 +21,16 @@ class Seccion {
 }
 
 /// Las secciones del panel, en orden (HU-01.5). Una ruta sin entrada en esta
-/// lista es una pagina huerfana. Vidriera (EP-09) va ultima: se usa de vez en
-/// cuando, y Catalogo y Pedidos todos los dias.
+/// lista es una pagina huerfana. Resumen (EP-11) va primera: es a donde se
+/// entra. Vidriera (EP-09) va ultima: se usa de vez en cuando, y Catalogo y
+/// Pedidos todos los dias.
 const secciones = [
+  Seccion(
+    titulo: 'Resumen',
+    ruta: Rutas.resumen,
+    icono: Icons.today_outlined,
+    iconoActivo: Icons.today,
+  ),
   Seccion(
     titulo: 'Catálogo',
     ruta: Rutas.catalogo,

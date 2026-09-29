@@ -130,16 +130,20 @@ void main() {
       expect(ir(operador, '/entrar?desde=%2Fpedidos'), Rutas.pedidos);
     });
 
-    test('al entrar sin desde va a Catalogo', () {
-      expect(ir(operador, '/entrar'), Rutas.catalogo);
+    test('al entrar sin desde va al Resumen (EP-11: "al entrar")', () {
+      expect(ir(operador, '/entrar'), Rutas.resumen);
     });
 
-    test('desde /sin-acceso, con el permiso recien dado, va a Catalogo', () {
-      expect(ir(operador, '/sin-acceso'), Rutas.catalogo);
+    test('desde /sin-acceso, con el permiso recien dado, va al Resumen', () {
+      expect(ir(operador, '/sin-acceso'), Rutas.resumen);
     });
 
-    test('la raiz va a Catalogo', () {
-      expect(ir(operador, '/'), Rutas.catalogo);
+    test('la raiz va al Resumen', () {
+      expect(ir(operador, '/'), Rutas.resumen);
+    });
+
+    test('el Resumen es una seccion: un operador ahi se queda', () {
+      expect(ir(operador, '/resumen'), isNull);
     });
 
     test('una ruta inventada se deja pasar a la pagina no encontrada', () {
@@ -160,12 +164,12 @@ void main() {
       '/entrar',
       '/',
     ]) {
-      test('desde=$malo cae en Catalogo', () {
+      test('desde=$malo cae en el Resumen', () {
         final url = Uri(
           path: Rutas.entrar,
           queryParameters: {'desde': malo},
         ).toString();
-        expect(ir(operador, url), Rutas.catalogo);
+        expect(ir(operador, url), Rutas.resumen);
       });
     }
   });

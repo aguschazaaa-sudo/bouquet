@@ -76,6 +76,30 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### EP-11, primer tramo: el panel se entra por *Resumen*, y la popularidad se mide (2026-09-29)
+
+**Escrito y probado en CI; NO desplegado.** Sin openspec, a pedido del dueño:
+[ADR 025](architecture/decisions/025-el-tablero-del-panel.md) es la especificación.
+**HU-11.2 y HU-11.3**; el segundo tramo es HU-11.1, el envío sin cargo (ADR 026).
+
+- **`calcularPopularidad`**, el primer job programado: cada madrugada recalcula
+  `metricas/popularidad` **entero** con las ventas reales de 90 días (`pagada` o
+  `por_fuera`, sin cancelar). Reemplaza al simulado del seed, que ya no lo puede pisar.
+- **Sección nueva, primera y a donde se entra: *Resumen*.** *Hoy*: por preparar y pagos
+  en proceso con `count()` (**una lectura cada uno**, `limit(50)` porque la regla de
+  `list` lo exige), y los agotados del catálogo en memoria. Abajo, *lo que más se
+  vende*, **sólo si está medido**.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36593373052`: contratos 284 → **293**, emulador 209 → **221**, Dart 509 → **522**; después se sacó un export sin llamador y contratos quedó en **292** |
+| Compila | CI `36594073461`: `flutter analyze` **No issues found!** |
+| Presupuesto | Job ~450 lecturas/día con 5 ventas (**0,9 %**); *Resumen* **+3** por apertura |
+
+⚠️ **Lo que sigue:** deploy **functions (el job) → panel**, correr el job una vez y leer
+el documento. **En cuanto corra, `/vinos` deja de ofrecer *"más vendidos"*** hasta que
+haya ventas reales: es lo correcto.
+
 ### Hito 3, segundo tramo: las cajas sugeridas se arman desde el panel — y EP-09 entera (2026-09-28)
 
 **Desplegado el 2026-09-28 —`guardarCajasSugeridas` y el panel (v0.42.0, `dacfb58`)— y
@@ -218,34 +242,6 @@ tienen que coincidir.
 y mande el aviso. **Nadie lo miró renderizado.** Del hito 2 quedan HU-06.5 y EP-08, **todo
 de la vidriera**: lo de WhatsApp está construido entero.
 
-### Tercer tramo del hito 2: lo que requiere acción primero, buscar por número y notas (2026-09-25)
-
-~~**Escrito y commiteado (v0.38.0, `04a149f`); NO desplegado.**~~ **Desplegado el
-2026-09-28 junto con HU-07.3** (entrada de arriba). Sin openspec, a pedido del
-dueño: [ADR 020](architecture/decisions/020-accion-busqueda-y-notas.md) es la
-especificación. **HU-06.3, HU-06.4 y HU-07.7.**
-
-- **La bandeja abre en *"Requieren acción"*** (HU-06.3): un `OR` de tramos que salen de la
-  proyección —no escritos a mano—: lo que hay que preparar, las entregas fallidas, las
-  entregadas sin cobrar de la vidriera y las canceladas con pago. **Pide un índice nuevo**
-  `(estadoEntrega, estadoPago, creadaEn)`: el deploy es **reglas (índices) → panel**. Un
-  panel publicado antes que el índice abre la bandeja en `FAILED_PRECONDITION`.
-- **Buscar por número** (HU-06.4): una lectura, y el detalle se abre sin releer.
-- **Notas internas** (HU-07.7): las reglas ya las aceptaban; ahora hay pantalla. Si dos
-  personas anotan a la vez, **gana la última** (decisión mía, en el ADR).
-
-| Qué | Cómo |
-|---|---|
-| Las reglas | Emulador local: **40/40** (+4). El caso nuevo siembra los **36 pares** y corre la consulta real: trae exactamente los que la proyección marca. **Mutado** (sin el tramo de `fallida`), cae ese caso y ningún otro |
-| Las suites en CI | Corrida `36192553512`: Dart 420 → **432 (+12)**, emulador 158 → **162 (+4)** |
-| Compila | Corrida `36192938783`: `flutter analyze` **No issues found**, build web con artifact `panel-web` |
-
-~~⚠️ **Lo que falta para entregarlo:** merge a `main` y deploy **índices → panel** (`firebase deploy --only firestore:indexes`, correr la consulta de *"Requieren acción"* contra la API hasta que no dé `FAILED_PRECONDITION`, y recién ahí `publicar.sh preview` → canario → `promover`). La sesión no tenía credenciales de Firebase.~~ **Hecho el 2026-09-28** (entrada de arriba).
-
-~~**Quedan del hito 2:** HU-06.5 (push: infra entera, y su caso fuerte es la vidriera),
-HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).~~ HU-07.3 se
-construyó el 2026-09-28 (entrada de arriba).
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -312,6 +308,7 @@ construyó el 2026-09-28 (entrada de arriba).
 | 022 | Lo que dice Mercado Pago entra por **un solo núcleo** (aviso y re-consulta); el marcador es **por hecho** —corrige ADR 003—; lo que movió plata y no se aplicó deja **`alertaDePago`** | [022](architecture/decisions/022-cobro-de-la-vidriera.md) |
 | 023 | La portada la elige el dueño: **`seleccion/publica`**, hasta 6 ids en su orden, que el panel escribe directo; sin elección, la regla. Los plazos que dice el panel viven en **`cuando_se_ve.dart`** | [023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) |
 | 024 | Las cajas sugeridas se guardan **enteras por la callable `guardarCajasSugeridas`**: el slug lo deriva el servidor, y exige composición, no publicado ni stock | [024](architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) |
+| 025 | El panel se entra por **Resumen**: el día con `count()` y `limit(50)`, lo agotado en memoria; la popularidad la **mide un job diario** que recalcula el documento entero, y sin medición no hay ranking | [025](architecture/decisions/025-el-tablero-del-panel.md) |
 
 ---
 

@@ -34,3 +34,7 @@ export { revisarPago } from './pagos/revisar_pago.ts';
 // y reordena las cajas, y esta callable es la unica puerta de escritura --
 // `cajasSugeridas/publicas` esta cerrado incluso para el admin en las reglas.
 export { guardarCajasSugeridas } from './vidriera/guardar_cajas_sugeridas.ts';
+// El primer job programado (HU-11.3, ADR 025): recalcula `metricas/popularidad`
+// entero cada madrugada, con las ventas reales de los ultimos 90 dias.  Hasta
+// hoy ese documento lo escribia solo el seed, simulado.
+export { calcularPopularidad } from './metricas/calcular_popularidad.ts';

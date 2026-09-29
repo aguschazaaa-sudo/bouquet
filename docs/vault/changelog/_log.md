@@ -9,6 +9,42 @@
 
 ---
 
+## Salió el 2026-09-29, al construirse el tablero del panel (ADR 025)
+
+Sale la del tercer tramo del hito 2 (2026-09-25): con la de EP-11 sumada al
+dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 020](../architecture/decisions/020-accion-busqueda-y-notas.md).
+
+### Tercer tramo del hito 2: lo que requiere acción primero, buscar por número y notas (2026-09-25)
+
+~~**Escrito y commiteado (v0.38.0, `04a149f`); NO desplegado.**~~ **Desplegado el
+2026-09-28 junto con HU-07.3** (entrada de arriba). Sin openspec, a pedido del
+dueño: [ADR 020](../architecture/decisions/020-accion-busqueda-y-notas.md) es la
+especificación. **HU-06.3, HU-06.4 y HU-07.7.**
+
+- **La bandeja abre en *"Requieren acción"*** (HU-06.3): un `OR` de tramos que salen de la
+  proyección —no escritos a mano—: lo que hay que preparar, las entregas fallidas, las
+  entregadas sin cobrar de la vidriera y las canceladas con pago. **Pide un índice nuevo**
+  `(estadoEntrega, estadoPago, creadaEn)`: el deploy es **reglas (índices) → panel**. Un
+  panel publicado antes que el índice abre la bandeja en `FAILED_PRECONDITION`.
+- **Buscar por número** (HU-06.4): una lectura, y el detalle se abre sin releer.
+- **Notas internas** (HU-07.7): las reglas ya las aceptaban; ahora hay pantalla. Si dos
+  personas anotan a la vez, **gana la última** (decisión mía, en el ADR).
+
+| Qué | Cómo |
+|---|---|
+| Las reglas | Emulador local: **40/40** (+4). El caso nuevo siembra los **36 pares** y corre la consulta real: trae exactamente los que la proyección marca. **Mutado** (sin el tramo de `fallida`), cae ese caso y ningún otro |
+| Las suites en CI | Corrida `36192553512`: Dart 420 → **432 (+12)**, emulador 158 → **162 (+4)** |
+| Compila | Corrida `36192938783`: `flutter analyze` **No issues found**, build web con artifact `panel-web` |
+
+~~⚠️ **Lo que falta para entregarlo:** merge a `main` y deploy **índices → panel** (`firebase deploy --only firestore:indexes`, correr la consulta de *"Requieren acción"* contra la API hasta que no dé `FAILED_PRECONDITION`, y recién ahí `publicar.sh preview` → canario → `promover`). La sesión no tenía credenciales de Firebase.~~ **Hecho el 2026-09-28** (entrada de arriba).
+
+~~**Quedan del hito 2:** HU-06.5 (push: infra entera, y su caso fuerte es la vidriera),
+HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).~~ HU-07.3 se
+construyó el 2026-09-28 (entrada de arriba).
+
+---
+
 ## Salió el 2026-09-28, al construirse las cajas sugeridas (ADR 024)
 
 Sale la de "EP-07" (2026-09-25): con la del segundo tramo del hito 3 sumada al

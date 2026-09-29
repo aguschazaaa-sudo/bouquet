@@ -23,3 +23,4 @@ export * from './stock.ts';
 export * from './pedido.ts';
 export * from './despacho.ts';
 export * from './pago.ts';
+export * from './popularidad.ts';

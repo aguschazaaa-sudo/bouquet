@@ -182,7 +182,7 @@ jobs:
           N=$(grep -oE 'tests [0-9]+' /tmp/suite.txt | head -1 | grep -oE '[0-9]+')
           NF=$(sed -n '/@bouquet\/functions/,$p' /tmp/suite.txt | grep -oE 'tests [0-9]+' | head -1 | grep -oE '[0-9]+')
           echo "tests ejecutados: contratos ${N:-0} - functions ${NF:-0}"
-          [ "${N:-0}" -ge 284 ] || { echo "::error::corrieron ${N:-0} tests de contratos y el piso es 284"; exit 1; }
+          [ "${N:-0}" -ge 292 ] || { echo "::error::corrieron ${N:-0} tests de contratos y el piso es 292"; exit 1; }
           [ "${NF:-0}" -ge 76 ] || { echo "::error::corrieron ${NF:-0} tests de functions y el piso es 76"; exit 1; }
       - name: El bundle de functions CARGA, como lo carga el deploy
         # Los tests importan el TypeScript directo; el deploy carga el BUNDLE de
@@ -196,7 +196,7 @@ jobs:
             const m = await import('./functions/lib/index.js');
             const n = Object.keys(m).sort();
             console.log('functions en el bundle: ' + n.length + ' - ' + n.join(', '));
-            if (n.length !== 7) { console.error('::error::se esperaban 7 functions'); process.exit(1); }
+            if (n.length !== 8) { console.error('::error::se esperaban 8 functions'); process.exit(1); }
           "
 
   # ==========================================================================
@@ -235,13 +235,13 @@ jobs:
         run: |
           set -o pipefail
           firebase emulators:exec --only firestore --project demo-bouquet \
-            "node --test --test-concurrency=1 scripts/reglas/ordenes.test.mjs scripts/reglas/productos.test.mjs scripts/reglas/seleccion.test.mjs functions/test/stock/mover.emulador.mjs functions/test/pedidos/crear.emulador.mjs functions/test/pedidos/cancelar.emulador.mjs functions/test/pagos/pago.emulador.mjs functions/test/vidriera/guardar.emulador.mjs" \
+            "node --test --test-concurrency=1 scripts/reglas/ordenes.test.mjs scripts/reglas/productos.test.mjs scripts/reglas/seleccion.test.mjs functions/test/stock/mover.emulador.mjs functions/test/pedidos/crear.emulador.mjs functions/test/pedidos/cancelar.emulador.mjs functions/test/pagos/pago.emulador.mjs functions/test/vidriera/guardar.emulador.mjs functions/test/metricas/calcular.emulador.mjs" \
             2>&1 | tee /tmp/emulador.txt
           N=$(grep -oE 'tests [0-9]+' /tmp/emulador.txt | tail -1 | grep -oE '[0-9]+')
           F=$(grep -oE 'fail [0-9]+' /tmp/emulador.txt | tail -1 | grep -oE '[0-9]+')
           echo "tests ejecutados: ${N:-0} - fallidos: ${F:-?}"
           [ "${F:-1}" = "0" ] || { echo "::error::fallaron ${F:-?} casos"; exit 1; }
-          [ "${N:-0}" -ge 209 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 209"; exit 1; }
+          [ "${N:-0}" -ge 221 ] || { echo "::error::corrieron ${N:-0} tests y el piso es 221"; exit 1; }
       - name: El script de accesos contra el emulador de Auth, y la CUENTA
         # Entra el 2026-09-28 con HU-07.3: `acceso.mjs` pasa a escribir un
         # segundo claim (`avisaPorWhatsApp`) y sin esto sus casos no los corria

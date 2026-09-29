@@ -16,6 +16,7 @@ import '../features/pedidos/domain/orden.dart';
 import '../features/pedidos/presentation/pagina_de_cargar_pedido.dart';
 import '../features/pedidos/presentation/pagina_del_pedido.dart';
 import '../features/pedidos/presentation/pantalla_de_pedidos.dart';
+import '../features/resumen/presentation/pantalla_del_resumen.dart';
 import '../features/vidriera/presentation/pantalla_de_la_vidriera.dart';
 import 'destino.dart';
 import 'rutas.dart';
@@ -43,7 +44,7 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
     redirect: (_, estado) => destinoPara(sesion.value, estado.uri),
     errorBuilder: (_, _) => const PaginaNoEncontrada(),
     routes: [
-      GoRoute(path: '/', redirect: (_, _) => Rutas.catalogo),
+      GoRoute(path: '/', redirect: (_, _) => Rutas.resumen),
       GoRoute(path: Rutas.entrar, builder: (_, _) => const PantallaDeEntrada()),
       GoRoute(
         path: Rutas.sinAcceso,
@@ -54,6 +55,11 @@ final enrutadorProvider = Provider<GoRouter>((ref) {
         builder: (_, estado, child) =>
             EstructuraDelPanel(ubicacion: estado.uri.path, child: child),
         routes: [
+          GoRoute(
+            path: Rutas.resumen,
+            pageBuilder: (_, _) =>
+                const NoTransitionPage(child: PantallaDelResumen()),
+          ),
           GoRoute(
             path: Rutas.catalogo,
             pageBuilder: (_, _) =>
