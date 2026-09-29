@@ -1,3 +1,4 @@
+import 'cajas_sugeridas.dart';
 import 'seleccion_de_la_portada.dart';
 
 /// Lo que el panel sabe hacer con lo que la tienda elige mostrar (EP-09). La
@@ -13,4 +14,12 @@ abstract interface class RepositorioDeLaVidriera {
   /// Lanza `FalloDeCatalogo`: es el mismo tipo de escritura que el catalogo,
   /// con los mismos tres desenlaces (sin permiso, sin conexion, desconocido).
   Future<void> guardarSeleccion(SeleccionDeLaPortada seleccion);
+
+  /// Las cajas sugeridas, cada vez que cambian. Un documento, que las reglas
+  /// dejan LEER al admin.
+  Stream<CajasSugeridas> cajas();
+
+  /// Reescribe TODAS las cajas por la callable `guardarCajasSugeridas`, que
+  /// verifica que cada una cierre (ADR 024). Lanza `FalloDeLasCajas`.
+  Future<void> guardarCajas(CajasSugeridas cajas);
 }

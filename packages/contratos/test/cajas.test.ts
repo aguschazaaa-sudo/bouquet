@@ -8,8 +8,11 @@ import assert from 'node:assert/strict';
 
 import { botellasEnCarrito, botellasSueltas, estadoDeLaCaja, resolverCarrito, sePuedeCobrar } from '../src/carrito.ts';
 import {
+  armarCajasSugeridas,
+  LARGO_DEL_NOMBRE_DE_CAJA,
   llenarConLaCaja,
   resolverCajasSugeridas,
+  TOPE_DE_CAJAS_SUGERIDAS,
   validarCajasSugeridas,
   verificarComposicion,
   type CajaSugerida,
@@ -372,4 +375,79 @@ test('sin todos los vinos a la vista, la caja NO se declara completa', () => {
   const productos = seisProductos().filter((p) => p.id !== 'f').concat(publicado('a', { botellas: 2 }));
   const r = resolverUna(productos.filter((p, i, xs) => xs.findIndex((y) => y.id === p.id) === i));
   assert.equal(r.completa, false);
+});
+
+// ------------------------------------------------ el pedido del panel (ADR 024)
+
+test('armar: el slug sale del nombre, y el orden es el del pedido', () => {
+  const r = armarCajasSugeridas({
+    cajas: [
+      { nombre: '  Seis tintos de Mendoza ', productoIds: SEIS },
+      { nombre: 'Para el asado', productoIds: ['a', 'a', 'a', 'b', 'b', 'b'] },
+    ],
+  });
+  assert.ok(r.ok, r.ok ? '' : r.motivo);
+  assert.deepEqual(
+    r.valor.map((c) => [c.slug, c.nombre]),
+    [
+      ['seis-tintos-de-mendoza', 'Seis tintos de Mendoza'],
+      ['para-el-asado', 'Para el asado'],
+    ],
+  );
+  // Un id repetido son dos botellas: viaja tal cual.
+  assert.deepEqual(r.valor[1]!.productoIds, ['a', 'a', 'a', 'b', 'b', 'b']);
+});
+
+test('armar: la lista vacia es valida -- el duenio saco todas', () => {
+  const r = armarCajasSugeridas({ cajas: [] });
+  assert.ok(r.ok);
+  assert.deepEqual(r.valor, []);
+});
+
+test('armar: dos nombres que dan el mismo slug se rechazan, no se pierden en la tienda', () => {
+  const r = armarCajasSugeridas({
+    cajas: [
+      { nombre: 'Seis tintos', productoIds: SEIS },
+      { nombre: 'SEIS  TINTOS!', productoIds: SEIS },
+    ],
+  });
+  assert.equal(r.ok, false);
+  assert.match(r.ok ? '' : r.motivo, /se llaman igual/);
+  // Control: con nombres distintos, pasa.
+  assert.ok(armarCajasSugeridas({ cajas: [{ nombre: 'Seis tintos', productoIds: SEIS }, { nombre: 'Seis blancos', productoIds: SEIS }] }).ok);
+});
+
+test('armar: sin nombre, sin letras o demasiado largo, no', () => {
+  for (const nombre of ['', '   ', '!!!', 'x'.repeat(LARGO_DEL_NOMBRE_DE_CAJA + 1), 7]) {
+    assert.equal(armarCajasSugeridas({ cajas: [{ nombre, productoIds: SEIS }] }).ok, false, String(nombre));
+  }
+  // Control: justo el largo maximo entra.
+  assert.ok(armarCajasSugeridas({ cajas: [{ nombre: 'x'.repeat(LARGO_DEL_NOMBRE_DE_CAJA), productoIds: SEIS }] }).ok);
+});
+
+test('armar: una caja que no tiene seis lugares no se arma', () => {
+  assert.equal(armarCajasSugeridas({ cajas: [{ nombre: 'Cinco', productoIds: SEIS.slice(0, 5) }] }).ok, false);
+  assert.equal(armarCajasSugeridas({ cajas: [{ nombre: 'Siete', productoIds: [...SEIS, 'g'] }] }).ok, false);
+  assert.equal(armarCajasSugeridas({ cajas: [{ nombre: 'Rota', productoIds: ['a', 'b', 'c', 'd', 'e', ''] }] }).ok, false);
+});
+
+test(`armar: mas de ${TOPE_DE_CAJAS_SUGERIDAS} cajas, no; justo el tope, si`, () => {
+  const cajas = (n: number) =>
+    Array.from({ length: n }, (_, i) => ({ nombre: `Caja ${i + 1}`, productoIds: SEIS }));
+  assert.equal(armarCajasSugeridas({ cajas: cajas(TOPE_DE_CAJAS_SUGERIDAS + 1) }).ok, false);
+  assert.ok(armarCajasSugeridas({ cajas: cajas(TOPE_DE_CAJAS_SUGERIDAS) }).ok);
+});
+
+test('armar: lo que no es un pedido, no', () => {
+  for (const entrada of [undefined, null, 'cajas', [], { cajas: 'x' }, { cajas: [null] }]) {
+    assert.equal(armarCajasSugeridas(entrada).ok, false, JSON.stringify(entrada));
+  }
+});
+
+test('armar da lo que validarCajasSugeridas acepta sin descartes: el pedido y el documento dicen lo mismo', () => {
+  const r = armarCajasSugeridas({ cajas: [{ nombre: 'Seis tintos', productoIds: SEIS }] });
+  assert.ok(r.ok);
+  const leido = validarCajasSugeridas({ cajas: r.valor });
+  assert.equal(leido.descartes.length, 0);
+  assert.deepEqual(leido.cajas, r.valor);
 });

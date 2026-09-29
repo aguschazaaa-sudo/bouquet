@@ -26,7 +26,10 @@
   FALSAS** — faltan las claves reales de Mercado Pago. **Hito 3, primer tramo
   (2026-09-28, sin openspec, [ADR 023](../../architecture/decisions/023-la-portada-la-elige-el-duenio.md)):
   HU-09.1 y HU-09.4** — la portada la elige el dueño desde la sección
-  *Vidriera*, y el panel dice cuándo se ve cada cambio
+  *Vidriera*, y el panel dice cuándo se ve cada cambio. **Hito 3, segundo
+  tramo (2026-09-28, sin openspec, [ADR 024](../../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md)):
+  HU-09.2 y HU-09.3** — las cajas sugeridas, por la callable
+  `guardarCajasSugeridas`. **Con esto EP-09 y el hito 3 quedan escritos enteros**
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)

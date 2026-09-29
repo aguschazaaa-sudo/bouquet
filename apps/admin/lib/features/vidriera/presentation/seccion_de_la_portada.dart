@@ -7,7 +7,7 @@ import '../../catalogo/domain/fallo_de_catalogo.dart';
 import '../../catalogo/presentation/textos_del_catalogo.dart';
 import '../domain/seleccion_de_la_portada.dart';
 import '../vidriera_providers.dart';
-import 'hoja_para_elegir_vino_de_la_portada.dart';
+import 'hoja_para_elegir_un_vino.dart';
 import 'renglon_de_la_portada.dart';
 import 'textos_de_la_vidriera.dart';
 
@@ -50,9 +50,15 @@ class _SeccionDeLaPortadaState extends ConsumerState<SeccionDeLaPortada> {
   }
 
   Future<void> _agregar() async {
-    final id = await HojaParaElegirVinoDeLaPortada.mostrar(
+    final s = widget.seleccion;
+    final id = await HojaParaElegirUnVino.mostrar(
       context,
-      widget.seleccion,
+      titulo: textoElegirParaLaPortada,
+      porQueNo: (p, catalogo) {
+        if (s.contiene(p.id)) return textoYaEstaEnLaPortada;
+        final fuera = fueraDeLaPortada(p, catalogo);
+        return fuera == null ? null : textoFueraDeLaPortada(fuera);
+      },
     );
     if (id == null || !mounted) return;
     await _guardar(widget.seleccion.agregar(id));

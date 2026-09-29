@@ -8,43 +8,50 @@ import '../../../theme/tema.dart';
 import '../../catalogo/catalogo_providers.dart';
 import '../../catalogo/domain/catalogo.dart';
 import '../../catalogo/domain/producto_del_panel.dart';
-import '../domain/seleccion_de_la_portada.dart';
 import 'textos_de_la_vidriera.dart';
 
-/// Elegir un vino para la portada, de la lista que **ya esta en memoria**:
-/// abrirla no lee nada de Firestore. Se busca escribiendo, sin acentos ni
-/// mayusculas.
+/// Por que [p] no se puede elegir, en una oracion corta, o `null` si se puede.
+typedef PorQueNo = String? Function(ProductoDelPanel p, Catalogo catalogo);
+
+/// Elegir un vino de la lista que **ya esta en memoria**, para la portada o
+/// para un lugar de una caja: abrirla no lee nada de Firestore. Se busca
+/// escribiendo, sin acentos ni mayusculas.
 ///
 /// Un vino que no puede ir **no desaparece**: aparece deshabilitado y dice
-/// por que (ya esta, no se ve en la tienda, viene en caja, sin stock). Mismo
-/// criterio que la hoja de los pedidos: uno que desaparece es alguien
-/// preguntandose donde esta.
+/// por que ([porQueNo]: ya esta, no se ve en la tienda, viene en caja, sin
+/// stock). Mismo criterio que la hoja de los pedidos: uno que desaparece es
+/// alguien preguntandose donde esta.
 ///
 /// Devuelve el id elegido, o `null` si se cerro sin elegir.
-class HojaParaElegirVinoDeLaPortada extends ConsumerStatefulWidget {
-  const HojaParaElegirVinoDeLaPortada({super.key, required this.seleccion});
+class HojaParaElegirUnVino extends ConsumerStatefulWidget {
+  const HojaParaElegirUnVino({
+    super.key,
+    required this.titulo,
+    required this.porQueNo,
+  });
 
-  final SeleccionDeLaPortada seleccion;
+  final String titulo;
+  final PorQueNo porQueNo;
 
   static Future<String?> mostrar(
-    BuildContext context,
-    SeleccionDeLaPortada seleccion,
-  ) {
+    BuildContext context, {
+    required String titulo,
+    required PorQueNo porQueNo,
+  }) {
     return showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => HojaParaElegirVinoDeLaPortada(seleccion: seleccion),
+      builder: (_) => HojaParaElegirUnVino(titulo: titulo, porQueNo: porQueNo),
     );
   }
 
   @override
-  ConsumerState<HojaParaElegirVinoDeLaPortada> createState() =>
-      _HojaParaElegirVinoDeLaPortadaState();
+  ConsumerState<HojaParaElegirUnVino> createState() =>
+      _HojaParaElegirUnVinoState();
 }
 
-class _HojaParaElegirVinoDeLaPortadaState
-    extends ConsumerState<HojaParaElegirVinoDeLaPortada> {
+class _HojaParaElegirUnVinoState extends ConsumerState<HojaParaElegirUnVino> {
   String _busqueda = '';
 
   @override
@@ -62,7 +69,7 @@ class _HojaParaElegirVinoDeLaPortadaState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(textoElegirParaLaPortada, style: tema.textTheme.titleLarge),
+                Text(widget.titulo, style: tema.textTheme.titleLarge),
                 const SizedBox(height: 12),
                 TextField(
                   autofocus: true,
@@ -87,7 +94,7 @@ class _HojaParaElegirVinoDeLaPortadaState
               AsyncData(:final value) => _Lista(
                 catalogo: value,
                 productos: _filtrar(value),
-                seleccion: widget.seleccion,
+                porQueNo: widget.porQueNo,
                 alElegir: (id) => Navigator.of(context).pop(id),
               ),
               _ => const Cargando(que: 'Buscando tus vinos…'),
@@ -113,13 +120,13 @@ class _Lista extends StatelessWidget {
   const _Lista({
     required this.catalogo,
     required this.productos,
-    required this.seleccion,
+    required this.porQueNo,
     required this.alElegir,
   });
 
   final Catalogo catalogo;
   final List<ProductoDelPanel> productos;
-  final SeleccionDeLaPortada seleccion;
+  final PorQueNo porQueNo;
   final ValueChanged<String> alElegir;
 
   @override
@@ -132,15 +139,9 @@ class _Lista extends StatelessWidget {
       itemCount: productos.length,
       itemBuilder: (_, i) {
         final p = productos[i];
-        final yaEsta = seleccion.contiene(p.id);
-        final fuera = fueraDeLaPortada(p, catalogo);
-        final sePuede = !yaEsta && fuera == null;
-        final bodega = catalogo.bodega(p.bodegaId)?.nombre;
-        final detalle = yaEsta
-            ? textoYaEstaEnLaPortada
-            : fuera != null
-            ? textoFueraDeLaPortada(fuera)
-            : bodega;
+        final motivo = porQueNo(p, catalogo);
+        final sePuede = motivo == null;
+        final detalle = motivo ?? catalogo.bodega(p.bodegaId)?.nombre;
         return ListTile(
           enabled: sePuede,
           title: Text(p.nombre, style: estiloDeNombre()),

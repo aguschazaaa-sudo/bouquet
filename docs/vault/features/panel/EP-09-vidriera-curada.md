@@ -49,6 +49,11 @@ que la home diga la verdad cuando dice *"los elegimos de a uno"*.
     guarda por una **callable**.
 - **Lo que más vale:** que el panel no deje elegir un vino en caja, y que diga
   cuántos lugares faltan antes de guardar.
+- **Construida el 2026-09-28** ([ADR 024](../../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md)):
+  la callable `guardarCajasSugeridas` reescribe el documento entero con
+  `verificarComposicion`, y el slug lo deriva del nombre. La hoja de armar dice
+  cuántos faltan todo el tiempo, no ofrece un vino en caja ni agotado, y si
+  guardar falla no se cierra.
 
 ## HU-09.3 — Cambiar, ordenar y quitar cajas sugeridas
 
@@ -61,6 +66,11 @@ con la temporada.
 - **Ojo:** una caja con un vino despublicado o agotado **se sigue mostrando**,
   con ese lugar marcado ([glosario](../../domain/glossary.md)). El panel lo
   avisa, para que el dueño decida si la cambia.
+- **Construida el 2026-09-28** ([ADR 024](../../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md)):
+  cambiar, subir, bajar y sacar —con *Deshacer*— desde la sección Vidriera. La
+  callable **no** exige publicado ni stock, así reordenar no falla por una caja
+  vieja; el panel marca cada lugar que la tienda no va a llenar, y aparte la
+  caja que no se muestra entera.
 
 ## HU-09.4 — Saber cuándo mi cambio se ve en la tienda
 

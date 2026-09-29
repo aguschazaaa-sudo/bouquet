@@ -1,7 +1,7 @@
 # ADR 023 — La portada la elige el dueño, y el panel dice cuándo se ve
 
 - **Fecha:** 2026-09-28
-- **Estado:** aceptada; escrita, **sin desplegar** (ver *Verificación*, al final)
+- **Estado:** aceptada; **desplegada y verificada por bytes el 2026-09-28** (v0.41.0, `4c75317`). Falta la rama positiva en producción: ver *Verificación*, al final
 - **Decide:** dónde vive la selección de la portada, qué muestra la portada con
   ella, y cómo le dice el panel a quien guarda cuándo lo va a ver en la tienda
 - **Historias:** HU-09.1 y HU-09.4 ([EP-09](../../features/panel/EP-09-vidriera-curada.md)).
@@ -146,6 +146,21 @@ suma diaria no se mueve.
 | **Los plazos de `cuando_se_ve.dart`** | El tramo 4 (purga por tag, ADR 005) |
 | **Que la portada entre a la purga** | El tramo 4: si entra, el plazo de la portada pasa a ser el del catálogo, y el texto cambia |
 
-## Verificación
+## Verificación (2026-09-28)
 
-*Pendiente: se completa con el deploy.*
+**Desplegado —reglas, panel (v0.41.0, `4c75317`) y la preview de la tienda— y verificado
+por bytes. Nadie lo miró renderizado.**
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36494514104` restada contra `36475268911`: contratos **+8**, tienda **+4**, emulador **+11**, Dart **+9**; `flutter analyze` sin issues |
+| El acople que encontró CI | La primera corrida (`36494126137`) tumbó `documento_del_vino_test.dart`: lee la PRIMERA lista de `hasOnly` sobre `d` en `firestore.rules`, y `seleccionValida(d)` quedó antes que `productoValido`. Se renombró el parámetro a `sel`, con el porqué al lado |
+| Reglas | API de Rules: el ruleset publicado es **idéntico byte a byte** al archivo; `seleccionValida(sel)` presente; string inventado 0 |
+| Panel | Canario discriminante en el canal (4 cadenas nuevas 0 → ≥1, una vieja 1 → 0, inventada 0 → 0) → live con los 4 hashes del artifact, `noindex` |
+| Tienda | Rollout `build-2026-09-28-001` `SUCCEEDED` al 100 %, gates cerrados. Sin documento (404), la portada muestra **los mismos 6** que la regla antes del deploy: la rama "nunca eligió" funciona en producción |
+
+⚠️ **Falta la rama positiva en producción.** El canario —una selección de prueba en
+`seleccion/publica` con un vino que aparece, dos que desaparecen, un agotado que se
+saltea y otro orden— lo frenó el clasificador de permisos al escribir en producción. Lo
+cubre CI; en producción queda para cuando el dueño elija desde *Vidriera* (o se autorice
+la escritura) y se vuelva a publicar la tienda.

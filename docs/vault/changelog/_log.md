@@ -9,6 +9,54 @@
 
 ---
 
+## Salió el 2026-09-28, al construirse las cajas sugeridas (ADR 024)
+
+Sale la de "EP-07" (2026-09-25): con la del segundo tramo del hito 3 sumada al
+dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 019](../architecture/decisions/019-preparar-despachar-y-cancelar.md).
+
+### EP-07: los pedidos se preparan, se despachan y se cancelan devolviendo el stock (2026-09-25)
+
+**Desplegado el 2026-09-25 —reglas, `cancelarOrden` y panel (`f066c56`)— y verificado
+por bytes, por API cruda y con cuatro mutaciones en CI. En producción hay 0 pedidos:
+nadie lo usó ni miró el detalle renderizado.** Sin openspec, a pedido del dueño:
+[ADR 019](../architecture/decisions/019-preparar-despachar-y-cancelar.md) es la
+especificación. **HU-07.1, 07.2, 07.4, 07.5 y 07.6**, el segundo tramo del hito 2:
+cierra lo que ADR 018 dejó como *"lo primero que sigue"* — un pedido ya sale de
+`sin_preparar`, y **uno mal cargado se cancela y su stock vuelve**.
+
+**Dos caminos.** Preparar, despachar (correo + seguimiento opcional), entregar y la
+entrega fallida (con motivo) los escribe el panel **directo**, y **las reglas validan
+la transición** contra el estado de ahora, con cero lecturas: era el hallazgo 3 del
+mapa. **Cancelar es `cancelarOrden`, la cuarta Cloud Function**: devuelve el stock con
+el snapshot de `botellas` en la misma transacción que marca la Orden, que es su propio
+marcador. **Ningún cliente puede escribir `cancelada`**, aunque la tabla la permita.
+
+**Tres decisiones mías, en el ADR:** cancelar **nunca se traba por una línea** (un vino
+borrado o recreado en otra presentación queda en `sinReponer`, escrito en la Orden y en
+rojo en el detalle); **no aplica el tope** de stock al devolver; y las listas de
+correos y motivos. La confirmación de *entregado* **es la declaración legal**: *"Sí, lo
+recibió un mayor de 18"*.
+
+**La tabla de transiciones vive ahora en tres lugares** (contratos, Dart, reglas), y la
+tercera copia la sincroniza un test: la suite de reglas lee los pares del JSON generado.
+Y **las suites de emulador pasan a CI** (job `suite_emulador`): hasta hoy las que prueban
+plata se corrían sólo a mano, y esta máquina no tiene RAM para levantar el emulador.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36186653800`, restadas contra la anterior: `contratos` **+10**, `functions` **+11**, Dart **+27**; emulador **158/158**, por primera vez en CI |
+| Que discriminen | **Cuatro mutaciones** en una rama descartable (cliente que cancela, sin la guarda de vidriera impaga, sin idempotencia, sin mirar la presentación): cada una tumbó sólo sus casos |
+| El deploy | Reglas: ruleset **idéntico byte a byte**. `cancelarOrden`: `ACTIVE`, timeout 120, `allUsers`, preflight 204, anónimo 401 JSON, inventada 404. Panel: canario discriminante (4 cadenas nuevas 0 → 1, una vieja 1 → 0) → promovido, 4 hashes iguales, `noindex`. Arranca en live con 0 errores de consola |
+
+⚠️ **Lo que sigue:** que el dueño cargue un pedido real y lo lleve hasta *entregado* (o lo
+cancele). Es lo único que prueba las reglas nuevas desde el panel y `cancelarOrden` con una
+cuenta de verdad. Y **una pregunta de producto abierta**: un pedido con la entrega fallida
+**no se puede cancelar** (tabla de ADR 002); si el correo lo devuelve y el cliente ya no lo
+quiere, queda sin salida ([ADR 019](../architecture/decisions/019-preparar-despachar-y-cancelar.md), hallazgo 3).
+
+---
+
 ## Salió el 2026-09-28, al construirse la portada del dueño (ADR 023)
 
 Sale la de "Pedidos de WhatsApp" (2026-09-24): con la del hito 3 sumada al dashboard,

@@ -26,6 +26,7 @@
 
 import { agregar, BOTELLAS_POR_CAJA, esProductoId, type Carrito } from './carrito.ts';
 import { viajaSolo, type Descarte, type ProductoPublicado, type Validacion } from './producto.ts';
+import { aSlug } from './texto.ts';
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -128,6 +129,63 @@ export function validarCajasSugeridas(datos: unknown): CajasArmadas {
   });
 
   return { cajas, descartes };
+}
+
+// ------------------------------------------------ 1b. el pedido del panel
+
+/**
+ * Cuantas cajas ofrece la tienda como mucho (HU-09.2, ADR 024). Acota lo que
+ * cuesta guardar: seis cajas de seis son 36 ids, y la callable lee cada id
+ * distinto una vez. Y el carril de `/vinos` se scrollea de lado: mas que esto
+ * ya no es una seleccion.
+ */
+export const TOPE_DE_CAJAS_SUGERIDAS = 6;
+
+/** El nombre entra en la tarjeta del carril sin cortarse en un telefono. */
+export const LARGO_DEL_NOMBRE_DE_CAJA = 40;
+
+/**
+ * El pedido del panel a `guardarCajasSugeridas` (HU-09.2, HU-09.3, ADR 024):
+ * la lista ENTERA de cajas, en el orden en que se ofrecen, cada una con su
+ * nombre y sus `BOTELLAS_POR_CAJA` ids. Devuelve las cajas del documento.
+ *
+ * **El slug lo deriva esto, del nombre** (`aSlug`), no lo manda el panel: es
+ * la clave de la tarjeta en `/vinos`, y dos cajas con el mismo slug quedan
+ * afuera LAS DOS (`validarCajasSugeridas`). Por eso dos nombres que dan el
+ * mismo slug se rechazan aca, con un motivo que el panel puede decir, en vez
+ * de guardarse y desaparecer de la tienda.
+ *
+ * Mira la FORMA. Que cada caja sume una caja con botellas sueltas lo mira
+ * `verificarComposicion`, que necesita el catalogo: lo corre la callable.
+ */
+export function armarCajasSugeridas(entrada: unknown): Validacion<readonly CajaSugerida[]> {
+  if (!esObjeto(entrada) || !Array.isArray(entrada.cajas)) {
+    return { ok: false, motivo: 'el pedido no tiene la forma { cajas: [...] }' };
+  }
+  if (entrada.cajas.length > TOPE_DE_CAJAS_SUGERIDAS) {
+    return { ok: false, motivo: `${entrada.cajas.length} cajas: el tope es ${TOPE_DE_CAJAS_SUGERIDAS}` };
+  }
+
+  const cajas: CajaSugerida[] = [];
+  for (const [i, cruda] of entrada.cajas.entries()) {
+    const donde = `cajas[${i}]`;
+    if (!esObjeto(cruda)) return { ok: false, motivo: `${donde}: no es un mapa` };
+    const nombre = typeof cruda.nombre === 'string' ? cruda.nombre.trim() : '';
+    if (nombre.length === 0) return { ok: false, motivo: `${donde}: falta el nombre` };
+    if (nombre.length > LARGO_DEL_NOMBRE_DE_CAJA) {
+      return { ok: false, motivo: `${donde}: el nombre pasa de ${LARGO_DEL_NOMBRE_DE_CAJA} letras` };
+    }
+    const slug = aSlug(nombre);
+    if (slug.length === 0) return { ok: false, motivo: `${donde}: el nombre no tiene letras ni numeros` };
+    const otra = cajas.find((c) => c.slug === slug);
+    if (otra !== undefined) {
+      return { ok: false, motivo: `${donde}: "${nombre}" y "${otra.nombre}" se llaman igual para la tienda` };
+    }
+    const v = validarUna({ slug, nombre, productoIds: cruda.productoIds }, donde);
+    if (!v.ok) return v;
+    cajas.push(v.valor);
+  }
+  return { ok: true, valor: cajas };
 }
 
 // --------------------------------------------------------- 2. la composicion

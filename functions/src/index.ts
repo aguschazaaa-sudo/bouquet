@@ -30,3 +30,7 @@ export { cancelarOrden } from './pedidos/cancelar_orden.ts';
 // Pago tienen HOY valores FALSOS: ver `pagos/secretos.ts`.
 export { avisoDeMercadoPago } from './pagos/aviso_de_mercado_pago.ts';
 export { revisarPago } from './pagos/revisar_pago.ts';
+// La vidriera curada, tramo cajas sugeridas (HU-09.2, HU-09.3): el panel arma
+// y reordena las cajas, y esta callable es la unica puerta de escritura --
+// `cajasSugeridas/publicas` esta cerrado incluso para el admin en las reglas.
+export { guardarCajasSugeridas } from './vidriera/guardar_cajas_sugeridas.ts';

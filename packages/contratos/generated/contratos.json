@@ -1410,7 +1410,9 @@
   },
   "vidriera": {
     "lugaresDeLaSeleccion": 6,
-    "botellasPorCaja": 6
+    "botellasPorCaja": 6,
+    "topeDeCajas": 6,
+    "largoDelNombreDeCaja": 40
   },
   "publico": {
     "estados": [

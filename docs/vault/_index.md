@@ -76,9 +76,28 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### Hito 3, segundo tramo: las cajas sugeridas se arman desde el panel — y EP-09 entera (2026-09-28)
+
+**Escrito; CI, deploy y verificación van abajo.** Sin openspec, a pedido del dueño:
+[ADR 024](architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) es la
+especificación. **HU-09.2 y HU-09.3**: con el primer tramo, **el hito 3 queda escrito
+entero**.
+
+- **La callable `guardarCajasSugeridas`** es la única puerta de `cajasSugeridas/publicas`
+  (cerrado incluso al admin, ADR 009 §8): valida la forma con `armarCajasSugeridas`
+  —hasta 6 cajas, slug derivado del nombre, nombres repetidos rechazados—, lee los ids
+  distintos en un `getAll`, corre `verificarComposicion` y reescribe el documento entero.
+  Todo o nada. **No exige publicado ni stock**: reordenar no puede fallar por una caja vieja.
+- **En Vidriera, debajo de la portada:** cada caja con sus seis vinos y lo que la tienda va
+  a hacer —lugares marcados, o la caja entera que no se muestra—; armar y cambiar en una
+  hoja que dice cuántos faltan y no se cierra si falla; subir, bajar y sacar con *Deshacer*.
+- La hoja de elegir un vino pasó a ser **una** para la portada y las cajas.
+
 ### Hito 3, primer tramo: la portada la elige el dueño, y el panel dice cuándo se ve (2026-09-28)
 
-**Escrito y verde en CI; el deploy y su verificación van abajo.** Sin openspec, a pedido
+**Desplegado el 2026-09-28 —reglas, panel (v0.41.0, `4c75317`) y la preview de la
+tienda— y verificado por bytes. Falta el camino positivo en producción: que exista una
+selección y la portada la muestre. Nadie lo miró renderizado.** Sin openspec, a pedido
 del dueño: [ADR 023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) es la
 especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 entero es esa
 épica; el segundo tramo son las cajas sugeridas, HU-09.2 y 09.3).
@@ -98,6 +117,18 @@ especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 ente
 - **CI encontró un acople que no se veía:** `documento_del_vino_test.dart` lee el PRIMER
   `hasOnly` sobre `d` de `firestore.rules`, y la función nueva quedó antes que
   `productoValido`. Se renombró su parámetro, con el porqué escrito al lado.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36494514104` restada contra `36475268911`: contratos 268 → **276 (+8)**, tienda 34 → **38 (+4)**, emulador 187 → **198 (+11)**, Dart 488 → **497 (+9)**, `flutter analyze` *No issues found* |
+| Reglas | Por la API de Rules: release de las 23:45:35Z, el ruleset publicado es **idéntico byte a byte** al archivo (SHA-256), tiene `seleccionValida(sel)`; un string inventado da 0 |
+| Panel | Build `36499391552` → canal → canario discriminante (4 cadenas nuevas 0 → ≥1, `"Vino sacado de la tienda."` 1 → 0, inventada 0 → 0) → live con los 4 hashes iguales, `noindex` |
+| Tienda | Rollout `build-2026-09-28-001` `SUCCEEDED` con el 100 % del tráfico, 7 rutas con `noindex`, gates cerrados. **Control de regresión:** sin `seleccion/publica` (404), la portada muestra los mismos 6 que antes |
+
+⚠️ **El canario positivo quedó sin correr**: escribir una selección de prueba en
+`seleccion/publica` de producción lo frenó el clasificador de permisos, y queda para que
+el usuario lo autorice o lo haga el dueño desde *Vidriera*. Hasta entonces, que la portada
+**use** la selección está probado en CI, no en producción.
 
 ### Quinto tramo del hito 2: el cobro de la vidriera, del lado que recibe — desplegado con credenciales FALSAS (2026-09-28)
 
@@ -201,46 +232,6 @@ especificación. **HU-06.3, HU-06.4 y HU-07.7.**
 HU-07.3 (falta el número de la tienda) y EP-08 (espera a `crearOrden`).~~ HU-07.3 se
 construyó el 2026-09-28 (entrada de arriba).
 
-### EP-07: los pedidos se preparan, se despachan y se cancelan devolviendo el stock (2026-09-25)
-
-**Desplegado el 2026-09-25 —reglas, `cancelarOrden` y panel (`f066c56`)— y verificado
-por bytes, por API cruda y con cuatro mutaciones en CI. En producción hay 0 pedidos:
-nadie lo usó ni miró el detalle renderizado.** Sin openspec, a pedido del dueño:
-[ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md) es la
-especificación. **HU-07.1, 07.2, 07.4, 07.5 y 07.6**, el segundo tramo del hito 2:
-cierra lo que ADR 018 dejó como *"lo primero que sigue"* — un pedido ya sale de
-`sin_preparar`, y **uno mal cargado se cancela y su stock vuelve**.
-
-**Dos caminos.** Preparar, despachar (correo + seguimiento opcional), entregar y la
-entrega fallida (con motivo) los escribe el panel **directo**, y **las reglas validan
-la transición** contra el estado de ahora, con cero lecturas: era el hallazgo 3 del
-mapa. **Cancelar es `cancelarOrden`, la cuarta Cloud Function**: devuelve el stock con
-el snapshot de `botellas` en la misma transacción que marca la Orden, que es su propio
-marcador. **Ningún cliente puede escribir `cancelada`**, aunque la tabla la permita.
-
-**Tres decisiones mías, en el ADR:** cancelar **nunca se traba por una línea** (un vino
-borrado o recreado en otra presentación queda en `sinReponer`, escrito en la Orden y en
-rojo en el detalle); **no aplica el tope** de stock al devolver; y las listas de
-correos y motivos. La confirmación de *entregado* **es la declaración legal**: *"Sí, lo
-recibió un mayor de 18"*.
-
-**La tabla de transiciones vive ahora en tres lugares** (contratos, Dart, reglas), y la
-tercera copia la sincroniza un test: la suite de reglas lee los pares del JSON generado.
-Y **las suites de emulador pasan a CI** (job `suite_emulador`): hasta hoy las que prueban
-plata se corrían sólo a mano, y esta máquina no tiene RAM para levantar el emulador.
-
-| Qué | Cómo |
-|---|---|
-| Las suites | CI `36186653800`, restadas contra la anterior: `contratos` **+10**, `functions` **+11**, Dart **+27**; emulador **158/158**, por primera vez en CI |
-| Que discriminen | **Cuatro mutaciones** en una rama descartable (cliente que cancela, sin la guarda de vidriera impaga, sin idempotencia, sin mirar la presentación): cada una tumbó sólo sus casos |
-| El deploy | Reglas: ruleset **idéntico byte a byte**. `cancelarOrden`: `ACTIVE`, timeout 120, `allUsers`, preflight 204, anónimo 401 JSON, inventada 404. Panel: canario discriminante (4 cadenas nuevas 0 → 1, una vieja 1 → 0) → promovido, 4 hashes iguales, `noindex`. Arranca en live con 0 errores de consola |
-
-⚠️ **Lo que sigue:** que el dueño cargue un pedido real y lo lleve hasta *entregado* (o lo
-cancele). Es lo único que prueba las reglas nuevas desde el panel y `cancelarOrden` con una
-cuenta de verdad. Y **una pregunta de producto abierta**: un pedido con la entrega fallida
-**no se puede cancelar** (tabla de ADR 002); si el correo lo devuelve y el cliente ya no lo
-quiere, queda sin salida ([ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md), hallazgo 3).
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -305,6 +296,8 @@ quiere, queda sin salida ([ADR 019](architecture/decisions/019-preparar-despacha
 | 011 | Al panel se entra con mail o Google; **las cuentas las crea un script, sin contraseña**, que se niega a habilitar una cuenta sin el mail verificado; el permiso viaja en el token, y se publica **lo que compiló CI** | [011](architecture/decisions/011-entrar-al-panel.md) |
 | 018 | Un pedido de WhatsApp se carga por **una callable del panel** que fija el origen; su cobro es **`por_fuera`** (terminal); el documento es su propio marcador; **cada venta deja su movimiento** | [018](architecture/decisions/018-pedidos-de-whatsapp.md) |
 | 022 | Lo que dice Mercado Pago entra por **un solo núcleo** (aviso y re-consulta); el marcador es **por hecho** —corrige ADR 003—; lo que movió plata y no se aplicó deja **`alertaDePago`** | [022](architecture/decisions/022-cobro-de-la-vidriera.md) |
+| 023 | La portada la elige el dueño: **`seleccion/publica`**, hasta 6 ids en su orden, que el panel escribe directo; sin elección, la regla. Los plazos que dice el panel viven en **`cuando_se_ve.dart`** | [023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) |
+| 024 | Las cajas sugeridas se guardan **enteras por la callable `guardarCajasSugeridas`**: el slug lo deriva el servidor, y exige composición, no publicado ni stock | [024](architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) |
 
 ---
 

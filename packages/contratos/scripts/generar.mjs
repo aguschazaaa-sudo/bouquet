@@ -67,6 +67,7 @@ import {
   sePuedeDespachar,
 } from '../src/despacho.ts';
 import { BOTELLAS_POR_CAJA } from '../src/carrito.ts';
+import { LARGO_DEL_NOMBRE_DE_CAJA, TOPE_DE_CAJAS_SUGERIDAS } from '../src/cajas.ts';
 import { LUGARES_DE_LA_SELECCION } from '../src/seleccion.ts';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
@@ -249,6 +250,10 @@ export function construirContrato() {
     vidriera: {
       lugaresDeLaSeleccion: LUGARES_DE_LA_SELECCION,
       botellasPorCaja: BOTELLAS_POR_CAJA,
+      // Las cajas sugeridas (ADR 024): el panel no deja armar mas, ni un
+      // nombre mas largo, que lo que `armarCajasSugeridas` acepta.
+      topeDeCajas: TOPE_DE_CAJAS_SUGERIDAS,
+      largoDelNombreDeCaja: LARGO_DEL_NOMBRE_DE_CAJA,
     },
     publico: {
       estados: [...ESTADOS_PUBLICOS],
