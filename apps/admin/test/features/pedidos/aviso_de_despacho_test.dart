@@ -9,25 +9,42 @@ import 'package:admin/features/pedidos/domain/orden.dart';
 import 'package:admin/features/pedidos/presentation/textos_del_aviso.dart';
 import 'package:test/test.dart';
 
-/// HU-07.3: cuándo el chat se abre con el aviso, que el enlace `wa.me` lleve al
-/// chat correcto con el texto entero —o vacío—, y el texto que lee el comprador.
+/// HU-07.3: qué mensaje le toca a cada estado, que el enlace `wa.me` lleve al
+/// chat correcto con el texto entero —o vacío—, y los textos que lee el
+/// comprador (curados por `voz`).
+
+const _items = [
+  ItemDeOrden(
+    productoId: 'malbec-reserva',
+    nombre: 'Malbec Reserva',
+    precioUnitario: 1000000,
+    cantidad: 2,
+    botellas: 1,
+  ),
+  ItemDeOrden(
+    productoId: 'torrontes',
+    nombre: 'Torrontés',
+    precioUnitario: 800000,
+    cantidad: 1,
+    botellas: 1,
+  ),
+];
 
 Orden _orden({
   EstadoEntrega entrega = EstadoEntrega.despachada,
   DespachoDeOrden? despacho = const DespachoDeOrden(correo: Correo.andreani),
+  EntregaFallida? entregaFallida,
+  String nombre = 'Marta',
 }) => Orden(
   id: 'pedido-de-prueba-0001',
   numero: 1184,
   origen: Origen.whatsapp,
   estadoPago: EstadoPago.por_fuera,
   estadoEntrega: entrega,
-  items: const [],
+  items: _items,
   subtotal: 0,
   total: 0,
-  contacto: const ContactoDeOrden(
-    nombre: 'Marta',
-    telefonoE164: '+5493541234567',
-  ),
+  contacto: ContactoDeOrden(nombre: nombre, telefonoE164: '+5493541234567'),
   entrega: const EntregaDeOrden(
     calle: 'San Martin',
     numero: '120',
@@ -36,23 +53,148 @@ Orden _orden({
     provincia: 'X',
   ),
   despacho: despacho,
+  entregaFallida: entregaFallida,
 );
 
 void main() {
-  group('sePuedeAvisar', () {
-    test('sólo un pedido despachado, en los seis estados', () {
+  group('mensajeSegun', () {
+    test('un mensaje por estado, en los seis', () {
+      final esperado = {
+        EstadoEntrega.sin_preparar: isA<PedidoAnotado>(),
+        EstadoEntrega.preparando: isA<PedidoAnotado>(),
+        EstadoEntrega.despachada: isA<PedidoSalio>(),
+        EstadoEntrega.fallida: isA<PedidoNoSeEntrego>(),
+        EstadoEntrega.entregada: isA<PedidoLlego>(),
+        EstadoEntrega.cancelada: isNull,
+      };
+      expect(esperado.keys, containsAll(EstadoEntrega.values));
       for (final e in EstadoEntrega.values) {
-        expect(
-          sePuedeAvisar(_orden(entrega: e)),
-          e == EstadoEntrega.despachada,
-          reason: e.name,
-        );
+        expect(mensajeSegun(_orden(entrega: e)), esperado[e], reason: e.name);
       }
     });
 
-    test('despachado sin el dato de por dónde salió, no', () {
-      expect(sePuedeAvisar(_orden(despacho: null)), isFalse);
+    test('despachado sin el dato de por dónde salió: chat vacío', () {
+      expect(mensajeSegun(_orden(despacho: null)), isNull);
     });
+
+    test('la entrega fallida lleva su motivo, y sin motivo va null', () {
+      final con = mensajeSegun(
+        _orden(
+          entrega: EstadoEntrega.fallida,
+          entregaFallida: const EntregaFallida(motivo: MotivoDeFalla.nadie),
+        ),
+      );
+      expect((con! as PedidoNoSeEntrego).motivo, MotivoDeFalla.nadie);
+      final sin = mensajeSegun(_orden(entrega: EstadoEntrega.fallida));
+      expect((sin! as PedidoNoSeEntrego).motivo, isNull);
+    });
+  });
+
+  group('textoDelMensaje', () {
+    test('anotado: los vinos, uno por renglón, y sin el total', () {
+      final t = textoDelMensaje(
+        const PedidoAnotado(),
+        _orden(entrega: EstadoEntrega.sin_preparar),
+      );
+      expect(
+        t,
+        'Hola, Marta. Anotamos tu pedido #1184:\n\n'
+        '2 × Malbec Reserva\n'
+        '1 × Torrontés\n\n'
+        'Te avisamos por acá cuando salga.',
+      );
+      expect(t, isNot(contains(r'$')));
+    });
+
+    test('anotado sin líneas no deja un renglón vacío', () {
+      expect(
+        textoDelAnotado(nombre: null, numero: 7, items: const []),
+        'Hola. Anotamos tu pedido #7.\n\nTe avisamos por acá cuando salga.',
+      );
+    });
+
+    test('salió: es el aviso de ADR 021, sin cambios', () {
+      const d = DespachoDeOrden(correo: Correo.oca, seguimiento: 'X9');
+      expect(
+        textoDelMensaje(const PedidoSalio(d), _orden()),
+        textoDelAviso(
+          nombre: 'Marta',
+          numero: 1184,
+          correo: Correo.oca,
+          seguimiento: 'X9',
+        ),
+      );
+    });
+
+    test('llegó', () {
+      expect(
+        textoDelMensaje(
+          const PedidoLlego(),
+          _orden(entrega: EstadoEntrega.entregada, nombre: 'Ana María'),
+        ),
+        'Hola, Ana. ¿Llegó todo bien con tu pedido #1184?\n\n'
+        'Si necesitás algo, escribinos por acá.',
+      );
+    });
+  });
+
+  group('textoDeNoSeEntrego', () {
+    String t(MotivoDeFalla? m) =>
+        textoDeNoSeEntrego(nombre: 'Marta', numero: 5, motivo: m);
+    const coordinamos =
+        '\n\nCoordinamos otra entrega cuando quieras. El pedido está guardado.';
+
+    test('sin un mayor de 18: el texto de voz.md §9.7', () {
+      expect(
+        t(MotivoDeFalla.sinMayor),
+        'Hola, Marta. No pudimos entregarte el pedido #5: no había nadie mayor '
+        'de 18 para recibirlo.$coordinamos',
+      );
+    });
+
+    test('no había nadie', () {
+      expect(
+        t(MotivoDeFalla.nadie),
+        'Hola, Marta. No pudimos entregarte el pedido #5: no había nadie para '
+        'recibirlo.$coordinamos',
+      );
+    });
+
+    test('la dirección: pide la dirección de nuevo', () {
+      expect(
+        t(MotivoDeFalla.direccion),
+        'Hola, Marta. No pudimos entregarte el pedido #5: no dimos con la '
+        'dirección.\n\nMandanos la dirección de nuevo y coordinamos otra '
+        'entrega. El pedido está guardado.',
+      );
+    });
+
+    test('un rechazo no dice "no pudimos": sin culpable', () {
+      final r = t(MotivoDeFalla.rechazo);
+      expect(r, 'Hola, Marta. Tu pedido #5 quedó sin entregar.$coordinamos');
+      expect(r, isNot(contains('No pudimos')));
+    });
+
+    test('otro, y sin motivo: sin inventar uno', () {
+      const sinMotivo =
+          'Hola, Marta. No pudimos entregarte el pedido #5.$coordinamos';
+      expect(t(MotivoDeFalla.otro), sinMotivo);
+      expect(t(null), sinMotivo);
+    });
+  });
+
+  test('ningún mensaje lleva exclamación, y todos dicen el número (voz.md)', () {
+    final textos = [
+      textoDelAnotado(nombre: 'Ana', numero: 1, items: _items),
+      textoDeLlego(nombre: 'Ana', numero: 1),
+      for (final m in [...MotivoDeFalla.values, null])
+        textoDeNoSeEntrego(nombre: 'Ana', numero: 1, motivo: m),
+    ];
+    for (final t in textos) {
+      expect(t, isNot(contains('!')), reason: t);
+      expect(t, contains('#1'), reason: t);
+      expect(t, startsWith('Hola, Ana. '), reason: t);
+    }
   });
 
   group('enlaceDeWhatsapp', () {

@@ -79,14 +79,16 @@ familia — el permiso lo da el script, no una pantalla.
 ### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
 
 **Desplegado y verificado por bytes el 2026-09-29** (v0.46.1, `df1304b`): CI restada, canario
-discriminante y los 4 hashes en live. **Falta que el dueño abra un pedido y lo vea.** Sin openspec, a pedido del dueño: la
+discriminante y los 4 hashes en live. **El dueño lo vio en el Pedido 1** y pidió un mensaje
+prearmado por estado, que va en el cambio siguiente. Sin openspec, a pedido del dueño: la
 especificación es la *Revisión* de [ADR 021](architecture/decisions/021-aviso-de-despacho.md).
 El dueño no encontraba el botón: pedía una marca que **no tenía nadie** y aparecía sólo en un
 pedido despachado.
 
-- **Un solo botón, debajo del estado, en cualquier estado del pedido**: *"Escribirle por
-  WhatsApp"* abre el chat vacío; en uno despachado, *"Avisarle por WhatsApp que salió"* lo abre
-  con el aviso escrito.
+- **Un solo botón, debajo del estado, en cualquier estado del pedido**, que abre el chat con
+  **el mensaje de su estado ya escrito** (curado por `voz`): que lo anotamos y qué lleva, que
+  salió (*"Avisarle por WhatsApp que salió"*), que no se pudo entregar y por qué, o si llegó
+  bien. Cancelado, vacío.
 - **Lo ve todo el que entra**: la marca `avisaPorWhatsApp` salió del panel, de `acceso.mjs`
   (`avisa`/`no-avisa`) y de sus tests; el piso de CI del script baja de 17 a 11.
 - Cero lecturas y cero escrituras; sólo el panel. **Arrastró la v0.45.0** (entrada de abajo),

@@ -208,9 +208,31 @@ despacha una sola persona.
   problema otra vez.
 - **Dos botones, *escribir* y *avisar*** — obligan a elegir entre dos parecidos, y el texto
   igual se edita antes de enviar.
-- **Un saludo escrito en el chat general** (*"Hola, Marta. Te escribo por tu pedido #1184"*) —
+- ~~**Un saludo escrito en el chat general** (*"Hola, Marta. Te escribo por tu pedido #1184"*) —
   sería texto nuevo que lee el comprador (pasa por `voz`), con un número de pedido que un
-  comprador de WhatsApp nunca recibió. Con el chat que ya tienen, vacío alcanza.
+  comprador de WhatsApp nunca recibió. Con el chat que ya tienen, vacío alcanza.~~ **Lo
+  cambió el dueño el mismo día**, al verlo abrir vacío: ver *Un mensaje por estado*, abajo.
+
+### Un mensaje por estado (2026-09-29, segunda vuelta)
+
+El dueño abrió el Pedido 1 (entregado), vio el botón y el chat **vacío**, y pidió un mensaje
+prearmado; se le mostró uno por estado y eligió ése sobre sólo el saludo. `mensajeSegun`
+(dominio) dice cuál le toca a la Orden; los textos están en `textos_del_aviso.dart` y los curó
+`voz`:
+
+| Estado | Mensaje |
+|---|---|
+| Por preparar, preparando | *"Anotamos tu pedido #N:"* y los vinos, uno por renglón (`cantidad × nombre`); *"Te avisamos por acá cuando salga."* |
+| Despachado | El aviso de §4, sin cambios. Sólo acá el botón dice *"Avisarle por WhatsApp que salió"* |
+| No se pudo entregar | Con el motivo guardado: sin un mayor de 18 (el texto de [voz.md §9.7](../../design/voz.md)), no había nadie, no dimos con la dirección (pide la dirección de nuevo). Un **rechazo** dice *"quedó sin entregar"*: el comprador pudo haberlo rechazado, y no se le reprocha |
+| Entregado | *"¿Llegó todo bien con tu pedido #N?"* |
+| Cancelado | Vacío: cualquier texto tendría que decir quién canceló y qué pasa con un pago, y ese dato no está |
+
+**Ninguno dice el total**: es el de lista, y el que se arregló por chat puede ser otro
+(ADR 018 §6).
+
+⚠️ **Lo que marcó `voz`:** *"Te avisamos por acá cuando salga"* es una promesa que se cumple
+sólo si alguien aprieta el botón cuando el pedido sale. No lo manda el sistema.
 
 ### Lecturas de la revisión
 
@@ -227,6 +249,6 @@ mira el token. Sólo se publica el panel.
 | El canario | Contra live antes del deploy y sobre el canal: *"Escribirle por WhatsApp"* y *"Buscalo a mano en tu WhatsApp"* **0 → 1**; `avisaPorWhatsApp` y el texto viejo (*"puede armar. Avisale a mano"*) **1 → 0**; control positivo *"Avisarle por WhatsApp que sali"* 1 → 1; inventada 0 → 0. Todas ASCII: dart2js escapa las tildes |
 | El deploy | `publicar.sh preview` (35 hashes contra el artifact) → canario → `promover` → live con **los 4 hashes iguales al build**, control negativo, `noindex`, `commit publicado: df1304b`. **Arrastró la v0.45.0** (el panel a ancho de teléfono), sólo presentación |
 
-**Lo que NO se verificó:** que el botón **se vea arriba y abra el chat**. Pide entrar al
-panel, y en esta máquina no hay credenciales, a propósito. Lo prueba el dueño abriendo un
-pedido.
+~~**Lo que NO se verificó:** que el botón **se vea arriba y abra el chat**.~~ **Lo vio el
+dueño el 2026-09-29**, en el Pedido 1 (entregado): el botón está y abre el chat. Eso disparó
+el mensaje por estado.

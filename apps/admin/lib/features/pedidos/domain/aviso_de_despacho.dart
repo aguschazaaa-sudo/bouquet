@@ -1,23 +1,65 @@
+import '../../../core/contratos/despacho.dart';
 import '../../../core/contratos/estado_entrega.dart';
+import 'despacho_de_orden.dart';
 import 'orden.dart';
 
 // Escribirle al comprador por WhatsApp desde un pedido: un enlace `wa.me` con su
-// chat y, si el pedido salio, el aviso ya escrito (HU-07.3). La persona lo abre,
-// lo lee y aprieta enviar desde SU WhatsApp. Cero infraestructura, cero
-// lecturas, cero escrituras: no queda registro de que se aviso, y el registro es
-// el chat.
+// chat y el mensaje que le toca al estado del pedido, ya escrito (HU-07.3). La
+// persona lo abre, lo lee y aprieta enviar desde SU WhatsApp. Cero
+// infraestructura, cero lecturas, cero escrituras: no queda registro de que se
+// escribio, y el registro es el chat.
 //
 // Lo ve todo el que entra al panel, en cualquier estado del pedido: la marca
-// por persona se saco a pedido del dueño (2026-09-29, ADR 021, *Revision*).
+// por persona se saco a pedido del dueño, y el dueño pidio un mensaje por
+// estado (2026-09-29, ADR 021, *Revision*).
 //
 // ⚠️ Recortada: el link a `/pedido/<numero>` (ADR 010 §6) no va, porque esa ruta
 // de la vidriera no existe. Lo suma la sesion de `crearOrden`.
 
-/// `true` si a este pedido se le puede avisar que salio: esta despachado y
-/// sabe por donde. Tambien despues de volver a despachar una entrega fallida:
-/// el correo o el seguimiento pueden ser otros.
-bool sePuedeAvisar(Orden orden) =>
-    orden.estadoEntrega == EstadoEntrega.despachada && orden.despacho != null;
+/// Que mensaje se le deja escrito al comprador, con lo que ese mensaje necesita.
+/// Los textos son de `presentation/` (los lee el comprador: pasan por `voz`).
+sealed class MensajeAlComprador {
+  const MensajeAlComprador();
+}
+
+/// Por preparar o preparandose: que lo anotamos, y que lleva.
+final class PedidoAnotado extends MensajeAlComprador {
+  const PedidoAnotado();
+}
+
+/// Despachado: por donde salio y el seguimiento. Tambien despues de volver a
+/// despachar una entrega fallida: el correo o el seguimiento pueden ser otros.
+final class PedidoSalio extends MensajeAlComprador {
+  const PedidoSalio(this.despacho);
+  final DespachoDeOrden despacho;
+}
+
+/// La entrega fallo. [motivo] es `null` si la Orden no lo tiene legible: el
+/// mensaje va sin el motivo, no se inventa uno.
+final class PedidoNoSeEntrego extends MensajeAlComprador {
+  const PedidoNoSeEntrego(this.motivo);
+  final MotivoDeFalla? motivo;
+}
+
+/// Entregado: si llego todo bien.
+final class PedidoLlego extends MensajeAlComprador {
+  const PedidoLlego();
+}
+
+/// El mensaje que le toca a [orden] por su estado de entrega, o `null` si el
+/// chat se abre vacio: un pedido cancelado, o uno despachado sin el dato de por
+/// donde salio (no se avisa algo que no se sabe).
+MensajeAlComprador? mensajeSegun(Orden orden) {
+  final despacho = orden.despacho;
+  return switch (orden.estadoEntrega) {
+    EstadoEntrega.sin_preparar || EstadoEntrega.preparando =>
+      const PedidoAnotado(),
+    EstadoEntrega.despachada => despacho == null ? null : PedidoSalio(despacho),
+    EstadoEntrega.fallida => PedidoNoSeEntrego(orden.entregaFallida?.motivo),
+    EstadoEntrega.entregada => const PedidoLlego(),
+    EstadoEntrega.cancelada => null,
+  };
+}
 
 final _e164 = RegExp(r'^\+[1-9]\d{7,14}$');
 

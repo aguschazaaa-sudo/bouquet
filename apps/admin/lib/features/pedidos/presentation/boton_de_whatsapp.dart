@@ -10,10 +10,11 @@ import 'textos_del_aviso.dart';
 /// persona aprieta enviar desde su WhatsApp.
 ///
 /// **Un solo boton, en cualquier estado del pedido**, y lo ve todo el que entra
-/// al panel (ADR 021, *Revision*). Si el pedido esta despachado
-/// ([sePuedeAvisar]) el chat se abre con el aviso de que salio ya escrito
-/// (HU-07.3); si no, vacio. Uno y no dos: dos botones parecidos obligan a
-/// elegir, y el texto igual se puede cambiar antes de enviar.
+/// al panel (ADR 021, *Revision*). El chat se abre con el mensaje que le toca al
+/// estado ya escrito ([mensajeSegun]): que lo anotamos, que salio (HU-07.3), que
+/// no se pudo entregar, o si llego bien; vacio si esta cancelado. Uno y no dos:
+/// dos botones parecidos obligan a elegir, y el texto igual se puede cambiar
+/// antes de enviar.
 ///
 /// Un telefono que no es E.164 **no arma el enlace**: `wa.me` abriria el chat de
 /// otra persona sin fallar. Se dice, y se escribe a mano.
@@ -24,24 +25,19 @@ class BotonDeWhatsapp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final despacho = sePuedeAvisar(orden) ? orden.despacho : null;
-    final aviso = despacho == null
-        ? null
-        : textoDelAviso(
-            nombre: nombreDePila(orden.contacto.nombre),
-            numero: orden.numero,
-            correo: despacho.correo,
-            seguimiento: despacho.seguimiento,
-          );
+    final mensaje = mensajeSegun(orden);
+    final texto = mensaje == null ? null : textoDelMensaje(mensaje, orden);
 
-    final enlace = enlaceDeWhatsapp(orden.contacto.telefonoE164, aviso);
+    final enlace = enlaceDeWhatsapp(orden.contacto.telefonoE164, texto);
     if (enlace == null) return const Aviso(texto: textoTelefonoSinWhatsapp);
     return Align(
       alignment: Alignment.centerLeft,
       child: OutlinedButton.icon(
         onPressed: () => _abrir(context, enlace),
         icon: const Icon(Icons.chat_outlined),
-        label: Text(aviso == null ? textoBotonEscribir : textoBotonAvisar),
+        label: Text(
+          mensaje is PedidoSalio ? textoBotonAvisar : textoBotonEscribir,
+        ),
       ),
     );
   }
