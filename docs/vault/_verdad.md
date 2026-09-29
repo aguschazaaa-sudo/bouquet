@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-29 - commit `a8fd2d8` - huella del cuerpo `6d1c40c69c5e`
+> **Generado:** 2026-09-29 - commit `e54f9ed` - huella del cuerpo `2ced38e4bd35`
 
 ---
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.46.2
+### Scripts de la raiz - `bouquet` 0.47.0
 
 | Script | Comando |
 |---|---|
@@ -111,7 +111,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/features/catalogo/numeros_escritos_test.dart` | 10 |
 | `apps/admin/test/features/fotos/foto_principal_test.dart` | 10 |
 | `apps/admin/test/features/pedidos/accion_busqueda_y_notas_test.dart` | 12 |
-| `apps/admin/test/features/pedidos/aviso_de_despacho_test.dart` | 15 |
+| `apps/admin/test/features/pedidos/aviso_de_despacho_test.dart` | 26 |
 | `apps/admin/test/features/pedidos/codigos_de_pedidos_test.dart` | 10 |
 | `apps/admin/test/features/pedidos/documento_de_la_orden_test.dart` | 11 |
 | `apps/admin/test/features/pedidos/eje_de_entrega_test.dart` | 22 |
@@ -161,7 +161,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `scripts/reglas/ordenes.test.mjs` | 38 |
 | `scripts/reglas/productos.test.mjs` | 62 |
 | `scripts/reglas/seleccion.test.mjs` | 11 |
-| **total** | **1044** |
+| **total** | **1055** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -483,4 +483,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 176. Archivos de test: 68. Casos de test: 1044.
+Archivos de codigo recorridos: 176. Archivos de test: 68. Casos de test: 1055.
