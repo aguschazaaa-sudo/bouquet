@@ -40,11 +40,8 @@ LineaACargar _linea(String id, {int? stock = 10, int precio = 1990000}) =>
 const _entregaValida = EntregaEscrita(
   nombre: 'Marta Gomez',
   telefono: '0351 15-555-1234',
-  calle: 'San Martin',
-  numero: '120',
-  codigoPostal: '5000',
+  direccion: 'San Martin 120',
   localidad: 'Cordoba',
-  provincia: 'X',
 );
 
 PedidoACargar _pedido({List<LineaACargar>? lineas}) => PedidoACargar(
@@ -231,7 +228,7 @@ void main() {
           .conVino(_linea('b'))
           .conCantidad('a', 5)
           .conPrecioDe('a', 2100000)
-          .conEntrega(_entregaValida.copiarCon(calle: 'Belgrano'))
+          .conEntrega(_entregaValida.copiarCon(direccion: 'Belgrano 50'))
           .sinVino('b');
       expect(despues.idPedido, inicial.idPedido);
     });

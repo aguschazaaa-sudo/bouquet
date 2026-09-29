@@ -53,8 +53,8 @@ Map<String, dynamic> _contrato() =>
         as Map<String, dynamic>;
 
 void main() {
-  group('por preparar sale de la proyeccion (HU-11.2)', () {
-    test('los pares son EXACTAMENTE los que contratos dice "falta preparar"', () {
+  group('para despachar sale de la proyeccion (HU-11.2, ADR 027)', () {
+    test('los pares son EXACTAMENTE los de "pagada" y "por_preparar"', () {
       final publico = _contrato()['publico'] as Map<String, dynamic>;
       final proyeccion = publico['proyeccion'] as Map<String, dynamic>;
       final esperados = [
@@ -69,9 +69,11 @@ void main() {
 
       expect(pares, esperados);
       // Control: la lista no es vacia por error, y no se colo nada que ya
-      // se preparo.
+      // salio ni un pedido de la tienda que espera el pago -tampoco desde
+      // `preparando`, que la proyeccion da con cualquier pago-.
       expect(pares, ['pagada|sin_preparar', 'por_fuera|sin_preparar']);
-      expect(pares, isNot(contains('pagada|preparando')));
+      expect(pares, isNot(contains('pendiente|preparando')));
+      expect(pares, isNot(contains('pendiente|sin_preparar')));
     });
 
     test('hoy es un tramo solo: sin_preparar, con pagada y por_fuera', () {

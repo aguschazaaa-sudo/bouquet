@@ -100,7 +100,7 @@ void main() {
         expect(o.cobroPorFuera, isTrue);
         expect(
           rotulosEstadoPublico[o.estadoPublico]!.operador,
-          'Cobro por fuera - falta preparar',
+          'Para despachar',
         );
       },
     );

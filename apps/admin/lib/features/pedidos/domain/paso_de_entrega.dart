@@ -13,15 +13,8 @@ sealed class PasoDeEntrega {
   EstadoEntrega get destino;
 }
 
-/// HU-07.1. Para que nadie mas lo arme dos veces.
-final class Preparar extends PasoDeEntrega {
-  const Preparar();
-
-  @override
-  EstadoEntrega get destino => EstadoEntrega.preparando;
-}
-
-/// HU-07.2, y volver a despachar tras una entrega fallida (HU-07.5).
+/// HU-07.2 -desde *Para despachar*, sin el paso de preparar que se saco con
+/// ADR 027-, y volver a despachar tras una entrega fallida (HU-07.5).
 final class Despachar extends PasoDeEntrega {
   const Despachar({required this.correo, this.seguimiento});
 
@@ -53,10 +46,13 @@ final class NoSeEntrego extends PasoDeEntrega {
 }
 
 /// Lo que el detalle de un pedido ofrece hacer. Cada una es un boton.
-enum AccionDelPedido { preparar, despachar, entregar, noSeEntrego, cancelar }
+///
+/// **Sin `preparar`** (ADR 027): arma y despacha una persona, y el paso
+/// confundia mas de lo que evitaba. La tabla todavia lo permite -`preparando`
+/// existe para las Ordenes que ya estan ahi-, pero el panel no lo ofrece.
+enum AccionDelPedido { despachar, entregar, noSeEntrego, cancelar }
 
 EstadoEntrega _destinoDe(AccionDelPedido a) => switch (a) {
-  AccionDelPedido.preparar => EstadoEntrega.preparando,
   AccionDelPedido.despachar => EstadoEntrega.despachada,
   AccionDelPedido.entregar => EstadoEntrega.entregada,
   AccionDelPedido.noSeEntrego => EstadoEntrega.fallida,

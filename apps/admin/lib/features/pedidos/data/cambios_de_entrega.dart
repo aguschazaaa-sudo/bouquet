@@ -20,7 +20,7 @@ Map<String, Object?> cambiosDe(
     'actualizadaEn': horaDelServidor,
   };
   return switch (paso) {
-    Preparar() || Entregar() => base,
+    Entregar() => base,
     Despachar(:final correo, :final seguimiento) => {
       ...base,
       // `seguimiento` va SIEMPRE, aunque sea null: las reglas piden la clave.

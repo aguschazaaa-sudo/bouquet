@@ -6,8 +6,10 @@ import 'package:admin/features/pedidos/domain/entrega_escrita.dart';
 import 'package:admin/features/pedidos/domain/fallo_de_pedidos.dart';
 import 'package:admin/features/pedidos/domain/hace_cuanto.dart';
 import 'package:admin/features/pedidos/domain/linea_a_cargar.dart';
+import 'package:admin/features/pedidos/domain/paso_de_entrega.dart';
 import 'package:admin/features/pedidos/domain/vista_de_bandeja.dart';
 import 'package:admin/features/pedidos/presentation/textos_de_carga.dart';
+import 'package:admin/features/pedidos/presentation/textos_de_entrega.dart';
 import 'package:admin/features/pedidos/presentation/textos_de_notas.dart';
 import 'package:admin/features/pedidos/presentation/textos_de_pedidos.dart';
 import 'package:test/test.dart';
@@ -28,10 +30,6 @@ List<String> _todosLosTextos() => [
   textoTotalDeLista,
   textoNoSePudieronLeerLosPedidos,
   textoNoSePudoVerMas,
-  for (final e in EstadoEntrega.values) ...[
-    textoDelEstado(e),
-    textoBandejaVacia(e),
-  ],
   textoIncompletos(1),
   textoIncompletos(3),
   textoDelNumero(7),
@@ -50,6 +48,12 @@ List<String> _todosLosTextos() => [
   textoCargarElPedido,
   textoFaltaAlgo,
   textoTelefonoAyuda,
+  textoCampoNombre,
+  textoCampoTelefono,
+  textoCampoDireccion,
+  textoDireccionAyuda,
+  textoCampoDetalle,
+  textoCampoLocalidad,
   textoVaAQuedarComo('+5493515551234'),
   for (final c in CampoDeEntrega.values) textoDelProblema(c),
   for (final m in MotivoNoElegible.values) textoDeMotivoNoElegible(m),
@@ -58,8 +62,8 @@ List<String> _todosLosTextos() => [
       FalloDePedidos(e, actual: 5, numero: 7, productoId: 'x'),
       nombre: 'Malbec',
     ),
-  // ADR 020: la ficha de lo que requiere accion, el buscador y las notas.
-  for (final v in VistaDeBandeja.todas) ...[
+  // ADR 027: las tres fichas; ADR 020: el buscador y las notas.
+  for (final v in VistaDeBandeja.values) ...[
     textoDeLaVista(v),
     textoVistaVacia(v),
   ],
@@ -113,7 +117,7 @@ void main() {
               EstadoPago.por_fuera,
               EstadoEntrega.sin_preparar,
             )]!;
-        expect(r.operador, 'Cobro por fuera - falta preparar');
+        expect(r.operador, 'Para despachar');
         expect(r.operador.toLowerCase(), isNot(contains('acreditad')));
         expect(r.cliente.toLowerCase(), isNot(contains('cobrar')));
       },
@@ -121,13 +125,47 @@ void main() {
   });
 
   group('cada texto de la bandeja', () {
-    test('los seis estados tienen su nombre y su bandeja vacia, distintos', () {
-      final nombres = EstadoEntrega.values.map(textoDelEstado).toSet();
-      final vacias = EstadoEntrega.values.map(textoBandejaVacia).toSet();
-      expect(nombres, hasLength(EstadoEntrega.values.length));
-      expect(vacias, hasLength(EstadoEntrega.values.length));
+    test('las tres fichas tienen su nombre y su bandeja vacia, distintos', () {
+      final nombres = VistaDeBandeja.values.map(textoDeLaVista).toSet();
+      final vacias = VistaDeBandeja.values.map(textoVistaVacia).toSet();
+      expect(nombres, hasLength(3));
+      expect(vacias, hasLength(3));
       for (final v in vacias) {
         expect(v, isNotEmpty);
+      }
+    });
+
+    test('UNA palabra por estado: la ficha, el rotulo y el boton dicen lo '
+        'mismo (ADR 027)', () {
+      String rotulo(EstadoPago p, EstadoEntrega e) =>
+          rotulosEstadoPublico[proyectarEstadoPublico(p, e)]!.operador;
+      // En camino: la ficha, el pedido y el boton que lo lleva ahi.
+      expect(
+        rotulo(EstadoPago.por_fuera, EstadoEntrega.despachada),
+        textoDeLaVista(VistaDeBandeja.enCamino),
+      );
+      expect(
+        textoDeLaAccion(AccionDelPedido.despachar).toLowerCase(),
+        contains('en camino'),
+      );
+      // Entregado: el rotulo y el boton.
+      expect(rotulo(EstadoPago.por_fuera, EstadoEntrega.entregada), 'Entregado');
+      expect(
+        textoDeLaAccion(AccionDelPedido.entregar).toLowerCase(),
+        contains('entregado'),
+      );
+      // No se pudo entregar: el rotulo y el boton, igual.
+      expect(
+        rotulo(EstadoPago.por_fuera, EstadoEntrega.fallida),
+        textoDeLaAccion(AccionDelPedido.noSeEntrego),
+      );
+      // Ningun nombre viejo en los rotulos del operador.
+      for (final r in rotulosEstadoPublico.values) {
+        expect(
+          r.operador.toLowerCase(),
+          isNot(matches(RegExp('despachada|falta preparar|preparacion'))),
+          reason: r.operador,
+        );
       }
     });
 

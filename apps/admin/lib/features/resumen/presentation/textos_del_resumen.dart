@@ -12,9 +12,10 @@ const textoNoSeLeyoElCatalogo =
 
 const textoTituloDelDia = 'Hoy';
 
-const textoPorPreparar = 'Por preparar';
+// La misma palabra que el estado del pedido en *Pedidos* (ADR 027).
+const textoPorPreparar = 'Para despachar';
 const textoQueEsPorPreparar =
-    'Pedidos cobrados —o de WhatsApp— que todavía no se prepararon.';
+    'Pedidos cobrados —o de WhatsApp— que todavía no salieron.';
 const textoVerPedidos = 'Ver pedidos';
 
 const textoPagosEnProceso = 'Pagos en proceso';

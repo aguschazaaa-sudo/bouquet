@@ -82,22 +82,30 @@ export function proyectarEstadoPublico(pago: EstadoPago, entrega: EstadoEntrega)
  * Y esto sobrevive a cualquier optimizacion de latencia: el estado existe
  * siempre, aunque dure 300 ms.
  */
+/*
+ * Los del OPERADOR usan UNA palabra por estado, la misma que la ficha de la
+ * bandeja y el boton que lleva ahi (ADR 027): antes un mismo pedido era "En
+ * camino" en la ficha, "Despachada" en el detalle y "Despachar" en el boton.
+ * Hablan del pedido, en masculino.  Lo que pide plata sigue en MAYUSCULAS.
+ */
 export const ROTULOS: Readonly<Record<EstadoPublico, { cliente: string; operador: string }>> = {
-  recibida: { cliente: 'Pedido recibido', operador: 'Recibida - falta cobrar' },
+  recibida: { cliente: 'Pedido recibido', operador: 'Recibido - falta cobrar' },
   confirmando: { cliente: 'Confirmando...', operador: 'Pago en proceso' },
   pago_rechazado: { cliente: 'No pudimos cobrar el pago', operador: 'Pago rechazado' },
-  pagada: { cliente: 'Pago acreditado', operador: 'Pagada - falta preparar' },
+  pagada: { cliente: 'Pago acreditado', operador: 'Pagado - para despachar' },
   // Ni "pagada" (afirmaria un cobro que nadie comprobo) ni "recibida" (dice
   // "falta cobrar"). Un pedido de WhatsApp se cobra por fuera.
-  por_preparar: { cliente: 'Pedido recibido', operador: 'Cobro por fuera - falta preparar' },
-  en_preparacion: { cliente: 'Preparando tu pedido', operador: 'En preparacion' },
-  en_camino: { cliente: 'En camino', operador: 'Despachada' },
-  entregada: { cliente: 'Entregado', operador: 'Entregada' },
-  entregada_impaga: { cliente: 'Entregado', operador: 'ENTREGADA SIN COBRAR' },
-  no_entregada: { cliente: 'No pudimos entregarlo', operador: 'Entrega fallida - reprogramar' },
-  cancelada: { cliente: 'Pedido cancelado', operador: 'Cancelada' },
-  cancelada_con_pago: { cliente: 'Pedido cancelado', operador: 'CANCELADA CON PAGO - devolver' },
-  reembolsada: { cliente: 'Pedido cancelado y reintegrado', operador: 'Reembolsada' },
+  por_preparar: { cliente: 'Pedido recibido', operador: 'Para despachar' },
+  // Sin paso de preparar en el panel (ADR 027): un pedido que quedo en
+  // `preparando` espera lo mismo que uno sin preparar.
+  en_preparacion: { cliente: 'Preparando tu pedido', operador: 'Para despachar' },
+  en_camino: { cliente: 'En camino', operador: 'En camino' },
+  entregada: { cliente: 'Entregado', operador: 'Entregado' },
+  entregada_impaga: { cliente: 'Entregado', operador: 'ENTREGADO SIN COBRAR' },
+  no_entregada: { cliente: 'No pudimos entregarlo', operador: 'No se pudo entregar' },
+  cancelada: { cliente: 'Pedido cancelado', operador: 'Cancelado' },
+  cancelada_con_pago: { cliente: 'Pedido cancelado', operador: 'CANCELADO CON PAGO - devolver' },
+  reembolsada: { cliente: 'Pedido cancelado y reintegrado', operador: 'Reembolsado' },
 };
 
 /** Los que exigen que alguien haga algo. Son la bandeja de entrada del panel. */

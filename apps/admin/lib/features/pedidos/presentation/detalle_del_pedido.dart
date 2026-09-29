@@ -60,8 +60,6 @@ class _DetalleDelPedidoState extends ConsumerState<DetalleDelPedido> {
   Future<void> _elegir(AccionDelPedido a) async {
     final n = _orden.numero;
     switch (a) {
-      case AccionDelPedido.preparar:
-        await _avanzar(const Preparar());
       case AccionDelPedido.despachar:
         final paso = await HojaDeDespacho.mostrar(context, n);
         if (paso != null) await _avanzar(paso);

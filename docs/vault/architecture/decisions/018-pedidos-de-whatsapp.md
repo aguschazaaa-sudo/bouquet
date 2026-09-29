@@ -99,6 +99,8 @@ Consecuencias, **todas en `contratos`** y espejadas en Dart:
   Ni `pagada` (afirmaría un cobro) ni `recibida` (dice *«falta cobrar»*). Su
   rótulo de operador es **«Cobro por fuera - falta preparar»** y **entra en
   `REQUIEREN_ACCION`**: hay que prepararlo, igual que uno pagado.
+  **Desde el 2026-09-29 el rótulo es «Para despachar»**
+  ([ADR 027 §4](027-pedidos-sin-burocracia.md): una palabra por estado).
 - El resto de los pares de `por_fuera` reutilizan estados que ya existen:
   `preparando → en_preparacion`, `despachada → en_camino`, `entregada →
   entregada` (**no** `entregada_impaga`), `fallida → no_entregada`,

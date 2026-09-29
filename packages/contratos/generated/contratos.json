@@ -52,6 +52,7 @@
     "transiciones": {
       "sin_preparar": [
         "preparando",
+        "despachada",
         "cancelada"
       ],
       "preparando": [
@@ -1379,7 +1380,8 @@
     ],
     "laEscribeElPanel": {
       "sin_preparar": [
-        "preparando"
+        "preparando",
+        "despachada"
       ],
       "preparando": [
         "despachada"
@@ -1442,7 +1444,7 @@
     "rotulos": {
       "recibida": {
         "cliente": "Pedido recibido",
-        "operador": "Recibida - falta cobrar"
+        "operador": "Recibido - falta cobrar"
       },
       "confirmando": {
         "cliente": "Confirmando...",
@@ -1454,43 +1456,43 @@
       },
       "pagada": {
         "cliente": "Pago acreditado",
-        "operador": "Pagada - falta preparar"
+        "operador": "Pagado - para despachar"
       },
       "por_preparar": {
         "cliente": "Pedido recibido",
-        "operador": "Cobro por fuera - falta preparar"
+        "operador": "Para despachar"
       },
       "en_preparacion": {
         "cliente": "Preparando tu pedido",
-        "operador": "En preparacion"
+        "operador": "Para despachar"
       },
       "en_camino": {
         "cliente": "En camino",
-        "operador": "Despachada"
+        "operador": "En camino"
       },
       "entregada": {
         "cliente": "Entregado",
-        "operador": "Entregada"
+        "operador": "Entregado"
       },
       "entregada_impaga": {
         "cliente": "Entregado",
-        "operador": "ENTREGADA SIN COBRAR"
+        "operador": "ENTREGADO SIN COBRAR"
       },
       "no_entregada": {
         "cliente": "No pudimos entregarlo",
-        "operador": "Entrega fallida - reprogramar"
+        "operador": "No se pudo entregar"
       },
       "cancelada": {
         "cliente": "Pedido cancelado",
-        "operador": "Cancelada"
+        "operador": "Cancelado"
       },
       "cancelada_con_pago": {
         "cliente": "Pedido cancelado",
-        "operador": "CANCELADA CON PAGO - devolver"
+        "operador": "CANCELADO CON PAGO - devolver"
       },
       "reembolsada": {
         "cliente": "Pedido cancelado y reintegrado",
-        "operador": "Reembolsada"
+        "operador": "Reembolsado"
       }
     },
     "proyeccion": {

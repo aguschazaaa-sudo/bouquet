@@ -471,11 +471,11 @@ service cloud.firestore {
         let despues = request.resource.data.estadoEntrega;
         return (antes == 'sin_preparar' && despues == 'preparando'
                   && editaSolo(['estadoEntrega', 'notasOperador', 'actualizadaEn']))
-          // Despachar, y volver a despachar tras una entrega fallida.  Un pedido de
-          // la VIDRIERA impago no sale: si Mercado Pago no aprobo, no hay venta.
-          // Uno de WHATSAPP sale sin mirar el pago, porque se cobra por fuera
-          // (`sePuedeDespachar` de contratos).
-          || (antes in ['preparando', 'fallida'] && despues == 'despachada'
+          // Despachar -tambien sin preparar, ADR 027-, y volver a despachar tras
+          // una entrega fallida.  Un pedido de la VIDRIERA impago no sale: si
+          // Mercado Pago no aprobo, no hay venta.  Uno de WHATSAPP sale sin mirar
+          // el pago, porque se cobra por fuera (`sePuedeDespachar` de contratos).
+          || (antes in ['sin_preparar', 'preparando', 'fallida'] && despues == 'despachada'
                   && editaSolo(['estadoEntrega', 'despacho', 'notasOperador', 'actualizadaEn'])
                   && despachoValido(request.resource.data.despacho)
                   && (resource.data.origen == 'whatsapp' || resource.data.estadoPago == 'pagada'))

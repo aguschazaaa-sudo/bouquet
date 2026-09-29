@@ -106,6 +106,8 @@ test('reescribir el mismo estado siempre es valido', () => {
 
 test('transiciones de entrega', () => {
   assert.equal(transicionEntregaValida('sin_preparar', 'preparando'), true);
+  assert.equal(transicionEntregaValida('sin_preparar', 'despachada'), true); // sin el paso de preparar (ADR 027)
+  assert.equal(transicionEntregaValida('sin_preparar', 'entregada'), false); // salir no se saltea
   assert.equal(transicionEntregaValida('preparando', 'cancelada'), true);
   assert.equal(transicionEntregaValida('despachada', 'fallida'), true);
   assert.equal(transicionEntregaValida('fallida', 'despachada'), true); // reprogramar

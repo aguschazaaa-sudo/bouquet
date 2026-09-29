@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/contratos/pedido.dart';
-import '../../../core/contratos/provincias.dart';
 import '../domain/entrega_escrita.dart';
 import 'textos_de_carga.dart';
 
-/// Los datos de quien recibe y a donde va (HU-10.1): lo que hace falta para
-/// despachar. Una sola pantalla, sin pasos.
+/// Los datos de quien recibe y a donde va (HU-10.1): **cuatro obligatorios y
+/// uno opcional** (ADR 027), en una columna. Antes eran diez campos, siete
+/// obligatorios, con el codigo postal y la provincia de la vidriera.
 ///
 /// - **El telefono se pega como vino del chat** y dice **como va a quedar** antes
 ///   de confirmar: es lo que lee `wa.me`, y uno mal armado abre el chat de otra
@@ -19,9 +19,7 @@ import 'textos_de_carga.dart';
 ///   confirmar** ([problema]): no se le grita a alguien que todavia esta
 ///   escribiendo.
 ///
-/// Es dueno de sus controles y le avisa al padre con cada cambio. La provincia no
-/// se preselecciona: una provincia que "queda puesta" es un despacho a la
-/// provincia equivocada.
+/// Es dueno de sus controles y le avisa al padre con cada cambio.
 class CamposDeEntrega extends StatefulWidget {
   const CamposDeEntrega({
     super.key,
@@ -56,7 +54,6 @@ class _CamposDeEntregaState extends State<CamposDeEntrega> {
     TextInputType? teclado,
     TextCapitalization mayusculas = TextCapitalization.sentences,
     String? ayuda,
-    bool soloDigitos = false,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -64,10 +61,7 @@ class _CamposDeEntregaState extends State<CamposDeEntrega> {
         enabled: widget.habilitado,
         keyboardType: teclado,
         textCapitalization: mayusculas,
-        inputFormatters: [
-          LengthLimitingTextInputFormatter(maximo),
-          if (soloDigitos) FilteringTextInputFormatter.digitsOnly,
-        ],
+        inputFormatters: [LengthLimitingTextInputFormatter(maximo)],
         decoration: InputDecoration(
           labelText: etiqueta,
           helperText: ayuda,
@@ -91,14 +85,14 @@ class _CamposDeEntregaState extends State<CamposDeEntrega> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _campo(
-          etiqueta: 'Nombre',
+          etiqueta: textoCampoNombre,
           maximo: largosDeEntrega['nombre']!,
           campo: CampoDeEntrega.nombre,
           mayusculas: TextCapitalization.words,
           alCambiar: (t) => _cambiar(e.copiarCon(nombre: t)),
         ),
         _campo(
-          etiqueta: 'Teléfono',
+          etiqueta: textoCampoTelefono,
           // Largo holgado: el numero se pega con espacios, guiones y +54, y lo
           // que importa es lo que queda normalizado, no lo que se escribio.
           maximo: 40,
@@ -110,87 +104,24 @@ class _CamposDeEntregaState extends State<CamposDeEntrega> {
           alCambiar: (t) => _cambiar(e.copiarCon(telefono: t)),
         ),
         _campo(
-          etiqueta: 'Mail (si lo tiene)',
-          maximo: largosDeEntrega['email']!,
-          campo: CampoDeEntrega.email,
-          teclado: TextInputType.emailAddress,
-          mayusculas: TextCapitalization.none,
-          alCambiar: (t) => _cambiar(e.copiarCon(email: t)),
-        ),
-        _campo(
-          etiqueta: 'Calle',
+          etiqueta: textoCampoDireccion,
           maximo: largosDeEntrega['calle']!,
-          campo: CampoDeEntrega.calle,
+          campo: CampoDeEntrega.direccion,
           mayusculas: TextCapitalization.words,
-          alCambiar: (t) => _cambiar(e.copiarCon(calle: t)),
-        ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _campo(
-                etiqueta: 'Número',
-                maximo: largosDeEntrega['numero']!,
-                campo: CampoDeEntrega.numero,
-                alCambiar: (t) => _cambiar(e.copiarCon(numero: t)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _campo(
-                etiqueta: 'Piso o depto',
-                maximo: largosDeEntrega['piso']!,
-                alCambiar: (t) => _cambiar(e.copiarCon(piso: t)),
-              ),
-            ),
-          ],
+          ayuda: textoDireccionAyuda,
+          alCambiar: (t) => _cambiar(e.copiarCon(direccion: t)),
         ),
         _campo(
-          etiqueta: 'Referencia (si ayuda)',
+          etiqueta: textoCampoDetalle,
           maximo: largosDeEntrega['referencia']!,
-          alCambiar: (t) => _cambiar(e.copiarCon(referencia: t)),
+          alCambiar: (t) => _cambiar(e.copiarCon(detalle: t)),
         ),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: _campo(
-                etiqueta: 'Código postal',
-                maximo: 4,
-                campo: CampoDeEntrega.codigoPostal,
-                teclado: TextInputType.number,
-                soloDigitos: true,
-                alCambiar: (t) => _cambiar(e.copiarCon(codigoPostal: t)),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: _campo(
-                etiqueta: 'Localidad',
-                maximo: largosDeEntrega['localidad']!,
-                campo: CampoDeEntrega.localidad,
-                mayusculas: TextCapitalization.words,
-                alCambiar: (t) => _cambiar(e.copiarCon(localidad: t)),
-              ),
-            ),
-          ],
-        ),
-        DropdownButtonFormField<String>(
-          isExpanded: true,
-          decoration: InputDecoration(
-            labelText: 'Provincia',
-            errorText: widget.problema == CampoDeEntrega.provincia
-                ? textoDelProblema(CampoDeEntrega.provincia)
-                : null,
-          ),
-          items: [
-            for (final p in provincias)
-              DropdownMenuItem(value: p.iso, child: Text(p.nombre)),
-          ],
-          onChanged: widget.habilitado
-              ? (iso) => _cambiar(e.copiarCon(provincia: iso ?? ''))
-              : null,
+        _campo(
+          etiqueta: textoCampoLocalidad,
+          maximo: largosDeEntrega['localidad']!,
+          campo: CampoDeEntrega.localidad,
+          mayusculas: TextCapitalization.words,
+          alCambiar: (t) => _cambiar(e.copiarCon(localidad: t)),
         ),
       ],
     );

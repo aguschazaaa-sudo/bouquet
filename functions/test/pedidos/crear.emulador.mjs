@@ -123,6 +123,36 @@ describe('crear una orden', () => {
     assert.deepEqual(o.items[0], { productoId: 'vino-a', nombre: 'Vino vino-a', precioUnitario: 1990000, cantidad: 2, botellas: 1 });
   });
 
+  test('con la entrega corta del panel (ADR 027): lo que falta queda null, y un reintento es el mismo pedido', async () => {
+    await sembrarVino('vino-a', { stock: 3 });
+    const p = pedido([['vino-a', 1]], nuevoId(), {
+      calle: 'San Martin 120',
+      numero: undefined,
+      referencia: '3B',
+      destino: { localidad: 'Cordoba' },
+    });
+
+    const r = await crearOrdenDelPanel(db, p, 'operador');
+    assert.equal(r.repetido, false);
+    assert.equal(await stockDe('vino-a'), 2);
+    const o = (await ordenes.doc(p.idPedido).get()).data();
+    // Escritos null, nunca ausentes: un campo que puede faltar es la trampa de
+    // `publicado` (ARQUITECTURA §5.2).
+    assert.deepEqual(o.entrega, {
+      calle: 'San Martin 120',
+      numero: null,
+      piso: null,
+      referencia: '3B',
+      destino: { codigoPostal: null, localidad: 'Cordoba', provincia: null, propio: false },
+    });
+
+    // La firma del reintento compara lo guardado con lo nuevo: los null no la
+    // rompen, y el stock no baja dos veces.
+    const otra = await crearOrdenDelPanel(db, p, 'operador');
+    assert.deepEqual(otra, { ordenId: p.idPedido, numero: r.numero, repetido: true });
+    assert.equal(await stockDe('vino-a'), 2);
+  });
+
   test('no escribe nada en el producto que no sea `stock`', async () => {
     // Un campo de mas rompe el `hasOnly` de las reglas y el panel deja de poder
     // editar ese vino, en silencio.

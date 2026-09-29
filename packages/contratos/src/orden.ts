@@ -96,7 +96,11 @@ export type EstadoEntrega = (typeof ESTADOS_ENTREGA)[number];
 export const NACE_ENTREGA: readonly EstadoEntrega[] = ['sin_preparar'];
 
 export const TRANSICIONES_ENTREGA: Readonly<Record<EstadoEntrega, readonly EstadoEntrega[]>> = {
-  sin_preparar: ['preparando', 'cancelada'],
+  // `despachada` directo, sin pasar por `preparando`: en la practica arma y
+  // despacha una sola persona, y el paso de preparar confundia mas de lo que
+  // evitaba (el dueno, 2026-09-29, ADR 027).  `preparando` queda para las
+  // Ordenes que ya estan ahi y para el dia que haga falta de nuevo.
+  sin_preparar: ['preparando', 'despachada', 'cancelada'],
   preparando: ['despachada', 'cancelada'],
   despachada: ['entregada', 'fallida'],
   entregada: [],

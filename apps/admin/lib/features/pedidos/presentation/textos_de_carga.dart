@@ -28,6 +28,14 @@ const textoSacarDelPedido = 'Sacar del pedido';
 const textoEsTodoElStock = 'Es todo el stock que hay';
 const textoTelefonoAyuda =
     'Pegalo como te lo mandaron: con o sin 15, con o sin +54.';
+
+// Los cinco campos de "quién lo recibe y a dónde va" (ADR 027).
+const textoCampoNombre = 'Nombre';
+const textoCampoTelefono = 'Teléfono';
+const textoCampoDireccion = 'Dirección';
+const textoDireccionAyuda = 'Calle y número, como te la pasaron.';
+const textoCampoDetalle = 'Piso, depto o referencia (si hace falta)';
+const textoCampoLocalidad = 'Localidad';
 const textoFaltaAlgo = 'Falta completar algo para poder cargarlo.';
 String textoAbrirElPedido(int numero) => 'Abrir el pedido $numero';
 
@@ -52,12 +60,8 @@ String textoDelProblema(CampoDeEntrega c) => switch (c) {
   CampoDeEntrega.telefono =>
     'No podemos armar el número. Revisá que tenga el código de área y el '
         'número: son 10 dígitos en total.',
-  CampoDeEntrega.email => 'Ese mail no parece completo. Podés dejarlo vacío.',
-  CampoDeEntrega.calle => 'Escribí la calle.',
-  CampoDeEntrega.numero => 'Escribí el número, o «s/n».',
-  CampoDeEntrega.codigoPostal => 'El código postal son 4 números.',
+  CampoDeEntrega.direccion => 'Escribí la calle y el número.',
   CampoDeEntrega.localidad => 'Escribí la localidad.',
-  CampoDeEntrega.provincia => 'Elegí la provincia.',
 };
 
 /// Lo que se le dice al operador cuando el servidor rechaza el pedido.

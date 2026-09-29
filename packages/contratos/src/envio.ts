@@ -343,6 +343,34 @@ export interface DatosDeEntrega {
   readonly destino: DestinoDeEnvio;
 }
 
+/**
+ * El destino de una Orden: el de la vidriera, o el mas corto de un pedido que
+ * cargo el panel (ADR 027), donde el codigo postal y la provincia pueden no
+ * estar.  Un `DestinoDeEnvio` ES un `DestinoDeOrden`.
+ */
+export interface DestinoDeOrden {
+  readonly codigoPostal: string | null;
+  readonly localidad: string;
+  readonly provincia: ProvinciaIso | null;
+  readonly propio: boolean;
+}
+
+/**
+ * Lo que escribe el operador al cargar un pedido de WhatsApp (ADR 027): nombre,
+ * telefono, la direccion entera -calle y numero- en `calle`, y la localidad.  Un
+ * `DatosDeEntrega` de la vidriera ES uno de estos.
+ */
+export interface DatosDeEntregaDelPanel {
+  readonly nombre: string;
+  readonly telefonoE164: string;
+  readonly email: string | null;
+  readonly calle: string;
+  readonly numero: string | null;
+  readonly piso: string | null;
+  readonly referencia: string | null;
+  readonly destino: DestinoDeOrden;
+}
+
 const LARGO_MAXIMO = 120;
 
 /**
@@ -380,17 +408,9 @@ export function validarDatosDeEntrega(datos: unknown): Validacion<DatosDeEntrega
   if (typeof datos !== 'object' || datos === null) return { ok: false, motivo: 'no es un objeto' };
   const d = datos as Record<string, unknown>;
 
-  const nombre = texto(d.nombre);
-  if (nombre.length < 2) return { ok: false, motivo: 'nombre' };
-  if (nombre.length > LARGO_MAXIMO) return { ok: false, motivo: 'nombre largo' };
-
-  const telefonoE164 = normalizarTelefonoAR(texto(d.telefono));
-  if (telefonoE164 === null) return { ok: false, motivo: 'telefono' };
-
-  const crudo = texto(d.email);
-  if (crudo !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(crudo)) return { ok: false, motivo: 'email' };
-  if (crudo.length > LARGOS_DE_ENTREGA.email) return { ok: false, motivo: 'email largo' };
-  const email = crudo === '' ? null : crudo;
+  const quien = validarQuienRecibe(d);
+  if (!quien.ok) return quien;
+  const { nombre, telefonoE164, email } = quien.valor;
 
   const calle = texto(d.calle);
   if (calle.length < 2) return { ok: false, motivo: 'calle' };
@@ -422,6 +442,103 @@ export function validarDatosDeEntrega(datos: unknown): Validacion<DatosDeEntrega
       piso: texto(d.piso) || null,
       referencia: texto(d.referencia) || null,
       destino: { codigoPostal, localidad, provincia, propio: destino.propio === true },
+    },
+  };
+}
+
+/**
+ * Un texto OPCIONAL de la entrega del panel: ausente o `null` es `''`; un texto,
+ * sin los espacios de los costados; **cualquier otra cosa es `undefined`**, y
+ * se rechaza.  Con `texto()` un `numero: 120` de un panel con un error quedaba
+ * `null` en silencio y el paquete salia sin numero (hallazgo 4 de
+ * `revisor-pagos`, ADR 027): se rechaza, no se corrige.
+ */
+function opcional(x: unknown): string | undefined {
+  if (x === undefined || x === null) return '';
+  return typeof x === 'string' ? x.trim() : undefined;
+}
+
+/**
+ * Nombre, telefono y mail: lo mismo para la vidriera y para el panel.  Un solo
+ * lugar, para que los dos validadores de la entrega no se desincronicen en lo
+ * que comparten (LECCIONES 6.4).
+ */
+function validarQuienRecibe(
+  d: Record<string, unknown>,
+): Validacion<Pick<DatosDeEntrega, 'nombre' | 'telefonoE164' | 'email'>> {
+  const nombre = texto(d.nombre);
+  if (nombre.length < 2) return { ok: false, motivo: 'nombre' };
+  if (nombre.length > LARGO_MAXIMO) return { ok: false, motivo: 'nombre largo' };
+
+  const telefonoE164 = normalizarTelefonoAR(texto(d.telefono));
+  if (telefonoE164 === null) return { ok: false, motivo: 'telefono' };
+
+  const crudo = texto(d.email);
+  if (crudo !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(crudo)) return { ok: false, motivo: 'email' };
+  if (crudo.length > LARGOS_DE_ENTREGA.email) return { ok: false, motivo: 'email largo' };
+  return { ok: true, valor: { nombre, telefonoE164, email: crudo === '' ? null : crudo } };
+}
+
+/**
+ * La entrega de un pedido que carga el PANEL (ADR 027): obligatorios el nombre,
+ * el telefono, la direccion -calle y numero juntos, en `calle`- y la localidad.
+ * El numero aparte, el codigo postal y la provincia son opcionales: el panel no
+ * cotiza, el precio y el correo se arreglan por el chat, y la etiqueta se hace a
+ * mano.  **La vidriera no cambia**: sigue con `validarDatosDeEntrega`.
+ *
+ * Acepta tambien lo que manda el panel de ANTES -numero, codigo postal y
+ * provincia aparte- y lo valida igual que siempre si viene: la callable se
+ * publica antes que el panel (reglas -> functions -> front), y en el medio el
+ * panel viejo tiene que poder seguir cargando.
+ */
+export function validarEntregaDelPanel(datos: unknown): Validacion<DatosDeEntregaDelPanel> {
+  if (typeof datos !== 'object' || datos === null) return { ok: false, motivo: 'no es un objeto' };
+  const d = datos as Record<string, unknown>;
+
+  const quien = validarQuienRecibe(d);
+  if (!quien.ok) return quien;
+
+  const calle = texto(d.calle);
+  if (calle.length < 2) return { ok: false, motivo: 'calle' };
+  if (calle.length > LARGOS_DE_ENTREGA.calle) return { ok: false, motivo: 'calle larga' };
+  const numero = opcional(d.numero);
+  if (numero === undefined) return { ok: false, motivo: 'numero' };
+  if (numero.length > LARGOS_DE_ENTREGA.numero) return { ok: false, motivo: 'numero largo' };
+  const piso = opcional(d.piso);
+  if (piso === undefined) return { ok: false, motivo: 'piso' };
+  if (piso.length > LARGOS_DE_ENTREGA.piso) return { ok: false, motivo: 'piso largo' };
+  const referencia = opcional(d.referencia);
+  if (referencia === undefined) return { ok: false, motivo: 'referencia' };
+  if (referencia.length > LARGOS_DE_ENTREGA.referencia) return { ok: false, motivo: 'referencia larga' };
+
+  const destino = d.destino as Record<string, unknown> | undefined;
+  if (typeof destino !== 'object' || destino === null) return { ok: false, motivo: 'destino' };
+  const codigoPostal = opcional(destino.codigoPostal);
+  if (codigoPostal === undefined || (codigoPostal !== '' && !/^\d{4}$/.test(codigoPostal))) {
+    return { ok: false, motivo: 'codigo postal' };
+  }
+  const localidad = texto(destino.localidad);
+  if (localidad === '') return { ok: false, motivo: 'localidad' };
+  if (localidad.length > LARGOS_DE_ENTREGA.localidad) return { ok: false, motivo: 'localidad larga' };
+  const escrita = opcional(destino.provincia);
+  if (escrita === undefined) return { ok: false, motivo: 'provincia' };
+  let provincia: ProvinciaIso | null = null;
+  if (escrita !== '') {
+    if (!esProvinciaIso(escrita)) return { ok: false, motivo: 'provincia' };
+    provincia = escrita;
+  }
+
+  return {
+    ok: true,
+    valor: {
+      ...quien.valor,
+      calle,
+      numero: numero || null,
+      piso: piso || null,
+      referencia: referencia || null,
+      // `propio` lo decide la cobertura del servidor, no quien carga el pedido
+      // (ADR 010); con el reparto propio apagado, siempre false.
+      destino: { codigoPostal: codigoPostal || null, localidad, provincia, propio: false },
     },
   };
 }

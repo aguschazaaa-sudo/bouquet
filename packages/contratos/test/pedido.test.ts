@@ -1,7 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ENTRADAS_DE_TELEFONO, LARGOS_DE_ENTREGA, normalizarTelefonoAR } from '../src/envio.ts';
+import {
+  ENTRADAS_DE_TELEFONO,
+  LARGOS_DE_ENTREGA,
+  normalizarTelefonoAR,
+  validarDatosDeEntrega,
+  validarEntregaDelPanel,
+} from '../src/envio.ts';
 import { TOPE_DE_STOCK } from '../src/stock.ts';
 import { PRECIO_MAXIMO, TOPE_DE_LINEAS, contactoYEntrega, parsearPedidoDelPanel } from '../src/pedido.ts';
 
@@ -152,12 +158,68 @@ test('un productoId con barra o reservado se rechaza', () => {
 
 // ---------------------------------------------------------------- la entrega
 
-test('los datos de entrega los valida el MISMO validador que la vidriera', () => {
+test('nombre y telefono, como la vidriera; codigo postal y provincia, si vienen, bien escritos', () => {
   rechaza(pedido({ entrega: entrega({ nombre: 'M' }) }), /datos de entrega: nombre/);
   rechaza(pedido({ entrega: entrega({ telefono: '12345678' }) }), /datos de entrega: telefono/);
   rechaza(pedido({ entrega: entrega({ destino: { codigoPostal: '50', localidad: 'x', provincia: 'X' } }) }), /codigo postal/);
   rechaza(pedido({ entrega: entrega({ destino: { codigoPostal: '5000', localidad: 'x', provincia: 'ZZ' } }) }), /provincia/);
   rechaza(pedido({ entrega: null }), /datos de entrega/);
+});
+
+// La que arma el formulario desde ADR 027: la direccion entera en `calle`.
+const entregaCorta = (cambios: Record<string, unknown> = {}) => ({
+  nombre: 'Marta Gomez',
+  telefono: '0351 15-555-1234',
+  calle: 'San Martin 120',
+  referencia: '3B, porton verde',
+  destino: { localidad: 'Cordoba' },
+  ...cambios,
+});
+
+test('la entrega corta del panel: nombre, telefono, direccion y localidad alcanzan (ADR 027)', () => {
+  const r = parsearPedidoDelPanel(pedido({ entrega: entregaCorta() }));
+  assert.equal(r.ok, true);
+  if (!r.ok) return;
+  assert.equal(r.valor.entrega.calle, 'San Martin 120');
+  assert.equal(r.valor.entrega.referencia, '3B, porton verde');
+  // Lo que no vino se escribe null, nunca ausente (ARQUITECTURA §5.2).
+  assert.deepEqual(
+    { numero: r.valor.entrega.numero, email: r.valor.entrega.email, piso: r.valor.entrega.piso },
+    { numero: null, email: null, piso: null },
+  );
+  assert.deepEqual(r.valor.entrega.destino, { codigoPostal: null, localidad: 'Cordoba', provincia: null, propio: false });
+});
+
+test('un opcional que no es texto se RECHAZA, no queda null en silencio (hallazgo 4)', () => {
+  rechaza(pedido({ entrega: entregaCorta({ numero: 120 }) }), /datos de entrega: numero/);
+  rechaza(pedido({ entrega: entregaCorta({ referencia: ['3B'] }) }), /datos de entrega: referencia/);
+  rechaza(pedido({ entrega: entregaCorta({ destino: { localidad: 'Cordoba', codigoPostal: 5000 } }) }), /codigo postal/);
+  rechaza(pedido({ entrega: entregaCorta({ destino: { localidad: 'Cordoba', provincia: 14 } }) }), /provincia/);
+  // Control positivo: ausente, null y vacio son lo mismo.
+  for (const nada of [undefined, null, '', '  ']) {
+    const r = parsearPedidoDelPanel(pedido({ entrega: entregaCorta({ numero: nada }) }));
+    assert.equal(r.ok, true, `numero: ${JSON.stringify(nada)}`);
+    if (r.ok) assert.equal(r.valor.entrega.numero, null);
+  }
+});
+
+test('la entrega corta sin direccion o sin localidad, no', () => {
+  rechaza(pedido({ entrega: entregaCorta({ calle: '' }) }), /datos de entrega: calle/);
+  rechaza(pedido({ entrega: entregaCorta({ destino: { localidad: ' ' } }) }), /datos de entrega: localidad/);
+  rechaza(pedido({ entrega: entregaCorta({ destino: undefined }) }), /datos de entrega: destino/);
+  // Control positivo sobre la misma forma.
+  assert.equal(parsearPedidoDelPanel(pedido({ entrega: entregaCorta() })).ok, true);
+});
+
+test('la vidriera NO cambia: su validador sigue pidiendo numero, codigo postal y provincia', () => {
+  const corta = validarDatosDeEntrega(entregaCorta());
+  assert.equal(corta.ok, false);
+  if (!corta.ok) assert.match(corta.motivo, /numero/);
+  const sinCp = validarDatosDeEntrega(entrega({ destino: { localidad: 'Cordoba', provincia: 'X' } }));
+  assert.equal(sinCp.ok, false);
+  // Control positivo: la completa pasa por los dos.
+  assert.equal(validarDatosDeEntrega(entrega()).ok, true);
+  assert.equal(validarEntregaDelPanel(entrega()).ok, true);
 });
 
 test('cada texto libre tiene su tope de largo: el borde pasa y uno mas no', () => {

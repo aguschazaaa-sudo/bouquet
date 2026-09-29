@@ -24,9 +24,14 @@ class Conteo {
   bool get llegoAlTope => cuantos >= topeDelConteo;
 }
 
-/// Los rotulos del operador que dicen *"falta preparar"*: `pagada`
-/// (*"Pagada - falta preparar"*) y `por_preparar` (*"Cobro por fuera - falta
-/// preparar"*). Es lo que HU-11.2 llama *"cuántos pedidos hay por preparar"*.
+/// Los rotulos del operador que dicen *"para despachar"* sin preparar
+/// (ADR 027): `pagada` (*"Pagado - para despachar"*) y `por_preparar`
+/// (*"Para despachar"*). Es lo que HU-11.2 llama *"cuántos pedidos hay por
+/// preparar"*.
+///
+/// `en_preparacion` NO entra aunque su rotulo tambien diga *"Para despachar"*:
+/// la proyeccion lo da con **cualquier** pago, y contaria un pedido de la
+/// tienda impago. Sin el paso de preparar ya no nacen pedidos ahi.
 const estadosPublicosPorPreparar = {
   EstadoPublico.pagada,
   EstadoPublico.por_preparar,
@@ -42,9 +47,9 @@ class TramoPorPreparar {
 }
 
 /// Los tramos, **sacados de la proyeccion** y no escritos a mano, igual que
-/// `tramosQueRequierenAccion`: si ADR 002 cambia la tabla, el conteo cambia
-/// solo. Hoy da uno solo —`sin_preparar` con `pagada` y `por_fuera`—, y el
-/// test lo dice con la lista entera.
+/// `tramosParaHacer`: si ADR 002 cambia la tabla, el conteo cambia solo. Hoy
+/// da uno solo —`sin_preparar` con `pagada` y `por_fuera`—, y el test lo dice
+/// con la lista entera.
 List<TramoPorPreparar> tramosPorPreparar() => [
   for (final entrega in EstadoEntrega.values)
     if (_pagosPorPreparar(entrega) case final pagos when pagos.isNotEmpty)

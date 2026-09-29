@@ -18,7 +18,8 @@ const ID = '3f2b9c1e-7a4d-4e8f-9b21-5c6d7e8f9a0b';
 // ------------------------------------------------------ quien escribe que
 
 test('el panel escribe exactamente las transiciones de la tabla menos cancelar', () => {
-  // Control positivo: las cinco que el panel SI escribe.
+  // Control positivo: las seis que el panel SI escribe.  `sin_preparar>despachada`
+  // entra con ADR 027: despachar sin el paso de preparar.
   const delPanel: string[] = [];
   for (const a of ESTADOS_ENTREGA) for (const d of ESTADOS_ENTREGA) if (laEscribeElPanel(a, d)) delPanel.push(`${a}>${d}`);
   assert.deepEqual(delPanel.sort(), [
@@ -26,6 +27,7 @@ test('el panel escribe exactamente las transiciones de la tabla menos cancelar',
     'despachada>fallida',
     'fallida>despachada',
     'preparando>despachada',
+    'sin_preparar>despachada',
     'sin_preparar>preparando',
   ]);
 });

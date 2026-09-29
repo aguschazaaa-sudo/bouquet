@@ -16,7 +16,7 @@
 
 import { esProductoId, type LineaDePedido } from './carrito.ts';
 import { centavos, type Centavos } from './dinero.ts';
-import { validarDatosDeEntrega, type DatosDeEntrega, type DestinoDeEnvio } from './envio.ts';
+import { validarEntregaDelPanel, type DatosDeEntregaDelPanel, type DestinoDeOrden } from './envio.ts';
 import type { EstadoEntrega, EstadoPago, Origen } from './orden.ts';
 import type { Validacion } from './producto.ts';
 import { TOPE_DE_STOCK } from './stock.ts';
@@ -52,9 +52,11 @@ export const PRECIO_MAXIMO = Math.floor(Number.MAX_SAFE_INTEGER / (TOPE_DE_STOCK
 /**
  * Lo que recibe `crearOrdenDelPanel`.
  *
- * `entrega` ya viene NORMALIZADO: `validarDatosDeEntrega` es el mismo
- * validador que usa la vidriera, y saca el telefono a E.164 (`telefonoE164`).
- * Dos validadores del mismo dato se desincronizan (LECCIONES 6.4).
+ * `entrega` ya viene NORMALIZADO por `validarEntregaDelPanel`, que saca el
+ * telefono a E.164 (`telefonoE164`).  Es mas corto que el de la vidriera -sin
+ * codigo postal ni provincia obligatorios, ADR 027- y comparte con el de la
+ * vidriera el nombre, el telefono y el mail: dos validadores del mismo dato se
+ * desincronizan (LECCIONES 6.4).
  */
 export interface PedidoDelPanel {
   /**
@@ -65,7 +67,7 @@ export interface PedidoDelPanel {
    */
   readonly idPedido: string;
   readonly lineas: readonly LineaDePedido[];
-  readonly entrega: DatosDeEntrega;
+  readonly entrega: DatosDeEntregaDelPanel;
 }
 
 function esObjeto(x: unknown): x is Record<string, unknown> {
@@ -108,7 +110,7 @@ function parsearLinea(x: unknown, indice: number): Validacion<LineaDePedido> {
  * RECHAZA lo que no cumple; no lo corrige.  Devuelve el PRIMER motivo.
  *
  * En la RAIZ y en las LINEAS rechaza una clave de mas.  Dentro de `entrega` no:
- * `validarDatosDeEntrega` rearma el objeto y descarta lo que no conoce, asi que
+ * `validarEntregaDelPanel` rearma el objeto y descarta lo que no conoce, asi que
  * una clave de mas no llega a la Orden (`origen`, `estadoPago` o `propio` ahi
  * adentro no hacen nada), pero tampoco se rechaza.
  *
@@ -149,7 +151,7 @@ export function parsearPedidoDelPanel(entrada: unknown): Validacion<PedidoDelPan
     lineas.push(linea.valor);
   }
 
-  const entrega = validarDatosDeEntrega(entrada.entrega);
+  const entrega = validarEntregaDelPanel(entrada.entrega);
   if (!entrega.ok) return { ok: false, motivo: `datos de entrega: ${entrega.motivo}` };
 
   return {
@@ -189,12 +191,17 @@ export interface ContactoDeOrden {
   readonly email: string | null;
 }
 
+/**
+ * A donde va.  En un pedido del panel (ADR 027) la direccion entera esta en
+ * `calle` y `numero`, el codigo postal y la provincia pueden ser `null`: se
+ * escriben igual, nunca ausentes (la trampa de `publicado`, ARQUITECTURA §5.2).
+ */
 export interface EntregaDeOrden {
   readonly calle: string;
-  readonly numero: string;
+  readonly numero: string | null;
   readonly piso: string | null;
   readonly referencia: string | null;
-  readonly destino: DestinoDeEnvio;
+  readonly destino: DestinoDeOrden;
 }
 
 /**
@@ -222,7 +229,7 @@ export interface OrdenNueva {
 }
 
 /** Parte los datos que escribio el operador en lo que va a `contacto` y lo que va a `entrega`. */
-export function contactoYEntrega(datos: DatosDeEntrega): {
+export function contactoYEntrega(datos: DatosDeEntregaDelPanel): {
   readonly contacto: ContactoDeOrden;
   readonly entrega: EntregaDeOrden;
 } {

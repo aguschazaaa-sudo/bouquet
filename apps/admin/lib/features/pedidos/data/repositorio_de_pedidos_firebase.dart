@@ -2,10 +2,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 
 import '../../../core/contratos/despacho.dart';
+import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/contratos/estado_pago.dart';
 import '../domain/fallo_de_pedidos.dart';
-import '../domain/lo_que_requiere_accion.dart';
 import '../domain/orden.dart';
+import '../domain/para_hacer.dart';
 import '../domain/paso_de_entrega.dart';
 import '../domain/pedido_a_cargar.dart';
 import '../domain/repositorio_de_pedidos.dart';
@@ -67,14 +68,15 @@ class RepositorioDePedidosFirebase implements RepositorioDePedidos {
   }
 
   /// `where` + `orderBy('creadaEn', desc)` + `limit`, con el `where` de la
-  /// [vista]:
+  /// [vista] (ADR 027):
   ///
-  /// - **Un estado** (HU-06.1): `estadoEntrega ==`, con el indice
-  ///   `(estadoEntrega, creadaEn)`.
-  /// - **Requieren accion** (HU-06.3): un `OR` de los tramos que salen de la
-  ///   proyeccion (`tramosQueRequierenAccion`), cada uno `estadoEntrega ==` y, si
-  ///   no son todos, `estadoPago in`. Usa el indice `(estadoEntrega, estadoPago,
-  ///   creadaEn)` (ADR 020 §1).
+  /// - **Para hacer**: un `OR` de los tramos de `tramosParaHacer`, cada uno
+  ///   `estadoEntrega ==` y, si no son todos, `estadoPago in`. Usa los indices
+  ///   `(estadoEntrega, creadaEn)` y `(estadoEntrega, estadoPago, creadaEn)`
+  ///   (ADR 020 §1).
+  /// - **En camino**: `estadoEntrega == despachada`.
+  /// - **Terminados**: `estadoEntrega in [entregada, cancelada]`, sobre el
+  ///   indice `(estadoEntrega, creadaEn)`: un `in` es una igualdad por valor.
   ///
   /// **Se verifica corriendola**, no mirando que el indice este `READY`. Un
   /// documento sin `creadaEn` no entra en el orden y no aparece: las callables la
@@ -119,17 +121,21 @@ class RepositorioDePedidosFirebase implements RepositorioDePedidos {
   }
 
   static Filter _filtroDe(VistaDeBandeja vista) => switch (vista) {
-    DeUnEstado(:final estado) => Filter(
-      'estadoEntrega',
-      isEqualTo: estado.name,
-    ),
     // `Filter.or` es posicional (hasta 30): se pliega de a dos. Firestore
     // aplana los `OR` anidados, asi que es la misma consulta.
-    RequierenAccion() =>
-      tramosQueRequierenAccion().map(_filtroDelTramo).reduce(Filter.or),
+    VistaDeBandeja.paraHacer =>
+      tramosParaHacer().map(_filtroDelTramo).reduce(Filter.or),
+    VistaDeBandeja.enCamino => Filter(
+      'estadoEntrega',
+      isEqualTo: EstadoEntrega.despachada.name,
+    ),
+    VistaDeBandeja.terminados => Filter(
+      'estadoEntrega',
+      whereIn: [EstadoEntrega.entregada.name, EstadoEntrega.cancelada.name],
+    ),
   };
 
-  static Filter _filtroDelTramo(TramoQueRequiereAccion t) {
+  static Filter _filtroDelTramo(TramoParaHacer t) {
     final entrega = Filter('estadoEntrega', isEqualTo: t.entrega.name);
     final pagos = t.pagos;
     if (pagos == null) return entrega;

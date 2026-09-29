@@ -106,7 +106,9 @@ merecía un botón; se dejó porque evita la pérdida que la historia nombra —
 personas armando el mismo pedido— y porque la máquina de estados no deja saltar
 de `sin_preparar` a `despachada`: esconderlo obligaría al panel a hacer dos
 escrituras seguidas, con una falla a mitad posible. **Disparador para
-cambiarlo:** que el dueño diga que el paso sobra.
+cambiarlo:** que el dueño diga que el paso sobra. **Lo dijo el 2026-09-29**
+(*"complica más que lo que aporta"*): la tabla suma `sin_preparar → despachada`
+y el panel dejó de ofrecer preparar ([ADR 027 §2](027-pedidos-sin-burocracia.md)).
 
 **Entregar pide confirmar** —es terminal— **y la confirmación es la declaración
 legal:** el botón dice *"Sí, lo recibió un mayor de 18"*, no *"Aceptar"*.

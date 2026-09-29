@@ -33,7 +33,7 @@ class PantallaDePedidos extends ConsumerStatefulWidget {
 }
 
 class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
-  VistaDeBandeja _vista = const RequierenAccion();
+  VistaDeBandeja _vista = VistaDeBandeja.paraHacer;
   bool _cargandoMas = false;
   bool _verMasFallo = false;
 

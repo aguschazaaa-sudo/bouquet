@@ -1,4 +1,3 @@
-import '../../../core/contratos/estado_entrega.dart';
 import '../../../core/contratos/pedido.dart';
 import '../domain/vista_de_bandeja.dart';
 
@@ -23,46 +22,25 @@ const textoNoSePudieronLeerLosPedidos =
 const textoNoSePudoVerMas =
     'No pudimos traer más pedidos. Los que ya ves siguen ahí: probá de nuevo.';
 
-/// Los seis estados de entrega, como se los llama en la bandeja.
-String textoDelEstado(EstadoEntrega e) => switch (e) {
-  EstadoEntrega.sin_preparar => 'Por preparar',
-  EstadoEntrega.preparando => 'Preparando',
-  EstadoEntrega.despachada => 'En camino',
-  EstadoEntrega.entregada => 'Entregados',
-  EstadoEntrega.fallida => 'No entregados',
-  EstadoEntrega.cancelada => 'Cancelados',
-};
-
-/// Lo que dice una bandeja vacia. **Dice que esta vacia y por que puede ser**:
-/// una lista en blanco muda parece un error.
-String textoBandejaVacia(EstadoEntrega e) => switch (e) {
-  EstadoEntrega.sin_preparar =>
-    'No hay pedidos por preparar. Cuando cargues uno de WhatsApp o entre uno de '
-        'la tienda, aparece acá.',
-  EstadoEntrega.preparando => 'No hay pedidos en preparación.',
-  EstadoEntrega.despachada => 'No hay pedidos en camino.',
-  EstadoEntrega.entregada => 'Todavía no hay pedidos entregados.',
-  EstadoEntrega.fallida => 'No hay pedidos con la entrega fallida.',
-  EstadoEntrega.cancelada => 'No hay pedidos cancelados.',
-};
-
-/// Cada ficha de la bandeja: *"Requieren acción"* y los seis estados (HU-06.3).
+/// Las tres fichas de la bandeja (ADR 027). Con las mismas palabras que el
+/// estado de cada pedido y que el boton que lo lleva ahi: *"Para despachar"*
+/// vive en *Para hacer*, *"Salió"* lo pasa a *En camino*.
 String textoDeLaVista(VistaDeBandeja v) => switch (v) {
-  RequierenAccion() => textoRequierenAccion,
-  DeUnEstado(:final estado) => textoDelEstado(estado),
+  VistaDeBandeja.paraHacer => 'Para hacer',
+  VistaDeBandeja.enCamino => 'En camino',
+  VistaDeBandeja.terminados => 'Terminados',
 };
 
-const textoRequierenAccion = 'Requieren acción';
-
-/// Lo que dice la bandeja vacia de una vista.
+/// Lo que dice la bandeja vacia de una vista. **Dice que esta vacia y por que
+/// puede ser**: una lista en blanco muda parece un error.
 String textoVistaVacia(VistaDeBandeja v) => switch (v) {
-  RequierenAccion() => textoNadaEspera,
-  DeUnEstado(:final estado) => textoBandejaVacia(estado),
+  VistaDeBandeja.paraHacer =>
+    'Nada espera por vos. Cuando cargues un pedido de WhatsApp, entre uno de la '
+        'tienda o no se pueda entregar uno, aparece acá.',
+  VistaDeBandeja.enCamino => 'No hay pedidos en camino.',
+  VistaDeBandeja.terminados =>
+    'Todavía no hay pedidos entregados ni cancelados.',
 };
-
-const textoNadaEspera =
-    'Nada espera por vos. Cuando entre un pedido o falle una entrega, aparece '
-    'acá.';
 
 // --------------------------------------------------------------- buscar
 

@@ -11,14 +11,14 @@ import 'textos_de_pedidos.dart';
 // "pagado" de un pedido de WhatsApp (ADR 018 §6).
 
 const textoQueSigue = 'Qué sigue';
-const textoCorreo = '¿Por dónde sale?';
+const textoCorreo = '¿Por dónde salió?';
 const textoSeguimiento = 'Número de seguimiento';
 const textoSeguimientoOpcional =
     'Opcional. Si lo tenés, sirve para contestar «¿dónde está mi vino?».';
 const textoMotivoDeFalla = '¿Qué pasó?';
 const textoMotivoDeCancelacion = '¿Por qué se cancela?';
 const textoElegiUnMotivo = 'Elegí un motivo.';
-const textoElegiElCorreo = 'Elegí por dónde sale.';
+const textoElegiElCorreo = 'Elegí por dónde salió.';
 const textoTodaviaNo = 'Todavía no';
 
 String textoSeguimientoLargo(int largo) =>
@@ -26,8 +26,7 @@ String textoSeguimientoLargo(int largo) =>
 
 /// El boton de cada accion, como lo lee quien lo aprieta.
 String textoDeLaAccion(AccionDelPedido a) => switch (a) {
-  AccionDelPedido.preparar => 'Empezar a prepararlo',
-  AccionDelPedido.despachar => 'Despachar',
+  AccionDelPedido.despachar => 'Salió: marcar en camino',
   AccionDelPedido.entregar => 'Llegó: marcar entregado',
   AccionDelPedido.noSeEntrego => 'No se pudo entregar',
   AccionDelPedido.cancelar => 'Cancelar el pedido',
@@ -67,14 +66,14 @@ String textoDelMotivoSinReponer(MotivoSinReponer? m) => switch (m) {
 
 // ---------------------------------------------------------------- las hojas
 
-String textoTituloDeDespachar(int numero) => 'Despachar el pedido $numero';
-const textoMarcarDespachado = 'Marcar como despachado';
+String textoTituloDeDespachar(int numero) => 'El pedido $numero salió';
+const textoMarcarDespachado = 'Marcar en camino';
 
 String textoTituloDeFalla(int numero) => 'El pedido $numero no se entregó';
 const textoMarcarNoEntregado = 'Marcar que no se entregó';
 const textoDespuesDeLaFalla =
-    'Queda como «No entregado». Cuando salga de nuevo, lo volvés a despachar: '
-    'mantiene su número.';
+    'Vuelve a «Para hacer» como «No se pudo entregar». Cuando salga de nuevo, '
+    'tocá «Salió» otra vez: mantiene su número.';
 
 String textoTituloDeCancelar(int numero) => 'Cancelar el pedido $numero';
 const textoVuelvenAlStock = 'Vuelven al stock:';
@@ -115,15 +114,14 @@ String textoLineaSinReponer(String nombre, int cantidad, MotivoSinReponer? m) =>
     '$cantidad × $nombre: ${textoDelMotivoSinReponer(m)}.';
 
 const textoEsperaElPago =
-    'Todavía no se puede despachar: falta que se acredite el pago.';
+    'Todavía no puede salir: falta que se acredite el pago.';
 
 // -------------------------------------------------------------- resultados
 
 String textoPasoHecho(PasoDeEntrega paso, int numero) => switch (paso) {
-  Preparar() => 'Pedido $numero: lo estás preparando.',
-  Despachar() => 'Pedido $numero despachado.',
+  Despachar() => 'Pedido $numero: en camino.',
   Entregar() => 'Pedido $numero entregado.',
-  NoSeEntrego() => 'Pedido $numero: quedó como no entregado.',
+  NoSeEntrego() => 'Pedido $numero: no se pudo entregar. Volvió a «Para hacer».',
 };
 
 String textoCancelado(

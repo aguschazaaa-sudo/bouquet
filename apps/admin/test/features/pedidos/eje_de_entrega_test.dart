@@ -53,8 +53,9 @@ void main() {
   group('lo que se ofrece desde cada estado', () {
     test('un pedido de WhatsApp recorre la tabla entera', () {
       final esperado = {
+        // Sin el paso de preparar (ADR 027): de por despachar, sale.
         EstadoEntrega.sin_preparar: [
-          AccionDelPedido.preparar,
+          AccionDelPedido.despachar,
           AccionDelPedido.cancelar,
         ],
         EstadoEntrega.preparando: [
@@ -92,13 +93,17 @@ void main() {
     });
 
     test('uno de la tienda impago no se despacha, y se dice por que', () {
-      final impago = _orden(
-        entrega: EstadoEntrega.preparando,
-        origen: Origen.vidriera,
-        pago: EstadoPago.pendiente,
-      );
-      expect(accionesDe(impago), [AccionDelPedido.cancelar]);
-      expect(despachoEsperaElPago(impago), isTrue);
+      // Desde por despachar tambien (ADR 027): despachar es lo que sigue, asi
+      // que el panel dice que falta el pago en vez de no ofrecer nada.
+      for (final desde in [EstadoEntrega.sin_preparar, EstadoEntrega.preparando]) {
+        final impago = _orden(
+          entrega: desde,
+          origen: Origen.vidriera,
+          pago: EstadoPago.pendiente,
+        );
+        expect(accionesDe(impago), [AccionDelPedido.cancelar], reason: desde.name);
+        expect(despachoEsperaElPago(impago), isTrue, reason: desde.name);
+      }
 
       final pagado = _orden(
         entrega: EstadoEntrega.preparando,
@@ -140,11 +145,7 @@ void main() {
   group('lo que se escribe por cada paso: el estado, la hora y SU campo', () {
     const hora = 'HORA-DEL-SERVIDOR';
 
-    test('preparar y entregar: solo el estado y la hora', () {
-      expect(cambiosDe(const Preparar(), horaDelServidor: hora), {
-        'estadoEntrega': 'preparando',
-        'actualizadaEn': hora,
-      });
+    test('entregar: solo el estado y la hora', () {
       expect(cambiosDe(const Entregar(), horaDelServidor: hora), {
         'estadoEntrega': 'entregada',
         'actualizadaEn': hora,
@@ -193,7 +194,6 @@ void main() {
 
     test('ningun paso escribe cancelada: eso es de la callable', () {
       for (final paso in const <PasoDeEntrega>[
-        Preparar(),
         Despachar(correo: Correo.oca),
         Entregar(),
         NoSeEntrego(MotivoDeFalla.nadie),

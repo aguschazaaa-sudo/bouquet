@@ -262,7 +262,7 @@ function paso(despues) {
 
 describe('EP-07: la entrega se mueve por la tabla de ADR 002, y nada mas', () => {
   test('la matriz: cada par contra lo que el contrato dice que escribe el panel', async () => {
-    let aceptados = 0;
+    const aceptados = [];
     for (const antes of ESTADOS) {
       for (const despues of ESTADOS) {
         if (antes === despues) continue; // el mismo estado es "anotar": abajo
@@ -270,15 +270,23 @@ describe('EP-07: la entrega se mueve por la tabla de ADR 002, y nada mas', () =>
         const intento = updateDoc(ordenDe(admin), paso(despues));
         if (DESPACHO.laEscribeElPanel[antes].includes(despues)) {
           await assertSucceeds(intento);
-          aceptados += 1;
+          aceptados.push(`${antes}>${despues}`);
         } else {
           await assertFails(intento);
         }
       }
     }
     // El control de la matriz misma: con un JSON vacio todos los rechazos
-    // pasarian y esto no probaria nada.
-    assert.equal(aceptados, 5);
+    // pasarian y esto no probaria nada.  La lista y no un conteo: un par de mas
+    // o de menos se nombra.  `sin_preparar>despachada` entra con ADR 027.
+    assert.deepEqual(aceptados.sort(), [
+      'despachada>entregada',
+      'despachada>fallida',
+      'fallida>despachada',
+      'preparando>despachada',
+      'sin_preparar>despachada',
+      'sin_preparar>preparando',
+    ]);
   });
 
   test('cancelar NO lo escribe ningun cliente, ni desde donde la tabla lo permite', async () => {
@@ -351,18 +359,35 @@ describe('EP-07: despachar lleva el correo y, si hay, el seguimiento', () => {
       ['una hora del cliente', despacho({ en: new Date('2026-01-01T00:00:00Z') })],
       ['una clave de mas', despacho({ costo: 1 })],
     ];
-    for (const [porque, d] of malos) {
-      await sembrar(`ordenes/${ID}`, orden({ estadoEntrega: 'preparando' }));
-      const cambio = { estadoEntrega: 'despachada', actualizadaEn: serverTimestamp() };
-      if (d !== undefined) cambio.despacho = d;
-      await assertFails(updateDoc(ordenDe(admin), cambio), porque);
+    // Desde los dos estados de los que se despacha por primera vez (ADR 027).
+    for (const desde of ['sin_preparar', 'preparando']) {
+      for (const [porque, d] of malos) {
+        await sembrar(`ordenes/${ID}`, orden({ estadoEntrega: desde }));
+        const cambio = { estadoEntrega: 'despachada', actualizadaEn: serverTimestamp() };
+        if (d !== undefined) cambio.despacho = d;
+        await assertFails(updateDoc(ordenDe(admin), cambio), `${porque} desde ${desde}`);
+      }
     }
   });
 
   test('un pedido de la vidriera impago NO sale; pagado, si', async () => {
-    await sembrar(`ordenes/${ID}`, orden({ origen: 'vidriera', estadoPago: 'pendiente', estadoEntrega: 'preparando' }));
-    await assertFails(updateDoc(ordenDe(admin), paso('despachada')));
-    await sembrar(`ordenes/${ID}`, orden({ origen: 'vidriera', estadoPago: 'pagada', estadoEntrega: 'preparando' }));
+    // Desde `sin_preparar` tambien (ADR 027): el paso nuevo no puede ser la
+    // puerta de atras para despachar algo que Mercado Pago no aprobo.  Y desde
+    // `fallida`, que entra por la misma rama de la regla (revisor-pagos).
+    for (const desde of ['sin_preparar', 'preparando', 'fallida']) {
+      await sembrar(`ordenes/${ID}`, orden({ origen: 'vidriera', estadoPago: 'pendiente', estadoEntrega: desde }));
+      await assertFails(updateDoc(ordenDe(admin), paso('despachada')), `impago desde ${desde}`);
+      await sembrar(`ordenes/${ID}`, orden({ origen: 'vidriera', estadoPago: 'pagada', estadoEntrega: desde }));
+      await assertSucceeds(updateDoc(ordenDe(admin), paso('despachada')), `pagado desde ${desde}`);
+    }
+  });
+
+  test('desde sin preparar, despachar pide el despacho igual que siempre (ADR 027)', async () => {
+    await sembrar(`ordenes/${ID}`, orden({ estadoEntrega: 'sin_preparar' }));
+    await assertFails(
+      updateDoc(ordenDe(admin), { estadoEntrega: 'despachada', actualizadaEn: serverTimestamp() }),
+      'sin el despacho',
+    );
     await assertSucceeds(updateDoc(ordenDe(admin), paso('despachada')));
   });
 
@@ -446,22 +471,30 @@ describe('los marcadores y el contador son del servidor', () => {
   });
 });
 
-// ------------------------------------------- requieren accion, buscar, anotar
+// ------------------------------------------- la bandeja, buscar, anotar
 //
-// ADR 020 (HU-06.3, HU-06.4, HU-07.7).  Las reglas no cambiaron: estos casos
-// prueban que dejan pasar las TRES consultas nuevas del panel con su forma
-// real, y que la de *"Requieren accion"* trae exactamente los pares que la
-// proyeccion marca.  Los pares salen del JSON generado, igual que el `Dart`
-// (`tramosQueRequierenAccion`) los saca de su espejo: si la tabla cambia en
-// `contratos`, esta suite sigue midiendo contra la tabla nueva.
+// ADR 020 (HU-06.4, HU-07.7) y ADR 027 (las tres fichas).  Las reglas de `list`
+// no cambiaron: estos casos prueban que dejan pasar las consultas del panel con
+// su forma real, y que la de *Para hacer* trae exactamente los pares que tiene
+// que traer.  Los pares salen del JSON generado, igual que el `Dart`
+// (`tramosParaHacer`) los saca de su espejo: si la tabla cambia en `contratos`,
+// esta suite sigue midiendo contra la tabla nueva.
 
-/** Los tramos, como los arma el panel: por estado de entrega, con los pagos
- *  que requieren accion, o sin filtro de pago si son todos. */
-function tramosQueRequierenAccion() {
+/** Los estados que entran ENTEROS en *Para hacer*: copia de `entregasParaHacer`
+ *  (apps/admin, `para_hacer.dart`). Lo que no salio y lo que volvio. */
+const ENTREGAS_PARA_HACER = ['sin_preparar', 'preparando', 'fallida'];
+
+/** Los tramos, como los arma el panel: los de arriba enteros, y de los demas
+ *  estados los pares que la proyeccion marca con accion. */
+function tramosParaHacer() {
   const { pago, entrega, publico } = CONTRATO;
   const accion = new Set(publico.requierenAccion);
   const tramos = [];
   for (const e of entrega.estados) {
+    if (ENTREGAS_PARA_HACER.includes(e)) {
+      tramos.push({ entrega: e, pagos: null });
+      continue;
+    }
     const pagos = pago.estados.filter((p) => accion.has(publico.proyeccion[`${p}|${e}`]));
     if (pagos.length === 0) continue;
     tramos.push({ entrega: e, pagos: pagos.length === pago.estados.length ? null : pagos });
@@ -469,8 +502,8 @@ function tramosQueRequierenAccion() {
   return tramos;
 }
 
-function consultaDeAccion(db, n = 25) {
-  const filtros = tramosQueRequierenAccion().map((t) =>
+function consultaParaHacer(db, n = 25) {
+  const filtros = tramosParaHacer().map((t) =>
     t.pagos === null
       ? where('estadoEntrega', '==', t.entrega)
       : and(where('estadoEntrega', '==', t.entrega), where('estadoPago', 'in', t.pagos)),
@@ -478,43 +511,69 @@ function consultaDeAccion(db, n = 25) {
   return query(coleccion(db), or(...filtros), orderBy('creadaEn', 'desc'), limit(n));
 }
 
-describe('ADR 020: requieren accion, buscar por numero y anotar', () => {
-  test('la consulta de "Requieren accion" trae EXACTAMENTE los pares con accion, lo mas nuevo primero', async () => {
+const consultaDeTerminados = (db, n = 25) =>
+  query(coleccion(db), where('estadoEntrega', 'in', ['entregada', 'cancelada']), orderBy('creadaEn', 'desc'), limit(n));
+
+/** Una orden por cada uno de los 36 pares, cada una un minuto mas nueva. */
+async function sembrarLosParesDeLaBandeja() {
+  const { pago, entrega } = CONTRATO;
+  let i = 0;
+  for (const p of pago.estados) {
+    for (const e of entrega.estados) {
+      i += 1;
+      await sembrar(`ordenes/par-${String(i).padStart(2, '0')}`, orden({
+        numero: i,
+        estadoPago: p,
+        estadoEntrega: e,
+        creadaEn: new Date(Date.UTC(2026, 8, 25, 12, i)),
+      }));
+    }
+  }
+}
+
+const parDe = (d) => `${d.get('estadoPago')}|${d.get('estadoEntrega')}`;
+
+describe('ADR 027: las fichas de la bandeja; ADR 020: buscar por numero y anotar', () => {
+  test('"Para hacer" trae EXACTAMENTE lo que no salio, lo que volvio y lo terminado que pide plata', async () => {
     const { pago, entrega, publico } = CONTRATO;
     const accion = new Set(publico.requierenAccion);
+    await sembrarLosParesDeLaBandeja();
     const esperados = [];
-    let i = 0;
-    // Una orden por cada uno de los 36 pares, cada una un minuto mas nueva.
     for (const p of pago.estados) {
       for (const e of entrega.estados) {
-        i += 1;
-        const par = `${p}|${e}`;
-        await sembrar(`ordenes/par-${String(i).padStart(2, '0')}`, orden({
-          numero: i,
-          estadoPago: p,
-          estadoEntrega: e,
-          creadaEn: new Date(Date.UTC(2026, 8, 25, 12, i)),
-        }));
-        if (accion.has(publico.proyeccion[par])) esperados.push(par);
+        if (ENTREGAS_PARA_HACER.includes(e) || accion.has(publico.proyeccion[`${p}|${e}`])) esperados.push(`${p}|${e}`);
       }
     }
-    // Control positivo: hay pares con y sin accion, no una lista vacia por error.
+    // Control positivo y negativo: un pedido de la tienda que espera el pago
+    // esta (no puede quedar en ninguna ficha), uno terminado sin plata no.
     assert.ok(esperados.includes('por_fuera|sin_preparar'));
+    assert.ok(esperados.includes('pendiente|sin_preparar'));
+    assert.ok(esperados.includes('pendiente|entregada'), 'entregado sin cobrar pide plata');
     assert.ok(!esperados.includes('por_fuera|entregada'));
-    assert.ok(tramosQueRequierenAccion().reduce((a, t) => a + (t.pagos?.length ?? 1), 0) <= 30);
+    assert.ok(!esperados.includes('pagada|despachada'));
+    assert.ok(tramosParaHacer().reduce((a, t) => a + (t.pagos?.length ?? 1), 0) <= 30);
 
-    const snap = await assertSucceeds(getDocs(consultaDeAccion(admin, 50)));
-    const traidos = snap.docs.map((d) => `${d.get('estadoPago')}|${d.get('estadoEntrega')}`);
-    assert.deepEqual([...traidos].sort(), [...esperados].sort());
+    const snap = await assertSucceeds(getDocs(consultaParaHacer(admin, 50)));
+    assert.deepEqual(snap.docs.map(parDe).sort(), [...esperados].sort());
     const numeros = snap.docs.map((d) => d.get('numero'));
     assert.deepEqual(numeros, [...numeros].sort((a, b) => b - a), 'los mas nuevos primero');
   });
 
-  test('"Requieren accion" tambien exige limite, y un comprador no la corre', async () => {
+  test('"Terminados" trae entregados y cancelados, y nada mas', async () => {
+    await sembrarLosParesDeLaBandeja();
+    const snap = await assertSucceeds(getDocs(consultaDeTerminados(admin, 50)));
+    const entregas = new Set(snap.docs.map((d) => d.get('estadoEntrega')));
+    assert.deepEqual([...entregas].sort(), ['cancelada', 'entregada']);
+    assert.equal(snap.size, 2 * CONTRATO.pago.estados.length, 'los seis pagos de cada uno');
+  });
+
+  test('las fichas tambien exigen limite, y un comprador no las corre', async () => {
     await sembrar(`ordenes/${ID}`, orden());
-    await assertSucceeds(getDocs(consultaDeAccion(admin, 25)));
-    await assertFails(getDocs(consultaDeAccion(admin, 51)));
-    await assertFails(getDocs(consultaDeAccion(comprador, 25)));
+    for (const consulta of [consultaParaHacer, consultaDeTerminados]) {
+      await assertSucceeds(getDocs(consulta(admin, 25)));
+      await assertFails(getDocs(consulta(admin, 51)));
+      await assertFails(getDocs(consulta(comprador, 25)));
+    }
   });
 
   test('buscar por numero: una igualdad con limit(1)', async () => {

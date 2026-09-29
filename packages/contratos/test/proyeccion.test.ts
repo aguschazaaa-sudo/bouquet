@@ -111,7 +111,17 @@ test('por_preparar requiere accion y no afirma un cobro', () => {
   for (const rotulo of [ROTULOS.por_preparar.cliente, ROTULOS.por_preparar.operador]) {
     assert.ok(!/acreditad|cobrar/i.test(rotulo), `"${rotulo}" afirma o reclama un cobro`);
   }
-  assert.equal(ROTULOS.por_preparar.operador, 'Cobro por fuera - falta preparar');
+  assert.equal(ROTULOS.por_preparar.operador, 'Para despachar');
+});
+
+test('el operador lee UNA palabra por estado: sin "Despachada" ni "falta preparar" (ADR 027)', () => {
+  assert.equal(ROTULOS.en_camino.operador, 'En camino');
+  assert.equal(ROTULOS.en_preparacion.operador, ROTULOS.por_preparar.operador);
+  for (const { operador } of Object.values(ROTULOS)) {
+    assert.ok(!/despachada|falta preparar|preparacion/i.test(operador), `"${operador}" es un nombre viejo`);
+  }
+  // Control positivo: el patron SI atrapa los nombres de antes.
+  assert.ok(/despachada|falta preparar|preparacion/i.test('Cobro por fuera - falta preparar'));
 });
 
 test('por_preparar solo lo produce por_fuera: ningun otro par de pago llega ahi', () => {

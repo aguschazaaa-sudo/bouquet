@@ -53,7 +53,7 @@ class RotuloEstado {
 const Map<EstadoPublico, RotuloEstado> rotulosEstadoPublico = {
   EstadoPublico.recibida: RotuloEstado(
     cliente: 'Pedido recibido',
-    operador: 'Recibida - falta cobrar',
+    operador: 'Recibido - falta cobrar',
   ),
   EstadoPublico.confirmando: RotuloEstado(
     cliente: 'Confirmando...',
@@ -65,45 +65,45 @@ const Map<EstadoPublico, RotuloEstado> rotulosEstadoPublico = {
   ),
   EstadoPublico.pagada: RotuloEstado(
     cliente: 'Pago acreditado',
-    operador: 'Pagada - falta preparar',
+    operador: 'Pagado - para despachar',
   ),
   // Ni "pagada" (afirmaría un cobro que nadie comprobó) ni "recibida" (dice
   // "falta cobrar"): un pedido de WhatsApp se cobra por fuera.
   EstadoPublico.por_preparar: RotuloEstado(
     cliente: 'Pedido recibido',
-    operador: 'Cobro por fuera - falta preparar',
+    operador: 'Para despachar',
   ),
   EstadoPublico.en_preparacion: RotuloEstado(
     cliente: 'Preparando tu pedido',
-    operador: 'En preparacion',
+    operador: 'Para despachar',
   ),
   EstadoPublico.en_camino: RotuloEstado(
     cliente: 'En camino',
-    operador: 'Despachada',
+    operador: 'En camino',
   ),
   EstadoPublico.entregada: RotuloEstado(
     cliente: 'Entregado',
-    operador: 'Entregada',
+    operador: 'Entregado',
   ),
   EstadoPublico.entregada_impaga: RotuloEstado(
     cliente: 'Entregado',
-    operador: 'ENTREGADA SIN COBRAR',
+    operador: 'ENTREGADO SIN COBRAR',
   ),
   EstadoPublico.no_entregada: RotuloEstado(
     cliente: 'No pudimos entregarlo',
-    operador: 'Entrega fallida - reprogramar',
+    operador: 'No se pudo entregar',
   ),
   EstadoPublico.cancelada: RotuloEstado(
     cliente: 'Pedido cancelado',
-    operador: 'Cancelada',
+    operador: 'Cancelado',
   ),
   EstadoPublico.cancelada_con_pago: RotuloEstado(
     cliente: 'Pedido cancelado',
-    operador: 'CANCELADA CON PAGO - devolver',
+    operador: 'CANCELADO CON PAGO - devolver',
   ),
   EstadoPublico.reembolsada: RotuloEstado(
     cliente: 'Pedido cancelado y reintegrado',
-    operador: 'Reembolsada',
+    operador: 'Reembolsado',
   ),
 };
 

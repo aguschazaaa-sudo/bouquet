@@ -30,8 +30,10 @@ const Set<EstadoEntrega> naceEnEntrega = {EstadoEntrega.sin_preparar};
 /// vuelve a `despachada`: no había nadie el martes, se vuelve el jueves
 /// (ADR 002).
 const Map<EstadoEntrega, Set<EstadoEntrega>> transicionesEntrega = {
+  // `despachada` directo, sin preparar (ADR 027): arma y despacha una persona.
   EstadoEntrega.sin_preparar: {
     EstadoEntrega.preparando,
+    EstadoEntrega.despachada,
     EstadoEntrega.cancelada,
   },
   EstadoEntrega.preparando: {EstadoEntrega.despachada, EstadoEntrega.cancelada},

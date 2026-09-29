@@ -41,7 +41,7 @@ derivada** para mostrar.
 |---|---|---|
 | `sin_preparar` | Confirmada, sin tocar | creación |
 | `preparando` | Se está armando | `sin_preparar` |
-| `despachada` | Salió | `preparando`, `fallida` |
+| `despachada` | Salió | `sin_preparar` ([ADR 027](027-pedidos-sin-burocracia.md)), `preparando`, `fallida` |
 | `entregada` | Llegó y firmó un mayor de 18 | `despachada` |
 | `fallida` | No se pudo entregar | `despachada` |
 | `cancelada` | No se entrega | `sin_preparar`, `preparando` |

@@ -50,7 +50,11 @@ class SeccionDeQuienYDonde extends StatelessWidget {
         if (lugar.isNotEmpty)
           DatoDelPedido(etiqueta: 'Localidad', valor: lugar),
         if (e.referencia != null)
-          DatoDelPedido(etiqueta: 'Referencia', valor: e.referencia!),
+          // El mismo nombre que en el formulario (ADR 027).
+          DatoDelPedido(
+            etiqueta: 'Piso, depto o referencia',
+            valor: e.referencia!,
+          ),
       ],
     );
   }

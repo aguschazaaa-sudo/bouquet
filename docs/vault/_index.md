@@ -94,10 +94,12 @@ pedido despachado.
 - Cero lecturas y cero escrituras; sólo el panel. **Arrastró la v0.45.0** (entrada de abajo),
   que estaba sin publicar. Detalle de la verificación en ADR 021.
 
-**Segundo tramo, aprobado por el dueño en la misma conversación y sin escribir.** Es Workflow D:
-toca `crearOrdenDelPanel`, que descuenta stock, y la tabla de estados de las reglas.
+**Segundo tramo: [ADR 027](architecture/decisions/027-pedidos-sin-burocracia.md), escrito;
+falta CI y el deploy** (reglas → `crearOrdenDelPanel` → panel). Workflow D, **sin openspec ni
+maqueta a pedido del dueño** (*"entregá completo vos"*). `revisor-pagos`: **cero ALTOS**, tres
+MEDIO (dos corregidos, uno latente y abierto).
 
-| | Hoy | Aprobado |
+| | Antes | Ahora |
 |---|---|---|
 | Cargar un pedido | 10 campos, 7 obligatorios | **6**: nombre, teléfono, dirección (calle y número en uno) y localidad obligatorios; piso, depto o referencia en uno, opcional. **Salen el código postal, la provincia y el mail**. La vidriera no cambia |
 | La bandeja | 7 fichas | **3**: *Para hacer* (por despachar y no entregados), *En camino*, *Terminados* |
@@ -105,9 +107,8 @@ toca `crearOrdenDelPanel`, que descuenta stock, y la tabla de estados de las reg
 | Pasos | preparar → despachar → llegó | ***Salió* → *Llegó***: sale "preparar" (arma una persona). Pide `sin_preparar → despachada` en la tabla y en las reglas |
 | Entrega fallida | no se cancela | **igual**: lo decidió el dueño, y cierra el abierto de [ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md) |
 
-**Disparador:** en cuanto el primer tramo esté verificado. Maqueta navegable con `/disenio` →
-`/opsx:propose` → `revisor-pagos` y `presupuesto-lecturas` → reglas → functions → panel. Desde
-2026-09-29.
+**Lo que sigue:** CI `tests` y `panel` restadas → reglas → `crearOrdenDelPanel` → panel, y que
+el dueño cargue un pedido y mire las tres fichas. Desde 2026-09-29.
 
 ### El panel a ancho de teléfono: un solo scroll, y la vidriera se ordena arrastrando (2026-09-29)
 
