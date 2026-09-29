@@ -1,7 +1,7 @@
 # ADR 025 — El tablero del panel: el día al entrar, y lo que más se vende medido
 
 - **Fecha:** 2026-09-29
-- **Estado:** aceptada; **escrita y probada en CI, NO desplegada**. Ver *Verificación*, al final
+- **Estado:** aceptada; **desplegada y verificada el 2026-09-29** —functions y panel (`e95e653`)—. El job corrió una vez a mano. Nadie miró el *Resumen* renderizado: ver *Verificación*, al final
 - **Decide:** qué ve el dueño al entrar al panel, cómo se cuentan los pedidos
   del día sin leerlos, y quién mide la popularidad que hasta hoy era inventada
 - **Historias:** HU-11.2 y HU-11.3 ([EP-11](../../features/panel/EP-11-parametros-y-tablero.md)).
@@ -151,3 +151,9 @@ acumulado por día.
 | Las suites | CI `36593373052` (`tests`) sobre la rama descartable `ci/ep11-t1`, restada contra ADR 024: contratos 284 → **293 (+9)**, emulador 209 → **221 (+12 = 7 del job + 5 de reglas)**, Dart 509 → **522 (+13)**; functions 76 sin cambios; el bundle carga **8 functions**. Después se sacó `esPopularidadMedida` —sin un solo llamador fuera de los tests—: contratos queda en **292** |
 | Compila | CI `36594073461` (`completo`): `flutter analyze` **No issues found!** |
 | Quién lo abre | `secciones` → `enrutador` → `PantallaDelResumen` → `SeccionDelDia` → `CifraDelDia` / `SeccionLoQueMasSeVende` → `RenglonDeVenta`; `destino` manda `/` y `/entrar` a `/resumen`. Cada símbolo nuevo con su llamada (grep directo; control inventado 0) |
+| El job en producción | `calcularPopularidad` `ACTIVE`; job de Cloud Scheduler `ENABLED`, `every day 05:00`, `America/Argentina/Cordoba` (el deploy **habilitó la API de Cloud Scheduler**, que estaba apagada). Las otras 7 functions conservan su `updateTime` |
+| Lo que escribió | Corrido a mano (`gcloud scheduler jobs run`): `metricas/popularidad` pasó de `simulada: true`, `muestra: true`, 20 vinos (2026-09-14) a `simulada: false`, `ventanaDias: 90`, `ventas: 0`, `unidades: {}` —en producción hay **0 pedidos**—, sin `muestra` |
+| ⚠️ Lo que encontró la corrida a mano | `calculadaEn` quedó en **2026-09-30T08:00Z**: una corrida manual manda como `scheduleTime` la **próxima** hora programada, no la de ahora. No rompe nada —la ventana se corre un día, y con cero pedidos da igual—; el panel dice *"calculado recién"* hasta mañana, y la corrida programada de las 5 escribe **el mismo documento** (misma hora programada). Si hace falta correrlo a mano con la hora real, el arreglo es `min(scheduleTime, reloj)` en `calcular_popularidad.ts` |
+| Los conteos, en producción | Las dos consultas del *Resumen*, con su forma real y `limit(50)`, corren por la API **sin pedir índice** (dan 0: no hay pedidos). Control negativo: igualdad + `orderBy` por otro campo da `FAILED_PRECONDITION`. Control positivo: el mismo `count()` sobre productos publicados da **21** |
+| La vidriera | `/vinos` de la preview (`build-2026-09-29-002`) ya **no ofrece** `popularidad`; `precio-asc` y `nombre` siguen |
+| Panel | Build `36608815308` (*No issues found*) → canal → canario discriminante (5 cadenas nuevas 0 → ≥1, `COMMIT` `dacfb58` → `e95e653`, inventada 0 → 0) → live con los 4 hashes del artifact, `noindex` |

@@ -1,7 +1,7 @@
 # ADR 026 — La entrega sin cargo desde un monto: `config/envios`, por una callable con baranda
 
 - **Fecha:** 2026-09-29
-- **Estado:** aceptada; **escrita y probada en CI, NO desplegada**. Ver *Verificación*, al final
+- **Estado:** aceptada; **desplegada y verificada el 2026-09-29** —functions, panel (`e95e653`) y la preview de la tienda—. **Apagada**: `config/envios` no existe hasta que el dueño fije un monto. Ver *Verificación*, al final
 - **Decide:** dónde vive el umbral de la entrega sin cargo, quién lo escribe, qué
   lo frena, y cómo lo aplica la vidriera sin decidir lo que se cobra
 - **Historias:** HU-11.1 ([EP-11](../../features/panel/EP-11-parametros-y-tablero.md)).
@@ -134,3 +134,7 @@ Todo junto, por debajo del **0,1 %** de la cuota.
 | Las suites | CI `36606564183` (`completo`) sobre la rama descartable `ci/ep11-t2`, restada contra `main` (`36605555613`): contratos 292 → **309 (+17)**, emulador 221 → **234 (+13 = 11 de la callable + 2 de reglas de `config`)**, Dart 522 → **534 (+12)**, tienda 38 → **39 (+1)**; functions 76 sin cambios; el bundle carga **9 functions**. `flutter analyze` **No issues found!** |
 | `revisor-pagos` (Workflow D) | **Cero ALTOS.** Un **MEDIO**, corregido: el guardado que la baranda marcaba y venía `confirmado` no dejaba rastro distinto de un cambio sano —el comentario lo prometía y el código descartaba el motivo—. Ahora el resultado lleva `barandaConfirmada` y la callable lo loguea como **advertencia**; dos casos nuevos en el emulador (con marca y sin nada que confirmar). Dos BAJOS: el orden de deploy (functions antes que panel y tienda, se respeta) y este ADR, que no existía cuando revisó |
 | Quién lo abre | `PantallaDeLaVidriera` → `SeccionDelEnvioSinCargo` → `DialogoDelEnvioSinCargo` / `ConfirmacionDelEnvio`; `/pedido` → `obtenerEnvioSinCargo` → `PaginaDelCheckout` (`conEnvioSinCargo`) → `ElResumen` (`faltaParaSinCargo`); `functions/src/index.ts` → `fijarEnvioSinCargo`. Cada símbolo con su llamada (grep directo; control inventado 0) |
+| La callable en producción | `fijarEnvioSinCargo` `ACTIVE`; preflight con `Origin` del panel **204** con `access-control-allow-origin`; `POST` anónimo **401** con el JSON de `exigirAdmin` (corre el código, no lo frena IAM); una inventada **404**. `config/envios` sigue **sin existir** después del anónimo |
+| La tienda | Preview `build-2026-09-29-002` `SUCCEEDED` al 100 %, gates cerrados; `/pedido` recibe `sinCargoDesde: null` del servidor (una clave inventada: 0) |
+| Panel | El mismo publicado de ADR 025: *"La entrega sin cargo"* va en el build `e95e653` (canario `fijarEnvioSinCargo` y *"Cobrar siempre la entrega"* 0 → 1) |
+| Lo que NO se verificó | **Nadie fijó un monto** —el control de la baranda contra producción espera al dueño— ni se vio el empujón en `/pedido` con un umbral puesto |

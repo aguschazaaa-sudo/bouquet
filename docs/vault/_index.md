@@ -78,8 +78,9 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### EP-11 entera: el panel se entra por *Resumen*, la popularidad se mide, y la entrega sin cargo tiene monto (2026-09-29)
 
-**Escrita y probada en CI; NADA desplegado.** El deploy lo frenó el clasificador de
-permisos: espera la autorización del usuario (abajo). Sin openspec, a pedido del dueño.
+**Desplegada y verificada el 2026-09-29** —functions, panel (`e95e653`) y la preview de la
+tienda—; el deploy de functions lo corrió **el usuario** (el clasificador frena los deploys a
+producción). **Nadie la miró renderizada.** Sin openspec, a pedido del dueño.
 
 **Primer tramo — HU-11.2 y HU-11.3, [ADR 025](architecture/decisions/025-el-tablero-del-panel.md),
 commiteado (v0.43.0, `484fbf5`).**
@@ -108,15 +109,14 @@ Workflow D.** Nace **apagado**: nada cambia hasta que el dueño ponga un monto.
 
 | Qué | Cómo |
 |---|---|
-| Tramo 1 en `main` | CI `36605555613`: contratos **292**, emulador **221**, Dart **522**; build del panel `36606091070` con `flutter analyze` *No issues found* y artifact `COMMIT 2a27823` |
-| Tramo 2 | CI `36606564183`: contratos **309**, emulador **234**, Dart **534**, tienda **39**, **9 functions**; *No issues found* |
+| Las suites en `main` | CI `36607938982`: contratos **309**, emulador **235**, Dart **534**, tienda **39**, **9 functions** en el bundle |
+| Producción | 9 functions `ACTIVE` (las 7 viejas con su `updateTime`); job `ENABLED` a las 5 de Córdoba; la callable 204 / 401 JSON / inventada 404; el job corrido a mano dejó `simulada: false`, 0 ventas; los conteos del *Resumen* corren sin índice (negativo: `FAILED_PRECONDITION`) |
+| Panel y tienda | Build `36608815308` → canal → canario (5 cadenas 0 → ≥1, `COMMIT` `dacfb58` → `e95e653`) → live con los 4 hashes; preview `build-2026-09-29-002` con gates cerrados, `/pedido` recibe `sinCargoDesde: null` y `/vinos` ya no ofrece *"más vendidos"* |
 | Presupuesto | Job ~450 lecturas/día con 5 ventas (**0,9 %**); *Resumen* +3 por apertura; el umbral, por debajo del 0,1 % |
 
-⚠️ **Lo que sigue:** con la autorización del usuario, deploy **functions
-(`calcularPopularidad`, `fijarEnvioSinCargo`) → panel → preview de la tienda**, correr el
-job una vez y leer el documento. **En cuanto corra, `/vinos` deja de ofrecer *"más
-vendidos"*** hasta que haya ventas reales: es lo correcto. Y que el dueño mire el
-*Resumen* renderizado.
+⚠️ **Lo que sigue:** que el dueño mire el *Resumen* y *Vidriera* renderizados, y fije el
+monto de la entrega sin cargo cuando tenga las tarifas. `calculadaEn` dice mañana a las 5
+hasta que corra la programada: una corrida a mano manda la **próxima** hora (ADR 025).
 
 ### Hito 3, segundo tramo: las cajas sugeridas se arman desde el panel — y EP-09 entera (2026-09-28)
 
@@ -368,7 +368,6 @@ Los que bloquean algo:
 | **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
 | **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
 | ⚠️ **Los secretos de Mercado Pago son FALSOS** ([ADR 022 §7](architecture/decisions/022-cobro-de-la-vidriera.md)): `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_SECRETO_DE_FIRMA`, etiqueta `valor=falso`. Reemplazarlos con `firebase functions:secrets:set` y **redesplegar `avisoDeMercadoPago` y `revisarPago`**; después, registrar la URL del webhook en Mercado Pago | El dueño pasa las claves | 2026-09-28 |
-| ⚠️ **EP-11 está escrita y NO desplegada**: el clasificador de permisos frenó `firebase deploy --only functions:calcularPopularidad` ([ADR 025](architecture/decisions/025-el-tablero-del-panel.md), [ADR 026](architecture/decisions/026-envio-sin-cargo.md)). Orden: functions (las dos) → panel (`publicar.sh preview` → canario → `promover`) → preview de la tienda | La autorización del usuario, o que lo corra él | 2026-09-29 |
 
 ---
 
