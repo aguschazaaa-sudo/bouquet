@@ -76,11 +76,13 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
-### EP-11, primer tramo: el panel se entra por *Resumen*, y la popularidad se mide (2026-09-29)
+### EP-11 entera: el panel se entra por *Resumen*, la popularidad se mide, y la entrega sin cargo tiene monto (2026-09-29)
 
-**Escrito y probado en CI; NO desplegado.** Sin openspec, a pedido del dueño:
-[ADR 025](architecture/decisions/025-el-tablero-del-panel.md) es la especificación.
-**HU-11.2 y HU-11.3**; el segundo tramo es HU-11.1, el envío sin cargo (ADR 026).
+**Escrita y probada en CI; NADA desplegado.** El deploy lo frenó el clasificador de
+permisos: espera la autorización del usuario (abajo). Sin openspec, a pedido del dueño.
+
+**Primer tramo — HU-11.2 y HU-11.3, [ADR 025](architecture/decisions/025-el-tablero-del-panel.md),
+commiteado (v0.43.0, `484fbf5`).**
 
 - **`calcularPopularidad`**, el primer job programado: cada madrugada recalcula
   `metricas/popularidad` **entero** con las ventas reales de 90 días (`pagada` o
@@ -90,15 +92,31 @@ familia — el permiso lo da el script, no una pantalla.
   `list` lo exige), y los agotados del catálogo en memoria. Abajo, *lo que más se
   vende*, **sólo si está medido**.
 
+**Segundo tramo — HU-11.1, [ADR 026](architecture/decisions/026-envio-sin-cargo.md),
+Workflow D.** Nace **apagado**: nada cambia hasta que el dueño ponga un monto.
+
+- **`fijarEnvioSinCargo`**, la única puerta de `config/envios`. Baranda **sobre el valor
+  nuevo**: dura (pesos enteros, $1 a $100 millones) y blanda —por debajo de una caja a
+  precio típico, o menos de la mitad del anterior— que **pregunta y no guarda** hasta
+  que el dueño confirma.
+- **El panel**: *"La entrega sin cargo"* en *Vidriera*. **La tienda**: `/pedido` lo lee
+  (60 s, su propia caché), pone todas las opciones a precio 0 y dice *"Con $ X más, la
+  entrega sale sin cargo."* **Lo que se cobre lo decide `crearOrden`** (hallazgo 10 de
+  ADR 008).
+- **`revisor-pagos`: cero ALTOS**; un MEDIO corregido (el guardado contra la baranda
+  ahora se loguea como advertencia).
+
 | Qué | Cómo |
 |---|---|
-| Las suites | CI `36593373052`: contratos 284 → **293**, emulador 209 → **221**, Dart 509 → **522**; después se sacó un export sin llamador y contratos quedó en **292** |
-| Compila | CI `36594073461`: `flutter analyze` **No issues found!** |
-| Presupuesto | Job ~450 lecturas/día con 5 ventas (**0,9 %**); *Resumen* **+3** por apertura |
+| Tramo 1 en `main` | CI `36605555613`: contratos **292**, emulador **221**, Dart **522**; build del panel `36606091070` con `flutter analyze` *No issues found* y artifact `COMMIT 2a27823` |
+| Tramo 2 | CI `36606564183`: contratos **309**, emulador **234**, Dart **534**, tienda **39**, **9 functions**; *No issues found* |
+| Presupuesto | Job ~450 lecturas/día con 5 ventas (**0,9 %**); *Resumen* +3 por apertura; el umbral, por debajo del 0,1 % |
 
-⚠️ **Lo que sigue:** deploy **functions (el job) → panel**, correr el job una vez y leer
-el documento. **En cuanto corra, `/vinos` deja de ofrecer *"más vendidos"*** hasta que
-haya ventas reales: es lo correcto.
+⚠️ **Lo que sigue:** con la autorización del usuario, deploy **functions
+(`calcularPopularidad`, `fijarEnvioSinCargo`) → panel → preview de la tienda**, correr el
+job una vez y leer el documento. **En cuanto corra, `/vinos` deja de ofrecer *"más
+vendidos"*** hasta que haya ventas reales: es lo correcto. Y que el dueño mire el
+*Resumen* renderizado.
 
 ### Hito 3, segundo tramo: las cajas sugeridas se arman desde el panel — y EP-09 entera (2026-09-28)
 
@@ -309,6 +327,7 @@ de la vidriera**: lo de WhatsApp está construido entero.
 | 023 | La portada la elige el dueño: **`seleccion/publica`**, hasta 6 ids en su orden, que el panel escribe directo; sin elección, la regla. Los plazos que dice el panel viven en **`cuando_se_ve.dart`** | [023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) |
 | 024 | Las cajas sugeridas se guardan **enteras por la callable `guardarCajasSugeridas`**: el slug lo deriva el servidor, y exige composición, no publicado ni stock | [024](architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) |
 | 025 | El panel se entra por **Resumen**: el día con `count()` y `limit(50)`, lo agotado en memoria; la popularidad la **mide un job diario** que recalcula el documento entero, y sin medición no hay ranking | [025](architecture/decisions/025-el-tablero-del-panel.md) |
+| 026 | El umbral de la entrega sin cargo vive en **`config/envios`**, lo escribe **sólo `fijarEnvioSinCargo`** con una baranda sobre el valor nuevo que **pregunta**; la vidriera lo muestra, y lo que se cobra lo decide `crearOrden` | [026](architecture/decisions/026-envio-sin-cargo.md) |
 
 ---
 
@@ -349,6 +368,7 @@ Los que bloquean algo:
 | **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
 | **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
 | ⚠️ **Los secretos de Mercado Pago son FALSOS** ([ADR 022 §7](architecture/decisions/022-cobro-de-la-vidriera.md)): `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_SECRETO_DE_FIRMA`, etiqueta `valor=falso`. Reemplazarlos con `firebase functions:secrets:set` y **redesplegar `avisoDeMercadoPago` y `revisarPago`**; después, registrar la URL del webhook en Mercado Pago | El dueño pasa las claves | 2026-09-28 |
+| ⚠️ **EP-11 está escrita y NO desplegada**: el clasificador de permisos frenó `firebase deploy --only functions:calcularPopularidad` ([ADR 025](architecture/decisions/025-el-tablero-del-panel.md), [ADR 026](architecture/decisions/026-envio-sin-cargo.md)). Orden: functions (las dos) → panel (`publicar.sh preview` → canario → `promover`) → preview de la tienda | La autorización del usuario, o que lo corra él | 2026-09-29 |
 
 ---
 

@@ -8,14 +8,17 @@ import '../../catalogo/catalogo_providers.dart';
 import '../vidriera_providers.dart';
 import 'seccion_de_cajas_sugeridas.dart';
 import 'seccion_de_la_portada.dart';
+import 'seccion_del_envio_sin_cargo.dart';
 import 'textos_de_la_vidriera.dart';
 
 /// La seccion Vidriera (EP-09): lo que la tienda **elige** mostrar, elegido
 /// por el dueño y no por una regla. Arriba la portada (HU-09.1), abajo las
-/// cajas sugeridas (HU-09.2, HU-09.3).
+/// cajas sugeridas (HU-09.2, HU-09.3). Al final, desde que monto la entrega
+/// sale sin cargo (HU-11.1, ADR 026): tambien es lo que la tienda ofrece.
 ///
 /// Lee el catalogo que ya esta en memoria si se paso por Catalogo —mismos
-/// providers, sin `autoDispose`— y dos documentos: la seleccion y las cajas.
+/// providers, sin `autoDispose`— y tres documentos: la seleccion, las cajas y
+/// `config/envios`.
 /// Entrar aca primero paga la carga del catalogo una vez por sesion, igual
 /// que entrar a Catalogo (ADR 012).
 class PantallaDeLaVidriera extends ConsumerWidget {
@@ -26,8 +29,12 @@ class PantallaDeLaVidriera extends ConsumerWidget {
     final catalogo = ref.watch(catalogoProvider);
     final seleccion = ref.watch(seleccionDeLaPortadaProvider);
     final cajas = ref.watch(cajasSugeridasProvider);
+    final envio = ref.watch(envioSinCargoProvider);
 
-    if (catalogo.hasError || seleccion.hasError || cajas.hasError) {
+    if (catalogo.hasError ||
+        seleccion.hasError ||
+        cajas.hasError ||
+        envio.hasError) {
       return FalloConReintento(
         texto: textoNoSePudieronLeer,
         alReintentar: () {
@@ -35,13 +42,15 @@ class PantallaDeLaVidriera extends ConsumerWidget {
           ref.invalidate(bodegasProvider);
           ref.invalidate(seleccionDeLaPortadaProvider);
           ref.invalidate(cajasSugeridasProvider);
+          ref.invalidate(envioSinCargoProvider);
         },
       );
     }
     final cat = catalogo.valueOrNull;
     final sel = seleccion.valueOrNull;
     final caj = cajas.valueOrNull;
-    if (cat == null || sel == null || caj == null) {
+    final env = envio.valueOrNull;
+    if (cat == null || sel == null || caj == null || env == null) {
       return const Cargando(que: 'Buscando tu vidriera…');
     }
 
@@ -62,6 +71,11 @@ class PantallaDeLaVidriera extends ConsumerWidget {
                   child: Divider(),
                 ),
                 SeccionDeCajasSugeridas(cajas: caj, catalogo: cat),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 28),
+                  child: Divider(),
+                ),
+                SeccionDelEnvioSinCargo(envio: env),
               ],
             ),
           ),

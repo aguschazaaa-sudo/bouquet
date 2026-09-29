@@ -32,7 +32,10 @@
   `guardarCajasSugeridas`. **Con esto EP-09 y el hito 3 quedan escritos enteros**.
   **EP-11, primer tramo (2026-09-29, sin openspec, [ADR 025](../../architecture/decisions/025-el-tablero-del-panel.md)):
   HU-11.2 y HU-11.3** — el panel se entra por *Resumen*, y la popularidad la mide
-  el job `calcularPopularidad`
+  el job `calcularPopularidad`. **EP-11, segundo tramo (2026-09-29, sin openspec,
+  Workflow D, [ADR 026](../../architecture/decisions/026-envio-sin-cargo.md)): HU-11.1**
+  — la entrega sin cargo desde un monto, por la callable `fijarEnvioSinCargo`.
+  **Con esto EP-11 queda escrita entera**
 - **Qué es:** el plan de la app de gestión, en dos capas — **épicas** que
   agrupan **historias de usuario**. La tercera capa, los **requerimientos**, se
   escribe después, historia por historia (ver *Cómo sigue*)

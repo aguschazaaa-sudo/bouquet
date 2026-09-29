@@ -449,6 +449,13 @@ select.campo__control {
   color: var(--tinta-1);
 }
 
+.resumen__empujon {
+  margin: 0;
+  padding-block: var(--e-2);
+  font-size: 0.95rem;
+  color: var(--tinta-2);
+}
+
 .resumen__nota {
   margin: var(--e-4) 0 0;
   font-size: 0.96rem;

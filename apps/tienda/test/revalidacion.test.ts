@@ -95,3 +95,22 @@ test('la selección del dueño la lee SÓLO la home, sin caché y una sola vez',
     assert.doesNotMatch(leer(ruta), /leerSeleccionSinCache/, ruta);
   }
 });
+
+test('el umbral de la entrega sin cargo lo lee SÓLO /pedido, con su mismo 60', () => {
+  // ADR 026: un documento por reconstrucción, en su propia caché. Si la home lo
+  // importara, un unstable_cache de 60 la pasaría sola a ISR (ADR 008 §7); si
+  // lo importaran /vinos o /carrito, pagarían por algo que no dibujan.
+  const IMPORTA_EL_UMBRAL = /import\s*\{[^}]*\bobtenerEnvioSinCargo\b[^}]*\}\s*from/;
+
+  // Control positivo: /pedido sí lo importa, así que el patrón detecta un
+  // import de verdad.
+  assert.match(leer('src/app/pedido/page.tsx'), IMPORTA_EL_UMBRAL);
+  for (const ruta of ['src/app/page.tsx', 'src/app/vinos/page.tsx', 'src/app/vinos/[slug]/page.tsx', 'src/app/carrito/page.tsx']) {
+    assert.doesNotMatch(leer(ruta), IMPORTA_EL_UMBRAL, ruta);
+  }
+
+  const config = numero('src/server/config.ts', /SEGUNDOS_DE_CONFIG = (\d+)/);
+  assert.equal(numero('src/app/pedido/page.tsx', /export const revalidate = (\d+)/), config);
+  // Una sola lectura del documento.
+  assert.equal(leer('src/server/config.ts').split("doc('config/envios')").length - 1, 1);
+});

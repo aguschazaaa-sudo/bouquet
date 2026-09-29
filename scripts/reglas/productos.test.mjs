@@ -462,6 +462,34 @@ describe('la popularidad es un documento del servidor', () => {
   });
 });
 
+// ----------------------------------------------------------------- config
+//
+// ADR 026 (HU-11.1).  `config/envios` lo escribe SOLO la callable
+// `fijarEnvioSinCargo`, que corre la baranda sobre el valor nuevo
+// (ARQUITECTURA §9.4): si un cliente pudiera escribirlo, la baranda tendria un
+// camino que la saltea.  El panel lo LEE directo, para mostrar el umbral.
+
+describe('config es del servidor, creacion incluida', () => {
+  const envios = (db) => doc(db, 'config', 'envios');
+
+  test('nadie lo crea ni lo cambia desde un cliente, ni siendo admin', async () => {
+    // La creacion: la primera escritura es la que mas se equivoca (§9.4).
+    await assertFails(setDoc(envios(admin), { sinCargoDesde: 100 }));
+    await assertFails(setDoc(envios(comprador), { sinCargoDesde: 100 }));
+    await sembrar('config/envios', { sinCargoDesde: 15_000_000 });
+    await assertFails(updateDoc(envios(admin), { sinCargoDesde: 100 }));
+    await assertFails(deleteDoc(envios(admin)));
+  });
+
+  test('el admin lo lee; un comprador y un anonimo no', async () => {
+    await sembrar('config/envios', { sinCargoDesde: 15_000_000 });
+    const snap = await assertSucceeds(getDoc(envios(admin)));
+    assert.equal(snap.get('sinCargoDesde'), 15_000_000, 'control positivo: lee lo sembrado');
+    await assertFails(getDoc(envios(comprador)));
+    await assertFails(getDoc(envios(anonimo)));
+  });
+});
+
 // ---------------------------------------------------------------- bodegas
 
 describe('bodegas: la forma cerrada', () => {

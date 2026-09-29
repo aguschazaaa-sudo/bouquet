@@ -252,6 +252,14 @@ cuando el dueño pida "los que más compraron" o repetir un pedido. Antes no —
 Dirección, `zonaId`, costo y ventana de entrega de una Orden. Sólo envío a
 domicilio en el MVP; retiro en local tiene disparador escrito.
 
+### Envío sin cargo
+El monto de **vinos** desde el que la entrega no se cobra —todas las opciones—.
+Vive en `config/envios` (`sinCargoDesde`, en centavos, o `null`: apagado), y lo
+escribe **sólo** la callable `fijarEnvioSinCargo`, que pregunta antes de guardar un
+monto por debajo de una caja a precio típico o menos de la mitad del anterior. Un
+documento roto se lee como **apagado**, nunca como *"sin cargo desde 0"*. Al
+comprador se le dice *"la entrega"*, nunca *"el envío"* ([ADR 026](../architecture/decisions/026-envio-sin-cargo.md)).
+
 ### Zona
 Área de cobertura con su costo. Una dirección fuera de toda zona **no puede
 comprar**, y se le dice antes de que cargue el carrito, no en el checkout.

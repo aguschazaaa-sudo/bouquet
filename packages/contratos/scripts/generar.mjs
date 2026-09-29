@@ -69,6 +69,7 @@ import {
 import { BOTELLAS_POR_CAJA } from '../src/carrito.ts';
 import { LARGO_DEL_NOMBRE_DE_CAJA, TOPE_DE_CAJAS_SUGERIDAS } from '../src/cajas.ts';
 import { LUGARES_DE_LA_SELECCION } from '../src/seleccion.ts';
+import { SIN_CARGO_MAXIMO, SIN_CARGO_MINIMO } from '../src/sin_cargo.ts';
 
 const AQUI = dirname(fileURLToPath(import.meta.url));
 export const DESTINO = join(AQUI, '..', 'generated', 'contratos.json');
@@ -254,6 +255,11 @@ export function construirContrato() {
       // nombre mas largo, que lo que `armarCajasSugeridas` acepta.
       topeDeCajas: TOPE_DE_CAJAS_SUGERIDAS,
       largoDelNombreDeCaja: LARGO_DEL_NOMBRE_DE_CAJA,
+      // La entrega sin cargo (ADR 026): el panel lee `config/envios` con el
+      // mismo criterio que la tienda -fuera de estos topes es un documento
+      // roto, que se lee como apagado-, asi que los topes viajan de aca.
+      sinCargoMinimo: SIN_CARGO_MINIMO,
+      sinCargoMaximo: SIN_CARGO_MAXIMO,
     },
     publico: {
       estados: [...ESTADOS_PUBLICOS],

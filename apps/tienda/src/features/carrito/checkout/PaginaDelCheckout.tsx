@@ -6,10 +6,13 @@ import {
   botellasEnCarrito,
   cajasADespachar,
   cargaDelPedido,
+  conEnvioSinCargo,
+  faltaParaSinCargo,
   nombreDeProvincia,
   pesoDelPedidoKg,
   resolverCarrito,
   sePuedeCobrar,
+  type Centavos,
   type ProductoPublicado,
 } from '@bouquet/contratos';
 
@@ -20,7 +23,7 @@ import { ElResumen } from './ElResumen';
 import { QuienRecibe } from './QuienRecibe';
 import { BORRADOR_VACIO, validarBorrador, type Borrador } from './borrador';
 import { TEXTOS } from './textos';
-import { useCotizacion, type Cotizador } from './useCotizacion';
+import { useCotizacion, type Cotizador, type EstadoDeCotizacion } from './useCotizacion';
 
 /* /pedido — terminar la compra. Papel sin excepción (direccion.md §3).
  *
@@ -36,10 +39,12 @@ import { useCotizacion, type Cotizador } from './useCotizacion';
 type Props = {
   productos: readonly ProductoPublicado[];
   cotizar: Cotizador;
+  /** Desde qué monto la entrega sale sin cargo, o `null` si no hay (HU-11.1). */
+  sinCargoDesde: Centavos | null;
   whatsapp: string;
 };
 
-export function PaginaDelCheckout({ productos, cotizar, whatsapp }: Props) {
+export function PaginaDelCheckout({ productos, cotizar, sinCargoDesde, whatsapp }: Props) {
   const hidratado = useHidratado();
   const carrito = useCarrito();
   const resuelto = useMemo(() => resolverCarrito(carrito, productos), [carrito, productos]);
@@ -53,7 +58,19 @@ export function PaginaDelCheckout({ productos, cotizar, whatsapp }: Props) {
   const [elegidaId, setElegidaId] = useState<string | null>(null);
   const [cpAplicado, setCpAplicado] = useState<string | null>(null);
 
-  const cotizacion = useCotizacion(cotizar, borrador.codigoPostal, carga);
+  const cotizada = useCotizacion(cotizar, borrador.codigoPostal, carga);
+  /* El umbral de la entrega sin cargo se aplica ACÁ, sobre lo que cotizó el
+   * servidor y con el subtotal de esta pantalla (HU-11.1, ADR 026): si el
+   * pedido llega, todas las opciones salen sin cargo, y la lista, el resumen y
+   * la opción elegida lo dicen igual. Es lo que se MUESTRA: lo que se cobre lo
+   * recalcula `crearOrden` en el servidor, con el subtotal que calcule él. */
+  const cotizacion = useMemo((): EstadoDeCotizacion => {
+    if (cotizada.fase !== 'lista' || !cotizada.resultado.ok) return cotizada;
+    const opciones = conEnvioSinCargo(cotizada.resultado.opciones, resuelto.total, sinCargoDesde);
+    return opciones === cotizada.resultado.opciones
+      ? cotizada
+      : { fase: 'lista', resultado: { ...cotizada.resultado, opciones } };
+  }, [cotizada, resuelto.total, sinCargoDesde]);
   const listo = cotizacion.fase === 'lista' && cotizacion.resultado.ok ? cotizacion.resultado : null;
 
   /* La cotización trae la localidad y la provincia que pudo deducir, y las pone
@@ -170,6 +187,7 @@ export function PaginaDelCheckout({ productos, cotizar, whatsapp }: Props) {
             cajas={cajasADespachar(carga)}
             pesoKg={pesoDelPedidoKg(carga)}
             impedimento={impedimento}
+            faltaParaSinCargo={faltaParaSinCargo(resuelto.total, sinCargoDesde)}
             whatsapp={whatsapp}
           />
         </form>

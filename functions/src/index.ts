@@ -38,3 +38,7 @@ export { guardarCajasSugeridas } from './vidriera/guardar_cajas_sugeridas.ts';
 // entero cada madrugada, con las ventas reales de los ultimos 90 dias.  Hasta
 // hoy ese documento lo escribia solo el seed, simulado.
 export { calcularPopularidad } from './metricas/calcular_popularidad.ts';
+// La primera que escribe `config` (HU-11.1, ADR 026): desde que monto el envio
+// sale sin cargo.  `config` esta cerrado incluso para el admin en las reglas, y
+// la baranda contra el dedo gordo corre aca, sobre el valor NUEVO (§9.4).
+export { fijarEnvioSinCargo } from './config/fijar_envio_sin_cargo.ts';

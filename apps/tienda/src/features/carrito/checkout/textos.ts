@@ -52,6 +52,9 @@ export const TEXTOS = {
   laEntrega: 'La entrega',
   faltaLaDireccion: 'falta la dirección',
   sinCargo: 'Sin cargo',
+  /* El empujón de HU-11.1: el monto que falta, y qué pasa si llega. Presente y
+   * sin imperativo: "aprovechá" o "sumá" es la urgencia que voz.md §7.1 saca. */
+  conMasSaleSinCargo: (monto: string) => `Con ${monto} más, la entrega sale sin cargo.`,
   total: 'Total',
   irAPagar: 'Ir a pagar',
   conMercadoPago: 'Se paga con Mercado Pago. Te llevamos y volvés acá.',

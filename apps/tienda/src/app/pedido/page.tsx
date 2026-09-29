@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next';
 import { PaginaDelCheckout } from '@/features/carrito/checkout/PaginaDelCheckout';
 import { SELLO } from '@/features/oficio/oficio';
 import { obtenerCatalogo } from '@/server/catalogo';
+import { obtenerEnvioSinCargo } from '@/server/config';
 import { cotizarEnvio } from '@/server/envios';
 import { COLORES } from '@/shared/tokens/colores';
 
@@ -15,7 +16,9 @@ import { COLORES } from '@/shared/tokens/colores';
  * client'` no puede importarla.
  *
  * Es la MISMA proyección de /vinos y /carrito: comparten la entrada de caché,
- * así que esta pantalla cuesta cero lecturas de más.
+ * así que esta pantalla cuesta cero lecturas de más. Lo único suyo es el
+ * umbral de la entrega sin cargo (HU-11.1, ADR 026): un documento, en su
+ * propia caché de 60 s.
  *
  * ⚠️ NO COBRA. `EL_CHECKOUT_NO_COBRA` en `features/carrito/checkout/textos.ts`
  * está en `true` y sale al HTML como `data-checkout-simulado`. */
@@ -34,8 +37,15 @@ export const viewport: Viewport = {
 };
 
 export default async function Pedido() {
-  const { productos } = await obtenerCatalogo();
+  const [{ productos }, sinCargoDesde] = await Promise.all([obtenerCatalogo(), obtenerEnvioSinCargo()]);
   const whatsapp = SELLO.canales[0]?.href ?? '';
 
-  return <PaginaDelCheckout productos={productos} cotizar={cotizarEnvio} whatsapp={whatsapp} />;
+  return (
+    <PaginaDelCheckout
+      productos={productos}
+      cotizar={cotizarEnvio}
+      sinCargoDesde={sinCargoDesde}
+      whatsapp={whatsapp}
+    />
+  );
 }

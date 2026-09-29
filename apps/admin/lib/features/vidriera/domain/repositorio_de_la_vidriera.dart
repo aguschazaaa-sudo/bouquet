@@ -1,4 +1,5 @@
 import 'cajas_sugeridas.dart';
+import 'envio_sin_cargo.dart';
 import 'seleccion_de_la_portada.dart';
 
 /// Lo que el panel sabe hacer con lo que la tienda elige mostrar (EP-09). La
@@ -22,4 +23,17 @@ abstract interface class RepositorioDeLaVidriera {
   /// Reescribe TODAS las cajas por la callable `guardarCajasSugeridas`, que
   /// verifica que cada una cierre (ADR 024). Lanza `FalloDeLasCajas`.
   Future<void> guardarCajas(CajasSugeridas cajas);
+
+  /// El umbral de la entrega sin cargo, cada vez que cambia (HU-11.1). Un
+  /// documento, `config/envios`, que las reglas dejan LEER al admin.
+  Stream<EnvioSinCargo> envioSinCargo();
+
+  /// Fija el umbral —en centavos, o `null` para apagarlo— por la callable
+  /// `fijarEnvioSinCargo`, la unica puerta de `config` (ADR 026). Si la
+  /// baranda pregunta, devuelve [PideConfirmar] y NO guarda: se vuelve a
+  /// llamar con [confirmado]. Lanza [FalloDelEnvio].
+  Future<ResultadoDeFijar> fijarEnvioSinCargo(
+    int? desde, {
+    bool confirmado = false,
+  });
 }

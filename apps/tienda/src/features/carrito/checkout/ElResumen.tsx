@@ -1,4 +1,4 @@
-import { SIN_CARGO, totalConEnvio, type Centavos, type CarritoResuelto } from '@bouquet/contratos';
+import { formatearARS, SIN_CARGO, totalConEnvio, type Centavos, type CarritoResuelto } from '@bouquet/contratos';
 
 import { Precio } from '@/shared/ui/Precio';
 
@@ -12,6 +12,10 @@ import { EL_CHECKOUT_NO_COBRA, TEXTOS } from './textos';
  * una afirmación —que el envío no cuesta nada— y todavía no sabemos si es
  * cierta. Cuando se sepa, si es sin cargo, lo dice con palabras.
  *
+ * Si el dueño fijó desde qué monto la entrega sale sin cargo y el pedido no
+ * llega, lo dice arriba del total, con el monto que falta (HU-11.1). Una sola
+ * frase, en presente: es un dato, no una urgencia (voz.md §7.1).
+ *
  * ⚠️ `data-checkout-simulado` ES EL GATE, y sale al HTML a propósito:
  * `auditor-produccion` audita con `curl` y no puede grepear un `.ts`. */
 
@@ -21,10 +25,12 @@ type Props = {
   cajas: number;
   pesoKg: number;
   impedimento: string | null;
+  /** Cuánto le falta a los vinos para la entrega sin cargo; `null` si ya llega o no hay umbral. */
+  faltaParaSinCargo: Centavos | null;
   whatsapp: string;
 };
 
-export function ElResumen({ resuelto, envio, cajas, pesoKg, impedimento, whatsapp }: Props) {
+export function ElResumen({ resuelto, envio, cajas, pesoKg, impedimento, faltaParaSinCargo, whatsapp }: Props) {
   const total = totalConEnvio(resuelto.total, envio);
   const vigentes = resuelto.lineas.filter((l) => l.estado === 'vigente' && l.producto !== null);
 
@@ -62,6 +68,9 @@ export function ElResumen({ resuelto, envio, cajas, pesoKg, impedimento, whatsap
             <Precio centavos={envio} />
           )}
         </p>
+        {faltaParaSinCargo !== null ? (
+          <p className="resumen__empujon">{TEXTOS.conMasSaleSinCargo(formatearARS(faltaParaSinCargo))}</p>
+        ) : null}
         <p className="resumen__total">
           <span className="versalita">{TEXTOS.total}</span>
           <Precio centavos={total} className="resumen__monto-total" />

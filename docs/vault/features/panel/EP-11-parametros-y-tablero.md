@@ -10,7 +10,9 @@ Cada historia lleva su propio disparador.
 
 > **2026-09-29: las tres se construyen a pedido del dueño**, antes de sus
 > disparadores. HU-11.2 y HU-11.3 en [ADR 025](../../architecture/decisions/025-el-tablero-del-panel.md)
-> —HU-11.3 construyendo **primero el job**, como pedía—; HU-11.1 en ADR 026. El
+> —HU-11.3 construyendo **primero el job**, como pedía—; HU-11.1 en
+> [ADR 026](../../architecture/decisions/026-envio-sin-cargo.md), que nace apagada: el
+> monto lo pone el dueño cuando tenga las tarifas. El
 > estado no se tilda acá: lo dicen los ADRs y `_index.md`.
 
 ---

@@ -6,7 +6,8 @@
 ///   rearma solo, y un cambio tarda **hasta unos 13 minutos** con poco trafico:
 ///   60 s de datos, la pagina vencida que Next sirve hasta 360 s, 60 del borde
 ///   y 300 de `stale-while-revalidate` (ADR 008, corregido por `revisor-pagos`
-///   de 8 a 13). Vale para el precio, publicar, la ficha y las fotos.
+///   de 8 a 13). Vale para el precio, publicar, la ficha y las fotos, y para
+///   el umbral de la entrega sin cargo, que `/pedido` lee igual (ADR 026).
 /// - **La portada** se arma UNA vez, al publicar la tienda (ADR 008 §7): un
 ///   cambio de la seleccion no se ve hasta la proxima publicacion.
 ///

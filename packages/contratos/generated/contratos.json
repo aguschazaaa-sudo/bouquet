@@ -1412,7 +1412,9 @@
     "lugaresDeLaSeleccion": 6,
     "botellasPorCaja": 6,
     "topeDeCajas": 6,
-    "largoDelNombreDeCaja": 40
+    "largoDelNombreDeCaja": 40,
+    "sinCargoMinimo": 100,
+    "sinCargoMaximo": 10000000000
   },
   "publico": {
     "estados": [
