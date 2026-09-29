@@ -21,7 +21,7 @@ al dashboard, era la más vieja de las cinco. El porqué sigue en
 secretos de Mercado Pago en valores FALSOS**, a pedido del usuario: el dueño todavía no pasó los
 de su cuenta. Verificado por respuesta y por bytes; **la conversación con Mercado Pago sigue sin
 probarse**. Sin openspec, a pedido del dueño:
-[ADR 022](architecture/decisions/022-cobro-de-la-vidriera.md) es la especificación.
+[ADR 022](../architecture/decisions/022-cobro-de-la-vidriera.md) es la especificación.
 **HU-08.1 y HU-08.3**: el webhook `avisoDeMercadoPago` (firma con el validador del SDK oficial →
 consulta → transacción con marcador), la callable `revisarPago` sobre el **mismo** núcleo, y en
 el detalle de un pedido de la vidriera *"El cobro"*: la operación para conciliar, lo devuelto,
