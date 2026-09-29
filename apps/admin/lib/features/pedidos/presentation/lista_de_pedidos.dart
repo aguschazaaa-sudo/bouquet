@@ -40,12 +40,16 @@ class ListaDePedidos extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (bandeja.estaVacia) {
-      return ListaVacia(
-        icono: Icons.receipt_long_outlined,
-        texto: textoVistaVacia(vista),
+      return SliverToBoxAdapter(
+        child: ListaVacia(
+          icono: Icons.receipt_long_outlined,
+          texto: textoVistaVacia(vista),
+        ),
       );
     }
-    return ListView(
+    // Un sliver: va en el mismo scroll que el buscador y las fichas, que
+    // fijos arriba le dejaban a la lista un tercio de un telefono.
+    return SliverList.list(
       children: [
         if (bandeja.incompletos > 0)
           Padding(

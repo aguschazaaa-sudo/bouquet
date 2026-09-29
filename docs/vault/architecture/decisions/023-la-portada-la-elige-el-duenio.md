@@ -95,10 +95,30 @@ deshabilitados con el motivo, como la de los pedidos.
 
 ### 5. Cada gesto se guarda en el acto
 
-Agregar, subir, bajar y sacar guardan al tocar, sin botón de *Guardar*: un
+Agregar, ordenar y sacar guardan al hacerlo, sin botón de *Guardar*: un
 guardar olvidado es un cambio que nadie hizo. Sacar no pide confirmación —se
-deshace volviendo a agregarlo— (criterio 3 del panel). Mientras se guarda, los
-botones esperan: dos toques seguidos armarían dos listas sobre la misma de antes.
+deshace volviendo a agregarlo— (criterio 3 del panel). Mientras se guarda, la
+manija y los botones esperan: dos gestos seguidos armarían dos listas sobre la
+misma de antes.
+
+**Ordenar es arrastrar, desde el 2026-09-29.** Eran botones de subir y bajar,
+por una razón que era cierta: arrastrar en un teléfono se confunde con
+scrollear. Lo que la resuelve es una **manija** (`ManijaParaArrastrar`): el
+arrastre arranca sólo desde los puntitos, y el resto del renglón sigue
+scrolleando. El dueño lo pidió mirando el panel a 328 px: las tres flechas se
+comían la mitad del renglón, y la deshabilitada no se distinguía de la
+habilitada.
+
+- **Quien no puede arrastrar conserva el gesto:** la lista agrega a cada
+  renglón las acciones de accesibilidad de mover —arriba, abajo, al principio,
+  al final—, traducidas por `WidgetsLocalizations`.
+- **La lista es un sliver del scroll de la página**, no una lista adentro de
+  otra: así la página scrollea sola cuando se arrastra hacia un borde.
+- **Al soltar, se ve el orden nuevo sin esperar al documento** (`_enCamino`).
+  Sin eso el renglón vuelve a su lugar viejo mientras se guarda y después salta.
+  Se descarta cuando llega el documento, o si el guardado falla.
+- **Sacar quedó a la derecha y la manija a la izquierda**, lejos: sacar no se
+  confirma, y no puede estar al lado de lo que se toca para arrastrar.
 
 ### 6. HU-09.4: cuándo se ve, en UN archivo
 

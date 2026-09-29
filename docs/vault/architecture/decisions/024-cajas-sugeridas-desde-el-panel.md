@@ -78,9 +78,14 @@ En la sección **Vidriera**, debajo de la portada:
 - **Armar o cambiar** abre una hoja con el nombre y seis lugares, que dice
   **cuántos faltan todo el tiempo**. Si guardar falla, la hoja **no se cierra**:
   rearmar seis lugares por un corte de red es trabajo tirado.
-- **Subir, bajar y sacar** guardan en el acto. **Sacar** ofrece *Deshacer*, que
+- **Ordenar y sacar** guardan en el acto. **Sacar** ofrece *Deshacer*, que
   vuelve a guardar la lista de antes: no hace falta confirmar lo que se deshace
-  en un toque.
+  en un toque. **Ordenar es arrastrar desde la manija desde el 2026-09-29**
+  —eran botones de subir y bajar—, con el mismo porqué que la portada
+  ([ADR 023 §5](023-la-portada-la-elige-el-duenio.md#5-cada-gesto-se-guarda-en-el-acto)).
+  Acá mostrar el orden nuevo sin esperar pesa más: el guardado pasa por la
+  callable, y sin eso la caja soltada volvía a su lugar viejo uno o dos
+  segundos.
 - El aviso de cuándo se ve es el del catálogo (**hasta ~13 minutos**): `/vinos`
   se rearma solo ([ADR 023 §6](023-la-portada-la-elige-el-duenio.md)).
 

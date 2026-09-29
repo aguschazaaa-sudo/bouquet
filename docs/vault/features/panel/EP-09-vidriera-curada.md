@@ -67,7 +67,8 @@ con la temporada.
   con ese lugar marcado ([glosario](../../domain/glossary.md)). El panel lo
   avisa, para que el dueño decida si la cambia.
 - **Construida el 2026-09-28** ([ADR 024](../../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md)):
-  cambiar, subir, bajar y sacar —con *Deshacer*— desde la sección Vidriera. La
+  cambiar, ordenar y sacar —con *Deshacer*— desde la sección Vidriera (ordenar
+  es arrastrar desde el 2026-09-29; antes, subir y bajar). La
   callable **no** exige publicado ni stock, así reordenar no falla por una caja
   vieja; el panel marca cada lugar que la tienda no va a llenar, y aparte la
   caja que no se muestra entera.

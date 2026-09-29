@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -54,33 +56,42 @@ class PantallaDeLaVidriera extends ConsumerWidget {
       return const Cargando(que: 'Buscando tu vidriera…');
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-      children: [
-        Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxWidth: Medidas.anchoDeEscritorio,
+    // Slivers y no un `ListView` con una columna adentro: la portada y las
+    // cajas se ordenan arrastrando, y la pagina tiene que scrollear sola
+    // cuando se arrastra hacia un borde. Una caja mide un tercio de telefono.
+    const separador = SliverToBoxAdapter(
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 28),
+        child: Divider(),
+      ),
+    );
+    return LayoutBuilder(
+      builder: (context, limites) {
+        // Centrado al ancho de escritorio: sin un `Center` que lo haga, el
+        // margen se calcula.
+        final lado = math.max(
+          16.0,
+          (limites.maxWidth - Medidas.anchoDeEscritorio) / 2,
+        );
+        return CustomScrollView(
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(lado, 20, lado, 32),
+              sliver: SliverMainAxisGroup(
+                slivers: [
+                  SeccionDeLaPortada(seleccion: sel, catalogo: cat),
+                  separador,
+                  SeccionDeCajasSugeridas(cajas: caj, catalogo: cat),
+                  separador,
+                  SliverToBoxAdapter(
+                    child: SeccionDelEnvioSinCargo(envio: env),
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SeccionDeLaPortada(seleccion: sel, catalogo: cat),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 28),
-                  child: Divider(),
-                ),
-                SeccionDeCajasSugeridas(cajas: caj, catalogo: cat),
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 28),
-                  child: Divider(),
-                ),
-                SeccionDelEnvioSinCargo(envio: env),
-              ],
-            ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 }

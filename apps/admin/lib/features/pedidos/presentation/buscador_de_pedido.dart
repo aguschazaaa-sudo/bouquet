@@ -74,35 +74,29 @@ class _BuscadorDePedidoState extends ConsumerState<BuscadorDePedido> {
   @override
   Widget build(BuildContext context) {
     final esquema = Theme.of(context).colorScheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _texto,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.search,
-            onSubmitted: (_) => _buscar(),
-            onChanged: (_) {
-              if (_aviso != null) setState(() => _aviso = null);
-            },
-            decoration: InputDecoration(
-              hintText: textoBuscarPorNumero,
-              prefixIcon: Icon(Icons.search, color: esquema.onSurfaceVariant),
-              errorText: _aviso,
-              errorMaxLines: 2,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: OutlinedButton(
+    return TextField(
+      controller: _texto,
+      keyboardType: TextInputType.number,
+      textInputAction: TextInputAction.search,
+      onSubmitted: (_) => _buscar(),
+      onChanged: (_) {
+        if (_aviso != null) setState(() => _aviso = null);
+      },
+      decoration: InputDecoration(
+        hintText: textoBuscarPorNumero,
+        prefixIcon: Icon(Icons.search, color: esquema.onSurfaceVariant),
+        // El boton va ADENTRO del campo. Afuera y con borde, en un telefono
+        // de 328 px le dejaba al campo 120 px de texto.
+        suffixIcon: Padding(
+          padding: const EdgeInsets.only(right: 4),
+          child: TextButton(
             onPressed: _buscando ? null : _buscar,
             child: Text(_buscando ? textoBuscando : textoBuscar),
           ),
         ),
-      ],
+        errorText: _aviso,
+        errorMaxLines: 2,
+      ),
     );
   }
 }

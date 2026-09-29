@@ -67,7 +67,10 @@ const textoNadaEspera =
 // --------------------------------------------------------------- buscar
 
 /// HU-06.4. Dice que se busca por NUMERO: el nombre del cliente no se busca.
-const textoBuscarPorNumero = 'Buscar por número de pedido';
+/// Sin el "Buscar por" de adelante: la lupa ya lo dice, y en un telefono de
+/// 328 px el texto largo se cortaba en *"Buscar por nú…"*, justo antes de la
+/// palabra que importa.
+const textoBuscarPorNumero = 'Número de pedido';
 const textoBuscar = 'Buscar';
 const textoBuscando = 'Buscando…';
 const textoNoEsUnNumero = 'Escribí el número del pedido, por ejemplo 123.';

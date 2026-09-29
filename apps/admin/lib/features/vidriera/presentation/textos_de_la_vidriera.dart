@@ -37,8 +37,11 @@ const textoPortadaLlena =
 /// HU-09.4: despues de cada cambio, para que nadie piense que no se guardo.
 const textoGuardado = 'Guardado. $textoTardaEnLaPortada';
 
-const textoSubir = 'Subir';
-const textoBajar = 'Bajar';
+/// Debajo de la lista, cuando hay dos o mas: la manija sola no avisa que se
+/// arrastra. [que] es *"cada vino"* o *"cada caja"*.
+String textoComoOrdenar(String que) =>
+    'Para cambiar el orden, arrastrá $que desde los puntitos de la izquierda.';
+
 const textoSacar = 'Sacar de la portada';
 
 const textoVinoQueYaNoExiste = 'Un vino que ya no existe';

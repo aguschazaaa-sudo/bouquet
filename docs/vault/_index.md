@@ -76,6 +76,26 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### El panel a ancho de teléfono: un solo scroll, y la vidriera se ordena arrastrando (2026-09-29)
+
+**Commiteado (v0.45.0). Falta publicarlo y que alguien pruebe el arrastre.** Sin openspec,
+a pedido del dueño, que mandó capturas del panel a 328 px. Las reglas quedaron en
+[ADR 011 §4](architecture/decisions/011-entrar-al-panel.md#4-la-dirección-visual-del-panel-la-mezcla-c)
+y [ADR 023 §5](architecture/decisions/023-la-portada-la-elige-el-duenio.md#5-cada-gesto-se-guarda-en-el-acto).
+
+- **Catálogo y Pedidos son un solo scroll**: el encabezado se va con la lista. Fijo arriba
+  se comía más de la mitad del teléfono.
+- **Por debajo de 440 px de contenido, la acción principal baja a su renglón**
+  (`RenglonConAccion`): *"Bodegas — 11 cargadas"* se partía en ocho renglones y
+  *"Pedidos"* en dos. El *Buscar* de Pedidos entró al campo, y la ayuda dice *"Número de
+  pedido"*: se cortaba en *"Buscar por nú…"*.
+- **La portada y las cajas se ordenan arrastrando** desde una manija; se fueron las
+  flechas, que se comían medio renglón y cuya deshabilitada no se distinguía. La lista es
+  un sliver del scroll de la página (scrollea sola al arrastrar), muestra el orden nuevo
+  sin esperar al documento, y conserva mover arriba/abajo como acción de accesibilidad.
+- **Cero lecturas y cero escrituras nuevas**: es sólo presentación; cada soltar es el
+  mismo guardado que antes hacía una flecha.
+
 ### EP-11 entera: el panel se entra por *Resumen*, la popularidad se mide, y la entrega sin cargo tiene monto (2026-09-29)
 
 **Desplegada y verificada el 2026-09-29** —functions, panel (`e95e653`) y la preview de la
@@ -223,42 +243,6 @@ las alertas y *"Volver a consultar a Mercado Pago"*.
 `revisarPago`** (no toman solas la versión nueva) → registrar la URL del webhook en Mercado
 Pago → una compra en sandbox. Y después, `crearOrden` con la preferencia: sin ella no existe un
 pedido de la vidriera, y nada de esto se ve. **Nadie lo miró renderizado.**
-
-### Cuarto tramo del hito 2: el aviso de que salió, por WhatsApp — y el tercero, desplegado (2026-09-28)
-
-**Desplegado y verificado por bytes el 2026-09-28 (v0.39.0, `fde0b38`); nadie lo miró
-renderizado.** Sin openspec, a pedido del dueño:
-[ADR 021](architecture/decisions/021-aviso-de-despacho.md) es la especificación. **HU-07.3,
-recortada**: en un pedido despachado, *"Avisarle por WhatsApp que salió"* abre el chat del
-comprador con el texto escrito —correo y seguimiento, curado por `voz`— y la persona aprieta
-enviar. **Sin el link a `/pedido/<numero>`**, que no existe: lo suma `crearOrden`.
-
-- **El número de la tienda no bloqueaba el código**: decide a quién se le prende el botón.
-  La marca es el claim **`avisaPorWhatsApp`**, cero lecturas, y la pone
-  `node scripts/acceso/acceso.mjs avisa <mail>` (se niega sin el rol). **Hoy nadie la tiene**:
-  el botón no lo ve nadie hasta que el dueño diga quién.
-- Un teléfono que no es E.164 **no arma el enlace** (abriría el chat de otra persona).
-- **`acceso.test.mjs` entra a CI** (paso propio con el emulador de Auth): hasta hoy no lo
-  corría nadie, y este cambio le suma un claim.
-
-**Y con el mismo deploy sale el tercer tramo** (ADR 020, entrada de abajo).
-⚠️ **Lo que ADR 020 temía no pasaba**: la consulta de *"Requieren acción"* **corrió en
-producción ANTES del índice nuevo** —HTTP 200—, porque Firestore la resuelve mezclando los dos
-índices que ya había; el control negativo (ordenar por `actualizadaEn`) sí daba
-`FAILED_PRECONDITION`. El índice se desplegó igual: está declarado, y declarado y desplegado
-tienen que coincidir.
-
-| Qué | Cómo |
-|---|---|
-| Las suites | CI `36466563334` sobre `ba62c5e`, restadas contra ADR 020: Dart 432 → **450 (+18 exactos)**; `acceso.test.mjs` **17/17, por primera vez en CI**; emulador de Firestore 162 → 162 (reglas sin tocar) |
-| El índice | `CICAgJiUsZIK` `READY`; la consulta real: 200 antes y después; el negativo: `FAILED_PRECONDITION` antes y después |
-| Sin huérfanos | 13 símbolos con call site; control inventado: 0. Cadena `enrutador → PaginaDelPedido → DetalleDelPedido → BotonDeAviso` |
-| Presupuesto | **0 lecturas, 0 escrituras** |
-| El deploy | Build `36467004226` (*No issues found*) → canal → **canario discriminante** (6 cadenas nuevas 0 → 1, *"Por preparar"* 1 → 1, inventada 0 → 0, `COMMIT` `f066c56` → `fde0b38`) → `promover` → live con los 4 hashes iguales, `noindex` |
-
-⚠️ **Lo que sigue:** que el dueño diga quién avisa, y que esa persona despache un pedido real
-y mande el aviso. **Nadie lo miró renderizado.** Del hito 2 quedan HU-06.5 y EP-08, **todo
-de la vidriera**: lo de WhatsApp está construido entero.
 
 ### Lo que quedó abierto
 

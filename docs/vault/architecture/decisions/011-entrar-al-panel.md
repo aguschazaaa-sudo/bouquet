@@ -100,6 +100,17 @@ Archivo para la interfaz, Newsreader sólo para los nombres, y Fraunces no
 entra. Los valores y sus contrastes están en
 [`tokens.md` §7](../../design/tokens.md).
 
+**A ancho de teléfono (2026-09-29).** Dos reglas, a partir de capturas del
+dueño a 328 px:
+
+- **Un solo scroll.** En Catálogo y Pedidos el buscador, las fichas y la acción
+  principal se van con la lista. Fijos arriba se comían más de la mitad de la
+  pantalla y la lista quedaba en una ranura.
+- **La acción principal baja a su propio renglón** por debajo de 440 px de
+  contenido (`Medidas.anchoAngosto`, `RenglonConAccion`). Lado a lado, el botón
+  se quedaba con su ancho y lo de al lado con las sobras: *"Bodegas — 11
+  cargadas"* se partía en ocho renglones y *"Pedidos"* en dos.
+
 ### 5. Se publica lo que compiló CI
 
 El alcance `panel` de `ci.yml` corre `dart test`, `flutter analyze` y

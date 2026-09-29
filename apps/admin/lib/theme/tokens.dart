@@ -84,5 +84,11 @@ abstract final class Medidas {
   /// Desde este ancho la navegacion va arriba; por debajo, abajo.
   static const anchoDeEscritorio = 840.0;
 
+  /// Por debajo de este ancho DE CONTENIDO, la accion principal de una seccion
+  /// baja a su propio renglon (`RenglonConAccion`). 440 es donde
+  /// *"Bodegas — 11 cargadas"* todavia entra en una linea al lado de
+  /// *"Cargar un vino"*; un telefono de 360 a 412 px queda por debajo.
+  static const anchoAngosto = 440.0;
+
   static const banda = 64.0;
 }

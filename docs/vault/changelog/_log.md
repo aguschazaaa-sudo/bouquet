@@ -9,6 +9,48 @@
 
 ---
 
+## Salió el 2026-09-29, al ordenar la vidriera arrastrando
+
+Sale la del cuarto tramo del hito 2 (2026-09-28): con la del panel a ancho de teléfono
+sumada al dashboard, era la más vieja de las cinco. El porqué sigue en
+[ADR 021](../architecture/decisions/021-aviso-de-despacho.md).
+
+### Cuarto tramo del hito 2: el aviso de que salió, por WhatsApp — y el tercero, desplegado (2026-09-28)
+
+**Desplegado y verificado por bytes el 2026-09-28 (v0.39.0, `fde0b38`); nadie lo miró
+renderizado.** Sin openspec, a pedido del dueño:
+[ADR 021](../architecture/decisions/021-aviso-de-despacho.md) es la especificación. **HU-07.3,
+recortada**: en un pedido despachado, *"Avisarle por WhatsApp que salió"* abre el chat del
+comprador con el texto escrito —correo y seguimiento, curado por `voz`— y la persona aprieta
+enviar. **Sin el link a `/pedido/<numero>`**, que no existe: lo suma `crearOrden`.
+
+- **El número de la tienda no bloqueaba el código**: decide a quién se le prende el botón.
+  La marca es el claim **`avisaPorWhatsApp`**, cero lecturas, y la pone
+  `node scripts/acceso/acceso.mjs avisa <mail>` (se niega sin el rol). **Hoy nadie la tiene**:
+  el botón no lo ve nadie hasta que el dueño diga quién.
+- Un teléfono que no es E.164 **no arma el enlace** (abriría el chat de otra persona).
+- **`acceso.test.mjs` entra a CI** (paso propio con el emulador de Auth): hasta hoy no lo
+  corría nadie, y este cambio le suma un claim.
+
+**Y con el mismo deploy sale el tercer tramo** (ADR 020, entrada de abajo).
+⚠️ **Lo que ADR 020 temía no pasaba**: la consulta de *"Requieren acción"* **corrió en
+producción ANTES del índice nuevo** —HTTP 200—, porque Firestore la resuelve mezclando los dos
+índices que ya había; el control negativo (ordenar por `actualizadaEn`) sí daba
+`FAILED_PRECONDITION`. El índice se desplegó igual: está declarado, y declarado y desplegado
+tienen que coincidir.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36466563334` sobre `ba62c5e`, restadas contra ADR 020: Dart 432 → **450 (+18 exactos)**; `acceso.test.mjs` **17/17, por primera vez en CI**; emulador de Firestore 162 → 162 (reglas sin tocar) |
+| El índice | `CICAgJiUsZIK` `READY`; la consulta real: 200 antes y después; el negativo: `FAILED_PRECONDITION` antes y después |
+| Sin huérfanos | 13 símbolos con call site; control inventado: 0. Cadena `enrutador → PaginaDelPedido → DetalleDelPedido → BotonDeAviso` |
+| Presupuesto | **0 lecturas, 0 escrituras** |
+| El deploy | Build `36467004226` (*No issues found*) → canal → **canario discriminante** (6 cadenas nuevas 0 → 1, *"Por preparar"* 1 → 1, inventada 0 → 0, `COMMIT` `f066c56` → `fde0b38`) → `promover` → live con los 4 hashes iguales, `noindex` |
+
+⚠️ **Lo que sigue:** que el dueño diga quién avisa, y que esa persona despache un pedido real
+y mande el aviso. **Nadie lo miró renderizado.** Del hito 2 quedan HU-06.5 y EP-08, **todo
+de la vidriera**: lo de WhatsApp está construido entero.
+
 ## Salió el 2026-09-29, al construirse el tablero del panel (ADR 025)
 
 Sale la del tercer tramo del hito 2 (2026-09-25): con la de EP-11 sumada al

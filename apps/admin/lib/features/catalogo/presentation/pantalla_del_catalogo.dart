@@ -7,6 +7,7 @@ import '../../../core/presentation/campo_de_busqueda.dart';
 import '../../../core/presentation/cargando.dart';
 import '../../../core/presentation/fallo_con_reintento.dart';
 import '../../../core/presentation/lista_vacia.dart';
+import '../../../core/presentation/renglon_con_accion.dart';
 import '../catalogo_providers.dart';
 import '../domain/catalogo.dart';
 import 'acceso_a_bodegas.dart';
@@ -20,6 +21,10 @@ import 'lista_del_catalogo.dart';
 /// El buscador arriba de todo es la direccion visual que eligio el dueno —*"me
 /// parece más eficiente la búsqueda de A"*, ADR 011 §4—, no una decision de
 /// esta pantalla.
+///
+/// **Un solo scroll**: el encabezado se va con la lista. Fijo arriba, en un
+/// telefono se comia mas de la mitad de la pantalla y la lista quedaba en una
+/// ranura (lo mostro el dueño el 2026-09-29).
 class PantallaDelCatalogo extends ConsumerWidget {
   const PantallaDelCatalogo({super.key});
 
@@ -29,57 +34,55 @@ class PantallaDelCatalogo extends ConsumerWidget {
     final busqueda = ref.watch(busquedaProvider);
     final soloPorReponer = ref.watch(soloPorReponerProvider);
 
-    return Column(
-      children: [
-        Padding(
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-          child: Column(
-            children: [
-              CampoDeBusqueda(
-                valor: busqueda,
-                etiqueta: 'Buscar un vino o una bodega',
-                alCambiar: (texto) =>
-                    ref.read(busquedaProvider.notifier).state = texto,
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: AccesoABodegas(
-                      cuantas: catalogo.valueOrNull?.bodegas.length ?? 0,
-                      alIr: context.go,
-                    ),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              children: [
+                CampoDeBusqueda(
+                  valor: busqueda,
+                  etiqueta: 'Buscar un vino o una bodega',
+                  alCambiar: (texto) =>
+                      ref.read(busquedaProvider.notifier).state = texto,
+                ),
+                const SizedBox(height: 12),
+                RenglonConAccion(
+                  principal: AccesoABodegas(
+                    cuantas: catalogo.valueOrNull?.bodegas.length ?? 0,
+                    alIr: context.go,
                   ),
-                  const SizedBox(width: 12),
                   // La unica puerta a `/catalogo/nuevo` (HU-03.2).
-                  FilledButton.icon(
+                  accion: FilledButton.icon(
                     onPressed: () => context.go(Rutas.nuevoVino),
                     icon: const Icon(Icons.add),
                     label: const Text('Cargar un vino'),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Align(
-                alignment: Alignment.centerLeft,
-                // HU-05.3: el numero es lo que dice si vale la pena tocarlo.
-                child: FilterChip(
-                  label: Text(
-                    'Por reponer (${catalogo.valueOrNull?.cuantosPorReponer ?? 0})',
-                  ),
-                  selected: soloPorReponer,
-                  onSelected: (v) =>
-                      ref.read(soloPorReponerProvider.notifier).state = v,
                 ),
-              ),
-            ],
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  // HU-05.3: el numero es lo que dice si vale la pena tocarlo.
+                  child: FilterChip(
+                    label: Text(
+                      'Por reponer (${catalogo.valueOrNull?.cuantosPorReponer ?? 0})',
+                    ),
+                    selected: soloPorReponer,
+                    onSelected: (v) =>
+                        ref.read(soloPorReponerProvider.notifier).state = v,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        Expanded(
-          child: switch (catalogo) {
-            // El error va PRIMERO: un stream que fallo y se pinta como una
-            // lista vacia manda a cargar de nuevo lo que ya existe.
-            AsyncError() => FalloConReintento(
+        switch (catalogo) {
+          // El error va PRIMERO: un stream que fallo y se pinta como una
+          // lista vacia manda a cargar de nuevo lo que ya existe.
+          AsyncError() => SliverFillRemaining(
+            hasScrollBody: false,
+            child: FalloConReintento(
               texto:
                   'No pudimos leer tu catálogo. Puede ser la conexión, o que '
                   'tu cuenta todavía no tenga permiso.',
@@ -88,24 +91,27 @@ class PantallaDelCatalogo extends ConsumerWidget {
                 ref.invalidate(bodegasProvider);
               },
             ),
-            AsyncData(:final value) => _Encontrados(
-              catalogo: value,
-              busqueda: busqueda,
-              soloPorReponer: soloPorReponer,
-              alVerTodos: () =>
-                  ref.read(soloPorReponerProvider.notifier).state = false,
-              alLimpiar: () => ref.read(busquedaProvider.notifier).state = '',
-              alAbrir: (id) => context.go(Rutas.vino(id)),
-            ),
-            _ => const Cargando(que: 'Buscando tus vinos…'),
-          },
-        ),
+          ),
+          AsyncData(:final value) => _Encontrados(
+            catalogo: value,
+            busqueda: busqueda,
+            soloPorReponer: soloPorReponer,
+            alVerTodos: () =>
+                ref.read(soloPorReponerProvider.notifier).state = false,
+            alLimpiar: () => ref.read(busquedaProvider.notifier).state = '',
+            alAbrir: (id) => context.go(Rutas.vino(id)),
+          ),
+          _ => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Cargando(que: 'Buscando tus vinos…'),
+          ),
+        },
       ],
     );
   }
 }
 
-/// La lista ya filtrada, con cuantos quedaron.
+/// La lista ya filtrada, con cuantos quedaron. Un sliver, como la lista.
 class _Encontrados extends StatelessWidget {
   const _Encontrados({
     required this.catalogo,
@@ -137,25 +143,26 @@ class _Encontrados extends StatelessWidget {
     // como tal: el vacio generico ("ningun vino coincide") suena a que algo
     // fallo, y manda a buscar de nuevo lo que simplemente no falta.
     if (soloPorReponer && renglones.isEmpty) {
-      return ListaVacia(
-        icono: Icons.check_circle_outline,
-        texto: busqueda.isEmpty
-            ? 'No hay nada por reponer: todos tus vinos tienen stock.'
-            : 'Ningún vino por reponer coincide con lo que buscaste.',
-        accion: OutlinedButton(
-          onPressed: alVerTodos,
-          child: const Text('Ver todos'),
+      return SliverToBoxAdapter(
+        child: ListaVacia(
+          icono: Icons.check_circle_outline,
+          texto: busqueda.isEmpty
+              ? 'No hay nada por reponer: todos tus vinos tienen stock.'
+              : 'Ningún vino por reponer coincide con lo que buscaste.',
+          accion: OutlinedButton(
+            onPressed: alVerTodos,
+            child: const Text('Ver todos'),
+          ),
         ),
       );
     }
 
-    return Column(
-      children: [
+    return SliverMainAxisGroup(
+      slivers: [
         if (renglones.isNotEmpty)
-          Padding(
+          SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
+            sliver: SliverToBoxAdapter(
               child: Semantics(
                 // Se anuncia al filtrar: quien no ve la pantalla necesita
                 // enterarse de que la lista cambio.
@@ -169,14 +176,12 @@ class _Encontrados extends StatelessWidget {
               ),
             ),
           ),
-        Expanded(
-          child: ListaDelCatalogo(
-            renglones: renglones,
-            catalogo: catalogo,
-            hayVinos: catalogo.renglones.isNotEmpty,
-            alLimpiarLaBusqueda: alLimpiar,
-            alAbrir: alAbrir,
-          ),
+        ListaDelCatalogo(
+          renglones: renglones,
+          catalogo: catalogo,
+          hayVinos: catalogo.renglones.isNotEmpty,
+          alLimpiarLaBusqueda: alLimpiar,
+          alAbrir: alAbrir,
         ),
       ],
     );

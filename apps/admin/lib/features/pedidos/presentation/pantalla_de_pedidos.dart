@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/rutas.dart';
 import '../../../core/presentation/cargando.dart';
 import '../../../core/presentation/fallo_con_reintento.dart';
+import '../../../core/presentation/renglon_con_accion.dart';
 import '../domain/vista_de_bandeja.dart';
 import '../pedidos_providers.dart';
 import 'buscador_de_pedido.dart';
@@ -56,69 +57,78 @@ class _PantallaDePedidosState extends ConsumerState<PantallaDePedidos> {
   Widget build(BuildContext context) {
     final bandeja = ref.watch(bandejaProvider(_vista));
 
-    return Column(
-      children: [
-        Padding(
+    // Un solo scroll, como Catalogo: el encabezado se va con la lista.
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      textoTituloDePedidos,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RenglonConAccion(
+                  principal: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          textoTituloDePedidos,
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: textoActualizar,
+                        onPressed: () =>
+                            ref.invalidate(bandejaProvider(_vista)),
+                        icon: const Icon(Icons.refresh),
+                      ),
+                    ],
                   ),
-                  IconButton(
-                    tooltip: textoActualizar,
-                    onPressed: () => ref.invalidate(bandejaProvider(_vista)),
-                    icon: const Icon(Icons.refresh),
-                  ),
-                  const SizedBox(width: 4),
                   // La unica puerta a `/pedidos/nuevo` (HU-10.1).
-                  FilledButton.icon(
+                  accion: FilledButton.icon(
                     onPressed: () => context.go(Rutas.nuevoPedido),
                     icon: const Icon(Icons.add),
                     label: const Text(textoCargarUnPedido),
                   ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              const BuscadorDePedido(),
-              const SizedBox(height: 12),
-              SelectorDeVista(
-                elegida: _vista,
-                alElegir: (v) => setState(() {
-                  _vista = v;
-                  _verMasFallo = false;
-                }),
-              ),
-            ],
+                ),
+                const SizedBox(height: 12),
+                const BuscadorDePedido(),
+                const SizedBox(height: 12),
+                SelectorDeVista(
+                  elegida: _vista,
+                  alElegir: (v) => setState(() {
+                    _vista = v;
+                    _verMasFallo = false;
+                  }),
+                ),
+              ],
+            ),
           ),
         ),
-        Expanded(
-          child: switch (bandeja) {
-            // El error va PRIMERO: una lectura que fallo y se pinta como una
-            // bandeja vacia manda a cargar de nuevo lo que ya existe.
-            AsyncError() => FalloConReintento(
+        switch (bandeja) {
+          // El error va PRIMERO: una lectura que fallo y se pinta como una
+          // bandeja vacia manda a cargar de nuevo lo que ya existe.
+          AsyncError() => SliverFillRemaining(
+            hasScrollBody: false,
+            child: FalloConReintento(
               texto: textoNoSePudieronLeerLosPedidos,
               alReintentar: () => ref.invalidate(bandejaProvider(_vista)),
             ),
-            AsyncData(:final value) => ListaDePedidos(
-              vista: _vista,
-              bandeja: value,
-              ahora: DateTime.now(),
-              alAbrir: (orden) =>
-                  context.go(Rutas.pedido(orden.id), extra: orden),
-              alVerMas: _verMas,
-              verMasFallo: _verMasFallo,
-              cargandoMas: _cargandoMas,
-            ),
-            _ => const Cargando(que: textoCargandoPedidos),
-          },
-        ),
+          ),
+          AsyncData(:final value) => ListaDePedidos(
+            vista: _vista,
+            bandeja: value,
+            ahora: DateTime.now(),
+            alAbrir: (orden) =>
+                context.go(Rutas.pedido(orden.id), extra: orden),
+            alVerMas: _verMas,
+            verMasFallo: _verMasFallo,
+            cargandoMas: _cargandoMas,
+          ),
+          _ => const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Cargando(que: textoCargandoPedidos),
+          ),
+        },
       ],
     );
   }
