@@ -10,7 +10,10 @@
 export const TEXTOS = {
   marca: 'bouquet',
   titulo: 'Para entrar hay que ser mayor de 18.',
-  documento: 'En la entrega se pide documento. Es la ley, y también es la parte fácil.',
+  /* El espacio después de la `y` es DURO ( ): una conjunción de una letra
+   * no cierra línea. Sin él, a 1280 y a 390 la línea terminaba en "Es la ley,
+   * y" — medido en la preview el 2026-09-30. Así corta en la coma. */
+  documento: 'En la entrega se pide documento. Es la ley, y también es la parte fácil.',
   soyMayor: 'Soy mayor de 18',
   todaviaNo: 'Todavía no',
 
