@@ -235,14 +235,28 @@
 
 /* Se dibuja mientras ENTRA y se queda. No se desdibuja al salir: eso sería
  * inquieto, y direccion.md §8.2 prohíbe lo juguetón — "un rebote es juguetón,
- * y juguetón es app". El rango termina en 55% del avance para que el marco esté
- * cerrado bastante antes de que el bloque llegue al centro de la pantalla. */
+ * y juguetón es app".
+ *
+ * ⚠️ TERMINA EN `entry 100%` —el bloque ENTERO en pantalla— Y NO EN UN
+ * PORCENTAJE DE `cover`, PORQUE ES EL ÚNICO FINAL QUE SIEMPRE SE ALCANZA.
+ *
+ * Decía `cover 55%`, con el comentario "cerrado antes de que llegue al centro".
+ * **Otra vez el comentario bien y el código no:** `cover 50%` ES el bloque
+ * centrado, así que 55% cerraba DESPUÉS del centro. Y un bloque sólo pasa el
+ * centro si abajo hay página para empujarlo. El sello es lo último de
+ * `/oficio`: con 922 px de viewport el scroll se acaba en `cover 42%`, cada
+ * brazo se quedaba en 136° de 180 y el marco quedaba abierto abajo — medido
+ * sobre la captura del dueño, el hueco terminaba a 43,5° del centro inferior.
+ *
+ * `entry 100%` no depende de lo que haya debajo: si el bloque entra entero en
+ * pantalla, el marco está cerrado. Y si es más alto que el viewport, el
+ * mismo punto es cuando lo cubre, que también se alcanza siempre. */
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) {
     .cartucho-deco--trazado::before {
       animation: cerrar-cartucho linear both;
       animation-timeline: view();
-      animation-range: entry 10% cover 55%;
+      animation-range: entry 10% entry 100%;
     }
   }
 }

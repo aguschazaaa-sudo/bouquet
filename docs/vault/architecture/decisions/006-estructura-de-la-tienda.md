@@ -195,6 +195,21 @@ recto de arriba, o sea `ancho > 2 · --chaflan`. Con `--chaflan-marco` son
   buscada, y va a doler la primera vez que el catálogo quiera una pieza de la
   landing. La salida correcta está escrita en el mensaje del hook.
 
+### El trazado termina con el bloque entero en pantalla (no revertir) — 2026-09-30
+
+`.cartucho-deco--trazado` cerraba el marco en `cover 55%`, y el sello de
+`/oficio` **se quedaba abierto abajo** para siempre: es lo último de la página, y
+un bloque sólo pasa el centro de la pantalla si hay página debajo que lo empuje.
+Con el viewport de 922 px del dueño el scroll se acaba en `cover 42%` y cada
+brazo llegaba a **136° de 180**; en su captura el hueco terminaba a **43,5°** del
+centro inferior. El cálculo y el píxel coinciden, así que la causa es ésta.
+
+Ahora termina en **`entry 100%`**: el marco está cerrado cuando el bloque entró
+entero, y eso **se alcanza siempre**, haya lo que haya debajo. El comentario
+viejo decía "cerrado antes del centro" y `cover 50%` **es** el centro: el código
+nunca hizo lo que decía. Aplica a los dos usuarios del trazado, el sello y la mesa
+de la home, que también es la última escena antes del pie.
+
 ## Lo que hay que medir antes de creerle a este ADR
 
 | Qué | Por qué | Disparador |
