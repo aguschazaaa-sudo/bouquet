@@ -114,11 +114,10 @@ El script lee 39 documentos una vez por corrida. Nada cambia por visita.
 | `/vinos` en vivo | Canario que aparece: `Violinista Malbec` (no existía en la muestra) 0 → 3. Canarios que desaparecen: `Portillo`, `Latitud 33`, `Callia`, `muestra-`, `vino de prueba` → 0 |
 | Fichas | Cuatro nuevas en 200, con descripción, precio, añada y foto; `portillo-malbec` (muestra), el borrador y una ruta inventada en 404 |
 | Renderizado | Chrome por CDP a 1280 y 390, puerta de edad aceptada: fotos sobre el papel, filtros con 11 Malbec, 2 cortes y 1 orgánico |
+| La home | Se hornea en el build, así que hizo falta desplegar `tienda`. `build-2026-09-30-005` arrastró la v0.50.0 y salió **sin `noindex`** (ADR 017 §4, revertido); `build-2026-09-30-006` es el bueno: `preview.sh verificar` entero en verde —`noindex` en 7 rutas, 23 fichas contra 23 publicados, gates y puerta de edad—, y en la home `muestra-` 10 → 0 y los seis de la portada 0 → 2 cada uno, con su foto |
 
 ## Lo que NO se resolvió
 
-- **La home sigue mostrando la muestra**: se hornea en el build (ADR 008 §7), así que sus
-  tarjetas apuntan a vinos y fotos borrados hasta el próximo deploy de `tienda`.
 - **Cordero con Piel de Lobo Dulce quedó como borrador**: las fuentes dicen *"blend"*, otras
   Chenin o Moscatel, y ninguna de las dos está en la lista cerrada de varietales. Lleva
   *Torrontés* **sin confirmar**; se publica cuando el dueño mire la contraetiqueta. Si es

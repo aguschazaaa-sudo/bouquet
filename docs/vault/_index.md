@@ -96,9 +96,12 @@ precios y stock inventados. Detalle y descartes en
 - Verificado por contenido: las fotos por SHA-256, `/vinos` y cuatro fichas en vivo con
   canarios que aparecen y desaparecen, y renderizado a 1280 y 390.
 
+**Tienda desplegada** para que la home se hornee con lo real: `build-2026-09-30-006`,
+`preview.sh verificar` en verde. El anterior (005) salió sin `noindex` por la v0.50.0, que
+se revirtió ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
+
 **Lo que sigue:** que el dueño corrija precio, stock y las añadas marcadas con la botella en
-la mano, y publique el Dulce. **La home sigue mostrando la muestra** hasta el próximo deploy
-de `tienda` (se hornea en el build). Desde 2026-09-30.
+la mano, y publique el Dulce. Desde 2026-09-30.
 
 ### La puerta de edad: el telón que se levanta, en todo el sitio (2026-09-30)
 
