@@ -113,6 +113,34 @@ tag de [ADR 005](005-hosting-vidriera.md) no se entera. Contra los 50.000/día: 
   [ARQUITECTURA §11](../../../../ARQUITECTURA.md#11-lo-que-queda-abierto-con-su-disparador).
   Un telón de autodeclaración no los reemplaza.
 
-## Verificación
+## Verificación (2026-09-30)
 
-*(se completa con el deploy de la preview)*
+**En la preview**, rollouts `build-2026-09-30-001` (v0.49.0) y `-002` (v0.49.1), los dos
+`SUCCEEDED` con el 100 % del tráfico **por la API cruda**, no por el "complete" del CLI.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36731529614` (`alcance=tests`) sobre `245b5ea`: los 4 casos de `edad.test.ts` **por nombre** en el log, y la tienda **39 → 43, +4 exactos**, restada contra la corrida `36646226469` |
+| El HTML servido | `preview.sh verificar`, paso 5 nuevo: telón en `/`, `/vinos`, `/oficio`, `/carrito`; el script **antes** del telón (por byte); las 21 fichas de `/vinos` debajo; control negativo en 0 |
+| Que llegó este deploy | Canario de v0.49.1: *"ley, y también"* con espacio normal **desaparece** y con espacio duro **aparece** en `/vinos` y `/oficio`. En `/` queda uno con espacio normal y es del pie de la landing, que ya repetía la frase |
+| Renderizado | Chrome del sistema por CDP, perfil vacío, a 1280 y a 390 (`innerWidth` medido: 390). **20/20**, capturas miradas: la placa, *"Todavía no"* y su vuelta, la subida a los 350 ms, y adentro |
+| El scroll, con su par | La misma rueda de 900 px: **`scrollY = 0`** con el telón puesto, **`900`** después de entrar |
+| Sin parpadeo, con su par | Un contador por frame desde el inicio del documento. Primera visita: **0 frames** con el sitio pintado sin telón (11 y 23 observados). Quien ya entró: **0 frames** con el telón pintado. **Repetido con la red estrangulada** a 150 KB/s y 300 ms: 338 y 436 frames, los dos en 0 |
+| Lo demás | `inert` puesto y sacado, el foco en el botón que corresponde, `localStorage` con `{mayor, fecha}`, `data-edad="ok"`, fundido con *reducir movimiento*, sin desborde a 390, **cero errores y avisos en la consola**, sin aviso de hidratación incluido |
+
+### Lo que la verificación encontró
+
+- **La "y" huérfana.** Mirando las capturas, a 1280 y a 390 la línea terminaba en *"Es la ley,
+  y"*. En v0.49.1 va un espacio duro después de la conjunción, y ahora corta en la coma. No lo
+  habría encontrado ningún test.
+- ⚠️ **Una sonda que mentía, y lo que midió de verdad.** La primera versión miraba sólo el
+  **primer** frame y dio *"sin telón"* en una corrida. Parecía que el telón, que va al final del
+  `<body>` y llega por streaming, dejaba ver la página un instante. Pero en ese frame **no había
+  sitio tampoco**: medía "todavía no llegó nada". Con un contador por frame que exige que el
+  sitio exista, da 0 incluso con la red estrangulada. **Por qué da 0:** el CSS del `<head>`
+  bloquea el render, y para cuando llega ya llegó el HTML entero. **Deja de ser cierto** si una
+  página crece hasta que su HTML llegue después que el CSS. El arreglo sería mover el telón
+  **antes** del sitio en `PuertaDeEdad`, que no cuesta nada. Disparador: que esta sonda dé un
+  frame distinto de 0.
+
+**Nadie lo miró en un teléfono de verdad**: los 390 son emulados. Lo mira el dueño.

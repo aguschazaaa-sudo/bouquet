@@ -78,8 +78,10 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### La puerta de edad: el telón que se levanta, en todo el sitio (2026-09-30)
 
-**Escrita; el deploy a la preview y su verificación están en
-[ADR 028](architecture/decisions/028-la-puerta-de-edad.md).** Cierra *la única pieza legal
+**Desplegada en la preview y verificada el 2026-09-30** (v0.49.1, rollout
+`build-2026-09-30-002`): CI restada (+4 tests exactos), canario discriminante, `preview.sh
+verificar` y Chrome por CDP a 1280 y 390, **20/20 con las capturas miradas**. El detalle está
+en [ADR 028](architecture/decisions/028-la-puerta-de-edad.md). Cierra *la única pieza legal
 obligatoria* que le faltaba a la vidriera (ARQUITECTURA §9.5), pendiente desde el
 2026-09-08. Sin openspec: el diseño ya estaba escrito en
 [parallax §10.2](design/parallax.md) y [voz §9.1](design/voz.md).
