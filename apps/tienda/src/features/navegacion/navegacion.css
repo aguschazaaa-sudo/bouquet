@@ -10,7 +10,10 @@
  *   z7     ESTA BARRA
  *   z8     la copa de progreso                (marca.css)
  *   z9     el grano                           (deco.css)
- *   z20    "saltar al contenido"              (globals.css)
+ *   z10    el telón de la puerta de edad      (edad.css) — trae su propio grano
+ *   z20    "saltar al contenido"              (globals.css) — pinta arriba del
+ *          telón, pero sólo aparece con foco, y con el telón puesto no puede
+ *          tenerlo: vive adentro del sitio, que está `inert`
  *
  * ⚠️ `.escena` es `position: relative` SIN `z-index`, así que no abre contexto
  * de apilamiento: los z de los planos compiten con los fijos en el mismo

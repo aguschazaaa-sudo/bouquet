@@ -76,6 +76,31 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### La puerta de edad: el telón que se levanta, en todo el sitio (2026-09-30)
+
+**Escrita; el deploy a la preview y su verificación están en
+[ADR 028](architecture/decisions/028-la-puerta-de-edad.md).** Cierra *la única pieza legal
+obligatoria* que le faltaba a la vidriera (ARQUITECTURA §9.5), pendiente desde el
+2026-09-08. Sin openspec: el diseño ya estaba escrito en
+[parallax §10.2](design/parallax.md) y [voz §9.1](design/voz.md).
+
+- **`features/edad/`**, montada en el **layout raíz**: se entra por cualquier ruta. Es un
+  overlay: el sitio se renderiza **entero debajo**, y Google lo sigue viendo.
+- **Quien ya entró no lo ve ni un frame**: un script en línea lee `localStorage` antes del
+  primer pintado. Se guarda un booleano y una fecha, **nunca la de nacimiento**.
+- **El scroll no se escapa**: `inert` en el sitio y el telón como contenedor de scroll con
+  `overscroll-behavior: contain`. La página queda en `scrollTop 0`, sin consumir animaciones.
+- **Sube en 800 ms, sin rebote**. Con *reducir movimiento*, un fundido de 150 ms. `Todavía
+  no` tiene respuesta y un camino de vuelta, curado por `voz`.
+- **Sin JavaScript no se muestra**: no se podría levantar, y sin JavaScript tampoco se puede
+  comprar.
+- Cero lecturas. `preview.sh verificar` suma el paso 5: telón en 4 rutas, script **antes**
+  del telón, fichas debajo, con control negativo.
+
+**Lo que sigue:** que el dueño lo mire en su teléfono. La preview deja de tener el hueco
+de ADR 017, pero **la publicación sigue con gates abiertos**: contacto provisorio, el
+checkout que no cobra, licencias, fuentes y el tramo 4. Desde 2026-09-30.
+
 ### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
 
 **Desplegado y verificado por bytes el 2026-09-29** (v0.46.1, `df1304b`): CI restada, canario
@@ -200,47 +225,6 @@ entero**.
 ⚠️ **Lo que sigue:** que el dueño arme una caja y elija la portada desde *Vidriera*, y
 publicar la tienda después de elegir la portada: se hornea en el build.
 
-### Hito 3, primer tramo: la portada la elige el dueño, y el panel dice cuándo se ve (2026-09-28)
-
-**Desplegado el 2026-09-28 —reglas, panel (v0.41.0, `4c75317`) y la preview de la
-tienda— y verificado en producción, las dos ramas. Nadie lo miró renderizado.** Sin openspec, a pedido
-del dueño: [ADR 023](architecture/decisions/023-la-portada-la-elige-el-duenio.md) es la
-especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 entero es esa
-épica; el segundo tramo son las cajas sugeridas, HU-09.2 y 09.3).
-
-- **Sección nueva en el panel: Vidriera.** *"La portada"*: hasta 6 vinos en el orden del
-  dueño, agregar / subir / bajar / sacar, **cada gesto se guarda en el acto**. El que la
-  portada va a saltear —no está en la tienda, viene en caja, sin stock— sale en rojo con
-  el porqué; si la portada va a usar la regla, lo dice arriba.
-- **`seleccion/publica`**, un documento que el panel escribe directo: las reglas cierran
-  la forma (hasta 6 ids sin repetir, sólo `productoIds`, no se borra). La portada lee
-  **una vez por build**: con elección, **sólo los del dueño** —la regla no completa—; sin
-  elección, o sin ninguno dibujable, la regla provisoria de ADR 008 §7.
-- **HU-09.4:** `apps/admin/lib/core/presentation/cuando_se_ve.dart` tiene los dos plazos
-  —**~13 min** el catálogo, **la próxima publicación de la tienda** la portada— y el
-  aviso sale tras guardar precio, publicar o sacar, la ficha, las fotos y la portada.
-  Publicar, la ficha y las fotos no decían nada.
-- **CI encontró un acople que no se veía:** `documento_del_vino_test.dart` lee el PRIMER
-  `hasOnly` sobre `d` de `firestore.rules`, y la función nueva quedó antes que
-  `productoValido`. Se renombró su parámetro, con el porqué escrito al lado.
-
-| Qué | Cómo |
-|---|---|
-| Las suites | CI `36494514104` restada contra `36475268911`: contratos 268 → **276 (+8)**, tienda 34 → **38 (+4)**, emulador 187 → **198 (+11)**, Dart 488 → **497 (+9)**, `flutter analyze` *No issues found* |
-| Reglas | Por la API de Rules: release de las 23:45:35Z, el ruleset publicado es **idéntico byte a byte** al archivo (SHA-256), tiene `seleccionValida(sel)`; un string inventado da 0 |
-| Panel | Build `36499391552` → canal → canario discriminante (4 cadenas nuevas 0 → ≥1, `"Vino sacado de la tienda."` 1 → 0, inventada 0 → 0) → live con los 4 hashes iguales, `noindex` |
-| Tienda | Rollout `build-2026-09-28-001` `SUCCEEDED` con el 100 % del tráfico, 7 rutas con `noindex`, gates cerrados. **Control de regresión:** sin `seleccion/publica` (404), la portada muestra los mismos 6 que antes |
-
-**La rama positiva, con autorización del usuario:** una selección de prueba en
-`seleccion/publica` y la preview otra vez (rollout `build-2026-09-29-001`): la portada
-muestra **exactamente** los 5 esperados en el orden elegido —uno que aparece, dos que
-desaparecen, un agotado salteado, sin relleno de la regla—.
-
-⚠️ **La selección de prueba sigue en `seleccion/publica`**: borrarla lo frenó el
-clasificador. Hasta limpiarla, *Vidriera* la muestra como del dueño y la próxima
-publicación de la tienda la hornea. Se limpia sacando los seis en *Vidriera*, o
-eligiendo los reales.
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -274,7 +258,7 @@ eligiendo los reales.
 | ⚠️ **La vidriera NO tiene sitemap, ninguna ruta** | Lo destapó `cazador-de-puertas` cerrando `/oficio`: no existe `sitemap.ts`, `sitemap.xml` ni `robots.ts` en todo el repo, así que hoy la única cobertura de descubribilidad es la barra de navegación. No se escribió acá a propósito: un `sitemap.ts` necesita una URL base y **todavía no hay dominio**, así que saldría apuntando a un host inventado. **Disparador: el día que exista dominio** — el mismo día que se puede medir la purga de Cloudflare y que se resuelve el mail del mostrador. Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **`frontera-features.sh` no ve los imports RELATIVOS entre features** | Su regla 2 grepea sólo `from '@/features/`. El **mismo** import escrito `from '../landing/seleccion'` **pasa**, medido con los dos controles uno al lado del otro. ADR 006 regla 3 queda a medias: la mide un hook que se esquiva con una ruta relativa. No se tocó en este cambio para no meter una modificación de enforcement adentro de una tarea de feature. **Disparador:** antes de la próxima feature nueva de la vidriera, o el día que alguien escriba un import relativo entre features. Desde 2026-09-09. | el usuario |
 | ⚠️ **`call-site-guard` cuenta los sourcemaps del build como call sites** | Grepea `apps/ packages/ functions/ scripts/` enteros, y ahí adentro están `node_modules` y `.next`. Los `*.js.map` **embeben el fuente**, así que un símbolo que no abre nadie aparece "usado" en cuanto corrió un `next build`: dio verde con dos exports huérfanos que un grep acotado a `src/` sí encontró. Es la misma familia que `generar_verdad.mjs` contando comentarios. Y es O(símbolos × repo): sobre un archivo con 8 exports tarda **más de dos minutos**, así que como PostToolUse frena la escritura. **Disparador:** la próxima vez que el hook tarde o que un huérfano pase. Desde 2026-09-09. | el usuario |
-| ⚠️ **La home NO tiene puerta de edad, y es la única pieza legal obligatoria** | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
+| ~~**La home NO tiene puerta de edad, y es la única pieza legal obligatoria**~~ **Resuelto el 2026-09-30** ([ADR 028](architecture/decisions/028-la-puerta-de-edad.md)): el telón está en el layout raíz, en todas las rutas. Lo de abajo queda como historia | [ARQUITECTURA §9.5](../../ARQUITECTURA.md#95-alcohol-y-edad) la exige, y es requisito de **arquitectura**: no se va con la composición que se descarta. Las composiciones 4 y 6 sí la construyeron (`PuertaDeEdad.tsx` + `puerta.css`, en `home-parallax-c` y `-d`); **la que ganó se escribió antes de que ese requisito bajara a código**. ⚠️ No se copia y pega: su diseño es decisión de composición y el de `-d` está dibujado con el cartucho del libro túnel. **Disparador: bloquea el deploy.** Desde 2026-09-08. | el dueño + `tienda` |
 | ~~**La selección de la home la elige una regla, no el dueño**~~ **Resuelto el 2026-09-28** ([ADR 023](architecture/decisions/023-la-portada-la-elige-el-duenio.md)): la elige desde el panel, en *Vidriera*. Lo que queda es que la elija, con el catálogo real | `elegirSeleccion` toma seis por ventas, sin agotados ni cajas y con los tres colores. La escena dice "los elegimos de a uno", y eso pide un dato que el modelo no tiene: que el dueño marque cuáles, con su campo en contratos, reglas y panel. **Disparador:** cuando el dueño cargue su catálogo real. Desde 2026-09-11. | el dueño + `contratos` |
 | ~~**Las SEIS tarjetas de la home apuntan a fichas que no existen**~~ **Resuelto el 2026-09-11:** salen del catálogo y sus seis fichas dan 200 (ADR 008 §7). | ~~`/vinos` no existe y la home lo apunta dos veces~~ — **resuelto el 2026-09-09**: `/vinos` existe y los dos CTA duros dan 200. Pero contando los `href` del HTML servido aparecieron **seis más**: `/vinos/muestra-01` … `-06`, las tarjetas de `EscenaSeleccion`, todas **404**. El vault decía "dos" y eran **ocho**. No se arreglan con un placeholder: son la ficha, paso 5 de ARQUITECTURA §12, y hacer que `/vinos/<cualquier-cosa>` devuelva 200 es peor que un 404. **Actualizado el 2026-09-11:** `/vinos/[slug]` ya existe, y un slug que no está da 404, que es lo correcto; lo que falta es que las tarjetas apunten a slugs reales. Y sus datos son inventados mientras `LA_SELECCION_ES_DE_MUESTRA` siga en `true`. **Disparador: bloquea el deploy.** Desde 2026-09-09. | el dueño + `tienda` |
 | ⚠️ **Los 8 assets están commiteados y no tienen `LICENCIAS.md`** | `ambiente`, `botella`, `cava-h/v`, `mesa-h/v`, `rack-h/v`. La única tabla de licencias verificada que existió es la de los **17 assets de `home-parallax-b`**, y **no cubre a éstos**. De esta misma tanda salió la foto con marca de agua `Unsplash+` tileada, que se descubrió **abriendo el PNG**, no leyendo metadatos. `scripts/assets/traer_landing.py` es la herramienta. **Disparador: antes del deploy.** Desde 2026-09-08. | el dueño |
@@ -309,6 +293,7 @@ eligiendo los reales.
 | 024 | Las cajas sugeridas se guardan **enteras por la callable `guardarCajasSugeridas`**: el slug lo deriva el servidor, y exige composición, no publicado ni stock | [024](architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) |
 | 025 | El panel se entra por **Resumen**: el día con `count()` y `limit(50)`, lo agotado en memoria; la popularidad la **mide un job diario** que recalcula el documento entero, y sin medición no hay ranking | [025](architecture/decisions/025-el-tablero-del-panel.md) |
 | 026 | El umbral de la entrega sin cargo vive en **`config/envios`**, lo escribe **sólo `fijarEnvioSinCargo`** con una baranda sobre el valor nuevo que **pregunta**; la vidriera lo muestra, y lo que se cobra lo decide `crearOrden` | [026](architecture/decisions/026-envio-sin-cargo.md) |
+| 028 | La puerta de edad es un **telón sobre el sitio entero** montado en el layout raíz, que **no bloquea el render**: un script en línea la esconde antes del primer pintado para quien ya entró, `inert` sale del efecto y no de una prop, y **sin JavaScript no se muestra** | [028](architecture/decisions/028-la-puerta-de-edad.md) |
 
 ---
 
@@ -329,7 +314,7 @@ Los que bloquean algo:
 | Deploy desde tag en vez de rama | Antes del primer deploy que incluya cobro | 2026-09-01 |
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
-| ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más puerta de edad, contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
+| ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más ~~puerta de edad~~ (resuelta el 2026-09-30, [ADR 028](architecture/decisions/028-la-puerta-de-edad.md)), contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
 | **HU-04.2 — ordenar las fotos que NO son la principal.** Elegir la principal se construyó el 2026-09-24 ([ADR 015 §7](architecture/decisions/015-fotos-del-panel.md)); la vidriera lee sólo `imagenes[0]`, así que ordenar el resto no cambia nada visible | El día que la ficha muestre más de una foto | 2026-09-22 |
 | **El recorte de fondo de una foto de cámara**, con un modelo real — el clasificador por umbral se midió y se refutó (ADR 015 §2) | Que la previsualización resulte insuficiente, mirándola | 2026-09-22 |
 | **Los crudos huérfanos en Storage** si `procesarFoto` falla a mitad de camino: no son alcanzables y no rompen nada. Entre el 2026-09-22 y el 2026-09-23 se produjo uno en CADA intento de subida, mientras el preflight de la callable daba 403 — **RESUELTO el CORS el 2026-09-23** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)), vuelve a ser el caso raro original | Cuando pesen, y hay que barrer los que deje un fallo a mitad de camino | 2026-09-22 |
@@ -342,7 +327,7 @@ Los que bloquean algo:
 | **El tope de 5.000 unidades por vino** es una decisión mía, no del dueño ([ADR 016](architecture/decisions/016-mover-el-stock.md) §1) | Que el dueño lo confirme, o el primer vino real que se le acerque | 2026-09-23 |
 | **`/favicon.ico` da 404 en la vidriera** (único error de consola de la preview): la tienda no tiene favicon | Antes de publicar de verdad | 2026-09-23 |
 | ⚠️ **La cuenta de servicio de la preview tiene `firebase.sdkAdminServiceAgent`**, que incluye escritura y el CLI re-otorga en cada deploy ([ADR 017](architecture/decisions/017-preview-cerrada.md) §6). La vidriera sólo lee | **Antes de publicar de verdad**: una cuenta dedicada con `roles/datastore.viewer` | 2026-09-23 |
-| **Basic auth en la preview**, que cierra de verdad el hueco de que no hay puerta de edad | Si la URL se va a compartir fuera de la familia | 2026-09-23 |
+| **Basic auth en la preview**. ~~Cierra el hueco de que no hay puerta de edad~~: desde el 2026-09-30 la hay ([ADR 028](architecture/decisions/028-la-puerta-de-edad.md)). Queda por el contacto provisorio y el checkout que no cobra | Si la URL se va a compartir fuera de la familia | 2026-09-23 |
 | ⚠️ **EP-07: despachar y cancelar un pedido.** Sin ella los pedidos se acumulan en `sin_preparar` (ADR 018 §10): la bandeja cuesta 25 lecturas por apertura desde el segundo día, el aviso de stock de la hoja de corrección no es fiable, y un pedido mal cargado no sale. **Lo que sigue** | **Bloquea que el hito 2 sirva.** Empezar por HU-07.6 (cancelar, Workflow D) y HU-07.1/07.2 | 2026-09-24 |
 | **Nadie llamó a `crearOrdenDelPanel` como usuario real** ni miró el panel renderizado (ADR 018, *Lo que NO se verificó*) | La primera carga real del dueño; y que la mire con sus ojos, en escritorio y en el teléfono | 2026-09-24 |
 | **¿Un pedido de WhatsApp puede ser de un vino que la tienda no muestra?** Se decidió que sí (ADR 018 §5) y el selector lo marca *«no está en la tienda»*; contradice ADR 014, donde despublicar es sacar de la venta | Que el dueño lo confirme o lo cambie (es una línea) | 2026-09-24 |

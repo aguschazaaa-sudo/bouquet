@@ -331,6 +331,19 @@ que el negocio está en regla — que es *Seguridad* y *Transparencia*, dos de l
 tres valores del brief. Y `Todavía no` es cordial sin ser condescendiente:
 dice que la puerta se va a poder abrir algún día.
 
+**La respuesta a `Todavía no`:**
+
+> **Entonces, todavía no.**
+>
+> Volvé cuando cumplas 18. Vamos a seguir acá.
+>
+> `Me equivoqué`
+
+**Por qué así:** repite el `todavía` del botón, así la respuesta suena a
+continuación y no a sentencia; el hecho y la salida, sin reproche, igual que
+§9.7. `Me equivoqué` es el único camino de vuelta a la pregunta, y está escrito
+en primera persona para que sea de quien apretó, no del sitio.
+
 ### 9.2 El balde de stock
 
 Tres estados, y ninguno afirma un número (glosario §7.4).

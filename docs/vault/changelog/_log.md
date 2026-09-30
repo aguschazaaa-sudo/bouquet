@@ -9,6 +9,55 @@
 
 ---
 
+## Salió el 2026-09-30, al construir la puerta de edad
+
+Sale la del primer tramo del hito 3 (2026-09-28): con la puerta de edad sumada al dashboard,
+era la más vieja de las cinco. El porqué sigue en
+[ADR 023](../architecture/decisions/023-la-portada-la-elige-el-duenio.md).
+
+### Hito 3, primer tramo: la portada la elige el dueño, y el panel dice cuándo se ve (2026-09-28)
+
+**Desplegado el 2026-09-28 —reglas, panel (v0.41.0, `4c75317`) y la preview de la
+tienda— y verificado en producción, las dos ramas. Nadie lo miró renderizado.** Sin openspec, a pedido
+del dueño: [ADR 023](../architecture/decisions/023-la-portada-la-elige-el-duenio.md) es la
+especificación. **HU-09.1 y HU-09.4**, el primer tramo de EP-09 (el hito 3 entero es esa
+épica; el segundo tramo son las cajas sugeridas, HU-09.2 y 09.3).
+
+- **Sección nueva en el panel: Vidriera.** *"La portada"*: hasta 6 vinos en el orden del
+  dueño, agregar / subir / bajar / sacar, **cada gesto se guarda en el acto**. El que la
+  portada va a saltear —no está en la tienda, viene en caja, sin stock— sale en rojo con
+  el porqué; si la portada va a usar la regla, lo dice arriba.
+- **`seleccion/publica`**, un documento que el panel escribe directo: las reglas cierran
+  la forma (hasta 6 ids sin repetir, sólo `productoIds`, no se borra). La portada lee
+  **una vez por build**: con elección, **sólo los del dueño** —la regla no completa—; sin
+  elección, o sin ninguno dibujable, la regla provisoria de ADR 008 §7.
+- **HU-09.4:** `apps/admin/lib/core/presentation/cuando_se_ve.dart` tiene los dos plazos
+  —**~13 min** el catálogo, **la próxima publicación de la tienda** la portada— y el
+  aviso sale tras guardar precio, publicar o sacar, la ficha, las fotos y la portada.
+  Publicar, la ficha y las fotos no decían nada.
+- **CI encontró un acople que no se veía:** `documento_del_vino_test.dart` lee el PRIMER
+  `hasOnly` sobre `d` de `firestore.rules`, y la función nueva quedó antes que
+  `productoValido`. Se renombró su parámetro, con el porqué escrito al lado.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36494514104` restada contra `36475268911`: contratos 268 → **276 (+8)**, tienda 34 → **38 (+4)**, emulador 187 → **198 (+11)**, Dart 488 → **497 (+9)**, `flutter analyze` *No issues found* |
+| Reglas | Por la API de Rules: release de las 23:45:35Z, el ruleset publicado es **idéntico byte a byte** al archivo (SHA-256), tiene `seleccionValida(sel)`; un string inventado da 0 |
+| Panel | Build `36499391552` → canal → canario discriminante (4 cadenas nuevas 0 → ≥1, `"Vino sacado de la tienda."` 1 → 0, inventada 0 → 0) → live con los 4 hashes iguales, `noindex` |
+| Tienda | Rollout `build-2026-09-28-001` `SUCCEEDED` con el 100 % del tráfico, 7 rutas con `noindex`, gates cerrados. **Control de regresión:** sin `seleccion/publica` (404), la portada muestra los mismos 6 que antes |
+
+**La rama positiva, con autorización del usuario:** una selección de prueba en
+`seleccion/publica` y la preview otra vez (rollout `build-2026-09-29-001`): la portada
+muestra **exactamente** los 5 esperados en el orden elegido —uno que aparece, dos que
+desaparecen, un agotado salteado, sin relleno de la regla—.
+
+⚠️ **La selección de prueba sigue en `seleccion/publica`**: borrarla lo frenó el
+clasificador. Hasta limpiarla, *Vidriera* la muestra como del dueño y la próxima
+publicación de la tienda la hornea. Se limpia sacando los seis en *Vidriera*, o
+eligiendo los reales.
+
+---
+
 ## Salió el 2026-09-29, al sacar la marca de WhatsApp
 
 Sale la del quinto tramo del hito 2 (2026-09-28): con la de *pedidos sin burocracia* sumada

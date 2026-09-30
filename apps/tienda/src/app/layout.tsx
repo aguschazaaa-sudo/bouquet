@@ -3,7 +3,10 @@ import type { ReactNode } from 'react';
 import { Archivo, Fraunces, Newsreader } from 'next/font/google';
 import { AvisoDelCarrito } from '@/features/carrito/AvisoDelCarrito';
 import { ContadorDelCarrito } from '@/features/carrito/ContadorDelCarrito';
+import { ESTILO_SIN_SCRIPT, SCRIPT_EDAD } from '@/features/edad/edad';
+import { PuertaDeEdad } from '@/features/edad/PuertaDeEdad';
 import { BarraPrincipal } from '@/features/navegacion/BarraPrincipal';
+import { Copa } from '@/shared/marca/Copa';
 import { COLORES } from '@/shared/tokens/colores';
 import './globals.css';
 
@@ -72,19 +75,41 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="es-AR" className={`${fraunces.variable} ${newsreader.variable} ${archivo.variable}`}>
+    /* `suppressHydrationWarning` porque el script de abajo escribe `data-edad`
+     * en este mismo elemento antes de que React hidrate. Es el caso para el
+     * que existe la bandera, no una alfombra: sólo cubre los atributos de
+     * este elemento, no los de sus hijos. */
+    <html
+      lang="es-AR"
+      className={`${fraunces.variable} ${newsreader.variable} ${archivo.variable}`}
+      suppressHydrationWarning
+    >
       <body>
-        {/* La barra va en el layout y no en cada página: es la misma pieza en
-            todas las rutas, y duplicarla sería la forma más rápida de que una
-            sección quede sin navegación. Se pinta ANTES del contenido para que
-            el orden del DOM coincida con el orden de lectura — un usuario de
-            teclado llega a la navegación primero, que es donde la espera. */}
-        {/* El contador llega a la barra como slot: navegacion/ no sabe que
-            existe un carrito, y el layout es el único que compone las dos
-            features (ADR 006, design.md §3). */}
-        <BarraPrincipal contador={<ContadorDelCarrito />} />
-        {children}
-        <AvisoDelCarrito />
+        {/* Primer hijo del body: corre antes de que el navegador llegue al
+            telón, así que quien ya entró no lo ve parpadear. Ver `edad.ts`. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_EDAD }} />
+
+        {/* La puerta de edad va en el layout RAÍZ y no en la home: ARQUITECTURA
+            §9.5 la pide al entrar al SITIO, y se entra también por una ficha
+            que llegó por un link. Envuelve todo, pero no lo condiciona: el
+            sitio se renderiza entero debajo del telón. */}
+        <PuertaDeEdad sello={<Copa id="puerta" nivel={0.62} className="puerta__copa" />}>
+          {/* La barra va en el layout y no en cada página: es la misma pieza en
+              todas las rutas, y duplicarla sería la forma más rápida de que una
+              sección quede sin navegación. Se pinta ANTES del contenido para que
+              el orden del DOM coincida con el orden de lectura — un usuario de
+              teclado llega a la navegación primero, que es donde la espera. */}
+          {/* El contador llega a la barra como slot: navegacion/ no sabe que
+              existe un carrito, y el layout es el único que compone las dos
+              features (ADR 006, design.md §3). */}
+          <BarraPrincipal contador={<ContadorDelCarrito />} />
+          {children}
+          <AvisoDelCarrito />
+        </PuertaDeEdad>
+
+        <noscript>
+          <style>{ESTILO_SIN_SCRIPT}</style>
+        </noscript>
       </body>
     </html>
   );

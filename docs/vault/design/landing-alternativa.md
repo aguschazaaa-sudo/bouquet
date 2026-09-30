@@ -3,8 +3,10 @@
 - **Fecha:** 2026-09-04. **Elegida el 2026-09-08.**
 - **Estado:** ✅ **ELEGIDA.** El dueño la eligió el 2026-09-08 entre las seis
   composiciones que llegaron a existir, y es **la home que vive en `main`**.
-  Construida y navegable; ⚠️ **sin desplegar** — le falta la puerta de edad y
-  `/vinos` no existe, las dos anotadas en [`_index.md`](../_index.md).
+  Construida y navegable; ⚠️ **sin desplegar** — ~~le falta la puerta de edad y
+  `/vinos` no existe~~: las dos existen (`/vinos` desde el 2026-09-09, la puerta
+  desde el 2026-09-30, [ADR 028](../architecture/decisions/028-la-puerta-de-edad.md)).
+  Los gates que quedan están en [`_index.md`](../_index.md).
   Ya no compite con [`escenas.md`](escenas.md): lo reemplaza.
 - **Por qué existe:** el dueño no quedó convencido de `escenas.md`. Sus cuatro
   objeciones, textuales, están en §1 y cada una tiene abajo qué se hizo con
@@ -439,7 +441,7 @@ ningún host de Firestore.
 | ~~`/vinos` no existe~~ **Resuelto:** existe desde el 2026-09-11 con el catálogo, y las seis tarjetas abren fichas que dan 200 | — | — |
 | **`tokens.md` sigue sin existir** | — | Esta rama adelantó la *implementación* de los tokens porque existe para mirar una composición. **El documento sigue siendo el bloqueo** y los nombres de `tokens.css` son provisorios |
 | **`generar_verdad.mjs` cuenta comentarios como call sites** | técnica | Usa `new RegExp('\\b' + nombre + '\\b')` sobre el fuente entero. La palabra `CERO` en un comentario bajó los "sin puerta" de 16 a 15 sin que nadie abriera nada. **Se detectó y se esquivó reformulando el comentario, que es un parche.** Disparador: la próxima vez que el número se mueva sin causa |
-| **La puerta de edad (el telón) NO está** | — | Se dejó afuera a propósito: obliga a un clic en cada recarga y eso es exactamente la fricción que impide juzgar una composición mirándola. Está especificada en `parallax.md §10.2` y `voz.md §9.1`. Disparador: antes de publicar el dominio |
+| ~~**La puerta de edad (el telón) NO está**~~ **Está desde el 2026-09-30**, en el layout raíz y no en esta composición ([ADR 028](../architecture/decisions/028-la-puerta-de-edad.md)); se pide una vez por navegador, no en cada recarga | — | Se dejó afuera a propósito: obliga a un clic en cada recarga y eso es exactamente la fricción que impide juzgar una composición mirándola. Está especificada en `parallax.md §10.2` y `voz.md §9.1`. Disparador: antes de publicar el dominio |
 | **La segunda dirección de arte de `ambiente` y `botella`** | — | Hoy sirven una sola pieza para las dos formas. Es aceptable en un bokeh y en un recorte; no lo sería en un escenario |
 | **Sin promesa de entrega en el pie** | el dueño | `voz.md §6` prohíbe una ventana de entrega sin `Zona` que la garantice. Cuando exista `Zona`, el pie es su lugar |
 | **Elegir entre esta composición y `escenas.md`** | **el dueño** | Ahora. **Las dos no se mergean.** La que pierda se archiva en `changelog/`, con el porqué |

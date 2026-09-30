@@ -1,0 +1,161 @@
+/* edad.css — el telón de la puerta de edad.
+ *
+ * parallax.md §10.2 lo diseña y direccion.md §8.2 le da el carácter: el telón
+ * PESA. Sube como una cortina, no como un modal — y por eso no hay `scale`, ni
+ * fundido desde el centro, ni rebote. El copy sale de voz.md §9.1.
+ *
+ * ⚠️ Es un overlay sobre contenido que ya está en el HTML (ARQUITECTURA §9.5).
+ * Nada de acá esconde el sitio: lo tapa.
+ */
+
+/* El contenedor del sitio no dibuja nada. Existe para poder ponerle `inert`
+ * (ver PuertaDeEdad.tsx), y no tiene que cambiar ni una línea del layout de
+ * lo que envuelve. */
+.sitio {
+  display: block;
+}
+
+.puerta {
+  /* La única animación grande por tiempo de la página (parallax.md §4.3):
+   * 700-900 ms, ease-out, sin rebote. */
+  --dur-telon: 800ms;
+
+  position: fixed;
+  inset: 0;
+  /* Arriba de todo lo fijo: la barra (z7), la copa de progreso (z8) y el
+   * grano de la página (z9). La escala está en navegacion.css. */
+  z-index: 10;
+
+  /* EL SCROLL, parallax.md §10.2 requisito 3: sin `overflow: hidden` en el
+   * body. El telón es él mismo un contenedor de scroll y NO deja que el gesto
+   * pase a la página (`overscroll-behavior: contain`).
+   *
+   * ⚠️ `contain` sólo retiene el gesto si el contenedor puede scrollear: uno
+   * que no desborda no entra en la cadena y la rueda le llega a la página.
+   * Por eso `.puerta__escenario` mide un píxel más que el telón. Y ahí está
+   * la ventaja estructural de §10.2: con la página clavada en `scrollTop 0`,
+   * ninguna animación atada al scroll se consume antes de entrar. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+
+  background-color: var(--tinta);
+  /* La misma lámpara que el body: el telón es el lugar, no una ventana
+   * encima del lugar. */
+  background-image: radial-gradient(
+    ellipse 80% 60% at 50% 0%,
+    color-mix(in srgb, var(--borgona) 30%, transparent),
+    transparent 65%
+  );
+
+  /* El dobladillo. En reposo cae justo en el borde de la pantalla; al subir
+   * cruza la página entera y es lo que hace que se lea como una tela y no
+   * como una pantalla que se va. La sombra es la luz que el telón le quita a
+   * lo de abajo, no una elevación de tarjeta (direccion.md §6). */
+  border-block-end: var(--filete) solid var(--oro-tenue);
+  box-shadow: 0 var(--e-5) var(--e-7) color-mix(in srgb, var(--negro) 55%, transparent);
+
+  transition: translate var(--dur-telon) var(--ease-caida);
+}
+
+.puerta::-webkit-scrollbar {
+  display: none;
+}
+
+.puerta[data-fase='subiendo'] {
+  translate: 0 -100%;
+}
+
+/* parallax.md §7.3: reducir movimiento NO es "sin animación". Se va el
+ * desplazamiento de una pantalla entera y queda un fundido de 150 ms. */
+@media (prefers-reduced-motion: reduce) {
+  .puerta {
+    transition: opacity 150ms linear;
+  }
+
+  .puerta[data-fase='subiendo'] {
+    translate: none;
+    opacity: 0;
+  }
+}
+
+/* Quien ya entró. El atributo lo escribe el script en línea de `edad.ts`
+ * ANTES del primer pintado: sin él, el telón parpadearía en cada carga. */
+[data-edad='ok'] .puerta {
+  display: none;
+}
+
+.puerta__escenario {
+  /* Un píxel más que el telón: es lo que lo hace un contenedor de scroll de
+   * verdad (ver arriba). Y en un teléfono acostado, donde la placa no entra,
+   * el mismo scroll es el que deja llegar al botón. */
+  min-block-size: calc(100% + 1px);
+  display: grid;
+  place-items: center;
+  padding: var(--e-7) var(--e-4);
+}
+
+.puerta__placa {
+  inline-size: min(100%, 36rem);
+  display: grid;
+  justify-items: center;
+  gap: var(--e-5);
+  text-align: center;
+}
+
+.puerta__sello {
+  display: grid;
+  justify-items: center;
+  gap: var(--e-2);
+}
+
+.puerta__copa {
+  width: clamp(26px, 3vw, 36px);
+}
+
+.puerta__marca {
+  font-size: var(--t-rotulo);
+  color: var(--marfil-1);
+}
+
+.puerta__titulo {
+  font-size: var(--t-h2);
+  color: var(--marfil);
+}
+
+.puerta__texto {
+  max-width: var(--medida);
+  margin: 0;
+}
+
+.puerta__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--e-4) var(--e-5);
+  margin-block-start: var(--e-2);
+}
+
+/* `Todavía no` no compite con `Soy mayor de 18`: es una salida, no una
+ * alternativa. Dos botones del mismo peso en la primera pantalla son el ruido
+ * que direccion.md §6 prohíbe. */
+.puerta__salida {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: var(--e-3) var(--e-4);
+  font-family: var(--tipo-display);
+  font-variant-caps: all-small-caps;
+  letter-spacing: var(--tracking-versalita);
+  font-size: var(--t-cuerpo);
+  font-weight: var(--peso-versalita);
+  color: var(--marfil-2);
+  cursor: pointer;
+  transition: color var(--dur-media) var(--ease-caida);
+}
+
+.puerta__salida:hover,
+.puerta__salida:focus-visible {
+  color: var(--marfil);
+}

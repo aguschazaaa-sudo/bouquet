@@ -1,7 +1,7 @@
 # La preview cerrada de la vidriera (docs/vault/architecture/decisions/017-preview-cerrada.md).
 #
 # NO es la publicacion de la tienda: los gates de deploy siguen cerrados
-# (puerta de edad, contacto provisorio, el checkout que no cobra). Esto es un
+# (contacto provisorio, el checkout que no cobra; la puerta de edad ya esta). Esto es un
 # lugar para MIRAR el catalogo real, sin dominio y sin indexar.
 
 runConfig:

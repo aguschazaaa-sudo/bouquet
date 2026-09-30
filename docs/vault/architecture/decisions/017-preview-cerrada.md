@@ -38,7 +38,7 @@ ve. Los gates de deploy **siguen abiertos** y esta preview no los cierra:
 
 | Gate | Estado en la preview |
 |---|---|
-| Puerta de edad | **No existe.** Es lo que hace que esto no pueda ser público |
+| Puerta de edad | ~~**No existe.**~~ **Existe desde el 2026-09-30** ([ADR 028](028-la-puerta-de-edad.md)); `verificar` la mide en cada ruta. Ya no es lo que impide que esto sea público |
 | Contacto | Provisorio: el WhatsApp es el del desarrollador (`EL_CONTACTO_ES_PROVISORIO`) |
 | Checkout | Armado y **no cobra** (`EL_CHECKOUT_NO_COBRA`); el botón está deshabilitado |
 | Datos | 20 vinos de muestra + los que el dueño cargó |
@@ -193,7 +193,7 @@ bouquet-vinos --force` la apaga entera. **Vigilar el uso el día que se comparta
 
 ## Lo que queda abierto
 
-- **La puerta de edad, el contacto real, el dominio, el tramo 4 y las licencias**
+- ~~**La puerta de edad**~~ (resuelta, [ADR 028](028-la-puerta-de-edad.md)), **el contacto real, el dominio, el tramo 4 y las licencias**
   son los gates de la **publicación**, no de esta preview. Siguen como estaban.
 - **`/favicon.ico` da 404** (único error de consola): la tienda no tiene favicon.
 - **Los roles anchos de la cuenta de servicio** (§6), antes de publicar de

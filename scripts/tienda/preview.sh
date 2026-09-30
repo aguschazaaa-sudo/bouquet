@@ -13,7 +13,8 @@
 #       sea el de Firestore, y que los gates sigan CERRADOS.
 #
 # Esto NO es la publicacion de la tienda: los gates de deploy siguen abiertos
-# (puerta de edad, contacto provisorio, el checkout que no cobra).
+# (contacto provisorio, el checkout que no cobra). La puerta de edad ya esta,
+# y `verificar` mide que siga en cada ruta.
 set -euo pipefail
 
 PROYECTO=bouquet-vinos
@@ -91,6 +92,27 @@ verificar() {
   contacto=$(curl -s "$URL/oficio" | grep -c 'data-contacto-provisorio' || true)
   [ "$contacto" -ge 1 ] || falla "el gate del contacto provisorio no aparece en /oficio"
   ok "gates cerrados: checkout que no cobra y contacto provisorio (con control negativo)"
+
+  # 5. La puerta de edad (ARQUITECTURA 9.5), en tres cosas que un 200 no prueba:
+  # que el telon este en el HTML de cada ruta y no solo en la home; que el
+  # script que lo esconde para quien ya entro venga ANTES (si viene despues, el
+  # telon parpadea en cada carga); y que el contenido siga entero debajo -- un
+  # telon que bloquea el render deja a Google sin nada que indexar.
+  local html telon script fichas
+  for ruta in / /vinos /oficio /carrito; do
+    html=$(curl -s "$URL$ruta")
+    telon=$( (echo "$html" | grep -bo 'data-fase="puesta"' || true) | head -1 | cut -d: -f1)
+    script=$( (echo "$html" | grep -bo 'localStorage.getItem("bouquet.edad")' || true) | head -1 | cut -d: -f1)
+    [ -n "$telon" ] || falla "$ruta no trae la puerta de edad en el HTML"
+    [ -n "$script" ] || falla "$ruta no trae el script que recuerda la edad"
+    [ "$script" -lt "$telon" ] || falla "$ruta: el script de la edad viene DESPUES del telon (byte $script > $telon)"
+  done
+  html=$(curl -s "$URL/vinos")
+  fichas=$(echo "$html" | grep -oE 'href="/vinos/[a-z0-9-]+"' | sort -u | wc -l)
+  [ "$fichas" -gt 0 ] || falla "/vinos trae el telon pero no las fichas: el telon esta bloqueando el render"
+  inventado=$(echo "$html" | grep -c 'data-fase="zz-inventada-2026"' || true)
+  [ "$inventado" -eq 0 ] || falla "el control negativo del telon coincide: la medicion no discrimina"
+  ok "puerta de edad en 4 rutas, con el script antes del telon y $fichas fichas debajo (con control negativo)"
   echo "    $URL"
 }
 
