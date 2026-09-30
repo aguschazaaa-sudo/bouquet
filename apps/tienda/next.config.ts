@@ -29,21 +29,25 @@ const nextConfig: NextConfig = {
    * slugs si cambia (ADR 008). */
   async headers() {
     return [
-      /* `noindex` SÓLO en la URL técnica de App Hosting (`*.hosted.app`), no
-       * en el dominio. Reemplaza a `PREVIEW_CERRADA` (ADR 017 §4): la tienda
-       * se publica, y la URL de App Hosting no se apaga porque es por donde se
-       * mide el origen salteando Cloudflare (ADR 005, medición 2). Sin esto
-       * Google indexa las dos y se reparte la misma página entre dos hosts.
+      /* PREVIEW CERRADA (ADR 017). Se prende SOLO con `PREVIEW_CERRADA=1` en
+       * el `apphosting.yaml` de esta carpeta, y por eso vive acá y no fijo:
+       * el día que se publique la tienda de verdad, salir con `noindex` la
+       * dejaría afuera de Google sin un solo error. Se lee al BUILD --
+       * `headers()` se compila en el manifiesto de rutas --, así que la
+       * variable tiene que estar disponible en `BUILD`, no sólo en `RUNTIME`.
        *
-       * Next arma `^valor$` con el `Host` del pedido en minúsculas y sin
-       * puerto (`matchHas`, prepare-destination.js): es una regex entera.
-       * ⚠️ Se verifica con el dominio conectado y con los dos controles: la
-       * URL de App Hosting CON el header, el dominio SIN él. */
-      {
-        source: '/:path*',
-        has: [{ type: 'host', value: '.+\\.hosted\\.app' }],
-        headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
-      },
+       * ⚠️ NO es `has: [{ type: 'host', value: '.+\\.hosted\\.app' }]`: se
+       * desplegó el 2026-09-30 (rollout build-2026-09-30-005) y en App Hosting
+       * NO coincide, la URL técnica salió SIN noindex. El Host que le llega a
+       * Next no es el público. El día del dominio, medir primero cuál llega. */
+      ...(process.env.PREVIEW_CERRADA === '1'
+        ? [
+            {
+              source: '/:path*',
+              headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
+            },
+          ]
+        : []),
       { source: '/vinos', headers: [{ key: 'Cache-Tag', value: 'catalogo' }] },
       { source: '/vinos/:slug', headers: [{ key: 'Cache-Tag', value: 'catalogo, producto-:slug' }] },
       { source: '/carrito', headers: [{ key: 'Cache-Tag', value: 'catalogo' }] },

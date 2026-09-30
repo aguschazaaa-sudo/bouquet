@@ -90,8 +90,9 @@ precios y stock inventados. Detalle y descartes en
   tubería que ahora comparten los dos scripts y que `tuberia.test.ts` compara con la callable.
 - **15 bodegas y 24 vinos** (23 publicados; *Cordero con Piel de Lobo Dulce* es borrador
   hasta confirmar la uva). Se borraron los 20 de muestra, sus 11 bodegas y sus fotos.
-- **Cajas sugeridas rearmadas** con vinos reales, **portada vacía** (la home usa la regla
-  hasta que el dueño elija) y **`vino-de-prueba` despublicado**.
+- **Cajas sugeridas rearmadas** con vinos reales, **portada elegida** —a pedido del dueño:
+  seis vinos de seis bodegas, se cambia desde *Vidriera*— y **los dos vinos de prueba
+  borrados** (`ve` y `vino-de-prueba`); el Pedido 1 queda, con su copia del renglón.
 - Verificado por contenido: las fotos por SHA-256, `/vinos` y cuatro fichas en vivo con
   canarios que aparecen y desaparecen, y renderizado a 1280 y 390.
 
@@ -127,11 +128,10 @@ de ADR 017, pero **la publicación sigue con gates abiertos**: contacto provisor
 checkout que no cobra, licencias, fuentes y el tramo 4. Desde 2026-09-30.
 
 **Y el mismo día, a pedido del dueño: SE PUBLICA.** Dominio por Cloudflare y el WhatsApp
-real a la tarde; Mercado Pago después, porque pide dominio. `PREVIEW_CERRADA` ya no existe:
-el `noindex` va **por host**, sólo en `*.hosted.app` ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
-**Commiteado y NO desplegado a propósito**: el control que discrimina —el dominio SIN
-`noindex`— no se puede medir sin dominio, así que sale en el mismo deploy que el WhatsApp
-(`DOMINIO=… bash scripts/tienda/preview.sh verificar`).
+real a la tarde; Mercado Pago después, porque pide dominio. ~~El `noindex` va **por host**,
+sólo en `*.hosted.app`~~: **desplegado y revertido el mismo día** —el `has: host` no coincide
+en App Hosting, la URL salió sin `noindex`, medido—. Vuelve `PREVIEW_CERRADA=1`; el día del
+dominio hay que medir qué `Host` llega ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
 
 ### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
 
@@ -340,7 +340,7 @@ Los que bloquean algo:
 | **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
 | **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
 | ⚠️ **Los secretos de Mercado Pago son FALSOS** ([ADR 022 §7](architecture/decisions/022-cobro-de-la-vidriera.md)): `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_SECRETO_DE_FIRMA`, etiqueta `valor=falso`. Reemplazarlos con `firebase functions:secrets:set` y **redesplegar `avisoDeMercadoPago` y `revisarPago`**; después, registrar la URL del webhook en Mercado Pago | El dueño pasa las claves | 2026-09-28 |
-| ⚠️ **La home muestra los vinos de muestra borrados** —tarjetas con links y fotos que ya no existen—: se hornea en el build ([ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md)). El deploy de `tienda` arrastra la v0.50.0 (`noindex` por host), commiteada y retenida a propósito | El próximo deploy de `tienda` | 2026-09-30 |
+| ⚠️ **El `noindex` del dominio no tiene mecanismo**: `has: host` no coincide en App Hosting (ADR 017 §4, medido 2026-09-30) y con `PREVIEW_CERRADA=1` el dominio saldría con `noindex` | El día que se conecte el dominio: medir el `Host` que llega antes de elegir | 2026-09-30 |
 | **Precio, stock y añada de los 24 vinos son inventados o probables**, y hay cinco líneas que eligió el script ([ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md), *Lo que NO se resolvió*). *Cordero con Piel de Lobo Dulce* es borrador: la uva no está confirmada y puede no estar en la lista cerrada | Que el dueño los revise con las botellas en la mano, antes de la primera venta | 2026-09-30 |
 
 ---

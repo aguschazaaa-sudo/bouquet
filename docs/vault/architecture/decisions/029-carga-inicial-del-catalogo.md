@@ -84,9 +84,19 @@ Fuera del script, porque son curaduría del dueño y el script corre de nuevo:
 
 - **Cajas sugeridas**: reescritas con vinos reales (*Seis tintos*, *Mitad y mitad*, *Seis
   blancos*), con la forma que escribe `guardarCajasSugeridas` y las mismas validaciones.
-- **Portada**: `seleccion/publica` a `[]`. Apuntaba a seis vinos borrados; vacía, la home usa
-  la regla hasta que el dueño elija ([ADR 023](023-la-portada-la-elige-el-duenio.md)).
-- **`vino-de-prueba`** despublicado —no borrado: tiene un pedido—. Su bodega era de muestra.
+- **Portada**: apuntaba a seis vinos borrados. **El dueño pidió que la eligiera el
+  script** (*"la portada va con vinos reales"*), así que va una elección y no la regla:
+  la regla desempata por id cuando no hay ventas medidas, y habría puesto los seis
+  primeros del abecedario. Seis vinos de **seis bodegas**, tintos y blancos alternados, de
+  $16.500 a $34.000: D.V. Catena Cabernet-Malbec, La Linda Torrontés, Zuccardi Serie A
+  Malbec, Trumpeter Sauvignon Blanc, Coquena Cabernet Sauvignon y El Buscapleito. Se
+  cambia desde *Vidriera* en el panel ([ADR 023](023-la-portada-la-elige-el-duenio.md)).
+- **Los dos vinos de prueba del dueño** (`ve` y `vino-de-prueba`) **borrados a pedido
+  suyo**, con sus movimientos y sus fotos —`ve` tenía un crudo huérfano de una subida que
+  no terminó—. Un producto no se borra ni siendo admin (reglas, hallazgo 1 de ADR 008):
+  se hizo con el Admin SDK porque son pruebas que nunca van a recrearse. **El Pedido 1**
+  —entregado, cobrado por fuera— sigue ahí con su renglón de 3 botellas: su `items[]` es
+  una copia y no depende del vino.
 
 ## Presupuesto de lecturas
 

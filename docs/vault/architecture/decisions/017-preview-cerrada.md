@@ -106,7 +106,16 @@ inconsistente y se entera uno a los 18 segundos de un build.
 > (`has: host .+\.hosted\.app` en `next.config.ts`): la URL de App Hosting lo
 > sigue llevando —no se apaga, es por donde se mide el origen salteando
 > Cloudflare, ADR 005 medición 2— y el dominio no. `preview.sh verificar` con
-> `DOMINIO=` mide las dos mitades. Lo de abajo queda como historia.
+> `DOMINIO=` mide las dos mitades.
+>
+> **⚠️ Revertido el mismo 2026-09-30, medido:** desplegado (rollout
+> `build-2026-09-30-005`, arrastrado por la carga del catálogo, ADR 029), el `has: host`
+> **no coincidió**: `preview.sh verificar` dio `NO / NO manda X-Robots-Tag`. El `Host`
+> que le llega a Next en App Hosting no es el público. **Vuelve `PREVIEW_CERRADA=1`**, que
+> es lo de abajo, y vuelve a ser la regla vigente. El día del dominio hay que **medir
+> primero qué `Host` (o `X-Forwarded-Host`) llega** y recién ahí elegir el mecanismo; con
+> `PREVIEW_CERRADA=1` el dominio saldría con `noindex`, y el paso 2b de `verificar` lo
+> atrapa.
 
 `next.config.ts` agrega `X-Robots-Tag: noindex, nofollow, noarchive` a **toda**
 ruta **sólo si `PREVIEW_CERRADA=1`**, que vive en el `apphosting.yaml` de la
