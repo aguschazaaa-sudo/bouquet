@@ -132,9 +132,12 @@ Amante vino a pedir.
 
 | Dialecto de cata (ajeno) | Voz de bouquet (propia) |
 |---|---|
-| "Notas de ciruela madura y un fondo de vainilla." | "Pide comida. Un domingo largo, algo que estuvo horas al fuego." |
+| "Notas de ciruela madura y un fondo de vainilla." | "Si no lo abrís enseguida, guardalo acostado, lejos de la luz y del calor." |
 | "Taninos redondos, final persistente." | "Se abre despacio. Servilo veinte minutos antes de que llegue alguien." |
 | "Ideal para maridar con carnes rojas." | "Aguanta una mesa ruidosa sin desaparecer." |
+
+⚠️ **La escena no es sinónimo de la mesa, y la mesa no es sinónimo de un plato.**
+En una ficha, el segundo párrafo tiene su propia regla: §3.3.
 
 ### 3.2 La excepción, y viene firmada
 
@@ -147,6 +150,43 @@ Sin autor, no se escribe. No es escrúpulo: es la misma regla que el glosario ya
 aplica al stock (§7.4 — *"Últimas 3 botellas" afirma un número exacto; "poco
 stock" no*). **Este proyecto ya decidió que no afirma lo que no sabe.** La voz
 no es la excepción.
+
+### 3.3 La ficha: el segundo párrafo sale del vino, no de la mesa
+
+*Revisión del 2026-09-30, a pedido del dueño.* Las 24 fichas de la carga
+inicial ([ADR 029](../architecture/decisions/029-carga-inicial-del-catalogo.md))
+salieron con el mismo molde —*"Para X. Plato, plato, escena."*— y **22 nombraban
+una comida**. El dueño: *"¿todo vino es para comida acaso?"*. No fue descuido de
+quien las escribió: fue esta guía. §3.1 listaba *la comida* entre las escenas y
+los dos ejemplos de ficha arrancaban con *"Pide comida"*. **Un agente copia el
+ejemplo antes que la regla.**
+
+El primer párrafo —origen, altura, método, con dato— el dueño lo aprobó y no se
+toca. El segundo sale de **lo que ese vino tiene y el de al lado no**:
+
+| Ancla | De dónde sale | Ejemplo |
+|---|---|---|
+| **Cómo guardarlo** | La custodia: el territorio propio de la marca (§1) | *"Si no lo abrís enseguida, guardalo acostado, lejos de la luz y del calor."* |
+| **Cómo servirlo** | Temperatura, copa, aire, heladera | *"Entre 16 y 18 grados, y en la copa más ancha que haya en la casa."* |
+| **Qué quiere decir el dato** | Traducir el primer párrafo: la altura, el método, el certificado | *"Así no se le agrega nada a lo que trae la uva."* |
+| **El nombre, o quién lo hace** | La historia de la etiqueta, con dato | *"Trivento quiere decir tres vientos."* |
+| **Para quién** | A quién sorprende, a quién le sirve | *"Para quien cree que ya conoce la Bonarda."* |
+| **La ocasión** | Un momento que no es comer | *"El tinto que se lleva a una casa ajena sin pensarlo dos veces."* |
+| **La comida** | Sólo cuando es lo que distingue a ese vino: un dulce, un Torrontés | *"Bien frío, y con comida que pica."* |
+
+| Regla | Tope |
+|---|---|
+| Fichas del catálogo que nombran una comida | **1 de cada 4**, y un plato o una categoría, **nunca una lista** |
+| La enumeración de tres escenas (*"A, B, la charla que sigue"*) | **0** |
+| El segundo párrafo copia un dato del primero | **0**: lo explica o lo usa, no lo repite |
+| Una ventana de consumo (*"para tomar joven"*, *"el mismo año"*, *"dentro de unos años"*) | **0**. La ficha no sabe de qué año es la botella que llega: la añada es de la etiqueta, y el dueño puede tener botellas viejas. Se dice **cómo guardarlo**, nunca **hasta cuándo** |
+| Un hecho (historia, nombre, fecha, "la segunda más plantada") | **Se chequea en una fuente antes de escribirse** —la bodega primero, el INV para los números—. El que no se pudo chequear **no se escribe** |
+
+⚠️ **La variedad se mide sobre el catálogo, no sobre la ficha.** Cada ficha
+suelta puede estar bien y las 24 juntas sonar a plantilla. Antes de escribir una
+tanda nueva se leen las que ya están publicadas, y **se leen de Firestore**
+(`productos/{slug}` → `fichaVino.descripcion`), no del JSON de la carga: el
+script nunca pisa, así que lo que el dueño corrija vive sólo en la base.
 
 ---
 
@@ -434,16 +474,21 @@ está escrito por cualquiera.
 > Malbec del Valle de Uco, 2019. Viñedos a mil doscientos metros, donde la
 > amplitud térmica hace casi todo el trabajo.
 >
-> Pide comida. Un domingo largo, algo que estuvo horas al fuego, gente que no
-> tiene apuro por irse.
+> Amplitud térmica quiere decir que entre el mediodía y la madrugada puede
+> haber veinte grados de diferencia: la uva madura de día y descansa de noche.
 >
 > Llegó acostado y así lo guardamos. Abrilo veinte minutos antes.
 
 **Qué se sacó y por qué:** seis notas de cata sin firma (§3.2), cuatro
 superlativos no verificables (§6), una exclamación, *experiencia única* y
 *verdaderos amantes* (§7.1), y *premium*. **Qué se agregó:** dos datos
-verificables —la altura y la añada—, una escena en vez de una copa (§3.1), y la
-única frase que sólo bouquet puede decir: **la de la custodia.**
+verificables —la altura y la añada—, uno de ellos explicado en palabras de
+todos los días en vez de una copa (§3.3), y la única frase que sólo bouquet
+puede decir: **la de la custodia.**
+
+*Hasta el 2026-09-30 el segundo párrafo de este ejemplo decía "Pide comida. Un
+domingo largo, algo que estuvo horas al fuego…", y las 24 fichas del catálogo
+real lo copiaron (§3.3).*
 
 ### 10.2 El "quiénes somos"
 

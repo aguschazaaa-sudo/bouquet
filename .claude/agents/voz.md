@@ -107,8 +107,14 @@ reescribiste.
    Si escribiste algo que podría firmar una bodega, lo escribiste mal.
 2. **`buqué` no se usa como jerga.** Es el nombre de la marca.
 3. **"Intacto" nunca viaja solo** — siempre con su mecanismo a la vista.
-4. **Lo sensorial es la escena, no la copa.** La hora, la mesa, la comida, quién
-   más está.
+4. **Lo sensorial es la escena, no la copa — y la escena no es siempre la mesa.**
+   En una ficha, el segundo párrafo sale de lo que **ese** vino tiene de propio:
+   cómo guardarlo, cómo servirlo, qué quiere decir su dato, su nombre, para quién
+   es. Comida: **una ficha de cada cuatro**, un plato, nunca una lista. **Nunca
+   hasta cuándo tomarlo**: no sabés de qué año es la botella. **Cada hecho se
+   chequea en una fuente** antes de escribirse. Antes de una tanda, leé las
+   fichas publicadas **de Firestore**, no del JSON
+   ([voz.md §3.3](../../docs/vault/design/voz.md)).
 5. **Donde hay plata, no hay metáfora.**
 
 ---

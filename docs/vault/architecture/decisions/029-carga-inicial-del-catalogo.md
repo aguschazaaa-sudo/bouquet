@@ -74,6 +74,21 @@ de su tienda, y una escena en vez de una nota de cata ([voz §3](../../design/vo
 Medidas contra §7.1 y §8 con un control positivo (una frase con *"notas de"*, *"en boca"*,
 *"descubrí"* y una exclamación da 4 fallas; las 24 dan 0).
 
+**Revisión del mismo día, a pedido del dueño: el segundo párrafo se reescribió en los 24.**
+El primero lo aprobó; el segundo era un molde —*"Para X. Plato, plato, escena."*— y **22
+nombraban comida** (*"¿todo vino es para comida acaso?"*). La causa era la guía, no el que
+escribió: [voz §3.3](../../design/voz.md) cuenta por qué y fija la regla nueva. Ahora sale de
+lo que ese vino tiene de propio —cómo guardarlo o servirlo, qué quiere decir su dato, su
+nombre, para quién es— y la comida queda en **3 de 24**. Dos correcciones más del dueño:
+**ninguna ventana de consumo** (*"no digas que se toma el mismo año, capaz alguna botella es
+vieja"*) y **cada hecho chequeado en una fuente** antes de escribirse: la bodega (Catena
+Zapata, Trivento, Luigi Bosca, Fabre Montmayou), el INV (Bonarda, Torrontés, San Juan).
+Se escribió **sólo `fichaVino.descripcion`**, por REST con precondición de `updateTime`,
+después de comprobar que la base seguía igual a la carga (nadie había corregido nada), y el
+JSON se sincronizó reemplazando las cadenas, sin re-serializarlo. Medido con el mismo
+contador sobre los textos viejos como control positivo: comida 22 → 3, arranques con
+*"Para"* 14 → 1, frases que suponen la edad de la botella 0.
+
 **La añada vacía no es neutra:** la ficha dice *"Sin añada"*, o sea que afirma un vino NV.
 Por eso las que el dueño no dijo llevan la probable de góndola, marcadas en el JSON
 (`anadaDelDuenio: false`) para confirmar con la botella.

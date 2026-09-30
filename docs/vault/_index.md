@@ -95,6 +95,11 @@ precios y stock inventados. Detalle y descartes en
   borrados** (`ve` y `vino-de-prueba`); el Pedido 1 queda, con su copia del renglón.
 - Verificado por contenido: las fotos por SHA-256, `/vinos` y cuatro fichas en vivo con
   canarios que aparecen y desaparecen, y renderizado a 1280 y 390.
+- **El segundo párrafo de las 24 descripciones, reescrito el mismo día a pedido del dueño**:
+  22 nombraban comida con el mismo molde. Ahora sale de lo que ese vino tiene de propio, sin
+  ventana de consumo y con cada hecho chequeado en una fuente. Escrito en Firestore (sólo
+  `fichaVino.descripcion`); la regla nueva está en [voz §3.3](design/voz.md) y en el agente
+  `voz`, así que la segunda mitad del catálogo no la repite ([ADR 029 §5](architecture/decisions/029-carga-inicial-del-catalogo.md)).
 
 **Tienda desplegada** para que la home se hornee con lo real: `build-2026-09-30-006`,
 `preview.sh verificar` en verde. El anterior (005) salió sin `noindex` por la v0.50.0, que
