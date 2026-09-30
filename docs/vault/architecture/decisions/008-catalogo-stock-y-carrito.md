@@ -166,6 +166,32 @@ cuota de un día, una vez por deploy.
 | La ventana prendida, en un teléfono | Mirarla con las fotos reales | El deploy de las reglas de Storage |
 | El gate apagado | Con un catálogo sin muestra, `grep -o data-catalogo-de-muestra` sobre el HTML de `/` tiene que dar 0. Hoy sólo se midió prendido: **2** | El primer catálogo real |
 
+### 8. El glifo de la barra: una bolsa de Heroicons, no una dibujada a mano — 2026-09-30
+
+A pedido del dueño —*"no me gusta el carrito o la bolsita esa"*—. La bolsa octogonal
+propia, la quinta versión, se leía como un **frasco** en la barra. Se dejó de dibujar: se
+bajaron **28 glifos de ocho librerías** (Lucide, Tabler, Heroicons, Phosphor, Carbon,
+Material Symbols Light, Teenyicons, Iconoir) y se renderizaron **dentro de la barra real**,
+a 20px y a 56px, con el dueño eligiendo mirando.
+
+- **Elegido: `shopping-bag` de Heroicons** (outline, MIT), **copiado como un solo SVG** en
+  `CarritoSvg.tsx`. No se instala la librería: un ícono, 600 bytes. Lo eligió el dueño; el
+  análisis lo había puesto segundo detrás de `ph-thin-bag`, que se leía más fina y con más
+  carácter deco.
+- **Descartadas, con el porqué:** `carbon-bag` se lee como **canasta**; `lucide-bag` pesa el
+  doble que la copa y parece Shopify; `tabler-bag`, un balde con asa; `iconoir-bag`, un
+  monedero; `teeny-bag` es correcta sin carácter; `msl-bag-sharp` es la más deco pero ocupa 13
+  de los 20px y se ve pálida.
+- **No existe una librería de íconos art déco.** Lo más cercano es lo geométrico de esquina
+  viva y trazo fino. Además **forzar `miter` + `butt` no endereza las esquinas redondeadas**:
+  vienen en la geometría del path, no en el `linejoin` (se midió; se había dicho lo contrario
+  y estaba mal). Lo que el CSS sí controla es el peso —constante, como la copa,
+  `direccion.md` §6— y las puntas.
+- **Sigue siendo una bolsa y no un carrito de supermercado**, por lo que dice
+  `secciones.ts` y `voz.md` §10: es una vinoteca. El dueño pidió ver carritos reales entre
+  las opciones y, con los 28 delante, eligió una bolsa.
+- Cero lecturas de Firestore; no toca datos.
+
 ## Por qué NO las alternativas
 
 | Alternativa | Por qué no |
