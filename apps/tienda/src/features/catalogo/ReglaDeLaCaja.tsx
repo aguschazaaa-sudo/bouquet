@@ -32,6 +32,11 @@ import { TEXTOS } from './textos';
  * no lo alcanza. La cifra pasa a ser la de SU caja y el rótulo deja de pedir
  * algo. Es la misma pieza porque es el mismo hueco de la pantalla y la misma
  * pregunta del comprador: cómo se vende esto.
+ *
+ * ⚠️ Y la nota de la suelta es UNA POR VARIANTE, desde el 2026-09-30 (ADR 009
+ * §11): en la ficha contesta "¿y ésta?", en /vinos dice la excepción de las
+ * cajas propias. Se elige por variante porque cada variante vive en un solo
+ * lugar; el día que la franja salga de la ficha, esto pasa a ser una prop.
  */
 
 type Props = {
@@ -42,6 +47,11 @@ type Props = {
 
 export function ReglaDeLaCaja({ variante = 'placa', botellas = 1 }: Props) {
   const propia = botellas > 1;
+  const nota = propia
+    ? TEXTOS.reglaPropiaNota
+    : variante === 'franja'
+      ? TEXTOS.reglaNotaFicha
+      : TEXTOS.reglaNotaListado;
   return (
     <div className={`regla-caja regla-caja--${variante} cartucho-deco`}>
       <p className="regla-caja__rotulo rotulo">{propia ? TEXTOS.reglaPropiaRotulo : TEXTOS.reglaRotulo}</p>
@@ -49,7 +59,7 @@ export function ReglaDeLaCaja({ variante = 'placa', botellas = 1 }: Props) {
         <span className="regla-caja__cifra cifra">{propia ? botellas : BOTELLAS_POR_CAJA}</span>
         <span className="regla-caja__unidad">{propia ? TEXTOS.reglaPropiaUnidad : TEXTOS.reglaUnidad}</span>
       </p>
-      <p className="regla-caja__nota">{propia ? TEXTOS.reglaPropiaNota : TEXTOS.reglaNota}</p>
+      <p className="regla-caja__nota">{nota}</p>
     </div>
   );
 }

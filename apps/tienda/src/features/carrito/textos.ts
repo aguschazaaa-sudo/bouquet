@@ -5,7 +5,9 @@ const botellas = (n: number) => `${n} ${n === 1 ? 'botella' : 'botellas'}`;
 
 export const TEXTOS = {
   agregar: 'Agregar',
-  agregarAlCarrito: 'Agregar al carrito',
+  /* El botón de la ficha dice CUÁNTO agrega: al lado de "6 botellas", un
+   * "Agregar al carrito" no decía si sumaba una o seis (ADR 009 §11). */
+  agregarUnaBotella: 'Agregar una botella',
   agregarLaCaja: 'Agregar la caja',
   sacar: 'Sacar del carrito',
   unaMenos: (cosa: string) => `Una ${cosa} menos`,

@@ -48,7 +48,7 @@ export function ControlDeCompra({ productoId, nombre, tope, botellas, variante =
 
   if (n === 0) {
     const etiqueta =
-      variante === 'tarjeta' ? TEXTOS.agregar : botellas > 1 ? TEXTOS.agregarLaCaja : TEXTOS.agregarAlCarrito;
+      variante === 'tarjeta' ? TEXTOS.agregar : botellas > 1 ? TEXTOS.agregarLaCaja : TEXTOS.agregarUnaBotella;
     return (
       <div className={`control-compra control-compra--${variante}`}>
         <button type="button" className="boton control-compra__agregar" onClick={agregarUna}>

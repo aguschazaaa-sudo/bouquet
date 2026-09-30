@@ -70,10 +70,23 @@ export const TEXTOS = {
 
   // --- la venta por caja y el carril ---
   /* La regla va en tres piezas y no en una frase: la cifra se compone aparte
-   * para que pueda ser una CIFRA y no una palabra (ver ReglaDeLaCaja). */
-  reglaRotulo: 'Se vende por caja',
+   * para que pueda ser una CIFRA y no una palabra (ver ReglaDeLaCaja).
+   *
+   * ⚠️ La mezcla la dice el RÓTULO, no la nota (ADR 009 §11). Decía "Se vende
+   * por caja", y al lado de un solo vino eso se lee "este vino va de a seis":
+   * es la fórmula mayorista del bulto cerrado. En el teléfono la nota de la
+   * ficha no se ve, así que lo único que queda es rótulo + cifra, y con eso
+   * solo tiene que ser imposible entender "seis de éste". Lo hace el plural
+   * de "los vinos". */
+  reglaRotulo: 'Armá tu caja con los vinos que quieras',
   reglaUnidad: 'botellas',
-  reglaNota: 'Elegí las que quieras y armá la tuya. Las que vienen en su caja viajan solas.',
+  /* Dos notas, una por lugar. La ficha contesta la pregunta de quien mira UNA
+   * botella; la excepción de las cajas propias va sólo en /vinos, que es donde
+   * hay de las dos a la vista: en la ficha de una suelta hablaba de otros
+   * productos y le daba a "caja" un segundo sentido en la misma placa. */
+  reglaNotaFicha: 'Ésta cuenta como una de las seis. Las otras cinco, de este vino o de cualquier otro.',
+  reglaNotaListado:
+    'Pueden ser las seis del mismo vino o de vinos distintos. Las que vienen en su propia caja viajan solas y no cuentan.',
   /* La misma placa para un vino que trae su propia caja. NO es la regla dicha
    * más suave: es otra regla —ésta no pide completar nada— y por eso tiene su
    * propio rótulo y su propia nota (ADR 009 §10). */

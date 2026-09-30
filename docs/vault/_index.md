@@ -77,6 +77,22 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### La placa de la caja dice la mezcla: nadie compra seis de un vino por error (2026-09-30)
+
+**Escrito el 2026-09-30; deploy y verificación, pendientes.** Lo preguntó el usuario mirando
+la ficha en producción: *"¿no pueden confundirse y creer que tiene que comprar una caja de 6
+de ese vino?"*. Detalle en [ADR 009 §11](architecture/decisions/009-venta-por-caja.md).
+
+- En el teléfono la ficha decía `SE VENDE POR CAJA · 6 botellas` al lado de **un** vino: la
+  nota que decía la mezcla está oculta abajo de 480 px. **El rótulo pasa a decirla**: *"Armá
+  tu caja con los vinos que quieras"*.
+- La ficha y `/vinos` tienen **cada una su nota**; la excepción de las cajas propias queda
+  sólo en `/vinos`. El botón de la botella suelta dice **"Agregar una botella"**.
+- Curado por `voz`, que cambió dos de las cinco cadenas. Cero lecturas.
+
+**Lo que sigue:** mostrarle la ficha en un teléfono a alguien que no conoce la tienda y
+preguntarle cuántas botellas de ese vino tiene que comprar. Desde 2026-09-30.
+
 ### El catálogo real: 24 vinos con foto y descripción, y la muestra afuera (2026-09-30)
 
 **Cargado en producción y verificado el 2026-09-30**, a pedido del dueño: pasó la lista de
@@ -196,48 +212,6 @@ y [ADR 023 §5](architecture/decisions/023-la-portada-la-elige-el-duenio.md#5-ca
 - **Cero lecturas y cero escrituras nuevas**: es sólo presentación; cada soltar es el
   mismo guardado que antes hacía una flecha.
 
-### EP-11 entera: el panel se entra por *Resumen*, la popularidad se mide, y la entrega sin cargo tiene monto (2026-09-29)
-
-**Desplegada y verificada el 2026-09-29** —functions, panel (`e95e653`) y la preview de la
-tienda—; el deploy de functions lo corrió **el usuario** (el clasificador frena los deploys a
-producción). **Nadie la miró renderizada.** Sin openspec, a pedido del dueño.
-
-**Primer tramo — HU-11.2 y HU-11.3, [ADR 025](architecture/decisions/025-el-tablero-del-panel.md),
-commiteado (v0.43.0, `484fbf5`).**
-
-- **`calcularPopularidad`**, el primer job programado: cada madrugada recalcula
-  `metricas/popularidad` **entero** con las ventas reales de 90 días (`pagada` o
-  `por_fuera`, sin cancelar). Reemplaza al simulado del seed, que ya no lo puede pisar.
-- **Sección nueva, primera y a donde se entra: *Resumen*.** *Hoy*: por preparar y pagos
-  en proceso con `count()` (**una lectura cada uno**, `limit(50)` porque la regla de
-  `list` lo exige), y los agotados del catálogo en memoria. Abajo, *lo que más se
-  vende*, **sólo si está medido**.
-
-**Segundo tramo — HU-11.1, [ADR 026](architecture/decisions/026-envio-sin-cargo.md),
-Workflow D.** Nace **apagado**: nada cambia hasta que el dueño ponga un monto.
-
-- **`fijarEnvioSinCargo`**, la única puerta de `config/envios`. Baranda **sobre el valor
-  nuevo**: dura (pesos enteros, $1 a $100 millones) y blanda —por debajo de una caja a
-  precio típico, o menos de la mitad del anterior— que **pregunta y no guarda** hasta
-  que el dueño confirma.
-- **El panel**: *"La entrega sin cargo"* en *Vidriera*. **La tienda**: `/pedido` lo lee
-  (60 s, su propia caché), pone todas las opciones a precio 0 y dice *"Con $ X más, la
-  entrega sale sin cargo."* **Lo que se cobre lo decide `crearOrden`** (hallazgo 10 de
-  ADR 008).
-- **`revisor-pagos`: cero ALTOS**; un MEDIO corregido (el guardado contra la baranda
-  ahora se loguea como advertencia).
-
-| Qué | Cómo |
-|---|---|
-| Las suites en `main` | CI `36607938982`: contratos **309**, emulador **235**, Dart **534**, tienda **39**, **9 functions** en el bundle |
-| Producción | 9 functions `ACTIVE` (las 7 viejas con su `updateTime`); job `ENABLED` a las 5 de Córdoba; la callable 204 / 401 JSON / inventada 404; el job corrido a mano dejó `simulada: false`, 0 ventas; los conteos del *Resumen* corren sin índice (negativo: `FAILED_PRECONDITION`) |
-| Panel y tienda | Build `36608815308` → canal → canario (5 cadenas 0 → ≥1, `COMMIT` `dacfb58` → `e95e653`) → live con los 4 hashes; preview `build-2026-09-29-002` con gates cerrados, `/pedido` recibe `sinCargoDesde: null` y `/vinos` ya no ofrece *"más vendidos"* |
-| Presupuesto | Job ~450 lecturas/día con 5 ventas (**0,9 %**); *Resumen* +3 por apertura; el umbral, por debajo del 0,1 % |
-
-⚠️ **Lo que sigue:** que el dueño mire el *Resumen* y *Vidriera* renderizados, y fije el
-monto de la entrega sin cargo cuando tenga las tarifas. `calculadaEn` dice mañana a las 5
-hasta que corra la programada: una corrida a mano manda la **próxima** hora (ADR 025).
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -297,7 +271,7 @@ hasta que corra la programada: una corrida a mano manda la **próxima** hora (AD
 | 006 | La vidriera se ordena por **feature**, y `shared/` tiene **cinco reglas** contra el cajón de sastre | [006](architecture/decisions/006-estructura-de-la-tienda.md) |
 | 007 | La sección se llama **El oficio**, cubre tres tramos, y el contacto es su cierre | [007](architecture/decisions/007-seccion-el-oficio.md) |
 | 008 | El **stock** lo escribe sólo el servidor, en unidades de venta; la vidriera lee **una proyección** por minuto, y el carrito vive en `localStorage` | [008](architecture/decisions/008-catalogo-stock-y-carrito.md) |
-| 009 | La botella **suelta** se vende sólo de a 6 — lo que viene en su propia caja **viaja solo** y no cuenta (§10); una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado | [009](architecture/decisions/009-venta-por-caja.md) |
+| 009 | La botella **suelta** se vende sólo de a 6 — lo que viene en su propia caja **viaja solo** y no cuenta (§10); una caja que ofrece el vendedor **no es un producto**, es un carrito pre-armado; que las seis **se mezclan** lo dice el rótulo, que se ve en el teléfono (§11) | [009](architecture/decisions/009-venta-por-caja.md) |
 | 010 | El **código postal** decide cómo viaja el pedido —nadie queda fuera de zona—; se cobra con **Mercado Pago Checkout Pro** y el comprobante **no va por mail** | [010](architecture/decisions/010-el-checkout.md) |
 | 011 | Al panel se entra con mail o Google; **las cuentas las crea un script, sin contraseña**, que se niega a habilitar una cuenta sin el mail verificado; el permiso viaja en el token, y se publica **lo que compiló CI** | [011](architecture/decisions/011-entrar-al-panel.md) |
 | 018 | Un pedido de WhatsApp se carga por **una callable del panel** que fija el origen; su cobro es **`por_fuera`** (terminal); el documento es su propio marcador; **cada venta deja su movimiento** | [018](architecture/decisions/018-pedidos-de-whatsapp.md) |

@@ -8,6 +8,10 @@
   que **viene en su propia caja** viaja solo y no cuenta para las seis. Lo dijo
   el dueño, y **cambia el §2**: la cuenta sigue siendo en botellas, pero sólo
   sobre las sueltas
+- **Enmendada:** 2026-09-30 con el **§11**, que cambia **qué pieza dice la
+  mezcla**. Lo preguntó el usuario mirando la ficha en producción: *"¿no pueden
+  confundirse y creer que tiene que comprar una caja de 6 de ese vino?"*. Sí: en
+  el teléfono la placa decía exactamente eso, y **corrige una premisa del §9**
 - **Estado:** aceptada y **aplicada en stage**. Las reglas están **publicadas**;
   la tienda **no se despliega** — y el 2026-09-15 se verificó por CLI que **no
   hay a dónde**: `apphosting:backends:list` de `bouquet-vinos` devuelve la tabla
@@ -200,6 +204,13 @@ quieras y armá la tuya"*, que además se dice entera en la cabecera de `/vinos`
 que es por donde se llega a la ficha— y **nunca la regla**: abajo de 480 px se
 sigue leyendo `SE VENDE POR CAJA · 6 botellas`.
 
+⚠️ **ENMENDADO POR EL §11 el 2026-09-30: las dos premisas de este párrafo eran
+falsas.** La nota no era una cortesía: era **lo único** que decía que las seis
+se mezclan. Y a la ficha no se llega sólo por `/vinos`: un link de WhatsApp o
+de Google cae directo en ella. Lo que quedaba en el teléfono —`SE VENDE POR CAJA
+· 6 botellas` al lado de un único vino— se lee *"este vino va de a seis"*. La
+medición de altura sigue valiendo; lo que cambió es qué pieza carga la mezcla.
+
 ⚠️ **Había un CUARTO lugar y este ADR no lo sabía: el checkout.** Lo encontró
 `cazador-de-puertas` barriendo el cambio. `TEXTOS.cajaIncompleta` —*"El vino
 viaja de a seis. Volvé al pedido y completá la caja."*— sale por
@@ -330,6 +341,58 @@ ciertas y juntas se leen como un error. La frase pasa a decir *"Faltan 2
 botellas **sueltas**"* —y sólo cuando el pedido tiene algo que viaja solo, o la
 palabra sería ruido para los otros veinte vinos—.
 
+### 11. La mezcla la dice el RÓTULO, no la nota (2026-09-30)
+
+⚠️ **El §9 le dio peso a la regla y se lo dio a la mitad equivocada.** Lo
+preguntó el usuario mirando `/vinos/trumpeter-sauvignon-blanc` en producción:
+*"¿se entiende que es una botella y tiene que juntar 6 cualquiera? ¿no pueden
+confundirse y creer que tiene que comprar una caja de 6 de ese vino?"*.
+
+Pueden, y en el teléfono es lo más probable. Leído pieza por pieza:
+
+| Pieza | Peso | Qué decía |
+|---|---|---|
+| Cifra | Lo más grande del mostrador después del monto | `6 botellas`, al lado de **un** vino |
+| Rótulo | Versalita | `SE VENDE POR CAJA` — la fórmula mayorista del **bulto cerrado del mismo producto**, con el vino en pantalla como sujeto implícito |
+| Nota | Lo más chico, y **oculta abajo de 480 px** | La única que decía que se mezclan. Y su segunda oración hablaba de packs en la ficha de una suelta, dándole a "caja" un segundo sentido en la misma placa |
+| Botón | — | `Agregar al carrito`, sin decir si suma una o seis |
+
+**La decisión: la desambiguación va en la pieza que sobrevive al teléfono.** El
+rótulo pasa a decir la mezcla, y cada lugar tiene su propia nota. Curado por
+`voz`, que cambió dos de las cinco cadenas de la propuesta:
+
+| Clave | Antes | Ahora |
+|---|---|---|
+| `reglaRotulo` (ficha y `/vinos`) | Se vende por caja | **Armá tu caja con los vinos que quieras** |
+| `reglaNotaFicha` (nueva) | *(la misma que `/vinos`)* | Ésta cuenta como una de las seis. Las otras cinco, de este vino o de cualquier otro. |
+| `reglaNotaListado` (nueva) | Elegí las que quieras y armá la tuya. Las que vienen en su caja viajan solas. | Pueden ser las seis del mismo vino o de vinos distintos. Las que vienen en su propia caja viajan solas y no cuentan. |
+| `agregarUnaBotella` (era `agregarAlCarrito`) | Agregar al carrito | **Agregar una botella** — hace par con `Agregar la caja` de los packs |
+
+En el teléfono la ficha se lee ahora `6 botellas · ARMÁ TU CAJA CON LOS VINOS
+QUE QUIERAS · [Agregar una botella]`: el plural de "los vinos" es lo que hace
+imposible leer *"seis de éste"*. La nota se sigue cayendo abajo de 480 px —la
+medición de altura del §9 sigue valiendo— porque ya no carga nada que el rótulo
+no diga.
+
+**`ReglaDeLaCaja` elige la nota por variante**, no por prop: cada variante vive
+en un solo lugar (`franja` en la ficha, `placa` en `/vinos`). El día que la
+franja salga de la ficha, pasa a ser una prop.
+
+| Alternativa | Por qué no |
+|---|---|
+| Mostrar la nota también en el teléfono | Cuesta 37 px (223 contra 186, medido en el §9) de un mostrador **sticky** que se come la foto durante todo el scroll, para decir algo que entra en el rótulo |
+| Alargar la unidad (`6 botellas, mezcladas como quieras`) | Era la primera propuesta. La cuenta vive en una columna de ancho automático: a 390 px le roba el ancho al rótulo. La unidad queda corta |
+| `Caja surtida` / `Mezclá` / `Combiná` | Los probó `voz`: *surtida* suena a bombonería, *mezclá* se lee como mezclar el líquido. Ninguna gana sobre el plural |
+| Dejar la excepción de los packs en la nota de la ficha | En la ficha de una suelta habla de productos que no están a la vista, y mete el segundo sentido de "caja". Va sólo en `/vinos`, donde hay de los dos |
+
+#### Por qué existe esto (no revertir)
+
+Una placa que dice la regla **sin decir la mezcla** vende una caja de seis del
+mismo vino a quien quería una botella: o compra de más, o se va. Y la ficha es
+la página que se comparte, así que es la que más se abre **sin contexto**. El
+error del §9 fue razonar *"ya lo dijimos en `/vinos`"* sobre una página que se
+abre desde afuera: **lo que se oculta en el teléfono tiene que poder faltar.**
+
 ## Presupuesto de lecturas
 
 Campo obligatorio. Lo cuantificó `presupuesto-lecturas` y **corrigió el encuadre
@@ -365,6 +428,9 @@ línea desde el §4, así que la barra sigue costando **cero**; y la carga del
 pedido se calcula en el navegador sobre esa misma proyección. Ni un `get()`
 nuevo, ni una entrada de caché nueva. Medido en la build: `/` sigue saliendo
 `○` **sin revalidate**, con `/vinos`, `/carrito` y `/pedido` en `1m` de control.
+
+**El §11 suma CERO lecturas:** son cadenas y un ternario sobre una prop que la
+ficha y `/vinos` ya pasaban. Ni un dato nuevo del catálogo.
 
 ## Consecuencias
 

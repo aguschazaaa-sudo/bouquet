@@ -9,6 +9,55 @@
 
 ---
 
+## Salió el 2026-09-30, al corregir la placa de la caja
+
+Sale la de EP-11 (2026-09-29): con la placa de la caja sumada al dashboard, era la más vieja
+de las cinco. El porqué sigue en
+[ADR 025](../architecture/decisions/025-el-tablero-del-panel.md) y
+[ADR 026](../architecture/decisions/026-envio-sin-cargo.md).
+
+### EP-11 entera: el panel se entra por *Resumen*, la popularidad se mide, y la entrega sin cargo tiene monto (2026-09-29)
+
+**Desplegada y verificada el 2026-09-29** —functions, panel (`e95e653`) y la preview de la
+tienda—; el deploy de functions lo corrió **el usuario** (el clasificador frena los deploys a
+producción). **Nadie la miró renderizada.** Sin openspec, a pedido del dueño.
+
+**Primer tramo — HU-11.2 y HU-11.3, [ADR 025](../architecture/decisions/025-el-tablero-del-panel.md),
+commiteado (v0.43.0, `484fbf5`).**
+
+- **`calcularPopularidad`**, el primer job programado: cada madrugada recalcula
+  `metricas/popularidad` **entero** con las ventas reales de 90 días (`pagada` o
+  `por_fuera`, sin cancelar). Reemplaza al simulado del seed, que ya no lo puede pisar.
+- **Sección nueva, primera y a donde se entra: *Resumen*.** *Hoy*: por preparar y pagos
+  en proceso con `count()` (**una lectura cada uno**, `limit(50)` porque la regla de
+  `list` lo exige), y los agotados del catálogo en memoria. Abajo, *lo que más se
+  vende*, **sólo si está medido**.
+
+**Segundo tramo — HU-11.1, [ADR 026](../architecture/decisions/026-envio-sin-cargo.md),
+Workflow D.** Nace **apagado**: nada cambia hasta que el dueño ponga un monto.
+
+- **`fijarEnvioSinCargo`**, la única puerta de `config/envios`. Baranda **sobre el valor
+  nuevo**: dura (pesos enteros, $1 a $100 millones) y blanda —por debajo de una caja a
+  precio típico, o menos de la mitad del anterior— que **pregunta y no guarda** hasta
+  que el dueño confirma.
+- **El panel**: *"La entrega sin cargo"* en *Vidriera*. **La tienda**: `/pedido` lo lee
+  (60 s, su propia caché), pone todas las opciones a precio 0 y dice *"Con $ X más, la
+  entrega sale sin cargo."* **Lo que se cobre lo decide `crearOrden`** (hallazgo 10 de
+  ADR 008).
+- **`revisor-pagos`: cero ALTOS**; un MEDIO corregido (el guardado contra la baranda
+  ahora se loguea como advertencia).
+
+| Qué | Cómo |
+|---|---|
+| Las suites en `main` | CI `36607938982`: contratos **309**, emulador **235**, Dart **534**, tienda **39**, **9 functions** en el bundle |
+| Producción | 9 functions `ACTIVE` (las 7 viejas con su `updateTime`); job `ENABLED` a las 5 de Córdoba; la callable 204 / 401 JSON / inventada 404; el job corrido a mano dejó `simulada: false`, 0 ventas; los conteos del *Resumen* corren sin índice (negativo: `FAILED_PRECONDITION`) |
+| Panel y tienda | Build `36608815308` → canal → canario (5 cadenas 0 → ≥1, `COMMIT` `dacfb58` → `e95e653`) → live con los 4 hashes; preview `build-2026-09-29-002` con gates cerrados, `/pedido` recibe `sinCargoDesde: null` y `/vinos` ya no ofrece *"más vendidos"* |
+| Presupuesto | Job ~450 lecturas/día con 5 ventas (**0,9 %**); *Resumen* +3 por apertura; el umbral, por debajo del 0,1 % |
+
+⚠️ **Lo que sigue:** que el dueño mire el *Resumen* y *Vidriera* renderizados, y fije el
+monto de la entrega sin cargo cuando tenga las tarifas. `calculadaEn` dice mañana a las 5
+hasta que corra la programada: una corrida a mano manda la **próxima** hora (ADR 025).
+
 ## Salió el 2026-09-30, al cargar el catálogo real
 
 Sale la del segundo tramo del hito 3 (2026-09-28): con el catálogo real sumado al dashboard,

@@ -212,9 +212,14 @@
    (La primera version de este comentario decia 169 px y era una RESTA, no una
    medicion. Daba 17 px de menos.)
 
-   Se cae la nota y no la regla: "6 botellas" es la condicion de compra, "armá
-   la tuya" es una cortesia que ademas ya esta dicha entera en la cabecera de
-   /vinos, que es por donde se llega a la ficha. */
+   Se cae la nota y no la regla. ⚠️ Hasta el 2026-09-30 este comentario decia
+   que la nota ("armá la tuya") era una CORTESIA ya dicha en /vinos, "que es
+   por donde se llega a la ficha". Las dos cosas eran falsas: era lo UNICO que
+   decia que las seis se mezclan, y a la ficha se llega directo desde un link
+   de WhatsApp o de Google. Sin ella quedaba "SE VENDE POR CAJA - 6 botellas"
+   al lado de un solo vino, que se lee "seis de este". Por eso la mezcla paso
+   al ROTULO, que si se ve aca (ADR 009 §11); la nota puede caerse porque ya
+   no carga nada que el rotulo no diga. */
 @media (max-width: 479.98px) {
   .ficha__fila .regla-caja__nota {
     display: none;
