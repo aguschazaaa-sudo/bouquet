@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-29 - commit `031dae3` - huella del cuerpo `594f5872354e`
+> **Generado:** 2026-09-30 - commit `420945b` - huella del cuerpo `6d7df0879b54`
 
 ---
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.48.1
+### Scripts de la raiz - `bouquet` 0.49.0
 
 | Script | Comando |
 |---|---|
@@ -129,6 +129,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `apps/admin/test/features/vidriera/envio_sin_cargo_test.dart` | 12 |
 | `apps/admin/test/features/vidriera/seleccion_de_la_portada_test.dart` | 9 |
 | `apps/tienda/test/almacen.test.ts` | 1 |
+| `apps/tienda/test/edad.test.ts` | 4 |
 | `apps/tienda/test/envios.test.ts` | 13 |
 | `apps/tienda/test/filtros.test.ts` | 10 |
 | `apps/tienda/test/revalidacion.test.ts` | 7 |
@@ -161,7 +162,7 @@ Dependencias declaradas en la raiz: `@firebase/rules-unit-testing`, `@fission-ai
 | `scripts/reglas/ordenes.test.mjs` | 40 |
 | `scripts/reglas/productos.test.mjs` | 62 |
 | `scripts/reglas/seleccion.test.mjs` | 11 |
-| **total** | **1062** |
+| **total** | **1066** |
 
 Conteo lexico de `test(` e `it(`. Se cuenta y no se escribe porque el `_index.md` del proyecto anterior decia 1929 cuando el runner iba por 2003. No incluye `test.skip(` ni `test.only(`: un test salteado no es un test que corre.
 
@@ -387,7 +388,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `MotivoSinCotizacion` | tipo | **SIN PUERTA - nadie** | - |
 | `ResultadoDeCotizacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/useCotizacion.ts`, `apps/tienda/src/server/envios.ts` |
 | `normalizar` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/envio.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
-| `clave` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/oficio/SelloDeContacto.tsx`, `apps/tienda/test/almacen.test.ts`, `functions/src/stock/mover_stock.ts`, `functions/test/foto/procesar_foto.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/despacho.test.ts`, `packages/contratos/test/stock.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/acceso/acceso.test.mjs`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/generar_verdad.mjs`, `scripts/reglas/ordenes.test.mjs`, `scripts/tienda/preparar_despliegue.mjs` |
+| `clave` | funcion | abierto | `apps/tienda/src/features/carrito/almacen.ts`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/edad/edad.ts`, `apps/tienda/src/features/oficio/SelloDeContacto.tsx`, `apps/tienda/test/almacen.test.ts`, `apps/tienda/test/edad.test.ts`, `functions/src/stock/mover_stock.ts`, `functions/test/foto/procesar_foto.emulador.mjs`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/despacho.test.ts`, `packages/contratos/test/stock.test.ts`, `packages/contratos/test/texto.test.ts`, `scripts/acceso/acceso.test.mjs`, `scripts/ci/auditar_estados.mjs`, `scripts/ci/generar_verdad.mjs`, `scripts/reglas/ordenes.test.mjs`, `scripts/tienda/preparar_despliegue.mjs` |
 | `aSlug` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `seParecen` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `ENTRADAS_DE_TEXTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
@@ -486,4 +487,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 176. Archivos de test: 68. Casos de test: 1062.
+Archivos de codigo recorridos: 180. Archivos de test: 69. Casos de test: 1066.
