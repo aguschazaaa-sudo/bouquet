@@ -374,6 +374,20 @@ imposible leer *"seis de éste"*. La nota se sigue cayendo abajo de 480 px —la
 medición de altura del §9 sigue valiendo— porque ya no carga nada que el rótulo
 no diga.
 
+**Verificado en producción el 2026-09-30** (`build-2026-09-30-007`, rollout
+`SUCCEEDED` con el 100 % del tráfico):
+
+| Qué | Cómo |
+|---|---|
+| Salió el cambio, y sólo donde va | `curl` a la ficha de Trumpeter y a `/vinos`: `Se vende por caja` **2 → 0**, el rótulo nuevo **0 → 2** (DOM + payload RSC). La nota de la ficha da 2 en la ficha y **0** en `/vinos`, y la del listado al revés: el ternario elige bien. Una segunda ficha (`alambrado-malbec`) da lo mismo; una ruta inventada, 404 |
+| El teléfono no pagó altura | El mostrador sticky a 390×844 mide **186,56 px (22,1 %)**, lo mismo que el §9 midió sin la nota. El rótulo va en dos renglones (30 px) dentro de la altura que ya ocupaba la cifra |
+| El botón agrega UNA | Tocado por CDP, ya hidratado: el carrito guarda `cantidad: 1, botellas: 1` y el selector muestra `1`, a 390 y a 1280 |
+| Se lee | Capturas a 390 y 1280 de las dos pantallas, miradas |
+
+⚠️ **La variante del pack no se pudo ver en producción:** el catálogo real no
+tiene ningún producto de más de una botella (las 23 fichas dan `Viaja sola` = 0).
+Su código no se tocó.
+
 **`ReglaDeLaCaja` elige la nota por variante**, no por prop: cada variante vive
 en un solo lugar (`franja` en la ficha, `placa` en `/vinos`). El día que la
 franja salga de la ficha, pasa a ser una prop.

@@ -79,7 +79,9 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### La placa de la caja dice la mezcla: nadie compra seis de un vino por error (2026-09-30)
 
-**Escrito el 2026-09-30; deploy y verificación, pendientes.** Lo preguntó el usuario mirando
+**Desplegado y verificado el 2026-09-30** (v0.51.4, `build-2026-09-30-007`): canarios
+discriminantes en la ficha y `/vinos` (viejo 2 → 0, nuevo 0 → 2, cada nota sólo en su lugar) y
+Chrome por CDP a 390 y 1280, con el botón tocado. Lo preguntó el usuario mirando
 la ficha en producción: *"¿no pueden confundirse y creer que tiene que comprar una caja de 6
 de ese vino?"*. Detalle en [ADR 009 §11](architecture/decisions/009-venta-por-caja.md).
 
