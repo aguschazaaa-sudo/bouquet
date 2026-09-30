@@ -11,7 +11,8 @@
  *   1. Los dos BRAZOS del filete (`.filete--izq` / `.filete--der`), que
  *      flanquean el numeral con la modulación invertida.
  *   2. La CAPITULAR del primer párrafo de cada tramo.
- *   3. El NUMERAL HUECO del tramo que la marca no firma.
+ *   3. El NOMBRE EN CURSIVA del tramo que la marca no firma. Era el numeral
+ *      hueco hasta el 2026-09-30: el dueño lo leyó como roto (plan B, abajo).
  *
  * Las tres derivan de lo que `direccion.md §5.1` autoriza —la regla de un solo
  * trazo, el chaflán, y el trazo modulado que se midió en el isotipo (1,38:1)— y
@@ -202,37 +203,40 @@
 
 /* --- El tramo que la marca NO firma ---------------------------------------
  *
- * ⚠️ La distinción va por TRES recursos y no por uno, y es a propósito: el
- * numeral hueco depende de `-webkit-text-stroke`, que no es estándar. Si un día
- * no está, el filete al 50 % y el nombre atenuado siguen diciendo lo mismo.
- * El design.md tiene esto anotado como riesgo y su plan B es exactamente esto:
- * "la distinción no puede depender de un solo recurso".
+ * ⚠️ EL NUMERAL ES MACIZO, IGUAL QUE LOS OTROS DOS, Y NO ES UN OLVIDO. Era
+ * hueco (`-webkit-text-stroke`) y el dueño lo miró renderizado el 2026-09-30:
+ * "I y II están pintados y III está outline" — se leía como algo roto, que es
+ * exactamente el riesgo que él había marcado en la maqueta. Se aplicó el plan
+ * B del design.md: la distinción la dicen el NOMBRE y el FILETE, no el número.
+ * No volver al contorno sin que él lo pida.
  *
- * Dos de los tres cuelgan de `.tramo__regla--sin-firma` y no de la sección,
- * porque los dibuja `ReglaNumerada`: el componente que pinta el numeral y los
- * brazos es el que decide cómo se pintan, y por eso recibe `firmado`. El
- * tercero —el nombre atenuado— cuelga de `.tramo--sin-firma`, que es de
- * `Tramo`. Ninguno de los dos duplica el hecho: los dos salen del mismo
+ * Siguen siendo dos recursos y no uno ("la distinción no puede depender de un
+ * solo recurso"). El filete al 50 % cuelga de `.tramo__regla--sin-firma`
+ * porque lo dibuja `ReglaNumerada`, que por eso recibe `firmado`; el nombre
+ * cuelga de `.tramo--sin-firma`, que es de `Tramo`. Los dos salen del mismo
  * booleano de `oficio.ts`. */
 .tramo__regla--sin-firma .filete::after {
   opacity: 0.5;
 }
 
+/* ⚠️ LA CURSIVA ES DE NEWSREADER Y NO DE FRAUNCES, Y ESO ES OBLIGATORIO: el
+ * layout carga Fraunces SIN su cursiva, así que un `italic` sobre el rótulo es
+ * una oblicua sintética —la recta inclinada por el navegador—. Traer la cursiva
+ * de Fraunces es otro archivo de fuente entero por una palabra; la de
+ * Newsreader ya viaja, y es la voz en cursiva del sitio (el "No hay
+ * formulario" del sello).
+ *
+ * Y en caja baja, no en versalita: se miraron las dos inyectadas sobre la
+ * preview. En versalita cursiva sale chica y pálida, y "ABRIR" se lee igual
+ * que "ELEGIR" inclinado — la diferencia no se ve. "Abrir" en caja baja se ve
+ * distinto sin verse roto. */
 .tramo--sin-firma .tramo__nombre {
+  font-family: var(--tipo-texto);
+  font-style: italic;
+  font-variant-caps: normal;
+  letter-spacing: normal;
+  font-size: var(--t-cuerpo);
   color: color-mix(in srgb, var(--dorado) 72%, transparent);
-}
-
-/* ⚠️ EL `color: transparent` VA ADENTRO DEL `@supports`, JUNTO AL STROKE, Y NO
- * AFUERA. Separados, un navegador sin `-webkit-text-stroke` se queda con el
- * `transparent` y el numeral desaparece: un III invisible no se lee como "no lo
- * firmamos", se lee como un bug. Juntos, la degradación es un numeral macizo,
- * que es lo correcto. La condición prueba el soporte con un valor real porque
- * `@supports (-webkit-text-stroke)` sin valor da falso. */
-@supports (-webkit-text-stroke: 1px red) {
-  .tramo__regla--sin-firma .tramo__numeral {
-    color: transparent;
-    -webkit-text-stroke: 1.2px color-mix(in srgb, var(--dorado) 76%, transparent);
-  }
 }
 
 /* ================================================================ LA PROSA = */

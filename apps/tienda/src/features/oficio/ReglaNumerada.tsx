@@ -21,10 +21,11 @@ type Props = {
   /** El romano, tal como se lee: `I`, `II`, `III`. */
   numeral: string;
   /**
-   * Si la marca firma el tramo. El numeral hueco y el filete atenuado son dos
-   * de los tres recursos que marcan el tramo sin firma, y los dibuja este
-   * componente: por eso el booleano baja hasta acá en vez de resolverse con un
-   * selector de ancestro. El tercero —el nombre del tramo— es de `Tramo`.
+   * Si la marca firma el tramo. El filete atenuado es uno de los dos recursos
+   * que marcan el tramo sin firma, y lo dibuja este componente: por eso el
+   * booleano baja hasta acá en vez de resolverse con un selector de ancestro.
+   * El otro —el nombre en cursiva— es de `Tramo`. El numeral es macizo en los
+   * tres tramos desde el 2026-09-30 (plan B de ADR 007).
    */
   firmado: boolean;
 };

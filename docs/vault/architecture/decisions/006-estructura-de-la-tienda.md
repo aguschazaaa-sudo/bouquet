@@ -210,6 +210,14 @@ viejo decía "cerrado antes del centro" y `cover 50%` **es** el centro: el códi
 nunca hizo lo que decía. Aplica a los dos usuarios del trazado, el sello y la mesa
 de la home, que también es la última escena antes del pie.
 
+**Desplegado en la preview y verificado** (v0.49.3, rollout `build-2026-09-30-003`).
+Chrome por CDP al fondo de la página, leyendo el progreso de `cerrar-cartucho` con
+`getAnimations()`: el sello da **180°** a 1920×922 y a 390×844; el rango viejo
+inyectado en el mismo navegador da **116°** y **108°** — el control que prueba que la
+medición distingue. La mesa daba 180° con los dos rangos. ⚠️ El CSS publicado dice
+`animation-range:entry 10%`: el minificador saca el `entry 100%` final porque es
+el valor implícito, así que un canario con el string del fuente da cero.
+
 ## Lo que hay que medir antes de creerle a este ADR
 
 | Qué | Por qué | Disparador |

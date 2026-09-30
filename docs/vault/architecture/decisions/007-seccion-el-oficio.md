@@ -100,7 +100,7 @@ una segunda feature las importe, y esa bajada es un commit propio.
 |---|---|
 | Los dos **brazos** del filete, con la modulación invertida | La regla de un solo trazo de [`direccion.md §5.1`](../../design/direccion.md) más el **trazo modulado**, que se midió en el isotipo: 1,38:1, p95/p05 sobre 1.313 muestras de cresta |
 | La **capitular** del primer párrafo de cada tramo | Tipografía del libro, con la misma Fraunces del sitio. No es una display de época |
-| El **numeral hueco** del tramo sin firma | El mismo romano macizo de los otros dos, en contorno |
+| ~~El **numeral hueco** del tramo sin firma~~ **El nombre en cursiva** del tramo sin firma (plan B, 2026-09-30) | La cursiva de Newsreader que el sitio ya carga, en caja baja. El numeral volvió a ser macizo: ver *Lo que hay que medir* |
 
 **Ninguna toca la lista prohibida de `§5.3`:** no hay soles nacientes, zigzags,
 galones, abanicos, escalonados tipo rascacielos, plumas, tipografías decó de
@@ -242,11 +242,15 @@ lectura por visitante, y en el bloque más visitado de la sección.
 
 ## Lo que hay que medir antes de creerle a este ADR
 
-- **El numeral hueco lo tiene que mirar el dueño.** Yo lo miré renderizado y se
-  lee como decisión, no como defecto: el contorno es parejo, y el filete al 50 %
-  y el nombre atenuado lo acompañan. Pero el que marcó el riesgo fue él, así que
-  la palabra es suya. El plan B está escrito: numeral macizo con el nombre en
-  cursiva y el filete al 50 %.
+- ~~**El numeral hueco lo tiene que mirar el dueño.**~~ **Lo miró el
+  2026-09-30 y se leyó como defecto**: *"I y II están pintados y III está
+  outline"*. Yo lo había mirado y dicho "se lee como decisión" — o sea que el
+  riesgo que él marcó en la maqueta era real y mi mirada no lo detectaba. Se
+  aplicó el **plan B**: numeral macizo, nombre en cursiva, filete al 50 %.
+  Dos precisiones que el plan no traía: la cursiva es de **Newsreader** porque
+  Fraunces se carga sin la suya (un `italic` ahí es una oblicua sintética), y va
+  en **caja baja** — en versalita cursiva, inyectadas las dos sobre la preview,
+  "ABRIR" se leía igual que "ELEGIR" inclinado.
 - **El contraste del filete dorado sigue sin medirse** sobre el píxel pintado.
   `direccion.md §2.1` calcula el dorado **puro** sobre tinta en 8,80:1, pero el
   filete se dibuja al 85 % y al 42 %, y la regla entre columnas al **22 %**. Si
