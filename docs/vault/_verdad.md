@@ -15,7 +15,7 @@
 > deuda del proyecto, medida.** Si se contradicen, este tiene razon.
 >
 > Sin tildes a proposito: lo escribe un script, como todo lo de `scripts/ci/`.
-> **Generado:** 2026-09-30 - commit `c1c7edc` - huella del cuerpo `325cf0af2698`
+> **Generado:** 2026-09-30 - commit `904ba63` - huella del cuerpo `ecd689044858`
 
 ---
 
@@ -77,7 +77,7 @@ Todos los estados publicos son alcanzables: cada uno lo produce al menos un par.
 | `@bouquet/tienda` | 0.1.0 | `apps/tienda` | `dev`, `build`, `start`, `typecheck`, `test` |
 | `@bouquet/functions` | 0.1.0 | `functions` | `construir`, `tipos`, `test` |
 
-### Scripts de la raiz - `bouquet` 0.50.0
+### Scripts de la raiz - `bouquet` 0.51.0
 
 | Script | Comando |
 |---|---|
@@ -296,7 +296,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `textoDelBalde` | funcion | abierto | `apps/tienda/src/features/carrito/LineaDelCarrito.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/textos.ts`, `packages/contratos/test/producto.test.ts` |
 | `esCorte` | funcion | abierto | `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/producto.test.ts`, `packages/contratos/test/seleccion.test.ts` |
 | `Validacion` | tipo | abierto | `apps/tienda/src/features/carrito/checkout/borrador.ts`, `functions/src/pagos/mercadopago.ts` |
-| `validarProducto` | funcion | abierto | `functions/src/pedidos/armar.ts`, `functions/src/pedidos/reponer.ts`, `functions/test/pedidos/armar.test.ts`, `packages/contratos/test/producto.test.ts`, `scripts/seed/seed.mjs` |
+| `validarProducto` | funcion | abierto | `functions/src/pedidos/armar.ts`, `functions/src/pedidos/reponer.ts`, `functions/test/pedidos/armar.test.ts`, `packages/contratos/test/producto.test.ts`, `scripts/catalogo/cargar.mjs`, `scripts/seed/seed.mjs` |
 | `ProductoPublicado` | tipo | abierto | `apps/tienda/src/features/carrito/PaginaDelCarrito.tsx`, `apps/tienda/src/features/carrito/checkout/PaginaDelCheckout.tsx`, `apps/tienda/src/features/catalogo/DatosDelVino.tsx`, `apps/tienda/src/features/catalogo/EstadoDelVino.tsx`, `apps/tienda/src/features/catalogo/FichaDeVino.tsx`, `apps/tienda/src/features/catalogo/HojaDelVino.tsx`, `apps/tienda/src/features/catalogo/ListadoDeVinos.tsx`, `apps/tienda/src/features/catalogo/NotaDelVino.tsx`, `apps/tienda/src/features/catalogo/PanelDeFiltros.tsx`, `apps/tienda/src/features/catalogo/PestanasDeColor.tsx`, `apps/tienda/src/features/catalogo/SinResultados.tsx`, `apps/tienda/src/features/catalogo/TarjetaDeVino.tsx`, `apps/tienda/src/features/catalogo/VentanaDeBotella.tsx`, `apps/tienda/src/features/catalogo/filtros.ts`, `apps/tienda/src/features/catalogo/textos.ts`, `apps/tienda/src/features/landing/seleccion.ts`, `apps/tienda/test/filtros.test.ts`, `apps/tienda/test/seleccion.test.ts`, `packages/contratos/test/caja.test.ts`, `packages/contratos/test/cajas.test.ts`, `packages/contratos/test/carrito.test.ts`, `packages/contratos/test/seleccion.test.ts` |
 | `proyectarProducto` | funcion | **SIN PUERTA - nadie** | - |
 | `DocumentoCrudo` | tipo | abierto | `apps/tienda/src/server/catalogo.ts`, `packages/contratos/test/producto.test.ts` |
@@ -393,7 +393,7 @@ Se buscan referencias en `.ts .tsx .js .jsx .mjs .cjs` del repo entero. El panel
 | `seParecen` | funcion | abierto | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts`, `scripts/ci/auditar_estados.mjs` |
 | `ENTRADAS_DE_TEXTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
 | `PARES_DE_TEXTO` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/texto.test.ts` |
-| `TUBERIA_DE_FOTO` | valor | abierto | `functions/src/foto/tuberia.ts`, `scripts/seed/seed.mjs` |
+| `TUBERIA_DE_FOTO` | valor | abierto | `functions/src/foto/tuberia.ts`, `scripts/seed/foto.mjs` |
 | `MOTIVOS_DE_AJUSTE` | valor | solo el generador | `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/stock.test.ts` |
 | `TOPE_DE_STOCK` | valor | abierto | `functions/src/pedidos/reponer.ts`, `packages/contratos/scripts/generar.mjs`, `packages/contratos/test/pedido.test.ts`, `packages/contratos/test/stock.test.ts` |
 | `PedidoDeMovimiento` | tipo | abierto | `functions/src/stock/mover.ts`, `packages/contratos/test/stock.test.ts` |
@@ -487,4 +487,4 @@ Las secciones de arriba que dependen de estas rutas se emiten vacias con su nota
 
 ---
 
-Archivos de codigo recorridos: 180. Archivos de test: 69. Casos de test: 1066.
+Archivos de codigo recorridos: 182. Archivos de test: 69. Casos de test: 1066.
