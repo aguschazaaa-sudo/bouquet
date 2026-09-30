@@ -17,8 +17,9 @@
 ## Dónde está el proyecto
 
 **Fase: la vidriera está entera hasta el botón de pagar (2026-09-15). Todavía
-no se cobra nada.** `/vinos`, la ficha, `/carrito` y ahora `/pedido` leen 20
-vinos de muestra de `bouquet-vinos`. El checkout pide los datos y cotiza el
+no se cobra nada.** `/vinos`, la ficha, `/carrito` y ahora `/pedido` leen **24
+vinos reales** de `bouquet-vinos` desde el 2026-09-30 —con precio y stock inventados,
+para corregir desde el panel—; la muestra se borró ([ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md)). El checkout pide los datos y cotiza el
 envío **con un cotizador simulado**; falta `crearOrden`, la preferencia de
 Mercado Pago y su webhook.
 
@@ -75,6 +76,28 @@ el deploy del panel y que alguien cargue y publique un vino real.
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### El catálogo real: 24 vinos con foto y descripción, y la muestra afuera (2026-09-30)
+
+**Cargado en producción y verificado el 2026-09-30**, a pedido del dueño: pasó la lista de
+lo que sabe que tiene —*"es más la mitad"*— y pidió las fichas con fotos y descripciones,
+precios y stock inventados. Detalle y descartes en
+[ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md).
+
+- **`scripts/catalogo/cargar.mjs`** da de alta como el panel —sin `muestra`, id igual al
+  slug— y **nunca pisa**: lo que el dueño corrija manda, y la segunda mitad entra
+  agregándola al JSON y volviendo a correr. La foto pasa por `scripts/seed/foto.mjs`, la
+  tubería que ahora comparten los dos scripts y que `tuberia.test.ts` compara con la callable.
+- **15 bodegas y 24 vinos** (23 publicados; *Cordero con Piel de Lobo Dulce* es borrador
+  hasta confirmar la uva). Se borraron los 20 de muestra, sus 11 bodegas y sus fotos.
+- **Cajas sugeridas rearmadas** con vinos reales, **portada vacía** (la home usa la regla
+  hasta que el dueño elija) y **`vino-de-prueba` despublicado**.
+- Verificado por contenido: las fotos por SHA-256, `/vinos` y cuatro fichas en vivo con
+  canarios que aparecen y desaparecen, y renderizado a 1280 y 390.
+
+**Lo que sigue:** que el dueño corrija precio, stock y las añadas marcadas con la botella en
+la mano, y publique el Dulce. **La home sigue mostrando la muestra** hasta el próximo deploy
+de `tienda` (se hornea en el build). Desde 2026-09-30.
 
 ### La puerta de edad: el telón que se levanta, en todo el sitio (2026-09-30)
 
@@ -207,33 +230,6 @@ Workflow D.** Nace **apagado**: nada cambia hasta que el dueño ponga un monto.
 monto de la entrega sin cargo cuando tenga las tarifas. `calculadaEn` dice mañana a las 5
 hasta que corra la programada: una corrida a mano manda la **próxima** hora (ADR 025).
 
-### Hito 3, segundo tramo: las cajas sugeridas se arman desde el panel — y EP-09 entera (2026-09-28)
-
-**Desplegado el 2026-09-28 —`guardarCajasSugeridas` y el panel (v0.42.0, `dacfb58`)— y
-verificado por bytes. Nadie armó una caja desde el panel.** Sin openspec, a pedido del dueño:
-[ADR 024](architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) es la
-especificación. **HU-09.2 y HU-09.3**: con el primer tramo, **el hito 3 queda escrito
-entero**.
-
-- **La callable `guardarCajasSugeridas`** es la única puerta de `cajasSugeridas/publicas`
-  (cerrado incluso al admin, ADR 009 §8): valida la forma con `armarCajasSugeridas`
-  —hasta 6 cajas, slug derivado del nombre, nombres repetidos rechazados—, lee los ids
-  distintos en un `getAll`, corre `verificarComposicion` y reescribe el documento entero.
-  Todo o nada. **No exige publicado ni stock**: reordenar no puede fallar por una caja vieja.
-- **En Vidriera, debajo de la portada:** cada caja con sus seis vinos y lo que la tienda va
-  a hacer —lugares marcados, o la caja entera que no se muestra—; armar y cambiar en una
-  hoja que dice cuántos faltan y no se cierra si falla; subir, bajar y sacar con *Deshacer*.
-- La hoja de elegir un vino pasó a ser **una** para la portada y las cajas.
-
-| Qué | Cómo |
-|---|---|
-| Las suites | CI `36502552119`: contratos **+8**, emulador **+11** (suite nueva en CI), Dart **+12**; `flutter analyze` sin issues; **7 functions** en el bundle |
-| La callable | `ACTIVE`; preflight **204** con CORS; anónimo **401** JSON de `exigirAdmin`; inventada **404**; las otras 6 intactas (`updateTime`) |
-| Panel | Canario 0 → 1 en 4 cadenas, `COMMIT` `4c75317` → `dacfb58` → live con los 4 hashes, `noindex` |
-
-⚠️ **Lo que sigue:** que el dueño arme una caja y elija la portada desde *Vidriera*, y
-publicar la tienda después de elegir la portada: se hornea en el build.
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -303,6 +299,7 @@ publicar la tienda después de elegir la portada: se hornea en el build.
 | 025 | El panel se entra por **Resumen**: el día con `count()` y `limit(50)`, lo agotado en memoria; la popularidad la **mide un job diario** que recalcula el documento entero, y sin medición no hay ranking | [025](architecture/decisions/025-el-tablero-del-panel.md) |
 | 026 | El umbral de la entrega sin cargo vive en **`config/envios`**, lo escribe **sólo `fijarEnvioSinCargo`** con una baranda sobre el valor nuevo que **pregunta**; la vidriera lo muestra, y lo que se cobra lo decide `crearOrden` | [026](architecture/decisions/026-envio-sin-cargo.md) |
 | 028 | La puerta de edad es un **telón sobre el sitio entero** montado en el layout raíz, que **no bloquea el render**: un script en línea la esconde antes del primer pintado para quien ya entró, `inert` sale del efecto y no de una prop, y **sin JavaScript no se muestra** | [028](architecture/decisions/028-la-puerta-de-edad.md) |
+| 029 | El catálogo real entra por **`scripts/catalogo/cargar.mjs`**, que escribe como el panel (sin `muestra`), **nunca pisa** y pasa la foto por la tubería compartida; el stock inventado nace **sin movimiento** | [029](architecture/decisions/029-carga-inicial-del-catalogo.md) |
 
 ---
 
@@ -323,7 +320,7 @@ Los que bloquean algo:
 | Deploy desde tag en vez de rama | Antes del primer deploy que incluya cobro | 2026-09-01 |
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
-| ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más ~~puerta de edad~~ (resuelta el 2026-09-30, [ADR 028](architecture/decisions/028-la-puerta-de-edad.md)), contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: correr el seed de `cajasSugeridas/publicas` en el proyecto que corresponda —sin ese documento el carril no se renderiza, que es el modo de falla silencioso— y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
+| ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más ~~puerta de edad~~ (resuelta el 2026-09-30, [ADR 028](architecture/decisions/028-la-puerta-de-edad.md)), contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: ~~correr el seed de `cajasSugeridas/publicas`~~ (desde el 2026-09-30 el documento tiene cajas de vinos reales, [ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md) §6) y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
 | **HU-04.2 — ordenar las fotos que NO son la principal.** Elegir la principal se construyó el 2026-09-24 ([ADR 015 §7](architecture/decisions/015-fotos-del-panel.md)); la vidriera lee sólo `imagenes[0]`, así que ordenar el resto no cambia nada visible | El día que la ficha muestre más de una foto | 2026-09-22 |
 | **El recorte de fondo de una foto de cámara**, con un modelo real — el clasificador por umbral se midió y se refutó (ADR 015 §2) | Que la previsualización resulte insuficiente, mirándola | 2026-09-22 |
 | **Los crudos huérfanos en Storage** si `procesarFoto` falla a mitad de camino: no son alcanzables y no rompen nada. Entre el 2026-09-22 y el 2026-09-23 se produjo uno en CADA intento de subida, mientras el preflight de la callable daba 403 — **RESUELTO el CORS el 2026-09-23** ([ADR 015](architecture/decisions/015-fotos-del-panel.md)), vuelve a ser el caso raro original | Cuando pesen, y hay que barrer los que deje un fallo a mitad de camino | 2026-09-22 |
@@ -343,6 +340,8 @@ Los que bloquean algo:
 | **`productoIds[]` en la Orden**, para contar exactas las vendidas sin despachar. Sin despacho, los 50 pedidos del tope se llenan en una semana | Más de 50 pedidos abiertos, o un conteo que el aviso no explique. La salida de fondo es EP-07 | 2026-09-24 |
 | **Cada venta escribe `productos.stock`**: con el tramo 4, una venta que cambie el balde de un vino publicado costará 232 lecturas | Cuando se escriba el tramo 4 | 2026-09-24 |
 | ⚠️ **Los secretos de Mercado Pago son FALSOS** ([ADR 022 §7](architecture/decisions/022-cobro-de-la-vidriera.md)): `MERCADOPAGO_ACCESS_TOKEN` y `MERCADOPAGO_SECRETO_DE_FIRMA`, etiqueta `valor=falso`. Reemplazarlos con `firebase functions:secrets:set` y **redesplegar `avisoDeMercadoPago` y `revisarPago`**; después, registrar la URL del webhook en Mercado Pago | El dueño pasa las claves | 2026-09-28 |
+| ⚠️ **La home muestra los vinos de muestra borrados** —tarjetas con links y fotos que ya no existen—: se hornea en el build ([ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md)). El deploy de `tienda` arrastra la v0.50.0 (`noindex` por host), commiteada y retenida a propósito | El próximo deploy de `tienda` | 2026-09-30 |
+| **Precio, stock y añada de los 24 vinos son inventados o probables**, y hay cinco líneas que eligió el script ([ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md), *Lo que NO se resolvió*). *Cordero con Piel de Lobo Dulce* es borrador: la uva no está confirmada y puede no estar en la lista cerrada | Que el dueño los revise con las botellas en la mano, antes de la primera venta | 2026-09-30 |
 
 ---
 

@@ -9,6 +9,41 @@
 
 ---
 
+## Salió el 2026-09-30, al cargar el catálogo real
+
+Sale la del segundo tramo del hito 3 (2026-09-28): con el catálogo real sumado al dashboard,
+era la más vieja de las cinco. El porqué sigue en
+[ADR 024](../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md).
+
+### Hito 3, segundo tramo: las cajas sugeridas se arman desde el panel — y EP-09 entera (2026-09-28)
+
+**Desplegado el 2026-09-28 —`guardarCajasSugeridas` y el panel (v0.42.0, `dacfb58`)— y
+verificado por bytes. Nadie armó una caja desde el panel.** Sin openspec, a pedido del dueño:
+[ADR 024](../architecture/decisions/024-cajas-sugeridas-desde-el-panel.md) es la
+especificación. **HU-09.2 y HU-09.3**: con el primer tramo, **el hito 3 queda escrito
+entero**.
+
+- **La callable `guardarCajasSugeridas`** es la única puerta de `cajasSugeridas/publicas`
+  (cerrado incluso al admin, ADR 009 §8): valida la forma con `armarCajasSugeridas`
+  —hasta 6 cajas, slug derivado del nombre, nombres repetidos rechazados—, lee los ids
+  distintos en un `getAll`, corre `verificarComposicion` y reescribe el documento entero.
+  Todo o nada. **No exige publicado ni stock**: reordenar no puede fallar por una caja vieja.
+- **En Vidriera, debajo de la portada:** cada caja con sus seis vinos y lo que la tienda va
+  a hacer —lugares marcados, o la caja entera que no se muestra—; armar y cambiar en una
+  hoja que dice cuántos faltan y no se cierra si falla; subir, bajar y sacar con *Deshacer*.
+- La hoja de elegir un vino pasó a ser **una** para la portada y las cajas.
+
+| Qué | Cómo |
+|---|---|
+| Las suites | CI `36502552119`: contratos **+8**, emulador **+11** (suite nueva en CI), Dart **+12**; `flutter analyze` sin issues; **7 functions** en el bundle |
+| La callable | `ACTIVE`; preflight **204** con CORS; anónimo **401** JSON de `exigirAdmin`; inventada **404**; las otras 6 intactas (`updateTime`) |
+| Panel | Canario 0 → 1 en 4 cadenas, `COMMIT` `4c75317` → `dacfb58` → live con los 4 hashes, `noindex` |
+
+⚠️ **Lo que sigue:** que el dueño arme una caja y elija la portada desde *Vidriera*, y
+publicar la tienda después de elegir la portada: se hornea en el build.
+
+---
+
 ## Salió el 2026-09-30, al construir la puerta de edad
 
 Sale la del primer tramo del hito 3 (2026-09-28): con la puerta de edad sumada al dashboard,
