@@ -101,6 +101,13 @@ inconsistente y se entera uno a los 18 segundos de un build.
 
 ### 4. `noindex` por variable de entorno
 
+> **Reemplazado el 2026-09-30, a pedido del dueño:** la tienda se publica con
+> dominio y `PREVIEW_CERRADA` ya no existe. El `noindex` pasó a ir **por host**
+> (`has: host .+\.hosted\.app` en `next.config.ts`): la URL de App Hosting lo
+> sigue llevando —no se apaga, es por donde se mide el origen salteando
+> Cloudflare, ADR 005 medición 2— y el dominio no. `preview.sh verificar` con
+> `DOMINIO=` mide las dos mitades. Lo de abajo queda como historia.
+
 `next.config.ts` agrega `X-Robots-Tag: noindex, nofollow, noarchive` a **toda**
 ruta **sólo si `PREVIEW_CERRADA=1`**, que vive en el `apphosting.yaml` de la
 carpeta. **No es fijo** porque el día que se publique la tienda de verdad, salir

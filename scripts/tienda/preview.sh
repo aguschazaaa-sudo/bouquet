@@ -12,9 +12,9 @@
 #       rollouts por la API, que cada respuesta lleve noindex, que el catalogo
 #       sea el de Firestore, y que los gates sigan CERRADOS.
 #
-# Esto NO es la publicacion de la tienda: los gates de deploy siguen abiertos
-# (contacto provisorio, el checkout que no cobra). La puerta de edad ya esta,
-# y `verificar` mide que siga en cada ruta.
+# Desde el 2026-09-30 es la publicacion (el nombre del script quedo de cuando
+# era una preview): la URL de App Hosting sigue con noindex, el dominio no
+# (paso 2b). El checkout sigue sin cobrar y `verificar` mide que siga asi.
 set -euo pipefail
 
 PROYECTO=bouquet-vinos
@@ -61,6 +61,22 @@ verificar() {
     case "$robots" in *noindex*) ;; *) falla "$ruta NO manda X-Robots-Tag: noindex (dice '${robots:-nada}')" ;; esac
   done
   ok "7 rutas con el codigo esperado y noindex en todas, los 404 incluidos"
+
+  # 2b. Y el DOMINIO, al reves: el mismo codigo y SIN noindex. Es el control
+  # negativo del paso 2 -- el header va por host (next.config.ts), y un
+  # `noindex` en el dominio deja la tienda afuera de Google sin un solo error.
+  # Solo si se pasa: `DOMINIO=ejemplo.com.ar bash scripts/tienda/preview.sh verificar`.
+  if [ -n "${DOMINIO:-}" ]; then
+    for ruta in / /vinos /oficio /ruta-inventada-de-control; do
+      cabeza=$(curl -s -o /dev/null -D - "https://$DOMINIO$ruta" | tr -d '\r')
+      codigo=$(echo "$cabeza" | head -1 | awk '{print $2}')
+      robots=$(echo "$cabeza" | grep -i '^x-robots-tag' | cut -d: -f2- | xargs || true)
+      case "$ruta" in *inventad*) esperado=404 ;; *) esperado=200 ;; esac
+      [ "$codigo" = "$esperado" ] || falla "$DOMINIO$ruta dio $codigo y se esperaba $esperado"
+      case "$robots" in *noindex*) falla "$DOMINIO$ruta manda noindex: Google no la indexa" ;; esac
+    done
+    ok "$DOMINIO: 4 rutas con el codigo esperado y SIN noindex"
+  fi
 
   # 3. El catalogo que se ve es el de Firestore, no una pagina vacia con 200.
   local vinos publicados enlaces

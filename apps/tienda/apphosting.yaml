@@ -1,24 +1,19 @@
-# La preview cerrada de la vidriera (docs/vault/architecture/decisions/017-preview-cerrada.md).
+# La vidriera en App Hosting (docs/vault/architecture/decisions/005-hosting-vidriera.md
+# y 017-preview-cerrada.md).
 #
-# NO es la publicacion de la tienda: los gates de deploy siguen cerrados
-# (contacto provisorio, el checkout que no cobra; la puerta de edad ya esta). Esto es un
-# lugar para MIRAR el catalogo real, sin dominio y sin indexar.
+# Desde el 2026-09-30 deja de ser una preview cerrada: se publica con el dominio
+# adelante. El `noindex` ya no sale de una variable de este archivo: lo pone
+# next.config.ts SOLO en la URL tecnica (`*.hosted.app`), no en el dominio.
+# El checkout sigue sin cobrar (`EL_CHECKOUT_NO_COBRA`) hasta Mercado Pago.
 
 runConfig:
   cpu: 1
   memoryMiB: 512
   # Cero instancias en reposo: no se paga cuando nadie mira.
   minInstances: 0
-  # Una sola, a proposito: es una preview. Con el maximo por defecto (100), un
-  # bot que encuentre la URL levanta cien instancias y paga el dueno.
+  # Una sola, a proposito, tambien publicada: Cloudflare cachea el HTML y el
+  # origen ve pocos pedidos. Con el maximo por defecto (100), un bot levanta
+  # cien instancias y paga el dueno; y el tope de instancias es el tope de
+  # lecturas, porque la cache de datos de Next vive por instancia (ADR 017 §5).
   maxInstances: 1
   concurrency: 80
-
-env:
-  # Prende el `X-Robots-Tag: noindex` de next.config.ts. BUILD y RUNTIME: los
-  # headers se compilan al hacer el build.
-  - variable: PREVIEW_CERRADA
-    value: '1'
-    availability:
-      - BUILD
-      - RUNTIME
