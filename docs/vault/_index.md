@@ -77,6 +77,23 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### El +18 se dice en tres lugares, no en cuatro: el pie de la home deja de repetir el telón (2026-10-01)
+
+**Desplegado y verificado el 2026-10-01** (v0.51.8, rollout `build-2026-10-01-001`). Lo pidió el
+dueño: *"con la cortina del inicio alcanza, se pone denso"*. Detalle en
+[ADR 028 §8](architecture/decisions/028-la-puerta-de-edad.md).
+
+- **Sale la línea del documento del pie de la home**: repetía palabra por palabra la del telón.
+  Quedan el telón, la leyenda legal del pie (*"Prohibida su venta a menores de 18 años"*) y la del
+  checkout, que dice quién tiene que recibir.
+- **Canario discriminante en `/`**: el pie viejo 1 → 0, con el telón (espacio duro) y la leyenda en 1
+  como control positivo y la ruta inventada en 0. `preview.sh verificar` en verde y la copia
+  desplegada idéntica al commit. Cero lecturas; sólo presentación. **No se miró renderizado**: es
+  un párrafo menos, y lo prueba el diff.
+
+**Lo que sigue:** si el dueño quiere bajar más, el candidato es la leyenda del pie, previa
+confirmación de que no es obligatoria en el sitio propio. Desde 2026-10-01.
+
 ### El ícono del carrito es una bolsa de Heroicons, no un octógono dibujado a mano (2026-09-30)
 
 **Desplegado y verificado el 2026-09-30** (v0.51.6, rollout `build-2026-09-30-008`): el canario
@@ -177,40 +194,6 @@ real a la tarde; Mercado Pago después, porque pide dominio. ~~El `noindex` va *
 sólo en `*.hosted.app`~~: **desplegado y revertido el mismo día** —el `has: host` no coincide
 en App Hosting, la URL salió sin `noindex`, medido—. Vuelve `PREVIEW_CERRADA=1`; el día del
 dominio hay que medir qué `Host` llega ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
-
-### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
-
-**Desplegado y verificado por bytes el 2026-09-29** (v0.46.1, `df1304b`): CI restada, canario
-discriminante y los 4 hashes en live. **El dueño lo vio en el Pedido 1** y pidió un mensaje
-prearmado por estado: **desplegado y verificado por bytes el mismo día** (v0.47.0, `b7c58e6`). Sin openspec, a pedido del dueño: la
-especificación es la *Revisión* de [ADR 021](architecture/decisions/021-aviso-de-despacho.md).
-El dueño no encontraba el botón: pedía una marca que **no tenía nadie** y aparecía sólo en un
-pedido despachado.
-
-- **Un solo botón, debajo del estado, en cualquier estado del pedido**, que abre el chat con
-  **el mensaje de su estado ya escrito** (curado por `voz`): que lo anotamos y qué lleva, que
-  salió (*"Avisarle por WhatsApp que salió"*), que no se pudo entregar y por qué, o si llegó
-  bien. Cancelado, vacío.
-- **Lo ve todo el que entra**: la marca `avisaPorWhatsApp` salió del panel, de `acceso.mjs`
-  (`avisa`/`no-avisa`) y de sus tests; el piso de CI del script baja de 17 a 11.
-- Cero lecturas y cero escrituras; sólo el panel. **Arrastró la v0.45.0** (entrada de abajo),
-  que estaba sin publicar. Detalle de la verificación en ADR 021.
-
-**Segundo tramo: [ADR 027](architecture/decisions/027-pedidos-sin-burocracia.md), escrito;
-falta CI y el deploy** (reglas → `crearOrdenDelPanel` → panel). Workflow D, **sin openspec ni
-maqueta a pedido del dueño** (*"entregá completo vos"*). `revisor-pagos`: **cero ALTOS**, tres
-MEDIO (dos corregidos, uno latente y abierto).
-
-| | Antes | Ahora |
-|---|---|---|
-| Cargar un pedido | 10 campos, 7 obligatorios | **6**: nombre, teléfono, dirección (calle y número en uno) y localidad obligatorios; piso, depto o referencia en uno, opcional. **Salen el código postal, la provincia y el mail**. La vidriera no cambia |
-| La bandeja | 7 fichas | **3**: *Para hacer* (por despachar y no entregados), *En camino*, *Terminados* |
-| Nombres | hasta 3 por estado (*"En camino"* / *"Despachada"*) | **uno**, el mismo en la ficha, el detalle y el botón |
-| Pasos | preparar → despachar → llegó | ***Salió* → *Llegó***: sale "preparar" (arma una persona). Pide `sin_preparar → despachada` en la tabla y en las reglas |
-| Entrega fallida | no se cancela | **igual**: lo decidió el dueño, y cierra el abierto de [ADR 019](architecture/decisions/019-preparar-despachar-y-cancelar.md) |
-
-**Lo que sigue:** CI `tests` y `panel` restadas → reglas → `crearOrdenDelPanel` → panel, y que
-el dueño cargue un pedido y mire las tres fichas. Desde 2026-09-29.
 
 ### Lo que quedó abierto
 

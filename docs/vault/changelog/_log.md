@@ -9,6 +9,46 @@
 
 ---
 
+## Salió el 2026-10-01, al registrar el pie de la home
+
+Sale el botón de WhatsApp de los pedidos (2026-09-29): con el +18 sumado, era la más vieja de las cinco.
+El porqué sigue en [ADR 021](../architecture/decisions/021-aviso-de-despacho.md) y
+[ADR 027](../architecture/decisions/027-pedidos-sin-burocracia.md).
+
+### Pedidos sin burocracia — primer tramo: el botón de WhatsApp, arriba y para todos (2026-09-29)
+
+**Desplegado y verificado por bytes el 2026-09-29** (v0.46.1, `df1304b`): CI restada, canario
+discriminante y los 4 hashes en live. **El dueño lo vio en el Pedido 1** y pidió un mensaje
+prearmado por estado: **desplegado y verificado por bytes el mismo día** (v0.47.0, `b7c58e6`). Sin openspec, a pedido del dueño: la
+especificación es la *Revisión* de [ADR 021](../architecture/decisions/021-aviso-de-despacho.md).
+El dueño no encontraba el botón: pedía una marca que **no tenía nadie** y aparecía sólo en un
+pedido despachado.
+
+- **Un solo botón, debajo del estado, en cualquier estado del pedido**, que abre el chat con
+  **el mensaje de su estado ya escrito** (curado por `voz`): que lo anotamos y qué lleva, que
+  salió (*"Avisarle por WhatsApp que salió"*), que no se pudo entregar y por qué, o si llegó
+  bien. Cancelado, vacío.
+- **Lo ve todo el que entra**: la marca `avisaPorWhatsApp` salió del panel, de `acceso.mjs`
+  (`avisa`/`no-avisa`) y de sus tests; el piso de CI del script baja de 17 a 11.
+- Cero lecturas y cero escrituras; sólo el panel. **Arrastró la v0.45.0** (entrada de abajo),
+  que estaba sin publicar. Detalle de la verificación en ADR 021.
+
+**Segundo tramo: [ADR 027](../architecture/decisions/027-pedidos-sin-burocracia.md), escrito;
+falta CI y el deploy** (reglas → `crearOrdenDelPanel` → panel). Workflow D, **sin openspec ni
+maqueta a pedido del dueño** (*"entregá completo vos"*). `revisor-pagos`: **cero ALTOS**, tres
+MEDIO (dos corregidos, uno latente y abierto).
+
+| | Antes | Ahora |
+|---|---|---|
+| Cargar un pedido | 10 campos, 7 obligatorios | **6**: nombre, teléfono, dirección (calle y número en uno) y localidad obligatorios; piso, depto o referencia en uno, opcional. **Salen el código postal, la provincia y el mail**. La vidriera no cambia |
+| La bandeja | 7 fichas | **3**: *Para hacer* (por despachar y no entregados), *En camino*, *Terminados* |
+| Nombres | hasta 3 por estado (*"En camino"* / *"Despachada"*) | **uno**, el mismo en la ficha, el detalle y el botón |
+| Pasos | preparar → despachar → llegó | ***Salió* → *Llegó***: sale "preparar" (arma una persona). Pide `sin_preparar → despachada` en la tabla y en las reglas |
+| Entrega fallida | no se cancela | **igual**: lo decidió el dueño, y cierra el abierto de [ADR 019](../architecture/decisions/019-preparar-despachar-y-cancelar.md) |
+
+**Lo que sigue:** CI `tests` y `panel` restadas → reglas → `crearOrdenDelPanel` → panel, y que
+el dueño cargue un pedido y mire las tres fichas. Desde 2026-09-29.
+
 ## Salió el 2026-09-30, al registrar el ícono del carrito
 
 Sale la del panel a ancho de teléfono (2026-09-29): con el ícono sumado, era la más vieja de las cinco.
