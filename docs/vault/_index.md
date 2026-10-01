@@ -80,7 +80,10 @@ familia — el permiso lo da el script, no una pantalla.
 
 ### El cotizador de Envíopack, escrito y dormido hasta las claves (2026-10-01)
 
-**Escrito el 2026-10-01, sin claves** (v0.52.0). Lo pidió el dueño: *"armemos la estructura para los
+**Desplegado dormido y verificado el 2026-10-01** (v0.52.0, rollout `build-2026-10-01-002`): CI
+restada (tienda 43 → 73), la copia idéntica al commit, `preview.sh verificar`, el canario de la
+provincia llamando la Server Action (`1425`: `B` → `C`, `1900` sigue `B`, el precio no se movió) y
+Chrome por CDP (una cotización por CP, una más al corregir la provincia, cero en reposo). Lo pidió el dueño: *"armemos la estructura para los
 envíos, apenas tenga el token lo agregamos"*. Detalle en
 [ADR 030](architecture/decisions/030-cotizar-con-enviopack.md).
 

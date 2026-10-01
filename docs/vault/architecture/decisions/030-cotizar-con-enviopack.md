@@ -1,9 +1,11 @@
 # ADR 030 — Cotizar con Envíopack: el adaptador escrito y dormido hasta las claves
 
 - **Fecha:** 2026-10-01
-- **Estado:** aceptada; **escrita y DORMIDA**. El adaptador existe y tiene tests, pero sin
+- **Estado:** aceptada; **desplegada DORMIDA y verificada el 2026-10-01** (v0.52.0, `822a9fc`,
+  rollout `build-2026-10-01-002`). El adaptador está en producción y tiene tests, pero sin
   `ENVIOPACK_API_KEY` y `ENVIOPACK_SECRET_KEY` en el entorno la vidriera sigue cotizando con
-  el simulado. Se prende con los secretos (ver *Cómo se prende*)
+  el simulado. Se prende con los secretos (ver *Cómo se prende*). Lo que sí cambió en
+  producción es la provincia (§7): ver *Verificación*
 - **Decide:** que Envíopack es el proveedor de envío por correo; qué endpoint se usa para
   mostrarle un precio al comprador; cómo se guarda y se renueva el token; qué se hace con una
   respuesta que no se puede leer; y quién contesta mientras no hay claves
@@ -261,6 +263,27 @@ no cambia nada visible—, pero **no prender las claves** sin A1, A3 y M1.
 Caminos de fuga de credenciales revisados, **sin hallazgo**: lo que vuelve al navegador, el
 `console.error`, el JSON roto, `/auth`, el bundle del cliente, el `.deploy/` de la tienda
 (`preparar_despliegue.mjs` excluye `.env*`), `apphosting.yaml` y `.env.example`.
+
+## Verificación (2026-10-01)
+
+- **CI restada**, no leída por el color: `alcance=tests` dio tienda **73** contra **43** de la
+  corrida anterior (+30, los de este cambio), contratos 314 y functions 76 sin cambios. `guardas`
+  en verde con `_verdad.md` regenerado en un worktree limpio de HEAD.
+- **La copia desplegada es el commit**: los siete archivos tocados, mismo SHA-256 en
+  `.deploy/tienda` que en `822a9fc`, y `src/` sin diferencias.
+- **`preview.sh verificar`** en verde: rollout `SUCCEEDED` con el 100 % del tráfico, `noindex`,
+  gates cerrados y puerta de edad, con sus controles negativos.
+- **Canario discriminante, llamando la Server Action como la llama el navegador** (el id sale del
+  payload RSC de `/pedido`): `1425` daba provincia **`B`** antes del deploy y **`C`** después;
+  `1900` sigue en `B` (control positivo); el precio de seis botellas a `1425` sigue en 900000
+  centavos (el simulado no cambió); `5500` con `"M"` devuelve `M` y con `"ZZ"` adivina `X`. El
+  id de la acción vieja y uno inventado dan **404**.
+- **Chrome por CDP sobre producción**, con carrito y puerta de edad sembrados: escribir `1425`
+  dispara **una** cotización y precarga `C`; corregir a `B` dispara **una** más, con `"B"`; cuatro
+  segundos quieto, **cero**. Captura mirada a 1280.
+
+**Lo que no se verificó, porque no se puede sin claves:** nada del adaptador contra Envíopack. Eso
+es *Lo que hay que medir con las claves en la mano*.
 
 ## Cuándo esta decisión deja de servir
 
