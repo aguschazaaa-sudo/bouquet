@@ -20,7 +20,8 @@
 no se cobra nada.** `/vinos`, la ficha, `/carrito` y ahora `/pedido` leen **24
 vinos reales** de `bouquet-vinos` desde el 2026-09-30 —con precio y stock inventados,
 para corregir desde el panel—; la muestra se borró ([ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md)). El checkout pide los datos y cotiza el
-envío **con un cotizador simulado**; falta `crearOrden`, la preferencia de
+envío **con un cotizador simulado**; **el de Envíopack está escrito y dormido
+hasta las claves** ([ADR 030](architecture/decisions/030-cotizar-con-enviopack.md)). Falta `crearOrden`, la preferencia de
 Mercado Pago y su webhook.
 
 **Las reglas de Firestore y Storage YA ESTÁN PUBLICADAS** (2026-09-14), medido
@@ -76,6 +77,29 @@ el deploy del panel y que alguien cargue y publique un vino real.
 la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
+
+### El cotizador de Envíopack, escrito y dormido hasta las claves (2026-10-01)
+
+**Escrito el 2026-10-01, sin claves** (v0.52.0). Lo pidió el dueño: *"armemos la estructura para los
+envíos, apenas tenga el token lo agregamos"*. Detalle en
+[ADR 030](architecture/decisions/030-cotizar-con-enviopack.md).
+
+- **`server/enviopack.ts`**: pide el token, lo guarda 3 h 45, cotiza el **precio** a domicilio
+  y se queda con la opción más barata que sea de **este** envío (servicio de entrega, banda de
+  peso del pedido). Lo que no se puede leer se descarta y, si no queda nada, va al log con el
+  motivo. **A sucursal no**: pide un id de localidad que no se busca por código postal.
+- **Contesta según el entorno**: con las dos claves, Envíopack; sin ninguna, el simulado,
+  **sólo mientras el checkout no cobre**; con una, nadie.
+- **La provincia que viaja es la del comprador**: del 1000 al 1499 es CABA (antes se adivinaba
+  Buenos Aires), y corregirla vuelve a cotizar sin cotizar dos veces cada código postal.
+- **El "token" son dos claves**, `api-key` y `secret-key`: el token dura cuatro horas y lo pide
+  el servidor. Van como secretos de App Hosting; el bloque está **comentado** en
+  `apphosting.yaml` con los comandos al lado.
+- Workflow D: `revisor-pagos` encontró 11; se arreglaron A1-A3, M1 y los tests de B4, y quedan
+  dos con disparador. Cero lecturas.
+
+**Lo que sigue:** las claves, y antes de prenderlas con el dominio publicado, el tope de la Server
+Action (M2) y decir *"estimado"* cuando el precio es del simulado (A4). Desde 2026-10-01.
 
 ### El +18 se dice en tres lugares, no en cuatro: el pie de la home deja de repetir el telón (2026-10-01)
 
@@ -162,39 +186,6 @@ se revirtió ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
 **Lo que sigue:** que el dueño corrija precio, stock y las añadas marcadas con la botella en
 la mano, y publique el Dulce. Desde 2026-09-30.
 
-### La puerta de edad: el telón que se levanta, en todo el sitio (2026-09-30)
-
-**Desplegada en la preview y verificada el 2026-09-30** (v0.49.1, rollout
-`build-2026-09-30-002`): CI restada (+4 tests exactos), canario discriminante, `preview.sh
-verificar` y Chrome por CDP a 1280 y 390, **20/20 con las capturas miradas**. El detalle está
-en [ADR 028](architecture/decisions/028-la-puerta-de-edad.md). Cierra *la única pieza legal
-obligatoria* que le faltaba a la vidriera (ARQUITECTURA §9.5), pendiente desde el
-2026-09-08. Sin openspec: el diseño ya estaba escrito en
-[parallax §10.2](design/parallax.md) y [voz §9.1](design/voz.md).
-
-- **`features/edad/`**, montada en el **layout raíz**: se entra por cualquier ruta. Es un
-  overlay: el sitio se renderiza **entero debajo**, y Google lo sigue viendo.
-- **Quien ya entró no lo ve ni un frame**: un script en línea lee `localStorage` antes del
-  primer pintado. Se guarda un booleano y una fecha, **nunca la de nacimiento**.
-- **El scroll no se escapa**: `inert` en el sitio y el telón como contenedor de scroll con
-  `overscroll-behavior: contain`. La página queda en `scrollTop 0`, sin consumir animaciones.
-- **Sube en 800 ms, sin rebote**. Con *reducir movimiento*, un fundido de 150 ms. `Todavía
-  no` tiene respuesta y un camino de vuelta, curado por `voz`.
-- **Sin JavaScript no se muestra**: no se podría levantar, y sin JavaScript tampoco se puede
-  comprar.
-- Cero lecturas. `preview.sh verificar` suma el paso 5: telón en 4 rutas, script **antes**
-  del telón, fichas debajo, con control negativo.
-
-**Lo que sigue:** que el dueño lo mire en su teléfono. La preview deja de tener el hueco
-de ADR 017, pero **la publicación sigue con gates abiertos**: contacto provisorio, el
-checkout que no cobra, licencias, fuentes y el tramo 4. Desde 2026-09-30.
-
-**Y el mismo día, a pedido del dueño: SE PUBLICA.** Dominio por Cloudflare y el WhatsApp
-real a la tarde; Mercado Pago después, porque pide dominio. ~~El `noindex` va **por host**,
-sólo en `*.hosted.app`~~: **desplegado y revertido el mismo día** —el `has: host` no coincide
-en App Hosting, la URL salió sin `noindex`, medido—. Vuelve `PREVIEW_CERRADA=1`; el día del
-dominio hay que medir qué `Host` llega ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -214,6 +205,7 @@ dominio hay que medir qué `Host` llega ([ADR 017 §4](architecture/decisions/01
 | ⚠️ **El peso y las medidas de una caja de 2 NO están medidos** | El peso sale de `⌈n × 1,118 + 0,6⌉` —la botella la pesó el dueño; el 0,6 del embalaje está **calibrado** para reproducir los 8 kg de la caja de seis, no medido— y el ancho es una proporción de esa caja. Una caja de regalo puede ser más ancha y más chata. **Disparador:** cuando haya una en la mano, y antes de las tarifas reales. Desde 2026-09-15. | el dueño |
 | ⚠️ **El glosario quedó DESACTUALIZADO en `Zona` y `Envío`** | Dice que una dirección fuera de toda zona *"no puede comprar"* y que se le avisa antes del carrito, y que el MVP es *"sólo envío a domicilio"*. Con envío a todo el país **eso ya no es cierto**: nadie queda afuera, `Zona` pasa a ser *hasta dónde repartimos nosotros*, y el texto de [`voz.md §9.3`](design/voz.md) queda sin pantalla. No se editó en este cambio a propósito: tocar el glosario adentro de una tarea de feature esconde la decisión adentro del diff de otra cosa. **Disparador:** antes de `crearOrden`, que es quien va a guardar el `Envío`. Desde 2026-09-15. | `vault` |
 | **Los precios del cotizador son INVENTADOS** (y los otros dos números ya no) | (a) El **peso** dejó de ser de catálogo: el dueño pesó una botella el 2026-09-15 —**1,118 kg**, o sea 6,666 kg las seis y ~7 kg con caja y relleno—, y se declara **8 del lado seguro**; lo que queda por mirar es **dónde caen los escalones de peso del correo**, porque de eso depende si ese margen cuesta algo. (b) Los **códigos postales de Punilla** dejaron de ser peligrosos al apagarse el reparto propio: hoy sólo prellenan una localidad que el comprador corrige. (c) Los **precios** siguen siendo puro invento y no hay forma de arreglarlos sin tarifas. **Disparador: las tarifas reales del proveedor, antes del primer cobro.** Desde 2026-09-15. | el dueño + `tienda` |
+| **El cotizador de Envíopack está escrito y DORMIDO: faltan las dos claves** | `api-key` y `secret-key` de la cuenta de Envíopack. Se cargan con `firebase apphosting:secrets:set`, se descomenta el bloque de `apps/tienda/apphosting.yaml` y se despliega la tienda: los pasos y la tabla de lo que hay que medir están en [ADR 030](architecture/decisions/030-cotizar-con-enviopack.md), *Cómo se prende*. Con las claves, *a sucursal* desaparece del checkout (§2). **Antes de prenderlas con el dominio publicado:** el tope de la Server Action (M2) y el *"estimado"* del simulado (A4) | El dueño (las claves) |
 | **El reparto propio en Punilla está APAGADO, y el camino está escrito entero** | `REPARTIMOS_NOSOTROS = false` en `server/envios.ts`, por decisión del dueño (*"de momento no lo vamos a hacer nosotros"*). Prenderlo es una línea, pero **antes** hay que verificar los códigos postales uno por uno con control negativo: con el reparto prendido, un CP mal puesto no falla ruidosamente. **Disparador:** cuando el dueño decida repartir él. Desde 2026-09-15. | el dueño |
 | ⚠️ **Nadie confirmó que se pueda despachar alcohol, ni cuánto cobra Mercado Pago** | Ningún correo prohíbe el vino por escrito **y ninguno lo permite por escrito**: es zona gris y se resuelve preguntándole a Envíopack por contacto comercial, no leyendo más documentación. Y la comisión de Mercado Pago no se pudo verificar: las páginas oficiales de costos devuelven **403** y las fuentes de terceros se contradicen entre 2,99 % y 6,99 % + IVA — hay que mirarlo en el panel de la cuenta real. Los dos están en [`proveedores/`](architecture/proveedores/). **Disparador:** antes de contratar y antes de fijar precios. Desde 2026-09-15. | el dueño |
 | **El umbral de envío sin cargo no existe, y el lugar donde va ya está** | El dueño lo dejó abierto: *"no sé desde qué monto me conviene"*. Cuando haya tarifas reales, el renglón es el de la entrega más un empujón arriba del total (*"te faltan $X para que el envío salga sin cargo"*). La cuenta ya soporta `precio: 0` y lo dice con palabras, no con un cero. **Disparador:** cuando existan las tarifas del proveedor. Desde 2026-09-15. | el dueño |

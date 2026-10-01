@@ -14,6 +14,10 @@ import {
   type ResultadoDeCotizacion,
 } from '@bouquet/contratos';
 
+import { EL_CHECKOUT_NO_COBRA } from '../features/carrito/checkout/textos.ts';
+import { crearCotizadorEnviopack } from './enviopack.ts';
+import { aDomicilio, aSucursal } from './opciones-de-envio.ts';
+
 /* Los topes del saneo de la carga. No son reglas de negocio —el carrito ya
  * tiene las suyas—: son el techo de lo que este endpoint público acepta
  * construir. Un pedido real no se acerca ni de lejos. */
@@ -22,25 +26,18 @@ const TOPE_DE_BOTELLAS_SUELTAS = 600;
 const TOPE_DE_BOTELLAS_POR_BULTO = 24;
 
 /**
- * El cotizador. HOY DEVUELVE NÚMEROS INVENTADOS, y está acá —en `server/`, la
- * frontera de credenciales— porque ahí es donde va a entrar el proveedor real:
+ * La cotización. Está acá —en `server/`, la frontera de credenciales— porque
  * Envíopack cotiza con una `api-key` + `secret-key` que no pueden viajar al
  * navegador.
  *
- * ⚠️ NINGÚN PRECIO DE ESTE ARCHIVO ES REAL. Están puestos para poder mirar la
+ * DOS COTIZADORES, y contesta uno según el entorno (`elCotizador`, abajo):
+ * Envíopack (`enviopack.ts`, ADR 030) si están sus dos claves, y el SIMULADO
+ * de este archivo si no está ninguna. La pantalla no se entera de cuál.
+ *
+ * ⚠️ NINGÚN PRECIO DEL SIMULADO ES REAL. Están puestos para poder mirar la
  * pantalla, no para cobrar. Lo que sí es real es la FORMA: una lista de
  * opciones con precio, plazo y transportista, calculada sobre los bultos que
- * de verdad viajan. El día que el proveedor esté confirmado se reemplaza el
- * cuerpo de `CotizadorSimulado.cotizar` y la pantalla no se entera.
- *
- * Lo que Envíopack va a pedir, y por eso está todo junto acá
- * (docs/vault/architecture/proveedores/enviopack.md):
- *   GET /cotizar/precio/a-domicilio?access_token=…&provincia=X&codigo_postal=5000
- *       &peso=8.00&paquetes=18x24x34
- *   → { correo, valor: "44.85", horas_entrega: 72, … }
- *
- * `provincia` es el ISO sin prefijo y `paquetes` es alto×ancho×largo por bulto,
- * separados por coma: por eso `bultosDelPedido` devuelve una lista y no un peso.
+ * de verdad viajan.
  */
 
 /** Una demora que el cotizador real va a tener. Ver la nota de abajo. */
@@ -87,9 +84,12 @@ const PUNILLA: Readonly<Record<string, string>> = {
  * hacerle elegir entre 24 a alguien que ya escribió el CP.
  *
  * Es una APROXIMACIÓN y el comprador la puede corregir: varias bandas cubren
- * más de una provincia. El proveedor real la resuelve con su webservice de
- * localidades; esto es el reemplazo barato hasta entonces.
+ * más de una provincia. Y desde ADR 030 NO es decorativa: es lo que recibe
+ * Envíopack en `provincia`. Por eso la corrección del comprador vuelve a
+ * cotizar (`provinciaElegida`, abajo), y por eso CABA tiene su rango propio:
+ * del 1000 al 1499 es la Ciudad, no la provincia de Buenos Aires.
  */
+const CABA = { desde: 1000, hasta: 1499 } as const;
 const BANDA: Readonly<Record<string, ProvinciaIso>> = {
   '1': 'B',
   '2': 'S',
@@ -101,6 +101,14 @@ const BANDA: Readonly<Record<string, ProvinciaIso>> = {
   '8': 'Q',
   '9': 'U',
 };
+
+function adivinarProvincia(cp: string): ProvinciaIso {
+  if (cp in PUNILLA) return 'X';
+  const numero = Number(cp);
+  if (numero >= CABA.desde && numero <= CABA.hasta) return 'C';
+  const adivinada = BANDA[cp[0] as string];
+  return esProvinciaIso(adivinada) ? adivinada : 'B';
+}
 
 /** Cuánto encarece la distancia. Inventado, y ordenado de cerca a lejos. */
 function factorDeDistancia(codigoPostal: string): number {
@@ -162,29 +170,46 @@ const CotizadorSimulado: ProveedorDeEnvio = {
     const dias = lejos > 1.5 ? 6 : lejos > 1.2 ? 4 : 3;
 
     return [
-      {
-        id: 'domicilio',
-        modalidad: 'domicilio',
-        nombre: 'Hasta tu puerta',
-        detalle: `Llega en ${dias} a ${dias + 2} días hábiles.`,
-        precio: aCentenas(base),
-        desdeDias: dias,
-        hastaDias: dias + 2,
-        transportista: 'correo',
-      },
-      {
-        id: 'sucursal',
-        modalidad: 'sucursal',
-        nombre: 'A una sucursal cerca',
-        detalle: `Llega en ${dias + 1} a ${dias + 3} días hábiles. Lo retirás con documento.`,
-        precio: aCentenas(base * 0.72),
-        desdeDias: dias + 1,
-        hastaDias: dias + 3,
-        transportista: 'correo',
-      },
+      aDomicilio({ precio: aCentenas(base), desdeDias: dias, hastaDias: dias + 2, transportista: 'correo' }),
+      aSucursal({ precio: aCentenas(base * 0.72), desdeDias: dias + 1, hastaDias: dias + 3, transportista: 'correo' }),
     ];
   },
 };
+
+/* Uno por instancia del servidor: guarda el token de Envíopack, que dura
+ * cuatro horas, y no tiene sentido pedir uno por cotización. */
+let enviopack: ProveedorDeEnvio | null = null;
+
+/**
+ * Quién contesta. Envíopack si están las DOS claves; el simulado si no está
+ * NINGUNA, que es hoy.
+ *
+ * ⚠️ CON UNA SOLA NO ES "SIMULADO": es una configuración rota, y caer al
+ * simulado ahí es mostrar en producción un precio inventado porque faltó un
+ * secreto. Tira, y el comprador ve "no pudimos calcular el envío" con el
+ * WhatsApp al lado: se nota en la pantalla y en el log, que es lo que tiene que
+ * pasar con un secreto a medio cargar.
+ *
+ * ⚠️ Y SIN NINGUNA, EL SIMULADO SÓLO VALE MIENTRAS EL CHECKOUT NO COBRA. Un
+ * deploy hecho desde un árbol con el bloque de `apphosting.yaml` comentado
+ * —un worktree viejo, un revert— vuelve al simulado sin una línea de log. Con
+ * el cobro prendido eso es cobrar un envío inventado en cada venta. El gate es
+ * una constante del CÓDIGO, así que un árbol viejo trae las dos cosas juntas:
+ * el simulado y el checkout que no cobra.
+ */
+function elCotizador(): ProveedorDeEnvio {
+  const apiKey = process.env.ENVIOPACK_API_KEY?.trim() ?? '';
+  const secretKey = process.env.ENVIOPACK_SECRET_KEY?.trim() ?? '';
+  if (apiKey === '' && secretKey === '') {
+    if (!EL_CHECKOUT_NO_COBRA) throw new Error('el checkout cobra y no hay claves de Envíopack: el simulado no cotiza');
+    return CotizadorSimulado;
+  }
+  if (apiKey === '' || secretKey === '') {
+    throw new Error('Envíopack a medio configurar: falta ENVIOPACK_API_KEY o ENVIOPACK_SECRET_KEY');
+  }
+  enviopack ??= crearCotizadorEnviopack({ apiKey, secretKey });
+  return enviopack;
+}
 
 /**
  * Lo que llama la pantalla. Recibe el código postal y la CARGA del pedido —qué
@@ -198,8 +223,17 @@ const CotizadorSimulado: ProveedorDeEnvio = {
  * El destino que vuelve es una SUGERENCIA: la localidad y la provincia quedan
  * editables en el formulario, porque una banda de CP cubre más de una
  * provincia y el que vive ahí sabe más que esta tabla.
+ *
+ * `provinciaElegida` es la que el comprador dejó en el formulario PARA ESTE
+ * código postal. Si es un ISO válido, manda; si no viene, se adivina. Con
+ * Envíopack la provincia cambia el precio, y cotizar con la adivinada después
+ * de que la corrigieron es mostrar la tarifa de otra provincia (ADR 030).
  */
-export async function cotizarEnvio(codigoPostal: string, carga: CargaDelPedido): Promise<ResultadoDeCotizacion> {
+export async function cotizarEnvio(
+  codigoPostal: string,
+  carga: CargaDelPedido,
+  provinciaElegida?: string,
+): Promise<ResultadoDeCotizacion> {
   const cp = String(codigoPostal ?? '').trim();
   if (!/^\d{4}$/.test(cp)) return { ok: false, motivo: 'codigo-postal' };
 
@@ -227,9 +261,7 @@ export async function cotizarEnvio(codigoPostal: string, carga: CargaDelPedido):
   if (numero < 1000 || numero > 9431) return { ok: false, motivo: 'codigo-postal' };
 
   const propio = REPARTIMOS_NOSOTROS && cp in PUNILLA;
-  const adivinada = BANDA[cp[0] as string];
-  const deCordoba = propio || cp in PUNILLA;
-  const provincia: ProvinciaIso = deCordoba ? 'X' : esProvinciaIso(adivinada) ? adivinada : 'B';
+  const provincia = esProvinciaIso(provinciaElegida) ? provinciaElegida : adivinarProvincia(cp);
 
   const destino: DestinoDeEnvio = {
     codigoPostal: cp,
@@ -239,11 +271,17 @@ export async function cotizarEnvio(codigoPostal: string, carga: CargaDelPedido):
   };
 
   try {
-    const opciones = await CotizadorSimulado.cotizar(destino, bultosDelPedido(pedido));
+    const opciones = await elCotizador().cotizar(destino, bultosDelPedido(pedido));
+    /* Sin ninguna opción no hay nada que elegir: la pantalla dibujaría una
+     * lista vacía. Para un código postal plausible, que el proveedor no ofrezca
+     * nada es que no lo conoce, y la salida es la misma: escribirnos. */
+    if (opciones.length === 0) return { ok: false, motivo: 'codigo-postal' };
     return { ok: true, destino, opciones };
-  } catch {
+  } catch (e) {
     /* El proveedor real se cae. Que el camino exista desde hoy es la mitad del
-     * punto de tener un puerto. */
+     * punto de tener un puerto. Al log va el MENSAJE, que nunca lleva la URL:
+     * el token de Envíopack viaja en ella. */
+    console.error('cotizarEnvio:', e instanceof Error ? e.message : String(e));
     return { ok: false, motivo: 'proveedor-caido' };
   }
 }

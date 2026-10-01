@@ -22,3 +22,27 @@ env:
     availability:
       - BUILD
       - RUNTIME
+
+  # --- Envíopack: el cotizador real del envio (ADR 030) ----------------------
+  # COMENTADO A PROPOSITO hasta que existan los secretos: un apphosting.yaml que
+  # referencia un secreto que no esta en Secret Manager, o al que el backend no
+  # tiene acceso, hace fallar el rollout. Sin estas dos, `server/envios.ts`
+  # sigue con el cotizador SIMULADO; con UNA sola, no cotiza (proveedor caido).
+  #
+  # El dia de las claves (api-key y secret-key, de la cuenta de Envíopack):
+  #   firebase apphosting:secrets:set ENVIOPACK_API_KEY --project bouquet-vinos
+  #   firebase apphosting:secrets:set ENVIOPACK_SECRET_KEY --project bouquet-vinos
+  #   firebase apphosting:secrets:grantaccess ENVIOPACK_API_KEY,ENVIOPACK_SECRET_KEY \
+  #     --backend bouquet-tienda --project bouquet-vinos
+  # descomentar las ocho lineas de abajo y desplegar la tienda.
+  #
+  # Solo RUNTIME: el build no cotiza, y un secreto que no hace falta en el build
+  # no tiene por que estar ahi.
+  # - variable: ENVIOPACK_API_KEY
+  #   secret: ENVIOPACK_API_KEY
+  #   availability:
+  #     - RUNTIME
+  # - variable: ENVIOPACK_SECRET_KEY
+  #   secret: ENVIOPACK_SECRET_KEY
+  #   availability:
+  #     - RUNTIME

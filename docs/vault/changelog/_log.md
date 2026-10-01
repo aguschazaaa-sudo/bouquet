@@ -9,6 +9,46 @@
 
 ---
 
+## Salió el 2026-10-01, al registrar el cotizador de Envíopack
+
+Sale la puerta de edad (2026-09-30): con el cotizador sumado, era la más vieja de las cinco.
+El porqué sigue en [ADR 028](../architecture/decisions/028-la-puerta-de-edad.md).
+
+### La puerta de edad: el telón que se levanta, en todo el sitio (2026-09-30)
+
+**Desplegada en la preview y verificada el 2026-09-30** (v0.49.1, rollout
+`build-2026-09-30-002`): CI restada (+4 tests exactos), canario discriminante, `preview.sh
+verificar` y Chrome por CDP a 1280 y 390, **20/20 con las capturas miradas**. El detalle está
+en [ADR 028](../architecture/decisions/028-la-puerta-de-edad.md). Cierra *la única pieza legal
+obligatoria* que le faltaba a la vidriera (ARQUITECTURA §9.5), pendiente desde el
+2026-09-08. Sin openspec: el diseño ya estaba escrito en
+[parallax §10.2](../design/parallax.md) y [voz §9.1](../design/voz.md).
+
+- **`features/edad/`**, montada en el **layout raíz**: se entra por cualquier ruta. Es un
+  overlay: el sitio se renderiza **entero debajo**, y Google lo sigue viendo.
+- **Quien ya entró no lo ve ni un frame**: un script en línea lee `localStorage` antes del
+  primer pintado. Se guarda un booleano y una fecha, **nunca la de nacimiento**.
+- **El scroll no se escapa**: `inert` en el sitio y el telón como contenedor de scroll con
+  `overscroll-behavior: contain`. La página queda en `scrollTop 0`, sin consumir animaciones.
+- **Sube en 800 ms, sin rebote**. Con *reducir movimiento*, un fundido de 150 ms. `Todavía
+  no` tiene respuesta y un camino de vuelta, curado por `voz`.
+- **Sin JavaScript no se muestra**: no se podría levantar, y sin JavaScript tampoco se puede
+  comprar.
+- Cero lecturas. `preview.sh verificar` suma el paso 5: telón en 4 rutas, script **antes**
+  del telón, fichas debajo, con control negativo.
+
+**Lo que sigue:** que el dueño lo mire en su teléfono. La preview deja de tener el hueco
+de ADR 017, pero **la publicación sigue con gates abiertos**: contacto provisorio, el
+checkout que no cobra, licencias, fuentes y el tramo 4. Desde 2026-09-30.
+
+**Y el mismo día, a pedido del dueño: SE PUBLICA.** Dominio por Cloudflare y el WhatsApp
+real a la tarde; Mercado Pago después, porque pide dominio. ~~El `noindex` va **por host**,
+sólo en `*.hosted.app`~~: **desplegado y revertido el mismo día** —el `has: host` no coincide
+en App Hosting, la URL salió sin `noindex`, medido—. Vuelve `PREVIEW_CERRADA=1`; el día del
+dominio hay que medir qué `Host` llega ([ADR 017 §4](../architecture/decisions/017-preview-cerrada.md)).
+
+---
+
 ## Salió el 2026-10-01, al registrar el pie de la home
 
 Sale el botón de WhatsApp de los pedidos (2026-09-29): con el +18 sumado, era la más vieja de las cinco.

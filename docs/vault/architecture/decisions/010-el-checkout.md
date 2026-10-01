@@ -96,6 +96,8 @@ una feature deja de entrar en una pantalla.
 que `ProveedorDePago` ([ADR 003](003-pagos.md)): un puerto, y el adaptador
 afuera. Hoy la única implementación es `CotizadorSimulado`, en
 `apps/tienda/src/server/envios.ts`, **con números inventados y la forma real**.
+~~La única~~: **desde el 2026-10-01 hay dos** —el de Envíopack, dormido hasta las
+claves— y contesta uno según el entorno ([ADR 030](030-cotizar-con-enviopack.md)).
 
 ⚠️ **La Server Action no se importa desde el cliente: llega por props.** El hook
 `server-only-guard` bloquea que un `'use client'` importe de `src/server/`, así

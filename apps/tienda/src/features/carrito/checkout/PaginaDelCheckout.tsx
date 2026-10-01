@@ -20,6 +20,7 @@ import { useCarrito, useHidratado } from '../useCarrito';
 import { ADondeVa } from './ADondeVa';
 import { ComoViaja } from './ComoViaja';
 import { ElResumen } from './ElResumen';
+import { PedidoVacio } from './PedidoVacio';
 import { QuienRecibe } from './QuienRecibe';
 import { BORRADOR_VACIO, validarBorrador, type Borrador } from './borrador';
 import { TEXTOS } from './textos';
@@ -58,7 +59,12 @@ export function PaginaDelCheckout({ productos, cotizar, sinCargoDesde, whatsapp 
   const [elegidaId, setElegidaId] = useState<string | null>(null);
   const [cpAplicado, setCpAplicado] = useState<string | null>(null);
 
-  const cotizada = useCotizacion(cotizar, borrador.codigoPostal, carga);
+  /* La provincia viaja a la cotización sólo si ya es la de ESTE código postal
+   * —la precargó su propia cotización, o la corrigió el comprador después—.
+   * Con un código recién escrito, la del anterior no vale: la adivina el
+   * servidor (ADR 030). */
+  const provinciaDelCp = cpAplicado === borrador.codigoPostal.trim() ? borrador.provincia : '';
+  const cotizada = useCotizacion(cotizar, borrador.codigoPostal, carga, provinciaDelCp);
   /* El umbral de la entrega sin cargo se aplica ACÁ, sobre lo que cotizó el
    * servidor y con el subtotal de esta pantalla (HU-11.1, ADR 026): si el
    * pedido llega, todas las opciones salen sin cargo, y la lista, el resumen y
@@ -134,21 +140,7 @@ export function PaginaDelCheckout({ productos, cotizar, sinCargoDesde, whatsapp 
     );
   }
 
-  /* Cero botellas es un pedido VACÍO, no una caja a medio llenar: hasta el
-   * 2026-09-15 esta rama decía "el vino viaja de a seis" sobre un carrito sin
-   * nada adentro, que es contestar una pregunta que nadie hizo. */
-  if (botellas === 0) {
-    return (
-      <main className="pagina-checkout papel">
-        <div className="pagina-checkout__contenedor pagina-checkout__vacio">
-          <p className="display">{TEXTOS.pedidoVacio}</p>
-          <Link className="enlace-blando" href="/carrito">
-            {TEXTOS.volver}
-          </Link>
-        </div>
-      </main>
-    );
-  }
+  if (botellas === 0) return <PedidoVacio />;
 
   return (
     <main className="pagina-checkout papel">

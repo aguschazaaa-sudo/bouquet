@@ -1,9 +1,11 @@
 # Envíopack — proveedor de envío por correo (evaluación)
 
 - **Fecha:** 2026-09-15
-- **Estado:** investigación cerrada, **sin adopción decidida**. No hay ADR
-  todavía — este documento es el insumo para escribirlo el día que el dueño
-  elija proveedor de envío.
+- **Estado:** investigación cerrada. ~~Sin adopción decidida~~ **Adoptado
+  para cotizar el 2026-10-01** ([ADR 030](../decisions/030-cotizar-con-enviopack.md)):
+  el adaptador está escrito en `apps/tienda/src/server/enviopack.ts` y
+  **dormido** hasta que existan las claves. Crear envíos, etiquetas y tracking
+  siguen siendo esta investigación, sin código.
 - **Qué contesta:** cómo se integra Envíopack de punta a punta (auth, cotizar,
   crear envío, etiqueta, tracking, webhooks), qué formato de datos exige, y
   qué queda como zona gris con el alcohol.
@@ -61,8 +63,9 @@ antes de que se investigara Envíopack. Calzan sin fricción.
 
 | Detalle | Valor |
 |---|---|
-| Duración del token | 4 horas, con refresh |
+| Duración del token | 4 horas, con refresh (`POST /token/refresh?refresh_token=…`) |
 | Cómo viaja | **query param** `?access_token=...` — NO como header `Authorization` |
+| Forma de la respuesta de `/auth` | **No documentada.** La doc dice que devuelve `access_token` y no muestra un ejemplo: ni `refresh_token` ni `expires_in` están confirmados (releído el 2026-10-01). Por eso ADR 030 §4 re-autentica con las claves en vez de refrescar |
 
 ⚠️ Es lo opuesto a Mercado Pago (ver [`mercado-pago.md`](mercado-pago.md)),
 que usa `Authorization: Bearer`. El cliente HTTP del adaptador de envío no
@@ -90,7 +93,7 @@ puede copiarse del de pagos.
 | `paquetes` | opcional, `"20x2x10,20x2x10"` (alto×ancho×largo cm, uno por bulto) | ⚠️ el orden es alto×ancho×largo, no largo×ancho×alto |
 | `despacho` / `modalidad` | `D` domicilio · `S` sucursal | |
 | `servicio` | `N` estándar · `P` prioritario · `X` express · `R` devoluciones | |
-| `localidad` | ID | obligatorio **sólo** para a-sucursal |
+| `localidad` | ID | obligatorio **sólo** para a-sucursal. ⚠️ **No se busca por código postal**: `GET /localidades` filtra sólo por `id_provincia` (releído el 2026-10-01). Es la razón por la que ADR 030 cotiza sólo a domicilio |
 
 https://developers.enviopack.com.ar/cotiza-un-envio
 

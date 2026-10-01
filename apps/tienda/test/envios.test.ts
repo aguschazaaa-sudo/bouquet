@@ -145,3 +145,139 @@ test('el precio es un entero de centavos, nunca un float', async () => {
     assert.ok(Number.isInteger(o.precio), `${o.id} vino ${o.precio}`);
   }
 });
+
+/* ------------------------------------------------- quien contesta (ADR 030)
+ *
+ * El entorno decide: con las DOS claves de Enviopack contesta Enviopack; sin
+ * ninguna, el simulado. Cada caso deja el entorno y el `fetch` como estaban,
+ * porque los de arriba miden el simulado y corren en el mismo proceso. */
+
+async function conEntorno(claves: Record<string, string>, cuerpo: () => Promise<void>) {
+  const antes = { ...process.env };
+  const fetchDeAntes = globalThis.fetch;
+  Object.assign(process.env, claves);
+  try {
+    await cuerpo();
+  } finally {
+    for (const k of Object.keys(claves)) {
+      if (antes[k] === undefined) delete process.env[k];
+      else process.env[k] = antes[k];
+    }
+    globalThis.fetch = fetchDeAntes;
+  }
+}
+
+/** Un Enviopack falso en el `fetch` global: lo que vea el adaptador es esto.
+ * Devuelve las URLs pedidas, para mirar QUE viajo. */
+function envioPackGlobal(filas: unknown) {
+  const pedidos: URL[] = [];
+  globalThis.fetch = (async (url: string | URL) => {
+    const u = new URL(String(url));
+    pedidos.push(u);
+    if (u.pathname === '/auth') return Response.json({ access_token: 'tok' });
+    return Response.json(filas);
+  }) as unknown as typeof fetch;
+  return pedidos;
+}
+
+const CLAVES = { ENVIOPACK_API_KEY: 'k', ENVIOPACK_SECRET_KEY: 's' };
+const UNA_FILA = [{ modalidad: 'D', servicio: 'N', valor: '4321.00', horas_entrega: 72 }];
+
+/** La provincia que recibio Enviopack en la ultima cotizacion. */
+const provinciaEnviada = (pedidos: readonly URL[]) =>
+  pedidos.filter((u) => u.pathname === '/cotizar/precio/a-domicilio').at(-1)?.searchParams.get('provincia');
+
+test('con UNA sola clave NO cotiza con numeros inventados: es proveedor caido', async () => {
+  for (const claves of [{ ENVIOPACK_API_KEY: 'k' }, { ENVIOPACK_SECRET_KEY: 's' }]) {
+    await conEntorno(claves, async () => {
+      const pedidos = envioPackGlobal([]);
+      const r = await cotizarEnvio('1425', sueltas(6));
+      assert.equal(r.ok, false, `con ${Object.keys(claves)} cotizo igual`);
+      assert.equal(r.ok === false && r.motivo, 'proveedor-caido');
+      assert.equal(pedidos.length, 0);
+    });
+  }
+});
+
+test('con las DOS claves contesta Enviopack, no el simulado', async () => {
+  await conEntorno(CLAVES, async () => {
+    const pedidos = envioPackGlobal(UNA_FILA);
+    const r = await cotizarEnvio('1425', sueltas(6));
+    assert.ok(r.ok);
+    // Una sola opcion, a domicilio, con el precio de Enviopack. El simulado
+    // devuelve dos y redondea a centenas: 432100 no sale de el.
+    assert.deepEqual(
+      r.opciones.map((o) => [o.modalidad, o.precio]),
+      [['domicilio', 432100]],
+    );
+    assert.ok(pedidos.some((u) => u.pathname === '/cotizar/precio/a-domicilio'));
+  });
+});
+
+test('si Enviopack no ofrece nada, es un codigo postal que no conocemos', async () => {
+  await conEntorno(CLAVES, async () => {
+    envioPackGlobal([]);
+    const r = await cotizarEnvio('1425', sueltas(6));
+    assert.equal(r.ok, false);
+    assert.equal(r.ok === false && r.motivo, 'codigo-postal');
+  });
+});
+
+test('sin ninguna clave vuelve el simulado, y no sale a la red', async () => {
+  // Control de que `conEntorno` deja todo como estaba: es lo que miden los de
+  // arriba, y si las claves quedaran puestas cotizarian contra el falso.
+  const fetchDeAntes = globalThis.fetch;
+  const pedidos = envioPackGlobal([]);
+  try {
+    const r = await cotizarEnvio('1425', sueltas(6));
+    assert.ok(r.ok);
+    assert.equal(r.opciones.length, 2);
+    assert.equal(pedidos.length, 0);
+  } finally {
+    globalThis.fetch = fetchDeAntes;
+  }
+});
+
+test('si Enviopack contesta algo que no se puede leer, es proveedor caido y NO codigo postal', async () => {
+  // Leido como CP desconocido, todos verian "no nos suena" y el log, vacio.
+  await conEntorno(CLAVES, async () => {
+    envioPackGlobal({ data: UNA_FILA });
+    const r = await cotizarEnvio('1425', sueltas(6));
+    assert.equal(r.ok === false && r.motivo, 'proveedor-caido');
+  });
+});
+
+test('del 1000 al 1499 es la CIUDAD, no la provincia de Buenos Aires', async () => {
+  for (const [cp, iso] of [
+    ['1000', 'C'],
+    ['1425', 'C'],
+    ['1499', 'C'],
+    ['1500', 'B'], // control: el primero de afuera
+    ['1900', 'B'],
+  ]) {
+    const r = await cotizarEnvio(cp as string, sueltas(6));
+    assert.ok(r.ok, `${cp} no cotizo`);
+    assert.equal(r.destino.provincia, iso, `${cp} dio ${r.destino.provincia}`);
+  }
+});
+
+test('Enviopack recibe la provincia ADIVINADA solo si nadie la eligio', async () => {
+  await conEntorno(CLAVES, async () => {
+    const pedidos = envioPackGlobal(UNA_FILA);
+
+    await cotizarEnvio('5500', sueltas(6)); // Mendoza, que la banda adivina Cordoba
+    assert.equal(provinciaEnviada(pedidos), 'X');
+
+    // El comprador la corrige: viaja la suya, y vuelve en el destino.
+    const corregida = await cotizarEnvio('5500', sueltas(6), 'M');
+    assert.equal(provinciaEnviada(pedidos), 'M');
+    assert.ok(corregida.ok);
+    assert.equal(corregida.destino.provincia, 'M');
+
+    // Lo que no es un ISO no se cree: se adivina.
+    for (const basura of ['ZZ', '', 'm', ' M']) {
+      await cotizarEnvio('5500', sueltas(6), basura);
+      assert.equal(provinciaEnviada(pedidos), 'X', `con "${basura}" viajo otra cosa`);
+    }
+  });
+});
