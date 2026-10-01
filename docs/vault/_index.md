@@ -77,6 +77,25 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### El ícono del carrito es una bolsa de Heroicons, no un octógono dibujado a mano (2026-09-30)
+
+**Desplegado y verificado el 2026-09-30** (v0.51.6, rollout `build-2026-09-30-008`): el canario
+discrimina —el path nuevo 0 → 1, el viejo 1 → 0 en `/`, `/vinos` y `/carrito`—, `preview.sh
+verificar` en verde y Chrome por CDP a **1280 y 390** con las capturas miradas. Lo pidió el
+dueño: *"no me gusta el carrito o la bolsita esa"*. Detalle y descartes en
+[ADR 008 §8](architecture/decisions/008-catalogo-stock-y-carrito.md).
+
+- **La quinta bolsa dibujada a mano se leía como un frasco.** Se bajaron 28 glifos de ocho
+  librerías, se renderizaron dentro de la barra real y el dueño eligió `shopping-bag` de
+  Heroicons —el análisis había puesto primero `ph-thin-bag`—. Va **copiado como un SVG**,
+  sin instalar la librería; el trazo sigue siendo el de la marca.
+- **No existe una librería de íconos art déco**, y forzar `miter`/`butt` no endereza las
+  esquinas redondeadas: vienen en el path.
+- Cero lecturas; sólo presentación.
+
+**Lo que sigue:** que el dueño la mire en su teléfono. A 390 px el glifo mide 16 px, el piso del
+`clamp`; en la captura se lee, pero es el tamaño más chico. Desde 2026-09-30.
+
 ### La placa de la caja dice la mezcla: nadie compra seis de un vino por error (2026-09-30)
 
 **Desplegado y verificado el 2026-09-30** (v0.51.4, `build-2026-09-30-007`): canarios
@@ -192,27 +211,6 @@ MEDIO (dos corregidos, uno latente y abierto).
 
 **Lo que sigue:** CI `tests` y `panel` restadas → reglas → `crearOrdenDelPanel` → panel, y que
 el dueño cargue un pedido y mire las tres fichas. Desde 2026-09-29.
-
-### El panel a ancho de teléfono: un solo scroll, y la vidriera se ordena arrastrando (2026-09-29)
-
-**Publicado el 2026-09-29 en el mismo build que el botón de WhatsApp** (`df1304b`, entrada de
-arriba). **Falta que alguien pruebe el arrastre.** Sin openspec,
-a pedido del dueño, que mandó capturas del panel a 328 px. Las reglas quedaron en
-[ADR 011 §4](architecture/decisions/011-entrar-al-panel.md#4-la-dirección-visual-del-panel-la-mezcla-c)
-y [ADR 023 §5](architecture/decisions/023-la-portada-la-elige-el-duenio.md#5-cada-gesto-se-guarda-en-el-acto).
-
-- **Catálogo y Pedidos son un solo scroll**: el encabezado se va con la lista. Fijo arriba
-  se comía más de la mitad del teléfono.
-- **Por debajo de 440 px de contenido, la acción principal baja a su renglón**
-  (`RenglonConAccion`): *"Bodegas — 11 cargadas"* se partía en ocho renglones y
-  *"Pedidos"* en dos. El *Buscar* de Pedidos entró al campo, y la ayuda dice *"Número de
-  pedido"*: se cortaba en *"Buscar por nú…"*.
-- **La portada y las cajas se ordenan arrastrando** desde una manija; se fueron las
-  flechas, que se comían medio renglón y cuya deshabilitada no se distinguía. La lista es
-  un sliver del scroll de la página (scrollea sola al arrastrar), muestra el orden nuevo
-  sin esperar al documento, y conserva mover arriba/abajo como acción de accesibilidad.
-- **Cero lecturas y cero escrituras nuevas**: es sólo presentación; cada soltar es el
-  mismo guardado que antes hacía una flecha.
 
 ### Lo que quedó abierto
 
