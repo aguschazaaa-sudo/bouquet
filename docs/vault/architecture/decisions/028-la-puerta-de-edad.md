@@ -81,6 +81,21 @@ puede levantar ni recordar: mostrarlo sería una puerta que no abre. **Y nadie c
 pasar por él**: el carrito vive en `localStorage` y el pedido lo arma un componente de
 cliente. Sin JavaScript se puede mirar el catálogo, no comprar.
 
+### 8. Revisión (2026-10-01): el +18 se dice en tres lugares, no en cuatro
+
+A pedido del dueño —*"con la cortina del inicio alcanza, se pone denso"*—. El pie de la home
+repetía **palabra por palabra** la línea del telón (*"En la entrega se pide documento. Es la ley,
+y también es la parte fácil."*): se sacó. Queda:
+
+| Dónde | Qué dice | Por qué se queda |
+|---|---|---|
+| El telón | La pregunta y la línea del documento | Es la puerta y cumple §9.5 (*copy explícito de que se exige documento*) |
+| El pie de la home | *"Beber con moderación. Prohibida su venta a menores de 18 años."* | Es la leyenda estándar de la venta de alcohol, **la única zona donde `voz` no manda** (voz §12). Una línea chica; **no se sacó sin que el dueño o quien conoce la norma lo confirme** |
+| El resumen del checkout | *"…lo tiene que recibir alguien mayor de 18."* | No repite la puerta: le dice al comprador **quién** tiene que estar en la entrega, en el momento en que decide |
+
+Si el dueño quiere seguir bajando, el candidato es la leyenda del pie, previa confirmación de que
+no es obligatoria en el sitio propio.
+
 ## Por qué NO las alternativas
 
 | Alternativa | Por qué no |
