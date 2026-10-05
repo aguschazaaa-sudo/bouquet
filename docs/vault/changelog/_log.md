@@ -9,6 +9,42 @@
 
 ---
 
+## Salió el 2026-10-05, al registrar el alias de la vidriera
+
+Sale el catálogo real (2026-09-30): con el alias sumado, era la más vieja de las cinco.
+El porqué sigue en [ADR 029](../architecture/decisions/029-carga-inicial-del-catalogo.md).
+
+### El catálogo real: 24 vinos con foto y descripción, y la muestra afuera (2026-09-30)
+
+**Cargado en producción y verificado el 2026-09-30**, a pedido del dueño: pasó la lista de
+lo que sabe que tiene —*"es más la mitad"*— y pidió las fichas con fotos y descripciones,
+precios y stock inventados. Detalle y descartes en
+[ADR 029](../architecture/decisions/029-carga-inicial-del-catalogo.md).
+
+- **`scripts/catalogo/cargar.mjs`** da de alta como el panel —sin `muestra`, id igual al
+  slug— y **nunca pisa**: lo que el dueño corrija manda, y la segunda mitad entra
+  agregándola al JSON y volviendo a correr. La foto pasa por `scripts/seed/foto.mjs`, la
+  tubería que ahora comparten los dos scripts y que `tuberia.test.ts` compara con la callable.
+- **15 bodegas y 24 vinos** (23 publicados; *Cordero con Piel de Lobo Dulce* es borrador
+  hasta confirmar la uva). Se borraron los 20 de muestra, sus 11 bodegas y sus fotos.
+- **Cajas sugeridas rearmadas** con vinos reales, **portada elegida** —a pedido del dueño:
+  seis vinos de seis bodegas, se cambia desde *Vidriera*— y **los dos vinos de prueba
+  borrados** (`ve` y `vino-de-prueba`); el Pedido 1 queda, con su copia del renglón.
+- Verificado por contenido: las fotos por SHA-256, `/vinos` y cuatro fichas en vivo con
+  canarios que aparecen y desaparecen, y renderizado a 1280 y 390.
+- **El segundo párrafo de las 24 descripciones, reescrito el mismo día a pedido del dueño**:
+  22 nombraban comida con el mismo molde. Ahora sale de lo que ese vino tiene de propio, sin
+  ventana de consumo y con cada hecho chequeado en una fuente. Escrito en Firestore (sólo
+  `fichaVino.descripcion`); la regla nueva está en [voz §3.3](../design/voz.md) y en el agente
+  `voz`, así que la segunda mitad del catálogo no la repite ([ADR 029 §5](../architecture/decisions/029-carga-inicial-del-catalogo.md)).
+
+**Tienda desplegada** para que la home se hornee con lo real: `build-2026-09-30-006`,
+`preview.sh verificar` en verde. El anterior (005) salió sin `noindex` por la v0.50.0, que
+se revirtió ([ADR 017 §4](../architecture/decisions/017-preview-cerrada.md)).
+
+**Lo que sigue:** que el dueño corrija precio, stock y las añadas marcadas con la botella en
+la mano, y publique el Dulce. Desde 2026-09-30.
+
 ## Salió el 2026-10-01, al registrar el cotizador de Envíopack
 
 Sale la puerta de edad (2026-09-30): con el cotizador sumado, era la más vieja de las cinco.

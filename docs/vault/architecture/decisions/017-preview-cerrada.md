@@ -209,6 +209,9 @@ bouquet-vinos --force` la apaga entera. **Vigilar el uso el día que se comparta
 
 ## Lo que queda abierto
 
+- **Desde el 2026-10-05 esta URL no es la única puerta**: `bouquet-tienda.web.app` reenvía al
+  mismo servicio de Cloud Run, que para eso quedó abierto a llamadas públicas
+  ([ADR 031](031-el-alias-de-la-vidriera.md)). `noindex` y `maxInstances: 1` valen igual.
 - ~~**La puerta de edad**~~ (resuelta, [ADR 028](028-la-puerta-de-edad.md)), **el contacto real, el dominio, el tramo 4 y las licencias**
   son los gates de la **publicación**, no de esta preview. Siguen como estaban.
 - **`/favicon.ico` da 404** (único error de consola): la tienda no tiene favicon.

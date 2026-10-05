@@ -78,6 +78,26 @@ la API key acotada por referrer. **El dueño ya entró con Google y tiene el
 permiso**: es la única cuenta de Auth. Falta la lista de mails del resto de la
 familia — el permiso lo da el script, no una pantalla.
 
+### La tienda tiene un link para mostrar: `bouquet-tienda.web.app` (2026-10-05)
+
+**Publicado y verificado el 2026-10-05** (v0.53.0). Lo pidió el usuario: *"podemos dejar la tienda
+en un link mas limpio? aun no compro el dominio"*. Detalle y descartes en
+[ADR 031](architecture/decisions/031-el-alias-de-la-vidriera.md).
+
+- **[`bouquet-tienda.web.app`](https://bouquet-tienda.web.app)** es un sitio de Hosting sin
+  archivos que reenvía todo al mismo servidor de la tienda. No hay segundo build: es otra puerta.
+- **El servicio de Cloud Run quedó abierto** (`allUsers` como `run.invoker`): Hosting no se
+  autentica, medido con un 403. Lo corrió el usuario; el clasificador frenó el otorgamiento.
+- **Hosting cachea la home un año**: `preview.sh desplegar` republica el alias después de cada
+  rollout, y `verificar` (paso 6) compara `/` y `/oficio` por los dos caminos.
+- Verificado por contenido: el mismo SHA-256 por las dos URLs, el cotizador contestando por el
+  alias (`1425` → `C`, `1900` → `B`) y rechazando un origen ajeno, y `verificar` en rojo antes del
+  permiso y en verde después. Sigue con `noindex`. Cero lecturas. **No se miró renderizado.**
+
+**Lo que sigue:** abrirlo en un teléfono antes de mandarlo; y en el próximo `desplegar`, leer el
+paso 6, que es donde se ve si un rollout pisa el permiso. **Se borra el día del dominio.** Desde
+2026-10-05.
+
 ### El cotizador de Envíopack, escrito y dormido hasta las claves (2026-10-01)
 
 **Desplegado dormido y verificado el 2026-10-01** (v0.52.0, rollout `build-2026-10-01-002`): CI
@@ -158,37 +178,6 @@ de ese vino?"*. Detalle en [ADR 009 §11](architecture/decisions/009-venta-por-c
 **Lo que sigue:** mostrarle la ficha en un teléfono a alguien que no conoce la tienda y
 preguntarle cuántas botellas de ese vino tiene que comprar. Desde 2026-09-30.
 
-### El catálogo real: 24 vinos con foto y descripción, y la muestra afuera (2026-09-30)
-
-**Cargado en producción y verificado el 2026-09-30**, a pedido del dueño: pasó la lista de
-lo que sabe que tiene —*"es más la mitad"*— y pidió las fichas con fotos y descripciones,
-precios y stock inventados. Detalle y descartes en
-[ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md).
-
-- **`scripts/catalogo/cargar.mjs`** da de alta como el panel —sin `muestra`, id igual al
-  slug— y **nunca pisa**: lo que el dueño corrija manda, y la segunda mitad entra
-  agregándola al JSON y volviendo a correr. La foto pasa por `scripts/seed/foto.mjs`, la
-  tubería que ahora comparten los dos scripts y que `tuberia.test.ts` compara con la callable.
-- **15 bodegas y 24 vinos** (23 publicados; *Cordero con Piel de Lobo Dulce* es borrador
-  hasta confirmar la uva). Se borraron los 20 de muestra, sus 11 bodegas y sus fotos.
-- **Cajas sugeridas rearmadas** con vinos reales, **portada elegida** —a pedido del dueño:
-  seis vinos de seis bodegas, se cambia desde *Vidriera*— y **los dos vinos de prueba
-  borrados** (`ve` y `vino-de-prueba`); el Pedido 1 queda, con su copia del renglón.
-- Verificado por contenido: las fotos por SHA-256, `/vinos` y cuatro fichas en vivo con
-  canarios que aparecen y desaparecen, y renderizado a 1280 y 390.
-- **El segundo párrafo de las 24 descripciones, reescrito el mismo día a pedido del dueño**:
-  22 nombraban comida con el mismo molde. Ahora sale de lo que ese vino tiene de propio, sin
-  ventana de consumo y con cada hecho chequeado en una fuente. Escrito en Firestore (sólo
-  `fichaVino.descripcion`); la regla nueva está en [voz §3.3](design/voz.md) y en el agente
-  `voz`, así que la segunda mitad del catálogo no la repite ([ADR 029 §5](architecture/decisions/029-carga-inicial-del-catalogo.md)).
-
-**Tienda desplegada** para que la home se hornee con lo real: `build-2026-09-30-006`,
-`preview.sh verificar` en verde. El anterior (005) salió sin `noindex` por la v0.50.0, que
-se revirtió ([ADR 017 §4](architecture/decisions/017-preview-cerrada.md)).
-
-**Lo que sigue:** que el dueño corrija precio, stock y las añadas marcadas con la botella en
-la mano, y publique el Dulce. Desde 2026-09-30.
-
 ### Lo que quedó abierto
 
 | Qué | Por qué | Quién |
@@ -260,6 +249,7 @@ la mano, y publique el Dulce. Desde 2026-09-30.
 | 026 | El umbral de la entrega sin cargo vive en **`config/envios`**, lo escribe **sólo `fijarEnvioSinCargo`** con una baranda sobre el valor nuevo que **pregunta**; la vidriera lo muestra, y lo que se cobra lo decide `crearOrden` | [026](architecture/decisions/026-envio-sin-cargo.md) |
 | 028 | La puerta de edad es un **telón sobre el sitio entero** montado en el layout raíz, que **no bloquea el render**: un script en línea la esconde antes del primer pintado para quien ya entró, `inert` sale del efecto y no de una prop, y **sin JavaScript no se muestra** | [028](architecture/decisions/028-la-puerta-de-edad.md) |
 | 029 | El catálogo real entra por **`scripts/catalogo/cargar.mjs`**, que escribe como el panel (sin `muestra`), **nunca pisa** y pasa la foto por la tubería compartida; el stock inventado nace **sin movimiento** | [029](architecture/decisions/029-carga-inicial-del-catalogo.md) |
+| 031 | Mientras no hay dominio, la tienda se muestra por **`bouquet-tienda.web.app`**: un sitio de Hosting sin archivos que reenvía al Cloud Run de App Hosting, **abierto con `allUsers`**; publicarlo es purgarlo, y **se borra el día del dominio** | [031](architecture/decisions/031-el-alias-de-la-vidriera.md) |
 
 ---
 
@@ -280,6 +270,8 @@ Los que bloquean algo:
 | Deploy desde tag en vez de rama | Antes del primer deploy que incluya cobro | 2026-09-01 |
 | **Medir la purga de Cloudflare** — [ADR 005](architecture/decisions/005-hosting-vidriera.md) la razona, no la midió | El día que exista dominio | 2026-09-03 |
 | **Licencia de las imágenes de la landing** | Antes de publicar el dominio | 2026-09-03 |
+| ⚠️ **El alias `bouquet-tienda.web.app` se borra, y con él `allUsers` del servicio de Cloud Run**: con Cloudflare adelante sería una caché de HTML que no se purga por tag. Los cuatro pasos están en [ADR 031](architecture/decisions/031-el-alias-de-la-vidriera.md), *Cuándo esta decisión deja de servir* | El día que exista dominio | 2026-10-05 |
+| **No se midió si un rollout de App Hosting pisa el permiso que abre el alias** ([ADR 031](architecture/decisions/031-el-alias-de-la-vidriera.md) §2). Si lo pisa, el link da 403 con la tienda sana | El próximo `preview.sh desplegar`: lo dice el paso 6 de `verificar`, con el comando | 2026-10-05 |
 | ⚠️ **La venta por caja Y AHORA EL CHECKOUT viajan de POLIZÓN**: están commiteados y **no desplegados**. Seis gates siguen abiertos — el sexto es `EL_CHECKOUT_NO_COBRA`, arriba — más ~~puerta de edad~~ (resuelta el 2026-09-30, [ADR 028](architecture/decisions/028-la-puerta-de-edad.md)), contacto provisorio, licencias de assets, 391 KB de fuentes y el tramo 4 de Cloudflare. El día que se despliegue `tienda` **se publica también esto**, porque el deploy de front reconstruye desde el HEAD pusheado, no desde el cambio de ese día. Antes de publicar: ~~correr el seed de `cajasSugeridas/publicas`~~ (desde el 2026-09-30 el documento tiene cajas de vinos reales, [ADR 029](architecture/decisions/029-carga-inicial-del-catalogo.md) §6) y verificar con `curl` el aviso y el carril, con control positivo y negativo | El primer deploy de `tienda`, sea por el motivo que sea | 2026-09-14 |
 | **HU-04.2 — ordenar las fotos que NO son la principal.** Elegir la principal se construyó el 2026-09-24 ([ADR 015 §7](architecture/decisions/015-fotos-del-panel.md)); la vidriera lee sólo `imagenes[0]`, así que ordenar el resto no cambia nada visible | El día que la ficha muestre más de una foto | 2026-09-22 |
 | **El recorte de fondo de una foto de cámara**, con un modelo real — el clasificador por umbral se midió y se refutó (ADR 015 §2) | Que la previsualización resulte insuficiente, mirándola | 2026-09-22 |

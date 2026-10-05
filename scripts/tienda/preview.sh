@@ -12,6 +12,12 @@
 #       rollouts por la API, que cada respuesta lleve noindex, que el catalogo
 #       sea el de Firestore, y que los gates sigan CERRADOS.
 #
+#   bash scripts/tienda/preview.sh alias
+#       Publica el alias `bouquet-tienda.web.app` (ADR 031): un sitio de
+#       Firebase Hosting SIN archivos que reenvia todo al servicio de Cloud Run
+#       de la tienda. `desplegar` lo llama solo; a mano hace falta si el alias
+#       quedo sirviendo una pagina vieja.
+#
 # Desde el 2026-09-30 es la publicacion (el nombre del script quedo de cuando
 # era una preview): la URL de App Hosting sigue con noindex, el dominio no
 # (paso 2b). El checkout sigue sin cobrar y `verificar` mide que siga asi.
@@ -21,15 +27,51 @@ PROYECTO=bouquet-vinos
 BACKEND=bouquet-tienda
 REGION=us-east4
 URL="https://$BACKEND--$PROYECTO.$REGION.hosted.app"
+SITIO_ALIAS=bouquet-tienda
+URL_ALIAS="https://$SITIO_ALIAS.web.app"
 RAIZ=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 falla() { echo "NO  $*" >&2; exit 1; }
 ok() { echo "ok  $*"; }
 
+# El alias no tiene bytes propios: su firebase.json es todo lo que es, y vive
+# aca. Se arma en `.deploy/alias` (gitignoreado) y NO en el firebase.json de la
+# raiz, que es el del panel: asi un deploy de este sitio no puede tocar el otro.
+#
+# `public` va VACIO a proposito: en Hosting un archivo estatico le gana a la
+# reescritura, y un index.html ahi taparia la home de la tienda.
+#
+# Y publicarlo es tambien PURGARLO: Hosting cachea lo que le contesta Cloud Run
+# segun su Cache-Control, la home sale con `s-maxage=31536000`, y lo unico que
+# vacia esa cache es una publicacion de este sitio. Sin eso, despues de un
+# rollout el alias sirve el HTML del build anterior, que pide chunks que el
+# build nuevo ya no tiene.
+publicar_alias() {
+  local dir="$RAIZ/.deploy/alias"
+  rm -rf "$dir"
+  mkdir -p "$dir/public"
+  cat > "$dir/firebase.json" <<JSON
+{
+  "hosting": {
+    "site": "$SITIO_ALIAS",
+    "public": "public",
+    "rewrites": [
+      { "source": "**", "run": { "serviceId": "$BACKEND", "region": "$REGION" } }
+    ]
+  }
+}
+JSON
+  echo "{ \"projects\": { \"default\": \"$PROYECTO\" } }" > "$dir/.firebaserc"
+  cd "$dir"
+  firebase deploy --only "hosting:$SITIO_ALIAS" --project "$PROYECTO"
+  echo "    $URL_ALIAS"
+}
+
 desplegar() {
   node "$RAIZ/scripts/tienda/preparar_despliegue.mjs"
   cd "$RAIZ/.deploy/tienda"
   firebase deploy --only apphosting --project "$PROYECTO"
+  publicar_alias
   echo "    verificalo: bash scripts/tienda/preview.sh verificar"
 }
 
@@ -130,13 +172,49 @@ verificar() {
   [ "$inventado" -eq 0 ] || falla "el control negativo del telon coincide: la medicion no discrimina"
   ok "puerta de edad en 4 rutas, con el script antes del telon y $fichas fichas debajo (con control negativo)"
   echo "    $URL"
+
+  # 6. El alias (ADR 031), al final a proposito: si falla, todo lo de arriba
+  # -- que es la tienda -- ya quedo dicho. Es el link que se le muestra a
+  # alguien, y un alias roto no avisa: da 403 con la tienda sana detras.
+  #
+  # El `noindex` hace dos trabajos: prueba que la respuesta salio de Next y no
+  # de Hosting (el 404 propio de Hosting no lo trae), y que el alias no compite
+  # en Google con el dominio el dia que exista.
+  for ruta in / /vinos /oficio /ruta-inventada-de-control; do
+    cabeza=$(curl -s -o /dev/null -D - "$URL_ALIAS$ruta" | tr -d '\r')
+    codigo=$(echo "$cabeza" | head -1 | awk '{print $2}')
+    robots=$(echo "$cabeza" | grep -i '^x-robots-tag' | cut -d: -f2- | xargs || true)
+    [ "$codigo" != 403 ] || falla "el alias $URL_ALIAS$ruta da 403: Cloud Run no acepta llamadas publicas. Falta allUsers como roles/run.invoker en el servicio $BACKEND ($REGION), ver ADR 031"
+    case "$ruta" in *inventad*) esperado=404 ;; *) esperado=200 ;; esac
+    [ "$codigo" = "$esperado" ] || falla "el alias $URL_ALIAS$ruta dio $codigo y se esperaba $esperado"
+    case "$robots" in *noindex*) ;; *) falla "el alias $URL_ALIAS$ruta NO manda X-Robots-Tag: noindex (dice '${robots:-nada}')" ;; esac
+  done
+  ok "alias: 4 rutas con el codigo esperado y noindex, el 404 incluido"
+
+  # Y que sirva EL MISMO build. Hosting cachea la home y /oficio un anio
+  # (medido: X-Cache HIT con s-maxage=31536000) y solo una publicacion del
+  # alias lo vacia: un rollout sin `alias` detras deja el link mostrando la
+  # tienda de antes, con 200 y todo en orden. Las dos paginas son estaticas,
+  # asi que por los dos caminos salen byte a byte iguales (medido). El telon
+  # es el control positivo: dos cuerpos vacios tambien son iguales.
+  local origen
+  for ruta in / /oficio; do
+    html=$(curl -s "$URL_ALIAS$ruta")
+    origen=$(curl -s "$URL$ruta")
+    telon=$(echo "$html" | grep -c 'data-fase="puesta"' || true)
+    [ "$telon" -ge 1 ] || falla "el alias $URL_ALIAS$ruta no trae la puerta de edad: no es la tienda"
+    [ "$html" = "$origen" ] || falla "el alias sirve OTRO build en $ruta (${#html} caracteres contra ${#origen}): bash scripts/tienda/preview.sh alias"
+  done
+  ok "alias: / y /oficio son byte a byte las de $URL"
+  echo "    $URL_ALIAS"
 }
 
 case "${1:-}" in
   desplegar) desplegar ;;
   verificar) verificar ;;
+  alias) publicar_alias ;;
   *)
-    sed -n '2,17p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,23p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 2
     ;;
 esac
